@@ -28,7 +28,6 @@ dpfp
 *.pc
 fpusb-*.tar.bz2
 fpusb-*.tar.gz
-ChangeLog
 doc/html
 *.plg
 *.ncb

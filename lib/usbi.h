@@ -83,7 +83,7 @@ void inline usbi_dbg(const char *format, ...)
 
 extern char *wchar_to_utf8(LPCWSTR wstr);
 extern char *windows_error_str(uint32_t retval);
-extern void usbi_log(struct libusb_context *ctx, enum usbi_log_level level,
+extern void usbi_log(void *ctx, enum usbi_log_level level,
 					 const char *function, const char *format, ...);
 
 

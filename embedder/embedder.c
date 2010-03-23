@@ -103,7 +103,7 @@ int main (int argc, char *argv[])
 	size = sizeof(size_t)*nb_embeddables;
 	file_size = malloc(size);
 	if (file_size == NULL) {
-		fprintf(stderr, "Couldn't even allocate a measly %d bytes\n", size);
+		fprintf(stderr, "Couldn't even allocate a measly %d bytes\n", (int)size);
 		return 1;
 	}
 
@@ -165,7 +165,7 @@ fprintf(header_fd, "struct res {\n" \
 	for (i=0; i<nb_embeddables; i++) {
 		fprintf(header_fd, "\t{ \"%s\", \"%s\", %d, %s },\n",
 			embeddable[i].extraction_subdir, embeddable[i].extraction_name,
-			file_size[i], embeddable[i].internal_name);
+			(int)file_size[i], embeddable[i].internal_name);
 	}
 	fprintf(header_fd, "};\n");
 	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");

@@ -73,13 +73,13 @@ static int init_dlls(void)
 void plog_v(const char *format, va_list args)
 {
 	char buffer[256];
-	int size;
+	DWORD size;
 
 	if (pipe == INVALID_HANDLE_VALUE)
 		return;
 
 	buffer[0] = IC_PRINT_MESSAGE;
-	size = vsnprintf_s(buffer+1, 255, _TRUNCATE, format, args);
+	size = vsnprintf(buffer+1, 255, format, args);
 	if (size < 0) {
 		buffer[255] = 0;
 		size = 254;
@@ -268,7 +268,7 @@ int main(int argc, char** argv)
 	// r = 0xE0000003 ERROR_GENERAL_SYNTAX the syntax of the inf is invalid or the inf is empty
 	// r = 0xE0000304 ERROR_INVALID_CATALOG_DATA => no cat
 	// r = 0xE000023F ERROR_NO_AUTHENTICODE_CATALOG => user cancelled on warnings
-	// r = 0xE0000247 if user decided not to install on warnings
+	// r = 0xE0000247 ERROR_DRIVER_STORE_ADD_FAILED if user decided not to install on warnings
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
 	switch(r) {

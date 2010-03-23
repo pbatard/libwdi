@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <objbase.h>
-#include <api/shellapi.h>
+#include <shellapi.h>
 
 #include "installer_library.h"
 #include "usbi.h"
@@ -30,15 +30,6 @@
 #include "resource.h"	// auto-generated during compilation
 
 #define INF_NAME "libusb-device.inf"
-
-/*
- * Cfgmgr32.dll, SetupAPI.dll interface
- */
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
-DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, CONST DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
 
 /*
@@ -62,6 +53,16 @@ typedef struct {
 
 const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
+
+/*
+ * Cfgmgr32.dll, SetupAPI.dll interface
+ */
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
+DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
+
 
 // convert a GUID to an hex GUID string
 char* guid_to_string(const GUID guid)
@@ -102,13 +103,11 @@ struct driver_info* list_driverless(void)
 {
 	unsigned i, j;
 	DWORD size, reg_type;
-	DEVPROPTYPE devprop_type;
+	ULONG devprop_type;
 	OSVERSIONINFO os_version;
 	CONFIGRET r;
 	HDEVINFO dev_info;
 	SP_DEVINFO_DATA dev_info_data;
-	SP_DEVICE_INTERFACE_DETAIL_DATA *dev_interface_details = NULL;
-	char *sanitized_short = NULL;
 	char *prefix[3] = {"VID_", "PID_", "MI_"};
 	char *token;
 	char path[MAX_PATH_LENGTH];
@@ -185,7 +184,7 @@ struct driver_info* list_driverless(void)
 				desc[0] = 0;
 			}
 		} else {
-			// On Windows 7, the information we want ("Bus reported device decsription") is
+			// On Windows 7, the information we want ("Bus reported device description") is
 			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
 			if (SetupDiGetDeviceProperty == NULL) {
 				usbi_warn(NULL, "failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
@@ -230,10 +229,6 @@ struct driver_info* list_driverless(void)
 // extract the embedded binary resources
 int extract_binaries(char* path)
 {
-	HANDLE h;
-	HGLOBAL h_load;
-	void *data;
-	DWORD size;
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	int i;
