@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <objbase.h>
-#include <api/difxapi.h>
 #include <api/shellapi.h>
 
 #include "installer_library.h"

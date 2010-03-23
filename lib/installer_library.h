@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include "installer.h"
+#include "../installer/installer.h"
 
 #define MAX_DESC_LENGTH             128
 #define MAX_PATH_LENGTH             128

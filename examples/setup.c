@@ -18,7 +18,7 @@
  */
 
 #include <stdio.h>
-#include "../installer/installer_library.h"
+#include "../lib/installer_library.h"
 
 int
 #ifdef _MSC_VER

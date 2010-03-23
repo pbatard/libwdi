@@ -347,7 +347,7 @@
 				>
 			</File>
 			<File
-				RelativePath="installer_library.h"
+				RelativePath="..\lib\installer_library.h"
 				>
 			</File>
 		</Filter>
