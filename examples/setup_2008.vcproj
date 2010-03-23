@@ -65,9 +65,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib libusb-installer.lib"
+				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\msvc;&quot;$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="D:\libusb-pbatard\$(PlatformName)\$(ConfigurationName)\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(ProjectName).pdb"
 				SubSystem="1"
@@ -142,9 +142,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib libusb-installer.lib"
+				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\msvc;&quot;$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="D:\libusb-pbatard\$(PlatformName)\$(ConfigurationName)\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)$(ProjectName).pdb"
 				SubSystem="1"
@@ -219,9 +219,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib libusb-installer.lib"
+				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\msvc;&quot;$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="D:\libusb-pbatard\$(PlatformName)\$(ConfigurationName)\lib"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -298,9 +298,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib libusb-installer.lib"
+				AdditionalDependencies="setupapi.lib difxapi.lib libusb-1.0.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\msvc;&quot;$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="D:\libusb-pbatard\$(PlatformName)\$(ConfigurationName)\lib"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"

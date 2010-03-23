@@ -28,7 +28,7 @@
 #include "installer_library.h"
 #include "usbi.h"
 #include "infs.h"
-#include "resource.h"
+#include "resource.h"	// auto-generated during compilation
 
 #define INF_NAME "libusb-device.inf"
 
@@ -41,25 +41,6 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, CONST DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
-
-/*
- * resources needed by the installer
- */
-/*
-struct res {
-	char* id;
-	char* subdir;
-	char* name;
-};
-
-const struct res resource[] = { {"AMD64_DLL1" , "amd64", "WdfCoInstaller01009.dll"},
-								{"AMD64_DLL2" , "amd64", "winusbcoinstaller2.dll"},
-								{"X86_DLL1", "x86", "WdfCoInstaller01009.dll"},
-								{"X86_DLL2", "x86", "winusbcoinstaller2.dll"},
-								{"AMD64_INSTALLER", ".", "installer_x64.exe"},
-								{"X86_INSTALLER", ".", "installer_x86.exe"} };
-const int nb_resources = sizeof(resource)/sizeof(resource[0]);
-*/
 
 /*
  * Global variables
