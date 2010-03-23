@@ -28,6 +28,8 @@ enum usbi_log_level {
 	LOG_LEVEL_ERROR,
 };
 
+#define ENABLE_LOGGING
+#define ENABLE_DEBUG_LOGGING
 #if !defined(_MSC_VER) || _MSC_VER > 1200
 
 #ifdef ENABLE_LOGGING

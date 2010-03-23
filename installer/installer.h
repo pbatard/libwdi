@@ -85,3 +85,28 @@ typedef RETURN_TYPE	CONFIGRET;
 #define CM_REENUMERATE_RETRY_INSTALLATION 0x00000002
 #define CM_REENUMERATE_ASYNCHRONOUS       0x00000004
 #define CM_REENUMERATE_BITS               0x00000007
+
+/*
+ * DifXApi.dll interface
+ */
+#define DRIVER_PACKAGE_REPAIR             0x00000001
+#define DRIVER_PACKAGE_FORCE              0x00000004
+#define DRIVER_PACKAGE_LEGACY_MODE        0x00000010
+
+#define ERROR_INVALID_CATALOG_DATA        0xE0000304
+
+typedef enum {
+	DIFXAPI_SUCCESS,
+	DIFXAPI_INFO,
+	DIFXAPI_WARNING,
+	DIFXAPI_ERROR
+} DIFXAPI_LOG;
+typedef void (__cdecl* DIFXAPILOGCALLBACK)(DIFXAPI_LOG EventType, DWORD Error, LPCSTR EventDescription, PVOID CallbackContext);
+
+typedef struct {
+	LPCSTR  pApplicationId;
+	LPCSTR  pDisplayName;
+	LPCSTR  pProductName;
+	LPCSTR  pMfgName;
+} INSTALLERINFO, *PINSTALLERINFO;
+typedef const PINSTALLERINFO PCINSTALLERINFO;

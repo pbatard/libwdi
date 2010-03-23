@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <direct.h>
 #include <setupapi.h>
-#include <api/difxapi.h>
 #include <fcntl.h>
 #include <io.h>
 #include <stdarg.h>
@@ -51,17 +50,21 @@ typedef DEVINSTID_A DEVINSTID;
 
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNode, (PDEVINST, DEVINSTID, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
+DLL_DECLARE(WINAPI, void, DIFXAPISetLogCallbackA, (DIFXAPILOGCALLBACK, PVOID));
+DLL_DECLARE(WINAPI, DWORD, DriverPackageInstallA, (LPCSTR, DWORD, PCINSTALLERINFO, BOOL*));
 
 /*
  * Globals
  */
 HANDLE pipe = INVALID_HANDLE_VALUE;
 
-// Setup the Cfgmgr32 DLL
+// Setup the Cfgmgr32 and DifXApi DLLs
 static int init_dlls(void)
 {
 	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
+	DLL_LOAD(DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
+	DLL_LOAD(DifXApi.dll, DriverPackageInstallA, TRUE);
 	return 0;
 }
 
@@ -162,7 +165,7 @@ char* req_device_id(void)
 }
 
 // Setup a DifXAPI Log
-void __cdecl log_callback(DIFXAPI_LOG Event, DWORD Error, const TCHAR * pEventDescription, PVOID CallbackContext)
+void __cdecl log_callback(DIFXAPI_LOG Event, DWORD Error, const char *pEventDescription, PVOID CallbackContext)
 {
 	if (Error == 0){
 		plog("(%u) %s", Event, pEventDescription);
@@ -217,7 +220,7 @@ int main(int argc, char** argv)
 	}
 
 	if (init_dlls()) {
-		plog("could not access dfmgr32 DLL");
+		plog("could not init DLLs");
 		return -1;
 	}
 
@@ -252,11 +255,11 @@ int main(int argc, char** argv)
 	}
 
 	plog("Installing driver - please wait...");
-	DIFXAPISetLogCallback(log_callback, NULL);
+	DIFXAPISetLogCallbackA(log_callback, NULL);
 	// TODO: set app dependency?
-	r = DriverPackageInstall(path, legacy_flag|DRIVER_PACKAGE_REPAIR|DRIVER_PACKAGE_FORCE,
+	r = DriverPackageInstallA(path, legacy_flag|DRIVER_PACKAGE_REPAIR|DRIVER_PACKAGE_FORCE,
 		NULL, &reboot_needed);
-	DIFXAPISetLogCallback(NULL, NULL);
+	DIFXAPISetLogCallbackA(NULL, NULL);
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
