@@ -24,7 +24,11 @@
 #include <setupapi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if !defined(__CYGWIN__)
 #include <direct.h>
+#else
+#include <unistd.h>
+#endif
 #include <setupapi.h>
 #include <fcntl.h>
 #include <io.h>
@@ -56,7 +60,7 @@ DLL_DECLARE(WINAPI, DWORD, DriverPackageInstallA, (LPCSTR, DWORD, PCINSTALLERINF
 /*
  * Globals
  */
-HANDLE pipe = INVALID_HANDLE_VALUE;
+HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 
 // Setup the Cfgmgr32 and DifXApi DLLs
 static int init_dlls(void)
@@ -75,7 +79,7 @@ void plog_v(const char *format, va_list args)
 	char buffer[256];
 	DWORD size;
 
-	if (pipe == INVALID_HANDLE_VALUE)
+	if (pipe_handle == INVALID_HANDLE_VALUE)
 		return;
 
 	buffer[0] = IC_PRINT_MESSAGE;
@@ -84,7 +88,7 @@ void plog_v(const char *format, va_list args)
 		buffer[255] = 0;
 		size = 254;
 	}
-	WriteFile(pipe, buffer, size+2, &size, NULL);
+	WriteFile(pipe_handle, buffer, size+2, &size, NULL);
 }
 
 void plog(const char *format, ...)
@@ -115,7 +119,7 @@ int request_data(unsigned char req, void *buffer, int size)
 		return -1;
 	}
 
-	if (ReadFile(pipe, buffer, count, &rd_count, &overlapped)) {
+	if (ReadFile(pipe_handle, buffer, count, &rd_count, &overlapped)) {
 		// Message was read synchronously
 		plog("received unexpected data");
 		CloseHandle(overlapped.hEvent);
@@ -129,11 +133,11 @@ int request_data(unsigned char req, void *buffer, int size)
 	}
 
 	// Now that we're set to receive data, let's send our request
-	WriteFile(pipe, &req, 1, &r, NULL);
+	WriteFile(pipe_handle, &req, 1, &r, NULL);
 
 	// Wait for the response
 	r = WaitForSingleObject(overlapped.hEvent, REQUEST_TIMEOUT);
-	if ( (r == WAIT_OBJECT_0) && (GetOverlappedResult(pipe, &overlapped, &rd_count, FALSE)) ) {
+	if ( (r == WAIT_OBJECT_0) && (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) ) {
 		CloseHandle(overlapped.hEvent);
 		return (int)rd_count;
 	}
@@ -209,12 +213,12 @@ int main(int argc, char** argv)
 	char log[MAX_PATH_LENGTH];
 	FILE *fd;
 	OSVERSIONINFO os_version;
-	DWORD legacy_flag;
+	DWORD legacy_flag = DRIVER_PACKAGE_LEGACY_MODE;
 
 	// Connect to the messaging pipe
-	pipe = CreateFile("\\\\.\\pipe\\libusb-installer", GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+	pipe_handle = CreateFile("\\\\.\\pipe\\libusb-installer", GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
-	if (pipe == INVALID_HANDLE_VALUE) {
+	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		printf("could not open pipe for writing: errcode %d\n", (int)GetLastError());
 		return -1;
 	}
@@ -250,8 +254,10 @@ int main(int argc, char** argv)
 	memset(&os_version, 0, sizeof(OSVERSIONINFO));
 	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	if ( (GetVersionEx(&os_version) != 0)
-	  && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT) ) {
-		legacy_flag = (os_version.dwMajorVersion >= 6)?0:DRIVER_PACKAGE_LEGACY_MODE;
+	  && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)
+	  && (os_version.dwMajorVersion >= 6) ) {
+		// Vista and later produce a warning with DRIVER_PACKAGE_LEGACY_MODE
+		legacy_flag = 0;
 	}
 
 	plog("Installing driver - please wait...");
@@ -274,7 +280,7 @@ int main(int argc, char** argv)
 	switch(r) {
 	case 0:
 		plog("  completed");
-		plog("reboot %s needed", reboot_needed?"":"not");
+		plog("reboot %s needed", reboot_needed?"IS":"not");
 		break;
 	case ERROR_NO_MORE_ITEMS:
 		plog("more recent driver was found (DRIVER_PACKAGE_FORCE option required)");
@@ -315,6 +321,6 @@ int main(int argc, char** argv)
 	update_driver(device_id);
 
 out:
-	CloseHandle(pipe);
+	CloseHandle(pipe_handle);
 	return 0;
 }

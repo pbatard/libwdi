@@ -29,6 +29,13 @@
 #define false FALSE
 #endif
 
+#if defined(__CYGWIN__ )
+// cygwin produces a warning unless these prototypes are defined
+extern int _snprintf(char *buffer, size_t count, const char *format, ...);
+extern char *_strdup(const char *strSource);
+#define _getcwd getcwd
+#define _access access
+#endif
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, min(count, dst_max - strlen(dst) - 1))
@@ -96,6 +103,9 @@ typedef RETURN_TYPE	CONFIGRET;
 #define ERROR_INVALID_CATALOG_DATA        0xE0000304
 #ifndef ERROR_DRIVER_STORE_ADD_FAILED
 #define ERROR_DRIVER_STORE_ADD_FAILED     0xE0000247
+#endif
+#ifndef ERROR_NO_AUTHENTICODE_CATALOG
+#define ERROR_NO_AUTHENTICODE_CATALOG     0xE000023F
 #endif
 
 typedef enum {

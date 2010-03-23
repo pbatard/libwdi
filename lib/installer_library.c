@@ -23,6 +23,9 @@
 #include <inttypes.h>
 #include <objbase.h>
 #include <shellapi.h>
+#if defined(__CYGWIN__)
+#include <unistd.h>
+#endif
 
 #include "installer_library.h"
 #include "usbi.h"
@@ -37,7 +40,7 @@
  */
 char* req_device_id;
 bool dlls_available = false;
-HANDLE pipe = INVALID_HANDLE_VALUE;
+HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 
@@ -326,7 +329,7 @@ int process_message(char* buffer, DWORD size)
 	{
 	case IC_GET_DEVICE_ID:
 		usbi_dbg("got request for device_id");
-		WriteFile(pipe, req_device_id, strlen(req_device_id), &junk, NULL);
+		WriteFile(pipe_handle, req_device_id, strlen(req_device_id), &junk, NULL);
 		break;
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
@@ -373,9 +376,9 @@ int run_installer(char* path, char* device_id)
 	}
 
 	// Use a pipe to communicate with our installer
-	pipe = CreateNamedPipe("\\\\.\\pipe\\libusb-installer", PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
+	pipe_handle = CreateNamedPipe("\\\\.\\pipe\\libusb-installer", PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
-	if (pipe == INVALID_HANDLE_VALUE) {
+	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		usbi_err(NULL, "could not create read pipe: errcode %d", (int)GetLastError());
 		r = -1; goto out;
 	}
@@ -419,7 +422,7 @@ int run_installer(char* path, char* device_id)
 	handle[1] = shExecInfo.hProcess;
 
 	while (1) {
-		if (ReadFile(pipe, buffer, 256, &rd_count, &overlapped)) {
+		if (ReadFile(pipe_handle, buffer, 256, &rd_count, &overlapped)) {
 			// Message was read synchronously
 			process_message(buffer, rd_count);
 		} else {
@@ -435,7 +438,7 @@ int run_installer(char* path, char* device_id)
 			case ERROR_IO_PENDING:
 				switch(WaitForMultipleObjects(2, handle, FALSE, INFINITE)) {
 				case WAIT_OBJECT_0: // Pipe event
-					if (GetOverlappedResult(pipe, &overlapped, &rd_count, FALSE)) {
+					if (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) {
 						// Message was read asynchronously
 						process_message(buffer, rd_count);
 					} else {
@@ -471,7 +474,7 @@ int run_installer(char* path, char* device_id)
 out:
 	safe_closehandle(handle[0]);
 	safe_closehandle(handle[1]);
-	safe_closehandle(pipe);
+	safe_closehandle(pipe_handle);
 	return r;
 }
 

@@ -10,7 +10,7 @@ EXTRA_DIST = $(LIB_SRC)
 #	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(RCFLAGS) -i $< -o $@
 #endif
 
-libusb_wdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -lusb-1.0 -L/d/libusb-pbatard/libusb/.libs
+libusb_wdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -L../../libusb-pbatard/libusb/.libs -lusb-1.0 
 libusb_wdi_la_SOURCES = $(LIB_SRC)
 
 #???
