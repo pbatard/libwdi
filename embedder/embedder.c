@@ -29,6 +29,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__CYGWIN__)
+#include <unistd.h>
+#define _unlink unlink
+#endif
+
 
 // Uncomment and set to your DDK installation directory
 // TODO: comment before release!
