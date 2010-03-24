@@ -1,0 +1,26 @@
+Windows Driver Installer library for libusb (libusb-wdi)
+
+Features:
+- Automated driverless device detection
+- Automated inf creation, using the name reported by the USB device
+- Automated driver files extraction, for both 32 and 64 bit platforms
+- Automated driver installation, including UAC elevation where necessary
+- When statically linked, only the final executable needs to be redistributed to
+  ensure that a driver can be automatically installed on any Windows platform.
+
+
+Note, for the reditributale library to work on both 64 and 32 bit, you must
+compile both the 32 and 64 bit version of the installer executable before you
+build the library. ***ALPHA - only works with MSVC for now***
+
+Compiling: ***ALPHA - this WILL be improved***
+Regardless of your development environment, you must either have the Windows DDK
+installed, or have the winusb/wdf 32 and 64 bit redistributable DLLs.
+You also need to have libusb (from libusb-pbatard) already compiled with the
+same environment as the one you plan to use to compile libusb-wdi
+Then you must edit the file embedder/embedder.c to set DDK_PATH path and, if
+necessary, edit the various Makefile.am to set the path to the libusb library.
+
+Example:
+setdvr is a sample that uses libusb-wdi to detect all driverless USB devices on
+your system and automatically install a WinUSB driver for them.
