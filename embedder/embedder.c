@@ -56,10 +56,10 @@ struct emb {
 #define INSTALLER_PATH_32 "..\\Win32\\Release\\lib"
 #define INSTALLER_PATH_64 "..\\x64\\Release\\lib"
 #else
-// DON'T PICK THE EXE IN "installer", as it can't run from ANYWHERE ELSE!
-// Use the one from .libs instead
-#define INSTALLER_PATH_32 "..\\installer\\.libs"
-#define INSTALLER_PATH_64 "..\\installer\\.libs"
+// If you compile with shared libs, DON'T PICK THE EXE IN "installer",
+// as it won't run from ANYWHERE ELSE! Use the one from .libs instead.
+#define INSTALLER_PATH_32 "..\\installer"
+#define INSTALLER_PATH_64 "..\\installer"
 #endif
 
 
