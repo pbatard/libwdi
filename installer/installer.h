@@ -107,6 +107,9 @@ typedef RETURN_TYPE	CONFIGRET;
 #ifndef ERROR_NO_AUTHENTICODE_CATALOG
 #define ERROR_NO_AUTHENTICODE_CATALOG     0xE000023F
 #endif
+#ifndef ERROR_IN_WOW64
+#define ERROR_IN_WOW64                    0xE0000235
+#endif
 
 typedef enum {
 	DIFXAPI_SUCCESS,

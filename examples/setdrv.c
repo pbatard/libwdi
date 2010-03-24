@@ -17,6 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/*
+ * WARNING: if any part of the resulting executable name contains "setup" or "instal(l)"
+ * it will require UAC elevation on Vista and later, and, when run from a cygwin/MSYS
+ * shell, will produce a "sh: Bad file number" message.
+ */
+
 #include <stdio.h>
 #include "../lib/installer_library.h"
 

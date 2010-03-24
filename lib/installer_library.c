@@ -379,7 +379,7 @@ int run_installer(char* path, char* device_id)
 	pipe_handle = CreateNamedPipe("\\\\.\\pipe\\libusb-installer", PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
-		usbi_err(NULL, "could not create read pipe: errcode %d", (int)GetLastError());
+		usbi_err(NULL, "could not create read pipe: %s", windows_error_str(0));
 		r = -1; goto out;
 	}
 
@@ -414,7 +414,7 @@ int run_installer(char* path, char* device_id)
 	shExecInfo.hInstApp = NULL;
 
 	if (!ShellExecuteEx(&shExecInfo)) {
-		usbi_err(NULL, "ShellExecuteEx failed: %d", (int)GetLastError());
+		usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(0));
 	}
 
 	if (shExecInfo.hProcess == NULL) {
@@ -454,7 +454,7 @@ int run_installer(char* path, char* device_id)
 							process_message(buffer, rd_count);
 							break;
 						default:
-							usbi_err(NULL, "could not read from pipe (async): %d", (int)GetLastError());
+							usbi_err(NULL, "could not read from pipe (async): %s", windows_error_str(0));
 							break;
 						}
 					}
@@ -463,12 +463,12 @@ int run_installer(char* path, char* device_id)
 					// installer process terminated
 					r = 0; goto out;
 				default:
-					usbi_err(NULL, "could not read from pipe (wait): %d", (int)GetLastError());
+					usbi_err(NULL, "could not read from pipe (wait): %s", windows_error_str(0));
 					break;
 				}
 				break;
 			default:
-				usbi_err(NULL, "could not read from pipe (sync): %d", (int)GetLastError());
+				usbi_err(NULL, "could not read from pipe (sync): %s", windows_error_str(0));
 				break;
 			}
 		}

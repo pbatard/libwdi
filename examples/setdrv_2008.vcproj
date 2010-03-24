@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="setup"
+	Name="setdrv"
 	ProjectGUID="{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
-	RootNamespace="setup"
+	RootNamespace="setdrv"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -339,7 +339,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\setup.c"
+				RelativePath=".\setdrv.c"
 				>
 			</File>
 		</Filter>

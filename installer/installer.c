@@ -274,6 +274,7 @@ int main(int argc, char** argv)
 	// r = 0xE0000003 ERROR_GENERAL_SYNTAX the syntax of the inf is invalid or the inf is empty
 	// r = 0xE0000304 ERROR_INVALID_CATALOG_DATA => no cat
 	// r = 0xE000023F ERROR_NO_AUTHENTICODE_CATALOG => user cancelled on warnings
+	// r = 0xE0000235 ERROR_IN_WOW64 => trying to run a 32 bit installer on a 64 bit machine
 	// r = 0xE0000247 ERROR_DRIVER_STORE_ADD_FAILED if user decided not to install on warnings
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
@@ -296,6 +297,9 @@ int main(int argc, char** argv)
 		goto out;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");
+		goto out;
+	case ERROR_IN_WOW64:
+		plog("a 32 bit installer cannot be used on a 64 bit machine");
 		goto out;
 	case ERROR_INVALID_DATA:
 	case ERROR_WRONG_INF_STYLE:

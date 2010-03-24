@@ -1,4 +1,4 @@
-AC_INIT([libusb-wdi], [1.0.7])
+AC_INIT([libusb-wdi], [1.0.0])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([lib/installer_library.c])
 AC_CONFIG_MACRO_DIR([m4])
@@ -12,53 +12,25 @@ AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 
-AC_MSG_CHECKING([operating system])
+AC_MSG_CHECKING([development environment])
 case $host in
-*-linux*)
-	AC_DEFINE(OS_LINUX, [], [Linux backend])
-	AC_SUBST(OS_LINUX)
-	AC_MSG_RESULT([Linux])
-	backend="linux"
-	AC_CHECK_LIB(rt, clock_gettime)
-	AM_CFLAGS="-Wshadow"
-	AM_LDFLAGS=""
-	;;
-*-darwin*)
-	AC_DEFINE(OS_DARWIN, [], [Darwin backend])
-	AC_SUBST(OS_DARWIN)
-	AC_DEFINE(USBI_OS_HANDLES_TIMEOUT, [], [Backend handles timeout])
-	AC_MSG_RESULT([Darwin/MacOS X])
-	backend="darwin"
-	AM_CFLAGS="-Wshadow"
-	AM_LDFLAGS="-Wl,-framework -Wl,IOKit -Wl,-framework -Wl,CoreFoundation -Wl,-prebind -no-undefined"
-	;;
 *-mingw*)
-	AC_DEFINE(OS_WINDOWS, [], [Windows backend])
-	AC_SUBST(OS_WINDOWS)
-	AC_MSG_RESULT([Windows])
-	backend="windows"
+	AC_MSG_RESULT([MinGW])
 	LIBS="-lsetupapi -lole32"
 	AM_CFLAGS="-Wshadow"	
 	AM_LDFLAGS="-no-undefined -avoid-version"
 	AC_CHECK_TOOL(RC, windres, no)
 	;;
 *-cygwin*)
-	AC_DEFINE(OS_WINDOWS, [], [Windows backend])
-	AC_SUBST(OS_WINDOWS)
-	AC_MSG_RESULT([Windows])
-	backend="windows"
+	AC_MSG_RESULT([cygwin])
 	LIBS="-lsetupapi -lole32"
 	AM_CFLAGS=""	
 	AM_LDFLAGS="-no-undefined -avoid-version"
 	AC_CHECK_TOOL(RC, windres, no)
 	;;	
 *)
-	AC_MSG_ERROR([unsupported operating system])
+	AC_MSG_ERROR([unsupported development environment])
 esac
-
-AM_CONDITIONAL([OS_LINUX], [test "x$backend" == "xlinux"])
-AM_CONDITIONAL([OS_DARWIN], [test "x$backend" == "xdarwin"])
-AM_CONDITIONAL([OS_WINDOWS], [test "x$backend" == "xwindows"])
 
 # Message logging
 AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],
@@ -66,6 +38,16 @@ AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],
 	[log_enabled='yes'])
 if test "x$log_enabled" != "xno"; then
 	AC_DEFINE([ENABLE_LOGGING], 1, [Message logging])
+fi
+
+# --enable-debug : check whether they want to have debug symbols:
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--disable-debug], [disable debugging]),
+	[debug_enabled=$enableval],
+	[debug_enabled='yes'])
+if test "x$debug_enabled" = "xyes" ; then
+  CFLAGS="-g -O2"
+else
+  CFLAGS="-O2"
 fi
 
 AC_ARG_ENABLE([debug-log], [AS_HELP_STRING([--enable-debug-log],
@@ -83,24 +65,6 @@ AC_ARG_ENABLE([examples-build], [AS_HELP_STRING([--enable-examples-build],
 	[build_examples='no'])
 AM_CONDITIONAL([BUILD_EXAMPLES], [test "x$build_examples" != "xno"])
 
-# Restore gnu89 inline semantics on gcc 4.3 and newer
-saved_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -fgnu89-inline"
-AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]), inline_cflags="-fgnu89-inline", inline_cflags="")
-CFLAGS="$saved_cflags"
-
-# check for -fvisibility=hidden compiler support (GCC >= 3.4)
-saved_cflags="$CFLAGS"
-# -Werror required for cygwin
-CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
-AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]),
-	[VISIBILITY_CFLAGS="-fvisibility=hidden"
-	 AC_DEFINE([API_EXPORTED], [__attribute__((visibility("default")))], [Default visibility]) ],
-	[ VISIBILITY_CFLAGS=""
-	 AC_DEFINE([API_EXPORTED], [], [Default visibility]) ],
-	])
-CFLAGS="$saved_cflags"
-
 # check for -Wno-pointer-sign compiler support (GCC >= 4)
 saved_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
@@ -108,7 +72,7 @@ AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]),
 	nopointersign_cflags="-Wno-pointer-sign", nopointersign_cflags="")
 CFLAGS="$saved_cflags"
 
-AM_CFLAGS="$AM_CFLAGS -std=gnu99 $inline_cflags -Wall -Wundef -Wunused -Wstrict-prototypes -Werror-implicit-function-declaration $nopointersign_cflags"
+AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Werror-implicit-function-declaration $nopointersign_cflags"
 
 AC_SUBST(VISIBILITY_CFLAGS)
 AC_SUBST(AM_CFLAGS)
