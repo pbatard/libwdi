@@ -51,9 +51,10 @@ struct emb {
 #define INSTALLER_PATH_32 "..\\Win32\\Release\\lib"
 #define INSTALLER_PATH_64 "..\\x64\\Release\\lib"
 #else
-// TODO: ????
-#define INSTALLER_PATH_32 ".lib"
-#define INSTALLER_PATH_64 ".lib64"
+// DON'T PICK THE EXE IN "installer", as it can't run from ANYWHERE ELSE!
+// Use the one from .libs instead
+#define INSTALLER_PATH_32 "..\\installer\\.libs"
+#define INSTALLER_PATH_64 "..\\installer\\.libs"
 #endif
 
 
@@ -67,8 +68,8 @@ struct emb embeddable[] = {
 	// Installer executable requiring UAC elevation
 	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 	// system, you will get the annoying "This program might not have installed properly" prompt.
-	{ INSTALLER_PATH_32 "\\driver-installer.exe", "installer_32", ".", "installer_x86.exe" },
-	{ INSTALLER_PATH_64 "\\driver-installer.exe", "installer_64", ".", "installer_x64.exe" },
+	{ INSTALLER_PATH_32 "\\installer.exe", "installer_32", ".", "installer_x86.exe" },
+	{ INSTALLER_PATH_64 "\\installer.exe", "installer_64", ".", "installer_x64.exe" },
 };
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
 
@@ -179,10 +180,9 @@ out3:
 	fclose(fd);
 out2:
 	fclose(header_fd);
+	// Must delete a failed file so that Make can relaunch its build
+	_unlink(argv[1]);
 out1:
 	free(file_size);
 	return ret;
 }
-
-
-

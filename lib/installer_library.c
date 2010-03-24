@@ -413,7 +413,9 @@ int run_installer(char* path, char* device_id)
 	shExecInfo.nShow = SW_HIDE;
 	shExecInfo.hInstApp = NULL;
 
-	ShellExecuteEx(&shExecInfo);
+	if (!ShellExecuteEx(&shExecInfo)) {
+		usbi_err(NULL, "ShellExecuteEx failed: %d", (int)GetLastError());
+	}
 
 	if (shExecInfo.hProcess == NULL) {
 		usbi_dbg("user chose not to run the installer");

@@ -22,7 +22,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\driver-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\driver-installer.exe"
+				OutputFile="$(OutDir)\installer.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -96,7 +96,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\driver-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -140,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\driver-installer.exe"
+				OutputFile="$(OutDir)\installer.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -171,7 +171,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\driver-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -215,7 +215,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\driver-installer.exe"
+				OutputFile="$(OutDir)\installer.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
 				SubSystem="1"
@@ -248,7 +248,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\driver-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -293,7 +293,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\driver-installer.exe"
+				OutputFile="$(OutDir)\installer.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
 				SubSystem="1"

@@ -13,6 +13,13 @@ EXTRA_DIST = $(LIB_SRC)
 libusb_wdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -L../../libusb-pbatard/libusb/.libs -lusb-1.0 
 libusb_wdi_la_SOURCES = $(LIB_SRC)
 
+resource.h:
+	../embedder/embedder.exe resource.h
+
+clean-local:
+	-rm -rf resource.h
+
+
 #???
 #hdrdir = $(includedir)/libusb-1.0
 #hdr_HEADERS = libusb.h

@@ -42,5 +42,3 @@ char* guid_to_string(const GUID guid);
 int create_inf(struct driver_info* drv_info, char* path, int type);
 int run_installer(char *path, char *dev_inst);
 int update_drivers(void);
-
-
