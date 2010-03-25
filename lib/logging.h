@@ -1,6 +1,6 @@
 /*
- * Reused internal libuxb functions
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * libwdi logging functions - copied from libusb:
+ * Copyright (c) Johannes Erdfelt, Daniel Drake et al.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,9 +18,6 @@
  */
 #pragma once
 
-/*
- * Internal libusb functions, which we reuse
- */
 enum usbi_log_level {
 	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_INFO,
@@ -28,8 +25,6 @@ enum usbi_log_level {
 	LOG_LEVEL_ERROR,
 };
 
-#define ENABLE_LOGGING
-#define ENABLE_DEBUG_LOGGING
 #if !defined(_MSC_VER) || _MSC_VER > 1200
 
 #ifdef ENABLE_LOGGING
@@ -81,7 +76,10 @@ void inline usbi_dbg(const char *format, ...)
 
 #endif /* !defined(_MSC_VER) || _MSC_VER > 1200 */
 
-extern char *wchar_to_utf8(LPCWSTR wstr);
-extern char *windows_error_str(uint32_t retval);
-extern void usbi_log(void *ctx, enum usbi_log_level level,
-					 const char *function, const char *format, ...);
+struct libusb_context {
+	int debug;
+	int debug_fixed;
+};
+
+// TODO: ensure we get an error as a reminder
+//#define USBI_GET_CONTEXT(ctx) if (!(ctx)) (ctx) = usbi_default_context

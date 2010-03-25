@@ -1,7 +1,7 @@
 BUILT_SOURCES = resource.h
 lib_LTLIBRARIES = libusb-wdi.la
 
-LIB_SRC = resource.h infs.h usbi.h installer.h installer_library.h installer_library.c
+LIB_SRC = resource.h logging.h usbi.h installer.h installer_library.h logging.c installer_library.c
 
 EXTRA_DIST = $(LIB_SRC)
 
@@ -12,7 +12,7 @@ EXTRA_DIST = $(LIB_SRC)
 #endif
 
 libusb_wdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
-libusb_wdi_la_LIBADD = -L../../libusb-pbatard/libusb/.libs -lusb-1.0
+libusb_wdi_la_LIBADD = -lsetupapi -lole32
 libusb_wdi_la_SOURCES = $(LIB_SRC)
 
 resource.h:

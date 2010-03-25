@@ -44,7 +44,7 @@ case $host in
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
-LIBS="-lsetupapi -lole32"
+#LIBS="-lsetupapi -lole32"
 AM_LDFLAGS="-no-undefined -avoid-version"
 AC_CHECK_TOOL(RC, windres, no)
 

@@ -28,7 +28,7 @@
 #endif
 
 #include "installer_library.h"
-#include "usbi.h"
+#include "logging.h"
 #include "infs.h"
 #include "resource.h"	// auto-generated during compilation
 
@@ -66,6 +66,61 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
+
+/*
+ * Converts a WCHAR string to UTF8 (allocate returned string)
+ * Returns NULL on error
+ */
+char* wchar_to_utf8(LPCWSTR wstr)
+{
+	int size;
+	char* str;
+
+	// Find out the size we need to allocate for our converted string
+	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+	if (size <= 1)	// An empty string would be size 1
+		return NULL;
+
+	if ((str = malloc(size)) == NULL)
+		return NULL;
+
+	if (WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, size, NULL, NULL) != size) {
+		free(str);
+		return NULL;
+	}
+
+	return str;
+}
+
+/*
+ * Converts a windows error to human readable string
+ * uses retval as errorcode, or, if 0, use GetLastError()
+ */
+char *windows_error_str(uint32_t retval)
+{
+static char err_string[ERR_BUFFER_SIZE];
+
+	DWORD size;
+	uint32_t errcode, format_errcode;
+
+	errcode = retval?retval:GetLastError();
+
+	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", errcode);
+
+	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
+		ERR_BUFFER_SIZE, NULL);
+	if (size == 0)
+	{
+		format_errcode = GetLastError();
+		if (format_errcode)
+			safe_sprintf(err_string, ERR_BUFFER_SIZE,
+				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
+		else
+			safe_sprintf(err_string, ERR_BUFFER_SIZE, "Unknown error code %u", errcode);
+	}
+	return err_string;
+}
 
 // convert a GUID to an hex GUID string
 char* guid_to_string(const GUID guid)

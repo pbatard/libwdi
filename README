@@ -11,15 +11,13 @@ Features:
 
 Note, for the reditributale library to work on both 64 and 32 bit, you must
 compile both the 32 and 64 bit version of the installer executable before you
-build the library. ***ALPHA - only works with MSVC for now***
+build the library. If you use gcc, you must ensure that your compiler supports
+*BOTH* -m32 and -m64
 
-Compiling: ***ALPHA - this WILL be improved***
+Compiling:
 Regardless of your development environment, you must either have the Windows DDK
 installed, or have the winusb/wdf 32 and 64 bit redistributable DLLs.
-You also need to have libusb (from libusb-pbatard) already compiled with the
-same environment as the one you plan to use to compile libusb-wdi
-Then you must edit the file embedder/embedder.c to set DDK_PATH path and, if
-necessary, edit the various Makefile.am to set the path to the libusb library.
+You must edit the file config.h (msvc/config.h for MSVC) to set DDK_PATH path.
 
 Example:
 setdvr is a sample that uses libusb-wdi to detect all driverless USB devices on

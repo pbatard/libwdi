@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\msvc;&quot;..\..\libusb-pbatard\libusb&quot;"
+				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-installer.lib"
+				OutputFile="$(OutDir)\libusb-wdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -108,7 +108,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc;&quot;..\..\libusb-pbatard\libusb&quot;"
+				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="1"
 			/>
@@ -124,7 +124,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-installer.lib"
+				OutputFile="$(OutDir)\libusb-wdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -171,7 +171,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\msvc;&quot;..\..\libusb-pbatard\libusb&quot;"
+				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -190,7 +190,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-installer.lib"
+				OutputFile="$(OutDir)\libusb-wdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -233,7 +233,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc;&quot;..\..\libusb-pbatard\libusb&quot;"
+				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="0"
 			/>
@@ -249,7 +249,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-installer.lib"
+				OutputFile="$(OutDir)\libusb-wdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -280,12 +280,20 @@
 				RelativePath="installer_library.c"
 				>
 			</File>
+			<File
+				RelativePath=".\logging.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\msvc\config.h"
+				>
+			</File>
 			<File
 				RelativePath=".\infs.h"
 				>
@@ -295,7 +303,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\usbi.h"
+				RelativePath=".\logging.h"
 				>
 			</File>
 		</Filter>
