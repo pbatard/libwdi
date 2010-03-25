@@ -46,8 +46,13 @@ struct emb {
 };
 
 #if defined(_MSC_VER)
+#if defined(_DEBUG)
+#define INSTALLER_PATH_32 "..\\Win32\\Debug\\lib"
+#define INSTALLER_PATH_64 "..\\x64\\Debug\\lib"
+#else
 #define INSTALLER_PATH_32 "..\\Win32\\Release\\lib"
 #define INSTALLER_PATH_64 "..\\x64\\Release\\lib"
+#endif
 #else
 // If you compile with shared libs, DON'T PICK THE EXE IN "installer",
 // as it won't run from ANYWHERE ELSE! Use the one from .libs instead.
