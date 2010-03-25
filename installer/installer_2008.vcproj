@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\installer.exe"
+				OutputFile="$(OutDir)\installer_x86.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -140,7 +140,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\installer.exe"
+				OutputFile="$(OutDir)\installer_x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -215,7 +215,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\installer.exe"
+				OutputFile="$(OutDir)\installer_x86.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
 				SubSystem="1"
@@ -293,7 +293,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="difxapi.lib"
-				OutputFile="$(OutDir)\installer.exe"
+				OutputFile="$(OutDir)\installer_x64.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
 				SubSystem="1"

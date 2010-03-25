@@ -11,26 +11,72 @@ AC_PROG_LIBTOOL
 AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
+AC_DEFINE([OPT_M32], [], [32 bit support])
+AC_DEFINE([OPT_M64], [], [64 bit support])
+
+# TODO: better CFLAGS
 
 AC_MSG_CHECKING([development environment])
 case $host in
 *-mingw*)
 	AC_MSG_RESULT([MinGW])
-	LIBS="-lsetupapi -lole32"
 	AM_CFLAGS="-Wshadow"	
-	AM_LDFLAGS="-no-undefined -avoid-version"
-	AC_CHECK_TOOL(RC, windres, no)
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
-	LIBS="-lsetupapi -lole32"
 	AM_CFLAGS=""	
-	AM_LDFLAGS="-no-undefined -avoid-version"
-	AC_CHECK_TOOL(RC, windres, no)
+	# -mno-cygwin
+	save_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -mno-cygwin"
+	AC_MSG_CHECKING([if -mno-cygwin is supported])
+	AC_TRY_COMPILE(, [;],
+		has_mno_cygwin=yes,
+		has_mno_cygwin=no)
+	if test "x$has_mno_cygwin" = "xyes"; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+		AC_MSG_ERROR([you must ensure that -mno-cygwin is available on cygwin])
+	fi
+	CFLAGS="${save_CFLAGS}"	
 	;;	
 *)
 	AC_MSG_ERROR([unsupported development environment])
 esac
+
+LIBS="-lsetupapi -lole32"
+AM_LDFLAGS="-no-undefined -avoid-version"
+AC_CHECK_TOOL(RC, windres, no)
+
+# 32 bit support
+save_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -m32"
+AC_MSG_CHECKING([whether the compiler can produce 32 bit binaries])
+AC_TRY_COMPILE(, [;],
+	compiler_has_m32=yes,
+	compiler_has_m32=no)
+if test "x$compiler_has_m32" = "xyes"; then
+	AC_MSG_RESULT([yes])
+else
+	AC_MSG_RESULT([no])
+fi
+CFLAGS="${save_CFLAGS}"
+AM_CONDITIONAL([OPT_M32], [test "x$compiler_has_m32" == "xyes"])
+
+# 64 bit support
+save_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -m64"
+AC_MSG_CHECKING([whether the compiler can produce 64 bit binaries])
+AC_TRY_COMPILE(, [;],
+	compiler_has_m64=yes,
+	compiler_has_m64=no)
+if test "x$compiler_has_m64" = "xyes"; then
+	AC_MSG_RESULT([yes])
+else
+	AC_MSG_RESULT([no])
+fi
+CFLAGS="${save_CFLAGS}"
+AM_CONDITIONAL([OPT_M64], [test "x$compiler_has_m64" == "xyes"])
 
 # Message logging
 AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],
@@ -80,4 +126,3 @@ AC_SUBST(AM_LDFLAGS)
 
 AC_CONFIG_FILES([Makefile] [embedder/Makefile] [installer/Makefile] [lib/Makefile] [examples/Makefile])
 AC_OUTPUT
-

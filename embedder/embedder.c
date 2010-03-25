@@ -72,9 +72,9 @@ struct emb embeddable[] = {
 	{ DDK_PATH "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
 	// Installer executable requiring UAC elevation
 	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
-	// system, you will get the annoying "This program might not have installed properly" prompt.
-	{ INSTALLER_PATH_32 "\\installer.exe", "installer_32", ".", "installer_x86.exe" },
-	{ INSTALLER_PATH_64 "\\installer.exe", "installer_64", ".", "installer_x64.exe" },
+	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
+	{ INSTALLER_PATH_32 "\\installer_x86.exe", "installer_32", ".", "installer_x86.exe" },
+	{ INSTALLER_PATH_64 "\\installer_x64.exe", "installer_64", ".", "installer_x64.exe" },
 };
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
 
@@ -97,6 +97,7 @@ int main (int argc, char *argv[])
 	size_t* file_size;
 	FILE *fd, *header_fd;
 	unsigned char* buffer;
+	char fullpath[256];
 
 	// Disable stdout bufferring
 	setvbuf(stdout, NULL, _IONBF,0);
@@ -122,10 +123,15 @@ int main (int argc, char *argv[])
 	fprintf(header_fd, "#pragma once\n");
 
 	for (i=0; i<nb_embeddables; i++) {
-		printf("Embedding '%s'\n",embeddable[i].file_name);
+		if (_fullpath(fullpath, embeddable[i].file_name, 256) == NULL) {
+			fprintf(stderr, "Unable to get full path for %s\n", embeddable[i].file_name);
+			ret = 1;
+			goto out2;
+		}
+		printf("Embedding '%s'\n", fullpath);
 		fd = fopen(embeddable[i].file_name, "rb");
 		if (fd == NULL) {
-			fprintf(stderr, "Couldn't open file '%s'\n", embeddable[i].file_name);
+			fprintf(stderr, "Couldn't open file '%s'\n", fullpath);
 			if (i>=nb_embeddables-2) {
 				fprintf(stderr, "Please make sure you compiled BOTH the 64 and 32 bit "
 					"versions of the installer executables before compiling this library.\n");
