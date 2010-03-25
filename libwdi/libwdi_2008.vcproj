@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="installer library"
+	Name="libwdi"
 	ProjectGUID="{9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9}"
-	RootNamespace="installerlibrary"
+	RootNamespace="libwdi"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -21,7 +21,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libusb-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libwdi"
 			ConfigurationType="4"
 			CharacterSet="2"
 			>
@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-wdi.lib"
+				OutputFile="$(OutDir)\libwdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -86,7 +86,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libusb-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libwdi"
 			ConfigurationType="4"
 			>
 			<Tool
@@ -124,7 +124,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-wdi.lib"
+				OutputFile="$(OutDir)\libwdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -145,7 +145,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libusb-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libwdi"
 			ConfigurationType="4"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -190,7 +190,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-wdi.lib"
+				OutputFile="$(OutDir)\libwdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -211,7 +211,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libusb-installer"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\libwdi"
 			ConfigurationType="4"
 			>
 			<Tool
@@ -249,7 +249,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\libusb-wdi.lib"
+				OutputFile="$(OutDir)\libwdi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -277,7 +277,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="installer_library.c"
+				RelativePath=".\libwdi.c"
 				>
 			</File>
 			<File
@@ -299,7 +299,7 @@
 				>
 			</File>
 			<File
-				RelativePath="installer_library.h"
+				RelativePath=".\libwdi.h"
 				>
 			</File>
 			<File

@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include "../installer/installer.h"
+//#include "../installer/installer.h"
 
 #define MAX_DESC_LENGTH             128
 #define MAX_PATH_LENGTH             128
@@ -37,8 +37,8 @@ struct driver_info {
 	char mi[6];
 };
 
-struct driver_info *list_driverless(void);
-char* guid_to_string(const GUID guid);
-int create_inf(struct driver_info* drv_info, char* path, int type);
-int run_installer(char *path, char *dev_inst);
-int update_drivers(void);
+struct driver_info *wdi_list_driverless(void);
+//char* guid_to_string(const GUID guid);
+int wdi_create_inf(struct driver_info* drv_info, char* path, int type);
+int wdi_run_installer(char *path, char *dev_inst);
+int wdi_update_drivers(void);

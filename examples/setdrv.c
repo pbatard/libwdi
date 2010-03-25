@@ -24,7 +24,7 @@
  */
 
 #include <stdio.h>
-#include "../lib/installer_library.h"
+#include "../libwdi/libwdi.h"
 
 int
 #ifdef _MSC_VER
@@ -34,10 +34,10 @@ main(void)
 {
 	struct driver_info *drv_info;
 
-	drv_info = list_driverless();
+	drv_info = wdi_list_driverless();
 	for (; drv_info != NULL; drv_info = drv_info->next) {
-		if (create_inf(drv_info, "C:\\test", USE_WINUSB) == 0) {
-			run_installer("C:\\test", drv_info->device_id);
+		if (wdi_create_inf(drv_info, "C:\\test", USE_WINUSB) == 0) {
+			wdi_run_installer("C:\\test", drv_info->device_id);
 		}
 	}
 	return 0;

@@ -1,7 +1,7 @@
 BUILT_SOURCES = resource.h
-lib_LTLIBRARIES = libusb-wdi.la
+lib_LTLIBRARIES = libwdi.la
 
-LIB_SRC = resource.h logging.h usbi.h installer.h installer_library.h logging.c installer_library.c
+LIB_SRC = resource.h logging.h usbi.h installer.h libwdi.h logging.c libwdi.c
 
 EXTRA_DIST = $(LIB_SRC)
 
@@ -11,9 +11,9 @@ EXTRA_DIST = $(LIB_SRC)
 #	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(RCFLAGS) -i $< -o $@
 #endif
 
-libusb_wdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
-libusb_wdi_la_LIBADD = -lsetupapi -lole32
-libusb_wdi_la_SOURCES = $(LIB_SRC)
+libwdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
+libwdi_la_LIBADD = -lsetupapi -lole32
+libwdi_la_SOURCES = $(LIB_SRC)
 
 resource.h:
 	../embedder/embedder.exe resource.h

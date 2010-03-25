@@ -1,6 +1,6 @@
-AC_INIT([libusb-wdi], [1.0.0])
+AC_INIT([libwdi], [1.0.0])
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([lib/installer_library.c])
+AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])
 AM_CONFIG_HEADER([config.h])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
@@ -137,5 +137,5 @@ AC_SUBST(VISIBILITY_CFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
 
-AC_CONFIG_FILES([Makefile] [embedder/Makefile] [installer/Makefile] [lib/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [embedder/Makefile] [installer/Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT

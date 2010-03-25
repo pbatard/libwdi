@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="installer executable"
+	Name="installer"
 	ProjectGUID="{9B1C561E-F95B-4849-A7AA-A4350E227C20}"
 	RootNamespace="installer"
 	Keyword="Win32Proj"

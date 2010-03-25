@@ -1,5 +1,5 @@
 /*
- * Library for WinUSB/libusb automated driver installation
+ * Library for USB automated driver installation
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -28,7 +28,8 @@
 #endif
 #include <config.h>
 
-#include "installer_library.h"
+#include "../installer/installer.h"
+#include "libwdi.h"
 #include "logging.h"
 #include "infs.h"
 #include "resource.h"	// auto-generated during compilation
@@ -158,7 +159,7 @@ static int init_dlls(void)
 }
 
 // List all driverless USB devices
-struct driver_info* list_driverless(void)
+struct driver_info* wdi_list_driverless(void)
 {
 	unsigned i, j;
 	DWORD size, reg_type;
@@ -321,7 +322,7 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int create_inf(struct driver_info* drv_info, char* path, int type)
+int wdi_create_inf(struct driver_info* drv_info, char* path, int type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -402,7 +403,7 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int run_installer(char* path, char* device_id)
+int wdi_run_installer(char* path, char* device_id)
 {
 	SHELLEXECUTEINFO shExecInfo;
 	char exename[MAX_PATH_LENGTH];

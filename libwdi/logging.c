@@ -63,7 +63,7 @@ void usbi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
 		break;
 	}
 
-	fprintf(stream, "libusb:%s [%s] ", prefix, function);
+	fprintf(stream, "libwdi:%s [%s] ", prefix, function);
 
 	vfprintf(stream, format, args);
 
