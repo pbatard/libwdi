@@ -29,11 +29,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(__CYGWIN__)
-#include <unistd.h>
-#define _unlink unlink
-#endif
+#include <windows.h>
 
+#define MAX_PATH_LENGTH 256
 
 // Uncomment and set to your DDK installation directory
 // TODO: comment before release!
@@ -61,8 +59,6 @@ struct emb {
 #define INSTALLER_PATH_32 "..\\installer"
 #define INSTALLER_PATH_64 "..\\installer"
 #endif
-
-
 
 struct emb embeddable[] = {
 	// WinUSB driver DLLs (32 and 64 bit)
@@ -93,11 +89,12 @@ void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 int main (int argc, char *argv[])
 {
 	int  ret, i;
+	DWORD r;
 	size_t size;
 	size_t* file_size;
 	FILE *fd, *header_fd;
 	unsigned char* buffer;
-	char fullpath[256];
+	char fullpath[MAX_PATH_LENGTH];
 
 	// Disable stdout bufferring
 	setvbuf(stdout, NULL, _IONBF,0);
@@ -123,7 +120,8 @@ int main (int argc, char *argv[])
 	fprintf(header_fd, "#pragma once\n");
 
 	for (i=0; i<nb_embeddables; i++) {
-		if (_fullpath(fullpath, embeddable[i].file_name, 256) == NULL) {
+		r = GetFullPathNameA(embeddable[i].file_name, MAX_PATH_LENGTH, fullpath, NULL);
+		if ((r == 0) || (r > MAX_PATH_LENGTH)) {
 			fprintf(stderr, "Unable to get full path for %s\n", embeddable[i].file_name);
 			ret = 1;
 			goto out2;
@@ -192,7 +190,7 @@ out3:
 out2:
 	fclose(header_fd);
 	// Must delete a failed file so that Make can relaunch its build
-	_unlink(argv[1]);
+	DeleteFile(argv[1]);
 out1:
 	free(file_size);
 	return ret;
