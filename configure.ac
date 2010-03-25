@@ -137,5 +137,5 @@ AC_SUBST(VISIBILITY_CFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
 
-AC_CONFIG_FILES([Makefile] [embedder/Makefile] [installer/Makefile] [libwdi/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT

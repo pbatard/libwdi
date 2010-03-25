@@ -28,7 +28,7 @@
 #endif
 #include <config.h>
 
-#include "../installer/installer.h"
+#include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
 #include "infs.h"

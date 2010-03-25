@@ -342,10 +342,6 @@
 				RelativePath="installer.h"
 				>
 			</File>
-			<File
-				RelativePath="..\lib\installer_library.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

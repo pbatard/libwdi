@@ -51,8 +51,8 @@ struct emb {
 #else
 // If you compile with shared libs, DON'T PICK THE EXE IN "installer",
 // as it won't run from ANYWHERE ELSE! Use the one from .libs instead.
-#define INSTALLER_PATH_32 "..\\installer"
-#define INSTALLER_PATH_64 "..\\installer"
+#define INSTALLER_PATH_32 "."
+#define INSTALLER_PATH_64 "."
 #endif
 
 struct emb embeddable[] = {
