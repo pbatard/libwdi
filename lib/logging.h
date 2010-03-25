@@ -83,3 +83,6 @@ struct libusb_context {
 
 // TODO: ensure we get an error as a reminder
 //#define USBI_GET_CONTEXT(ctx) if (!(ctx)) (ctx) = usbi_default_context
+
+extern void usbi_log(struct libusb_context *ctx, enum usbi_log_level level,
+					 const char *function, const char *format, ...);

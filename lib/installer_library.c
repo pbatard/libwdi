@@ -26,6 +26,7 @@
 #if defined(__CYGWIN__)
 #include <unistd.h>
 #endif
+#include <config.h>
 
 #include "installer_library.h"
 #include "logging.h"
