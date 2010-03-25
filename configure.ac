@@ -19,10 +19,8 @@ AC_ARG_WITH(ddkdir,
 	AS_HELP_STRING([--with-ddkdir], [location of the DDK]),
 	DDK_DIR=$withval,
 	DDK_DIR="C:/WinDDK/7600.16385.0")
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll
-	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll
-	$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll
-	$DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
+# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll $DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
 	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
 configure: error: must be provided to compile this library (--with-ddkdir)])])
 AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
