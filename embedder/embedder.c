@@ -31,14 +31,9 @@
 #include <stdlib.h>
 #include <windows.h>
 
-#define MAX_PATH_LENGTH 256
+#include <config.h>
 
-// Uncomment and set to your DDK installation directory
-// TODO: comment before release!
-#define DDK_PATH "E:\\WinDDK\\7600.16385.0"
-#if !defined(DDK_PATH)
-#error "Make sure you set DDK_PATH before compiling this file"
-#endif
+#define MAX_PATH_LENGTH 256
 
 /*
  * files to embed
@@ -62,10 +57,11 @@ struct emb {
 
 struct emb embeddable[] = {
 	// WinUSB driver DLLs (32 and 64 bit)
-	{ DDK_PATH "\\redist\\wdf\\amd64\\WdfCoInstaller01009.dll", "amd64_dll1", "amd64", "WdfCoInstaller01009.dll" },
-	{ DDK_PATH "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
-	{ DDK_PATH "\\redist\\wdf\\x86\\WdfCoInstaller01009.dll", "x86_dll1", "x86", "WdfCoInstaller01009.dll" },
-	{ DDK_PATH "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
+	// TODO: coinstaller versions (1009, etc)
+	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller01009.dll", "amd64_dll1", "amd64", "WdfCoInstaller01009.dll" },
+	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
+	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller01009.dll", "x86_dll1", "x86", "WdfCoInstaller01009.dll" },
+	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
 	// Installer executable requiring UAC elevation
 	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.

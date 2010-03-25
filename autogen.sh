@@ -14,4 +14,4 @@ aclocal || exit 1
 autoheader || exit 1
 autoconf || exit 1
 automake -a -c || exit 1
-./configure --enable-debug-log --enable-examples-build --disable-debug $*
+./configure --enable-debug-log --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" $*

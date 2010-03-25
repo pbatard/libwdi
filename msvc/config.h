@@ -5,6 +5,9 @@
 #error "Please make sure the msvc/ directory is removed from your build path."
 #endif
 
+/* DDK directory */
+#define DDK_DIR "E:/WinDDK/7600.16385.0"
+
 /* Debug message logging */
 #define ENABLE_DEBUG_LOGGING 1
 

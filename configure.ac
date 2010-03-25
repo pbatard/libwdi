@@ -13,6 +13,19 @@ AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 AC_DEFINE([OPT_M32], [], [32 bit support])
 AC_DEFINE([OPT_M64], [], [64 bit support])
+AC_DEFINE([DDK_DIR], [], [DDK directory])
+
+AC_ARG_WITH(ddkdir,
+	AS_HELP_STRING([--with-ddkdir], [location of the DDK]),
+	DDK_DIR=$withval,
+	DDK_DIR="C:/WinDDK/7600.16385.0")
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll
+	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll
+	$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll
+	$DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
+	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
+configure: error: must be provided to compile this library (--with-ddkdir)])])
+AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
 
 # TODO: better CFLAGS
 
