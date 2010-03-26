@@ -29,6 +29,12 @@
 #define false FALSE
 #endif
 
+#define MAX_DESC_LENGTH             128
+#define MAX_PATH_LENGTH             128
+#define MAX_KEY_LENGTH              256
+#define STR_BUFFER_SIZE             256
+#define MAX_GUID_STRING_LENGTH      40
+
 #if defined(__CYGWIN__ )
 // cygwin produces a warning unless these prototypes are defined
 extern int _snprintf(char *buffer, size_t count, const char *format, ...);

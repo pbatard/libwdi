@@ -67,6 +67,8 @@ struct emb embeddable[] = {
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
 	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller01009.dll", "x86_dll1", "x86", "WdfCoInstaller01009.dll" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
+	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\amd64\\DIFxAPI.dll", "amd64_dll3", "amd64", "DIFxAPI.dll" },
+	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\x86\\DIFxAPI.dll", "x86_dll3", "x86", "DIFxAPI.dll" },
 	// Installer executable requiring UAC elevation
 	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.

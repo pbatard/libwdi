@@ -24,11 +24,6 @@
 #include <setupapi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if !defined(__CYGWIN__)
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
 #include <setupapi.h>
 #include <fcntl.h>
 #include <io.h>
@@ -36,7 +31,6 @@
 #include "installer.h"
 
 #define INF_NAME "libusb-device.inf"
-#define MAX_PATH_LENGTH 128
 #define REQUEST_TIMEOUT 5000
 
 /*
@@ -67,8 +61,13 @@ static int init_dlls(void)
 {
 	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
-	DLL_LOAD(DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
-	DLL_LOAD(DifXApi.dll, DriverPackageInstallA, TRUE);
+#ifdef _WIN64
+	DLL_LOAD(amd64\\DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
+	DLL_LOAD(amd64\\DifXApi.dll, DriverPackageInstallA, TRUE);
+#else
+	DLL_LOAD(x86\\DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
+	DLL_LOAD(x86\\DifXApi.dll, DriverPackageInstallA, TRUE);
+#endif
 	return 0;
 }
 
@@ -244,7 +243,13 @@ int main(int argc, char** argv)
 	}
 
 	// TODO: use GetFullPathName() to get full inf path
-	_getcwd(path, MAX_PATH_LENGTH);
+	r = GetFullPathNameA(".", MAX_PATH_LENGTH, path, NULL);
+	if ((r == 0) || (r > MAX_PATH_LENGTH)) {
+		plog("could not retreive absolute path of working directory");
+		goto out;
+	}
+
+//	_getcwd(path, MAX_PATH_LENGTH);
 	safe_strcat(path, MAX_PATH_LENGTH, "\\");
 	safe_strcat(path, MAX_PATH_LENGTH, INF_NAME);
 
@@ -299,7 +304,7 @@ int main(int argc, char** argv)
 		plog("this process needs to be run with administrative privileges");
 		goto out;
 	case ERROR_IN_WOW64:
-		plog("a 32 bit installer cannot be used on a 64 bit machine");
+		plog("attempted to use a 32 bit installer on a 64 bit machine");
 		goto out;
 	case ERROR_INVALID_DATA:
 	case ERROR_WRONG_INF_STYLE:

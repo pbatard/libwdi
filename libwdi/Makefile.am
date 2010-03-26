@@ -10,18 +10,18 @@ if OPT_M32
 M32 = -m32
 endif
 if OPT_M64
-M64 = -m64
+M64 = -m64 -D_WIN64
 endif
 
 embedder_SOURCES = embedder.c
 
 installer_x86_SOURCES = installer.h installer.c
-installer_x86_LDFLAGS = $(AM_LDFLAGS) -mno-cygwin -static
+installer_x86_LDFLAGS = $(AM_LDFLAGS) -static
 installer_x86_CFLAGS = $(AM_CFLAGS) $(M32)
 installer_x86_LDADD = -lsetupapi -lole32
 
 installer_x64_SOURCES = installer.h installer.c
-installer_x64_LDFLAGS = $(AM_LDFLAGS) -mno-cygwin -static
+installer_x64_LDFLAGS = $(AM_LDFLAGS) -static
 installer_x64_CFLAGS = $(AM_CFLAGS) $(M64)
 installer_x64_LDADD = -lsetupapi -lole32
 

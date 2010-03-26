@@ -18,13 +18,6 @@
  */
 #pragma once
 
-//#include "../installer/installer.h"
-
-#define MAX_DESC_LENGTH             128
-#define MAX_PATH_LENGTH             128
-#define MAX_KEY_LENGTH              256
-#define ERR_BUFFER_SIZE             256
-#define MAX_GUID_STRING_LENGTH      40
 #define USE_WINUSB                  0
 #define USE_LIBUSB                  1
 
@@ -38,7 +31,6 @@ struct driver_info {
 };
 
 struct driver_info *wdi_list_driverless(void);
-//char* guid_to_string(const GUID guid);
 int wdi_create_inf(struct driver_info* drv_info, char* path, int type);
 int wdi_run_installer(char *path, char *dev_inst);
 int wdi_update_drivers(void);

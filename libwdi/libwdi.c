@@ -23,9 +23,6 @@
 #include <inttypes.h>
 #include <objbase.h>
 #include <shellapi.h>
-#if defined(__CYGWIN__)
-#include <unistd.h>
-#endif
 #include <config.h>
 
 #include "installer.h"
@@ -35,6 +32,19 @@
 #include "resource.h"	// auto-generated during compilation
 
 #define INF_NAME "libusb-device.inf"
+#define INSTALLER_TIMEOUT 10000
+#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
+
+#define BLAH
+
+enum windows_version {
+	WINDOWS_UNDEFINED,
+	WINDOWS_UNSUPPORTED,
+	WINDOWS_2K,
+	WINDOWS_XP,
+	WINDOWS_VISTA,
+	WINDOWS_7
+};
 
 
 /*
@@ -45,6 +55,7 @@ bool dlls_available = false;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
+enum windows_version windows_version = WINDOWS_UNDEFINED;
 
 /*
  * For the retrieval of the device description on Windows 7
@@ -66,8 +77,31 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
+// This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
+// Detect Windows version
+void detect_version(void)
+{
+	OSVERSIONINFO os_version;
+
+	memset(&os_version, 0, sizeof(OSVERSIONINFO));
+	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	windows_version = WINDOWS_UNSUPPORTED;
+	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
+		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
+			windows_version = WINDOWS_2K;
+		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
+			windows_version = WINDOWS_XP;
+		} else if (os_version.dwMajorVersion >= 6) {
+			if (os_version.dwBuildNumber < 7000) {
+				windows_version = WINDOWS_VISTA;
+			} else {
+				windows_version = WINDOWS_7;
+			}
+		}
+	}
+}
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -100,26 +134,26 @@ char* wchar_to_utf8(LPCWSTR wstr)
  */
 char *windows_error_str(uint32_t retval)
 {
-static char err_string[ERR_BUFFER_SIZE];
+static char err_string[STR_BUFFER_SIZE];
 
 	DWORD size;
 	uint32_t errcode, format_errcode;
 
 	errcode = retval?retval:GetLastError();
 
-	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", errcode);
+	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", errcode);
 
 	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
-		ERR_BUFFER_SIZE, NULL);
+		STR_BUFFER_SIZE, NULL);
 	if (size == 0)
 	{
 		format_errcode = GetLastError();
 		if (format_errcode)
-			safe_sprintf(err_string, ERR_BUFFER_SIZE,
+			safe_sprintf(err_string, STR_BUFFER_SIZE,
 				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
 		else
-			safe_sprintf(err_string, ERR_BUFFER_SIZE, "Unknown error code %u", errcode);
+			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", errcode);
 	}
 	return err_string;
 }
@@ -164,7 +198,6 @@ struct driver_info* wdi_list_driverless(void)
 	unsigned i, j;
 	DWORD size, reg_type;
 	ULONG devprop_type;
-	OSVERSIONINFO os_version;
 	CONFIGRET r;
 	HDEVINFO dev_info;
 	SP_DEVINFO_DATA dev_info_data;
@@ -231,11 +264,8 @@ struct driver_info* wdi_list_driverless(void)
 		}
 		drv_info->device_id = _strdup(path);
 
-		// Retreive the device description as reported by the device itself
-		memset(&os_version, 0, sizeof(OSVERSIONINFO));
-		os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-		if ( (GetVersionEx(&os_version) != 0)
-		  && (os_version.dwBuildNumber < 7000) ) {
+		GET_WINDOWS_VERSION;
+		if (windows_version < WINDOWS_7) {
 			// On Vista and earlier, we can use SPDRP_DEVICEDESC
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
@@ -406,16 +436,20 @@ int process_message(char* buffer, DWORD size)
 int wdi_run_installer(char* path, char* device_id)
 {
 	SHELLEXECUTEINFO shExecInfo;
-	char exename[MAX_PATH_LENGTH];
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+	char exename[STR_BUFFER_SIZE];
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
 	DWORD rd_count;
 	BOOL is_x64 = false;
-#define BUFSIZE 256
-	char buffer[BUFSIZE];
+	char buffer[STR_BUFFER_SIZE];
 
 	req_device_id = device_id;
+	memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    memset(&pi, 0, sizeof(pi));
 
 	// Detect whether if we should run the 64 bit installer, without
 	// relying on external libs
@@ -448,54 +482,67 @@ int wdi_run_installer(char* path, char* device_id)
 	}
 	overlapped.hEvent = handle[0];
 
-	safe_strcpy(exename, MAX_PATH_LENGTH, path);
+	safe_strcpy(exename, STR_BUFFER_SIZE, path);
 	// TODO: fallback to x86 if x64 unavailable
 	if (is_x64) {
-		safe_strcat(exename, MAX_PATH_LENGTH, "\\installer_x64.exe");
+		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x64.exe");
 	} else {
-		safe_strcat(exename, MAX_PATH_LENGTH, "\\installer_x86.exe");
+		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x86.exe");
 	}
 
-	shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	GET_WINDOWS_VERSION;
+	if (windows_version >= WINDOWS_VISTA) {
+		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
+		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
-	shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-	shExecInfo.hwnd = NULL;
-	shExecInfo.lpVerb = "runas";
-	shExecInfo.lpFile = exename;
-	// if INF_NAME ever has a space, it will be seen as multiple parameters
-	shExecInfo.lpParameters = INF_NAME;
-	shExecInfo.lpDirectory = path;
-	// TODO: hide
-//	shExecInfo.nShow = SW_NORMAL;
-	shExecInfo.nShow = SW_HIDE;
-	shExecInfo.hInstApp = NULL;
+		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+		shExecInfo.hwnd = NULL;
+		shExecInfo.lpVerb = "runas";
+		shExecInfo.lpFile = exename;
+		// if INF_NAME ever has a space, it will be seen as multiple parameters
+		shExecInfo.lpParameters = INF_NAME;
+		shExecInfo.lpDirectory = path;
+		// TODO: hide
+		//shExecInfo.nShow = SW_NORMAL;
+		shExecInfo.nShow = SW_HIDE;
+		shExecInfo.hInstApp = NULL;
 
-	if (!ShellExecuteEx(&shExecInfo)) {
-		usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(0));
+		if (!ShellExecuteEx(&shExecInfo)) {
+			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(0));
+		}
+
+		if (shExecInfo.hProcess == NULL) {
+			usbi_dbg("user chose not to run the installer");
+			r = -1; goto out;
+		}
+		handle[1] = shExecInfo.hProcess;
+	} else {
+		// On XP and earlier, simply yse CreateProcess
+		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
+		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
+			usbi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
+		}
+		handle[1] = pi.hProcess;
 	}
-
-	if (shExecInfo.hProcess == NULL) {
-		usbi_dbg("user chose not to run the installer");
-		r = -1; goto out;
-	}
-	handle[1] = shExecInfo.hProcess;
 
 	while (1) {
-		if (ReadFile(pipe_handle, buffer, 256, &rd_count, &overlapped)) {
+		if (ReadFile(pipe_handle, buffer, STR_BUFFER_SIZE, &rd_count, &overlapped)) {
 			// Message was read synchronously
 			process_message(buffer, rd_count);
 		} else {
 			switch(GetLastError()) {
 			case ERROR_BROKEN_PIPE:
 				// The pipe has been ended - wait for installer to finish
-				WaitForSingleObject(handle[1], INFINITE);
+				if ((WaitForSingleObject(handle[1], INSTALLER_TIMEOUT) == WAIT_TIMEOUT)) {
+					TerminateProcess(handle[1], 0);
+				}
 				r = 0; goto out;
 			case ERROR_PIPE_LISTENING:
 				// Wait for installer to open the pipe
 				Sleep(100);
 				continue;
 			case ERROR_IO_PENDING:
-				switch(WaitForMultipleObjects(2, handle, FALSE, INFINITE)) {
+				switch(WaitForMultipleObjects(2, handle, FALSE, INSTALLER_TIMEOUT)) {
 				case WAIT_OBJECT_0: // Pipe event
 					if (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) {
 						// Message was read asynchronously
@@ -504,7 +551,9 @@ int wdi_run_installer(char* path, char* device_id)
 						switch(GetLastError()) {
 						case ERROR_BROKEN_PIPE:
 							// The pipe has been ended - wait for installer to finish
-							WaitForSingleObject(handle[1], INFINITE);
+							if ((WaitForSingleObject(handle[1], INSTALLER_TIMEOUT) == WAIT_TIMEOUT)) {
+								TerminateProcess(handle[1], 0);
+							}
 							r = 0; goto out;
 						case ERROR_MORE_DATA:
 							usbi_warn(NULL, "program assertion failed: message overflow");
@@ -516,6 +565,11 @@ int wdi_run_installer(char* path, char* device_id)
 						}
 					}
 					break;
+				case WAIT_TIMEOUT:
+					// Lost contact
+					usbi_err(NULL, "installer failed to respond - aborting");
+					TerminateProcess(handle[1], 0);
+					r = -1; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
 					r = 0; goto out;
