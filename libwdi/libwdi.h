@@ -18,19 +18,36 @@
  */
 #pragma once
 
+#include <windows.h>
+#if !defined(bool)
+#define bool BOOL
+#endif
+#if !defined(true)
+#define true TRUE
+#endif
+#if !defined(false)
+#define false FALSE
+#endif
+
 #define USE_WINUSB                  0
 #define USE_LIBUSB                  1
 
-struct driver_info {
-	struct driver_info *next;
-	char* device_id;
+struct wdi_device_info {
+	struct wdi_device_info *next;
+	char* device_id;	// device URI
 	char* desc;
+	char* driver;
 	char vid[9];
 	char pid[9];
 	char mi[6];
 };
 
-struct driver_info *wdi_list_driverless(void);
-int wdi_create_inf(struct driver_info* drv_info, char* path, int type);
+/*
+ * returns a driver_info list of USB devices
+ * parameter: driverless_only - boolean
+ */
+struct wdi_device_info* wdi_create_list(bool driverless_only);
+void wdi_destroy_list(struct wdi_device_info* list);
+int wdi_create_inf(struct wdi_device_info* drv_info, char* path, int type);
 int wdi_run_installer(char *path, char *dev_inst);
 int wdi_update_drivers(void);

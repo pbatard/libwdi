@@ -39,9 +39,9 @@
 // cygwin produces a warning unless these prototypes are defined
 extern int _snprintf(char *buffer, size_t count, const char *format, ...);
 extern char *_strdup(const char *strSource);
-#define _getcwd getcwd
 #define _access access
 #endif
+#define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, min(count, dst_max - strlen(dst) - 1))
@@ -50,6 +50,7 @@ extern char *_strdup(const char *strSource);
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
+#define safe_strdup _strdup
 
 enum installer_code {
 	IC_PRINT_MESSAGE,

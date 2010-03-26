@@ -37,6 +37,7 @@
 
 // These warnings are taken care off in configure for other platforms
 #if defined(_MSC_VER)
+
 #define __STR2__(x) #x
 #define __STR1__(x) __STR2__(x)
 #if defined(_WIN64) && defined(OPT_M32)
@@ -54,21 +55,8 @@
 #pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : this library will be INCOMPATIBLE with 64 bit platforms")
 #endif
 
-#endif
-/*
-#	if defined(OPT_M64)
-#		if defined(OPT_M32)
-#			if defined(_WIN64)
-	if test "x$enable_32bit" != "xno"; then
-		AC_MSG_NOTICE([will produce a 32 bit library, compatible with 64 bit platforms])
-	else
-		AC_MSG_WARN([will produce a 64 bit library that is INCOMPATIBLE with 32 bit platforms])
-	fi
-else
-	AC_MSG_WARN([will produce a 32 bit library that is INCOMPATIBLE with 64 bit platforms])
-fi
-#endif
-*/
+#endif /* _MSC_VER */
+
 enum windows_version {
 	WINDOWS_UNDEFINED,
 	WINDOWS_UNSUPPORTED,
@@ -77,7 +65,6 @@ enum windows_version {
 	WINDOWS_VISTA,
 	WINDOWS_7
 };
-
 
 /*
  * Global variables
@@ -202,15 +189,16 @@ char* guid_to_string(const GUID guid)
 	return guid_string;
 }
 
-// free a driver info struct
-void free_di(struct driver_info *start)
+// free a device info struct
+void free_di(struct wdi_device_info *di)
 {
-	struct driver_info *tmp;
-	while(start != NULL) {
-		tmp = start;
-		start = start->next;
-		free(tmp);
+	if (di == NULL) {
+		return;
 	}
+	safe_free(di->device_id);
+	safe_free(di->desc);
+	safe_free(di->driver);
+	free(di);
 }
 
 // Setup the Cfgmgr32 and SetupApi DLLs
@@ -224,10 +212,10 @@ static int init_dlls(void)
 	return 0;
 }
 
-// List all driverless USB devices
-struct driver_info* wdi_list_driverless(void)
+// List USB devices
+struct wdi_device_info* wdi_create_list(bool driverless_only)
 {
-	unsigned i, j;
+	unsigned i, j, interface_number;
 	DWORD size, reg_type;
 	ULONG devprop_type;
 	CONFIGRET r;
@@ -238,7 +226,7 @@ struct driver_info* wdi_list_driverless(void)
 	char path[MAX_PATH_LENGTH];
 	WCHAR desc[MAX_DESC_LENGTH];
 	char driver[MAX_DESC_LENGTH];
-	struct driver_info *ret = NULL, *cur = NULL, *drv_info;
+	struct wdi_device_info *ret = NULL, *cur = NULL, *device_info;
 	bool driverless;
 
 	if (!dlls_available) {
@@ -261,28 +249,46 @@ struct driver_info* wdi_list_driverless(void)
 			break;
 		}
 
-		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
-		// SPDRP_INSTALL_STATE
-		if (SetupDiGetDeviceRegistryProperty(dev_info, &dev_info_data, SPDRP_DRIVER,
-			&reg_type, (BYTE*)driver, MAX_KEY_LENGTH, &size)) {
-			// Driverless devices should return an error
-			// TODO: should we also return devices that have a driver?
+		// Eliminate USB hubs by checking the driver string
+		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_SERVICE,
+			&reg_type, (BYTE*)driver, MAX_DESC_LENGTH, &size)) {
+			driver[0] = 0;
+		}
+		if (safe_strcmp(driver, "usbhub") == 0) {
 			continue;
 		}
-//		usbi_dbg("driver: %s", driver);
+
+		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
+		// SPDRP_INSTALL_STATE
+		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_DRIVER,
+			&reg_type, (BYTE*)path, MAX_PATH_LENGTH, &size)) {
+			if (driverless_only) {
+				continue;
+			}
+		} else {
+			// Driverless devices will return an error
+			driverless = true;
+		}
 
 		// Allocate a driver_info struct to store our data
-		drv_info = calloc(1, sizeof(struct driver_info));
-		if (drv_info == NULL) {
+		device_info = calloc(1, sizeof(struct wdi_device_info));
+		if (device_info == NULL) {
 			free_di(ret);
 			return NULL;
 		}
 		if (cur == NULL) {
-			ret = drv_info;
+			ret = device_info;
 		} else {
-			cur->next = drv_info;
+			cur->next = device_info;
 		}
-		cur = drv_info;
+		cur = device_info;
+
+		// Copy the driver name (this will be used to detect driverless)
+		if (driverless) {
+			cur->driver = NULL;
+		} else {
+			cur->driver = safe_strdup(driver);
+		}
 
 		// Retrieve device ID. This is needed to re-enumerate our device and force
 		// the final driver installation
@@ -292,9 +298,10 @@ struct driver_info* wdi_list_driverless(void)
 				i, r);
 			continue;
 		} else {
-			usbi_dbg("Driverless USB device (%d): %s", i, path);
+			usbi_dbg("%s USB device (%d): %s",
+				cur->driver?cur->driver:"Driverless", i, path);
 		}
-		drv_info->device_id = _strdup(path);
+		device_info->device_id = _strdup(path);
 
 		GET_WINDOWS_VERSION;
 		if (windows_version < WINDOWS_7) {
@@ -313,13 +320,15 @@ struct driver_info* wdi_list_driverless(void)
 				desc[0] = 0;
 			} else if (!SetupDiGetDeviceProperty(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
-				usbi_warn(NULL, "could not read device description for %d (Win7): %s",
-					i, windows_error_str(0));
-				desc[0] = 0;
+				// fallback to SPDRP_DEVICEDESC (USB husb still use it)
+				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
+					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
+					usbi_warn(NULL, "could not read device description for %d: %s",
+						i, windows_error_str(0));
+					desc[0] = 0;
+				}
 			}
 		}
-		drv_info->desc = wchar_to_utf8(desc);
-		usbi_dbg("Device description: %s", drv_info->desc);
 
 		token = strtok (path, "\\#&");
 		while(token != NULL) {
@@ -327,13 +336,18 @@ struct driver_info* wdi_list_driverless(void)
 				if (safe_strncmp(token, prefix[j], strlen(prefix[j])) == 0) {
 					switch(j) {
 					case 0:
-						safe_strcpy(drv_info->vid, sizeof(drv_info->vid), token);
+						safe_strcpy(device_info->vid, sizeof(device_info->vid), token);
 						break;
 					case 1:
-						safe_strcpy(drv_info->pid, sizeof(drv_info->pid), token);
+						safe_strcpy(device_info->pid, sizeof(device_info->pid), token);
 						break;
 					case 2:
-						safe_strcpy(drv_info->mi, sizeof(drv_info->mi), token);
+						safe_strcpy(device_info->mi, sizeof(device_info->mi), token);
+						// Add the interface if we have space
+						if ( (sscanf(token, "MI_%02X", &interface_number) == 1)
+						  && (wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH ) {
+							_snwprintf(&desc[wcslen(desc)], sizeof(" (Interface ###)"), L" (Interface %d)", interface_number);
+						}
 						break;
 					default:
 						usbi_err(NULL, "unexpected case");
@@ -343,9 +357,23 @@ struct driver_info* wdi_list_driverless(void)
 			}
 			token = strtok (NULL, "\\#&");
 		}
+
+		device_info->desc = wchar_to_utf8(desc);
+		usbi_dbg("Device description: %s", device_info->desc);
+
 	}
 
 	return ret;
+}
+
+void wdi_destroy_list(struct wdi_device_info* list)
+{
+	struct wdi_device_info *tmp;
+	while(list != NULL) {
+		tmp = list;
+		list = list->next;
+		free_di(tmp);
+	}
 }
 
 // extract the embedded binary resources
@@ -384,14 +412,14 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int wdi_create_inf(struct driver_info* drv_info, char* path, int type)
+int wdi_create_inf(struct wdi_device_info* device_info, char* path, int type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
 
 	// TODO? create a reusable temp dir if path is NULL?
-	if ((path == NULL) || (drv_info == NULL)) {
+	if ((path == NULL) || (device_info == NULL)) {
 		return -1;
 	}
 
@@ -420,10 +448,10 @@ int wdi_create_inf(struct driver_info* drv_info, char* path, int type)
 	fprintf(fd, "; libusb_device.inf\n");
 	fprintf(fd, "; Copyright (c) 2010 libusb (GNU LGPL)\n");
 	fprintf(fd, "[Strings]\n");
-	fprintf(fd, "DeviceName = \"%s\"\n", drv_info->desc);
-	fprintf(fd, "DeviceID = \"%s&%s", drv_info->vid, drv_info->pid);
-	if (drv_info->mi[0] != 0) {
-		fprintf(fd, "&%s\"\n", drv_info->mi);
+	fprintf(fd, "DeviceName = \"%s\"\n", device_info->desc);
+	fprintf(fd, "DeviceID = \"%s&%s", device_info->vid, device_info->pid);
+	if (device_info->mi[0] != 0) {
+		fprintf(fd, "&%s\"\n", device_info->mi);
 	} else {
 		fprintf(fd, "\"\n");
 	}
@@ -474,7 +502,7 @@ int wdi_run_installer(char* path, char* device_id)
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
-	DWORD rd_count;
+	DWORD err, rd_count;
 	BOOL is_x64 = false;
 	char buffer[STR_BUFFER_SIZE];
 
@@ -522,6 +550,13 @@ int wdi_run_installer(char* path, char* device_id)
 	} else {
 		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x86.exe");
 	}
+	// At this stage, if either the 32 or 64 bit installer version is missing,
+	// it is the application developer's fault...
+	if (_access(exename, 00) != 0) {
+		usbi_err(NULL, "this application does not contain the required %s bit installer", is_x64?"64":"32");
+		usbi_err(NULL, "please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
+		r = -1; goto out;
+	}
 
 	GET_WINDOWS_VERSION;
 	if (windows_version >= WINDOWS_VISTA) {
@@ -540,14 +575,19 @@ int wdi_run_installer(char* path, char* device_id)
 		shExecInfo.nShow = SW_HIDE;
 		shExecInfo.hInstApp = NULL;
 
+		err = 0;
 		if (!ShellExecuteEx(&shExecInfo)) {
-			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(0));
+			err = GetLastError();
 		}
 
-		if (shExecInfo.hProcess == NULL) {
-			usbi_dbg("user chose not to run the installer");
+		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
+			usbi_dbg("operation cancelled by the user");
 			r = -1; goto out;
 		}
+		else if (err) {
+			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
+		}
+
 		handle[1] = shExecInfo.hProcess;
 	} else {
 		// On XP and earlier, simply yse CreateProcess

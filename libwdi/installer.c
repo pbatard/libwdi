@@ -316,7 +316,7 @@ int main(int argc, char** argv)
 		goto out;
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
-		plog("cancelled by user");
+		plog("operation cancelled by the user");
 		goto out;
 	// TODO: make DRIVER_PACKAGE_REPAIR optional
 	case ERROR_ALREADY_EXISTS:

@@ -26,19 +26,35 @@
 #include <stdio.h>
 #include "../libwdi/libwdi.h"
 
+#define FLUSHER	while(getchar() != 0x0A)
+
 int
 #ifdef _MSC_VER
 __cdecl
 #endif
 main(void)
 {
-	struct driver_info *drv_info;
+	struct wdi_device_info *device, *list;
+	char c;
 
-	drv_info = wdi_list_driverless();
-	for (; drv_info != NULL; drv_info = drv_info->next) {
-		if (wdi_create_inf(drv_info, "C:\\test", USE_WINUSB) == 0) {
-			wdi_run_installer("C:\\test", drv_info->device_id);
+	list = wdi_create_list(true);
+	if (list == NULL) {
+		printf("No driverless USB devices were found.\n");
+		return 0;
+	}
+
+	for (device = list; device != NULL; device = device->next) {
+		printf("Found driverless USB device: \"%s\" (%s:%s)\n", device->desc, device->vid, device->pid);
+		printf("Do you want to install a driver for this device (y/n)?\n");
+		c = (char) getchar();
+		FLUSHER;
+		if ((c!='y') && (c!='Y')) {
+			continue;
+		}
+		if (wdi_create_inf(device, "C:\\test", USE_WINUSB) == 0) {
+			wdi_run_installer("C:\\test", device->device_id);
 		}
 	}
+	wdi_destroy_list(list);
 	return 0;
 }
