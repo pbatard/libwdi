@@ -1,4 +1,4 @@
-Windows Driver Installer library for WinUSB device (libwdi)
+libwdi: Windows Driver Installer library for USB devices
 
 Features:
 - Automated driverless device detection
@@ -8,27 +8,30 @@ Features:
 - When statically linked, only the final executable needs to be redistributed to
   ensure that a driver can be automatically installed on any Windows platform.
 
-Note, for the reditributale library to work on both 64 and 32 bit, you must
-compile both the 32 and 64 bit version of the installer executable before you
-build the library. If you use gcc, you must ensure that your compiler supports
-*BOTH* -m32 and -m64
-The best solution right now, to have -m32 and -m64 with very little effort, is
-to download WPG System 64 from http://www.cadforte.com/system64.html
-Note that MinGW and cygwin can only compile 32 bit binaries by default, and that
-the official binary packages from MinGW-w64 don't have multilib enabled, so they
-are 64 bit only. 
-Therefore, if you don't want to recompile MinGW-w64, WPG System 64 is the way to
-go.
+For the reditributale library to work on both 64 and 32 bit, you must use a 
+compiler that can produce both 32 and 64 bit binaries, and compile the library
+as 32 bit.
+For gcc, that means that your compiler should support both the -m32 and -m64
+options, and for Visual Studio, that means using a non Express version.
+Note that you still have the possibility to use other compilers to produce a 32
+bit (or 64 bit) only library, and automated configuration will be smart enough
+to detect this, and compile/embed only the required 32 or 64 bit resources.
+If you want to compile a 64 bit only library, make sure you comment OPT_M32 in
+config.h, or use the --disable-32bit option when runing configure.
+
+For gcc, the best solution right now, to have -m32 and -m64 with very little
+effort, is to download WPG System 64 from http://www.cadforte.com/system64.html
+as the MinGW-32 and cygwin only compile 32 bit binaries by default, and the 
+official binary packages from MinGW-w64 don't have multilib enabled, so they are
+64 bit only. 
 
 Compiling:
 Regardless of your development environment, you must either have the Windows DDK
 installed, or have the winusb/wdf 32 and 64 bit redistributable DLLs.
-On cygwin/mingw, the path to the DDK must be provided with the --with-ddkdir
-option (see autogen.sh)
+On cygwin/mingw, you need to supply the path to your DDK with the --with-ddkdir
+option when calling configure (see autogen.sh).
 For MSVC, you must edit msvc/config.h and set DDK_PATH path accordingly.
-Note that because Visual Studio Express 2008 cannot compile 64 bit binaries, you
-will need to use the full version of Visual Studio.
 
 Example:
-setdvr is a sample that uses libusb-wdi to detect all driverless USB devices on
-your system and automatically install a WinUSB driver for them.
+setdvr is a sample that will use libwdi to detect all driverless USB devices on
+your system and prompt you to automatically install a WinUSB driver for them.
