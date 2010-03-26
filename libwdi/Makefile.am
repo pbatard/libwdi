@@ -16,13 +16,14 @@ endif
 embedder_SOURCES = embedder.c
 
 installer_x86_SOURCES = installer.h installer.c
-installer_x86_LDFLAGS = $(AM_LDFLAGS) -static
-installer_x86_CFLAGS = $(AM_CFLAGS) $(M32)
+installer_x86_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS) $(M32)
+installer_x86_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x86_LDADD = -lsetupapi -lole32
 
+installer_x64_CC = gcc $(NO_CYGWIN)
 installer_x64_SOURCES = installer.h installer.c
-installer_x64_LDFLAGS = $(AM_LDFLAGS) -static
-installer_x64_CFLAGS = $(AM_CFLAGS) $(M64)
+installer_x64_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS) $(M64)
+installer_x64_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x64_LDADD = -lsetupapi -lole32
 
 EXTRA_DIST = $(LIB_SRC)
@@ -33,7 +34,8 @@ EXTRA_DIST = $(LIB_SRC)
 #	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(RCFLAGS) -i $< -o $@
 #endif
 
-libwdi_la_CFLAGS = $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
+libwdi_la_CFLAGS = $(NO_CYGWIN) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
+libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
 libwdi_la_LIBADD = -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
 

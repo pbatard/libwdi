@@ -31,7 +31,8 @@ AC_MSG_CHECKING([development environment])
 case $host in
 *-mingw*)
 	AC_MSG_RESULT([MinGW])
-	AM_CFLAGS="-Wshadow"	
+	AM_CFLAGS="-Wshadow"
+	NO_CYGWIN=""
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
@@ -50,7 +51,7 @@ case $host in
 		AC_MSG_ERROR([you must ensure that -mno-cygwin is available on cygwin])
 	fi
 	CFLAGS="${save_CFLAGS}"	
-	CC="gcc -mno-cygwin"
+	NO_CYGWIN="-mno-cygwin"
 	;;	
 *)
 	AC_MSG_ERROR([unsupported development environment])
@@ -135,6 +136,7 @@ AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Wer
 AC_SUBST(VISIBILITY_CFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
+AC_SUBST(NO_CYGWIN)
 
 AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT
