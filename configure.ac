@@ -1,4 +1,4 @@
-AC_INIT([libwdi], [1.0.0])
+AC_INIT([libwdi], [1.0.0], [libusb-devel@lists.sourceforge.net], [libwdi], [http://libusb.org/wiki/windows_backend])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])
@@ -11,19 +11,13 @@ AC_PROG_LIBTOOL
 AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
-AC_DEFINE([OPT_M32], [], [32 bit support])
-AC_DEFINE([OPT_M64], [], [64 bit support])
 AC_DEFINE([DDK_DIR], [], [DDK directory])
+AC_DEFINE([WDF_VER], ["01009"], [DDK WDF coinstaller version (string)])
 
 AC_ARG_WITH(ddkdir,
 	AS_HELP_STRING([--with-ddkdir], [location of the DDK]),
 	DDK_DIR=$withval,
 	DDK_DIR="C:/WinDDK/7600.16385.0")
-# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll $DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll $DDK_DIR/redist/DIFx/DIFxAPI/amd64/DIFxAPI.dll $DDK_DIR/redist/DIFx/DIFxAPI/x86/DIFxAPI.dll],,
-	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
-configure: error: must be provided to compile this library (--with-ddkdir)])])
-AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
 
 # TODO: better CFLAGS
 
@@ -44,13 +38,15 @@ case $host in
 	AC_TRY_COMPILE(, [;],
 		has_mno_cygwin=yes,
 		has_mno_cygwin=no)
-	if test "x$has_mno_cygwin" = "xyes"; then
+	if test "x$has_mno_cygwin" == "xyes"; then
 		AC_MSG_RESULT([yes])
 	else
 		AC_MSG_RESULT([no])
 		AC_MSG_ERROR([you must ensure that -mno-cygwin is available on cygwin])
 	fi
-	CFLAGS="${save_CFLAGS}"	
+	CFLAGS="${save_CFLAGS}"
+	# if you try to redefine CC to "gcc -mno-cygwin", all kind of bad things happen
+	# => use a variable instead
 	NO_CYGWIN="-mno-cygwin"
 	;;	
 *)
@@ -68,13 +64,12 @@ AC_MSG_CHECKING([whether the compiler can produce 32 bit binaries])
 AC_TRY_COMPILE(, [;],
 	compiler_has_m32=yes,
 	compiler_has_m32=no)
-if test "x$compiler_has_m32" = "xyes"; then
+if test "x$compiler_has_m32" == "xyes"; then
 	AC_MSG_RESULT([yes])
 else
 	AC_MSG_RESULT([no])
 fi
 CFLAGS="${save_CFLAGS}"
-AM_CONDITIONAL([OPT_M32], [test "x$compiler_has_m32" == "xyes"])
 
 # 64 bit support
 save_CFLAGS="${CFLAGS}"
@@ -83,13 +78,79 @@ AC_MSG_CHECKING([whether the compiler can produce 64 bit binaries])
 AC_TRY_COMPILE(, [;],
 	compiler_has_m64=yes,
 	compiler_has_m64=no)
-if test "x$compiler_has_m64" = "xyes"; then
+if test "x$compiler_has_m64" == "xyes"; then
 	AC_MSG_RESULT([yes])
 else
 	AC_MSG_RESULT([no])
 fi
 CFLAGS="${save_CFLAGS}"
-AM_CONDITIONAL([OPT_M64], [test "x$compiler_has_m64" == "xyes"])
+
+if test "x$compiler_has_m64" != "xyes" -a "x$compiler_has_m32" != "xyes"; then
+	AC_MSG_ERROR([neither -m32 nor -m64 is supported by your compiler])
+fi
+
+# 32 and 64 bit selection
+AC_ARG_ENABLE(32bit,
+	AS_HELP_STRING([--disable-32bit], [don't try to build 32 bit compatible library]))
+AC_ARG_ENABLE(64bit,
+	AS_HELP_STRING([--disable-64bit], [don't try to build 64 bit compatible library]))
+
+if test "x$enable_64bit" == "xno" -a "x$enable_32bit" == "xno"; then
+	AC_MSG_ERROR([you cannot disable both 32 and 64 bit support])
+fi
+
+# OK, let's make some sense of all this 32/64 bit mess...
+if test "x$enable_64bit" != "xno" -a "x$compiler_has_m64" == "xno"; then
+	if test "x$enable_32bit" == "xno"; then
+		AC_MSG_ERROR([compiler cannot produce 64 bit binaries, and 32 bit support is disabled])
+	fi
+	AC_MSG_WARN([compiler cannot produce 64 bit binaries - disabling 64 bit support])
+	enable_64bit="no"
+fi
+
+if test "x$enable_32bit" != "xno" -a "x$compiler_has_m32" == "xno"; then
+	if test "x$enable_64bit" == "xno"; then
+		AC_MSG_ERROR([compiler cannot produce 32 bit binaries, and 64 bit support is disabled])
+	fi
+	AC_MSG_WARN([compiler cannot produce 32 bit binaries - disabling 32 bit support])
+	enable_32bit="no"
+fi
+
+# define the automake and config.h variables
+if test "x$enable_64bit" != "xno"; then
+	AC_DEFINE([OPT_M64], [], [64 bit support])
+	AC_SUBST(OPT_M64)	
+fi
+AM_CONDITIONAL([OPT_M64], [test "x$enable_64bit" != "xno"])
+if test "x$enable_32bit" != "xno"; then
+	AC_DEFINE([OPT_M32], [], [32 bit support])
+	AC_SUBST(OPT_M32)
+fi
+AM_CONDITIONAL([OPT_M32], [test "x$enable_32bit" != "xno"])
+
+if test "x$enable_64bit" != "xno"; then
+	if test "x$enable_32bit" != "xno"; then
+		AC_MSG_NOTICE([will produce a 32 bit library, compatible with 64 bit platforms])
+	else
+		AC_MSG_WARN([will produce a 64 bit library that is INCOMPATIBLE with 32 bit platforms])
+	fi
+else
+	AC_MSG_WARN([will produce a 32 bit library that is INCOMPATIBLE with 64 bit platforms])
+fi
+
+# check that the required DDK files are available
+if test "x$enable_64bit" != "xno"; then
+# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll $DDK_DIR/redist/DIFx/DIFxAPI/amd64/DIFxAPI.dll],,
+	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
+configure: error: must be provided to compile this library (--with-ddkdir)])])
+fi
+if test "x$enable_32bit" != "xno"; then
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll $DDK_DIR/redist/DIFx/DIFxAPI/x86/DIFxAPI.dll],,
+	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
+configure: error: must be provided to compile this library (--with-ddkdir)])])
+fi
+AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
 
 # Message logging
 AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],

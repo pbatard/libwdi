@@ -35,17 +35,14 @@
 
 #define MAX_PATH_LENGTH 256
 
-/*
- * files to embed
- */
-struct emb {
-	char* file_name;
-	char* internal_name;
-	char* extraction_subdir;
-	char* extraction_name;
-};
-
 #if defined(_MSC_VER)
+#define __STR2__(x) #x
+#define __STR1__(x) __STR2__(x)
+// TODO: feed preprocessor arg to custom step?
+#if defined(_WIN64) && defined(OPT_M32)
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support as it cannot be used")
+#undef OPT_M32
+#endif
 #if defined(_DEBUG)
 #define INSTALLER_PATH_32 "..\\Win32\\Debug\\lib"
 #define INSTALLER_PATH_64 "..\\x64\\Debug\\lib"
@@ -60,20 +57,35 @@ struct emb {
 #define INSTALLER_PATH_64 "."
 #endif
 
+/*
+ * files to embed
+ */
+struct emb {
+	char* file_name;
+	char* internal_name;
+	char* extraction_subdir;
+	char* extraction_name;
+};
+
+
 struct emb embeddable[] = {
 	// WinUSB driver DLLs (32 and 64 bit)
-	// TODO: coinstaller versions (1009, etc)
-	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller01009.dll", "amd64_dll1", "amd64", "WdfCoInstaller01009.dll" },
-	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
-	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller01009.dll", "x86_dll1", "x86", "WdfCoInstaller01009.dll" },
+#if !defined(OPT_M32) && !defined(OPT_M64)
+#error both 32 and 64 bit support have been disabled - check your config.h
+#endif
+
+#if defined(OPT_M32)
+	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86_dll1", "x86", "WdfCoInstaller" WDF_VER ".dll" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
-	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\amd64\\DIFxAPI.dll", "amd64_dll3", "amd64", "DIFxAPI.dll" },
 	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\x86\\DIFxAPI.dll", "x86_dll3", "x86", "DIFxAPI.dll" },
-	// Installer executable requiring UAC elevation
-	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
-	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
 	{ INSTALLER_PATH_32 "\\installer_x86.exe", "installer_32", ".", "installer_x86.exe" },
+#endif
+#if defined(OPT_M64)
+	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64_dll1", "amd64", "WdfCoInstaller" WDF_VER ".dll" },
+	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
+	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\amd64\\DIFxAPI.dll", "amd64_dll3", "amd64", "DIFxAPI.dll" },
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "installer_64", ".", "installer_x64.exe" },
+#endif
 };
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
 

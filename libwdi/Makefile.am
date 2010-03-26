@@ -1,30 +1,31 @@
 INCLUDES = -I$(top_srcdir)
 
 BUILT_SOURCES = resource.h
-noinst_PROGRAMS = embedder installer_x86 installer_x64
+noinst_PROGRAMS = embedder
+noinst_EXES = embedder.exe
 lib_LTLIBRARIES = libwdi.la
 LIB_SRC = resource.h logging.h usbi.h installer.h libwdi.h logging.c libwdi.c
 
-# TODO: warn if _X86 or _X64 is missing
 if OPT_M32
-M32 = -m32
+noinst_PROGRAMS += installer_x86
+noinst_EXES += installer_x86.exe
+installer_x86_SOURCES = installer.h installer.c
+installer_x86_CFLAGS = -m32 $(NO_CYGWIN) $(AM_CFLAGS) $(M32)
+installer_x86_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
+installer_x86_LDADD = -lsetupapi -lole32
 endif
+
 if OPT_M64
-M64 = -m64 -D_WIN64
+noinst_PROGRAMS += installer_x64
+noinst_EXES += installer_x64.exe
+installer_x64_CC = gcc $(NO_CYGWIN)
+installer_x64_SOURCES = installer.h installer.c
+installer_x64_CFLAGS = -m64 -D_WIN64 $(NO_CYGWIN) $(AM_CFLAGS)
+installer_x64_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
+installer_x64_LDADD = -lsetupapi -lole32
 endif
 
 embedder_SOURCES = embedder.c
-
-installer_x86_SOURCES = installer.h installer.c
-installer_x86_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS) $(M32)
-installer_x86_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
-installer_x86_LDADD = -lsetupapi -lole32
-
-installer_x64_CC = gcc $(NO_CYGWIN)
-installer_x64_SOURCES = installer.h installer.c
-installer_x64_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS) $(M64)
-installer_x64_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
-installer_x64_LDADD = -lsetupapi -lole32
 
 EXTRA_DIST = $(LIB_SRC)
 
@@ -39,7 +40,7 @@ libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
 libwdi_la_LIBADD = -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
 
-resource.h: embedder.exe installer_x86.exe installer_x64.exe
+resource.h: $(noinst_EXES)
 	./embedder.exe resource.h
 
 clean-local:

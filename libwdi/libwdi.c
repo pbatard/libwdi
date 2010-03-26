@@ -35,8 +35,40 @@
 #define INSTALLER_TIMEOUT 10000
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
 
-#define BLAH
+// These warnings are taken care off in configure for other platforms
+#if defined(_MSC_VER)
+#define __STR2__(x) #x
+#define __STR1__(x) __STR2__(x)
+#if defined(_WIN64) && defined(OPT_M32)
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support as it cannot be used")
+#undef OPT_M32
+#endif
 
+#if !defined(OPT_M32) && !defined(OPT_M64)
+#error both 32 and 64 bit support have been disabled - check your config.h
+#endif
+#if defined(OPT_M64) && !defined(OPT_M32)
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : this library will be INCOMPATIBLE with 32 bit platforms")
+#endif
+#if defined(OPT_M32) && !defined(OPT_M64)
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : this library will be INCOMPATIBLE with 64 bit platforms")
+#endif
+
+#endif
+/*
+#	if defined(OPT_M64)
+#		if defined(OPT_M32)
+#			if defined(_WIN64)
+	if test "x$enable_32bit" != "xno"; then
+		AC_MSG_NOTICE([will produce a 32 bit library, compatible with 64 bit platforms])
+	else
+		AC_MSG_WARN([will produce a 64 bit library that is INCOMPATIBLE with 32 bit platforms])
+	fi
+else
+	AC_MSG_WARN([will produce a 32 bit library that is INCOMPATIBLE with 64 bit platforms])
+fi
+#endif
+*/
 enum windows_version {
 	WINDOWS_UNDEFINED,
 	WINDOWS_UNSUPPORTED,
@@ -483,7 +515,8 @@ int wdi_run_installer(char* path, char* device_id)
 	overlapped.hEvent = handle[0];
 
 	safe_strcpy(exename, STR_BUFFER_SIZE, path);
-	// TODO: fallback to x86 if x64 unavailable
+	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
+	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
 	if (is_x64) {
 		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x64.exe");
 	} else {

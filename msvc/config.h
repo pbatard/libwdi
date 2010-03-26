@@ -8,6 +8,15 @@
 /* DDK directory */
 #define DDK_DIR "E:/WinDDK/7600.16385.0"
 
+/* DDK WDF coinstaller version (string) */
+#define WDF_VER "01009"
+
+/* 32 bit support */
+#define OPT_M32
+
+/* 64 bit support */
+#define OPT_M64
+
 /* Debug message logging */
 #define ENABLE_DEBUG_LOGGING 1
 
