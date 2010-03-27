@@ -1,7 +1,5 @@
-TARGETNAME=libwdi
-TARGETTYPE=LIBRARY
-
-#DLLDEF=..\libwdi.def
+TARGETNAME=setdrv
+TARGETTYPE=PROGRAM
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3
@@ -9,15 +7,17 @@ MSC_WARNING_LEVEL=/W3
 
 USE_MSVCRT=1
 
+UMTYPE=console
+UMBASE=0x01000000
+
 INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD
-LINKER_FLAGS=/ignore:4006
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
-           $(SDK_LIB_PATH)\advapi32.lib \
            $(SDK_LIB_PATH)\user32.lib \
            $(SDK_LIB_PATH)\setupapi.lib \
-           $(SDK_LIB_PATH)\ole32.lib
+           $(SDK_LIB_PATH)\ole32.lib \
+           $(SDK_LIB_PATH)\shell32.lib \
+           ..\libwdi\libwdi.lib
 
-SOURCES=logging.c \
-	libwdi.c
+SOURCES=setdrv.c

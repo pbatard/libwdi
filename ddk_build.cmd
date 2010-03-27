@@ -44,7 +44,7 @@ set _AMD64bit=true
 set _BUILDARCH=AMD64
 set PATH=%BASEDIR%\bin\x86\amd64;%BASEDIR%\bin\x86
 
-copy installer_x64_sources sources >blah 2>&1
+copy installer_x64_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -65,16 +65,28 @@ echo.
 echo Embedding binary resources
 embedder.exe resource.h
 
-copy libwdi_sources sources >blah 2>&1
+copy libwdi_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
-rem copy obj%BUILD_ALT_DIR%\amd64\installer_x64.exe . >blah 2>&1
+copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
+
+cd ..\examples
+
+copy setdrv_sources sources >blah 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv.exe . >NUL 2>&1
 
 cd ..
 
 goto done
+
+rem TODO: restore env
+rem TODO: feed Basepath to embedder
 
 :builderror
 cd ..
