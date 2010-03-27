@@ -46,6 +46,12 @@
 #define safe_sprintf _snprintf
 #define safe_strdup _strdup
 
+#if defined(_MSC_VER)
+#define safe_vsnprintf vsprintf_s
+#else
+#define safe_vsnprintf vsnprintf
+#endif
+
 enum installer_code {
 	IC_PRINT_MESSAGE,
 	IC_GET_DEVICE_ID,

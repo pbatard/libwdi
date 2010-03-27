@@ -32,7 +32,9 @@
 #include "resource.h"	// auto-generated during compilation
 
 #define INF_NAME "libusb-device.inf"
-#define INSTALLER_TIMEOUT 10000
+// Make sure the delay is not too small!
+// TODO: remove timeout when we are waiting for user input
+#define INSTALLER_TIMEOUT 60000
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
 
 // These warnings are taken care off in configure for other platforms
@@ -41,7 +43,8 @@
 #define __STR2__(x) #x
 #define __STR1__(x) __STR2__(x)
 #if defined(_WIN64) && defined(OPT_M32)
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support as it cannot be used")
+// a 64 bit application/library CANNOT be used on 32 bit platforms
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support")
 #undef OPT_M32
 #endif
 

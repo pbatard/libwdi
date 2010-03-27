@@ -76,22 +76,20 @@ static int init_dlls(void)
 void plog_v(const char *format, va_list args)
 {
 	char buffer[256];
-	DWORD size;
+	DWORD junk;
+	int size;
 
 	if (pipe_handle == INVALID_HANDLE_VALUE)
 		return;
 
 	buffer[0] = IC_PRINT_MESSAGE;
 
-#if defined(_MSC_VER)
-	if (vsprintf_s(buffer+1, 255, format, args) < 0) {
-#else
-	if (vsnprintf(buffer+1, 255, format, args) < 0) {
-#endif
+	size = safe_vsnprintf(buffer+1, 255, format, args);
+	if (size < 0) {
 		buffer[255] = 0;
 		size = 254;
 	}
-	WriteFile(pipe_handle, buffer, size+2, &size, NULL);
+	WriteFile(pipe_handle, buffer, (DWORD)size+2, &junk, NULL);
 }
 
 void plog(const char *format, ...)

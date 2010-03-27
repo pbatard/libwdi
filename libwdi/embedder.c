@@ -40,19 +40,13 @@
 #define __STR1__(x) __STR2__(x)
 // TODO: feed preprocessor arg to custom step?
 #if defined(_WIN64) && defined(OPT_M32)
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support as it cannot be used")
+// a 64 bit application/library CANNOT be used on 32 bit platforms
+#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support")
 #undef OPT_M32
 #endif
 #endif
 
 #if defined(_MSC_VER) && !defined(DDKBUILD)
-#define __STR2__(x) #x
-#define __STR1__(x) __STR2__(x)
-// TODO: feed preprocessor arg to custom step?
-#if defined(_WIN64) && defined(OPT_M32)
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support as it cannot be used")
-#undef OPT_M32
-#endif
 #if defined(_DEBUG)
 #define INSTALLER_PATH_32 "..\\Win32\\Debug\\lib"
 #define INSTALLER_PATH_64 "..\\x64\\Debug\\lib"
