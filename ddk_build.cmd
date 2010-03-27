@@ -35,7 +35,7 @@ copy installer_x86_sources sources >NUL 2>&1
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
-copy obj%BUILD_ALT_DIR%\i386\installer_x86.exe . >blah 2>&1
+copy obj%BUILD_ALT_DIR%\i386\installer_x86.exe . >NUL 2>&1
 
 set 386=
 set AMD64=1
@@ -49,7 +49,7 @@ copy installer_x64_sources sources >NUL 2>&1
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
-copy obj%BUILD_ALT_DIR%\amd64\installer_x64.exe . >blah 2>&1
+copy obj%BUILD_ALT_DIR%\amd64\installer_x64.exe . >NUL 2>&1
 
 if %ORG_ARCH%==AMD64 goto restorePath
 set 386=1
@@ -74,7 +74,7 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 
 cd ..\examples
 
-copy setdrv_sources sources >blah 2>&1
+copy setdrv_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
