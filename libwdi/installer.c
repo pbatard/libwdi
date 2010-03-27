@@ -82,8 +82,12 @@ void plog_v(const char *format, va_list args)
 		return;
 
 	buffer[0] = IC_PRINT_MESSAGE;
-	size = vsnprintf(buffer+1, 255, format, args);
-	if (size < 0) {
+
+#if defined(_MSC_VER)
+	if (vsprintf_s(buffer+1, 255, format, args) < 0) {
+#else
+	if (vsnprintf(buffer+1, 255, format, args) < 0) {
+#endif
 		buffer[255] = 0;
 		size = 254;
 	}
@@ -203,7 +207,11 @@ int update_driver(char* device_id)
 
 
 // TODO: allow commandline options
-int main(int argc, char** argv)
+int
+#ifdef _MSC_VER
+__cdecl
+#endif
+main(int argc, char** argv)
 {
 	DWORD r;
 	char* device_id;

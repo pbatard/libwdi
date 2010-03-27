@@ -228,6 +228,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 	char driver[MAX_DESC_LENGTH];
 	struct wdi_device_info *ret = NULL, *cur = NULL, *device_info;
 	bool driverless;
+	const char keep_ddk_happy[] = "usbhub";
 
 	if (!dlls_available) {
 		init_dlls();
@@ -254,7 +255,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			&reg_type, (BYTE*)driver, MAX_DESC_LENGTH, &size)) {
 			driver[0] = 0;
 		}
-		if (safe_strcmp(driver, "usbhub") == 0) {
+		if (safe_strcmp(driver, keep_ddk_happy) == 0) {
 			continue;
 		}
 
