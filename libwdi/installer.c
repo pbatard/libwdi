@@ -17,17 +17,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// This standalone installer is a separate exe, as it needs to be run
-// through ShellExecuteEx() for UAC elevation
+// This standalone installer is a separate exe, as it needs
+// - administrative rights, and therefore UAC elevation on platforms that use UAC
+// - native 32 or 64 bit execution according to the platform
 
 #include <windows.h>
-#include <setupapi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <setupapi.h>
-#include <fcntl.h>
-#include <io.h>
 #include <stdarg.h>
+#include <setupapi.h>
+#if defined(_MSC_VER)
+#include <newdev.h>
+#else
+#include <ddk/newdev.h>
+#endif
 #include "installer.h"
 
 #define INF_NAME "libusb-device.inf"
@@ -48,28 +51,47 @@ typedef DEVINSTID_A DEVINSTID;
 
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNode, (PDEVINST, DEVINSTID, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
-DLL_DECLARE(WINAPI, void, DIFXAPISetLogCallbackA, (DIFXAPILOGCALLBACK, PVOID));
-DLL_DECLARE(WINAPI, DWORD, DriverPackageInstallA, (LPCSTR, DWORD, PCINSTALLERINFO, BOOL*));
 
 /*
  * Globals
  */
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
+//enum windows_version windows_version = WINDOWS_UNDEFINED;
 
-// Setup the Cfgmgr32 and DifXApi DLLs
+
+// Setup the Cfgmgr32 DLLs
 static int init_dlls(void)
 {
 	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
-#ifdef _WIN64
-	DLL_LOAD(amd64\\DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
-	DLL_LOAD(amd64\\DifXApi.dll, DriverPackageInstallA, TRUE);
-#else
-	DLL_LOAD(x86\\DifXApi.dll, DIFXAPISetLogCallbackA, TRUE);
-	DLL_LOAD(x86\\DifXApi.dll, DriverPackageInstallA, TRUE);
-#endif
 	return 0;
 }
+
+/*
+// Detect Windows version
+#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
+void detect_version(void)
+{
+	OSVERSIONINFO os_version;
+
+	memset(&os_version, 0, sizeof(OSVERSIONINFO));
+	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	windows_version = WINDOWS_UNSUPPORTED;
+	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
+		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
+			windows_version = WINDOWS_2K;
+		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
+			windows_version = WINDOWS_XP;
+		} else if (os_version.dwMajorVersion >= 6) {
+			if (os_version.dwBuildNumber < 7000) {
+				windows_version = WINDOWS_VISTA;
+			} else {
+				windows_version = WINDOWS_7;
+			}
+		}
+	}
+}
+*/
 
 // Log data with parent app through the pipe
 // TODO: return a status byte along with the message
@@ -101,8 +123,15 @@ void plog(const char *format, ...)
 	va_end (args);
 }
 
+// Notify the parent app
+void send_status(char status)
+{
+	DWORD junk;
+	WriteFile(pipe_handle, &status, 1, &junk, NULL);
+}
+
 // Query the parent app for data
-int request_data(unsigned char req, void *buffer, int size)
+int request_data(char req, void *buffer, int size)
 {
 	OVERLAPPED overlapped;
 	DWORD rd_count;
@@ -152,41 +181,62 @@ int request_data(unsigned char req, void *buffer, int size)
 	return -1;
 }
 
-// Query aprent app for device ID
-char* req_device_id(void)
+// Query parent app for device ID
+char* req_id(enum installer_code id_code)
 {
 	int size;
 	static char device_id[MAX_PATH_LENGTH];
+	static char hardware_id[MAX_PATH_LENGTH];
+	char* id = NULL;
 
-	memset(device_id, 0, MAX_PATH_LENGTH);
-	size = request_data(IC_GET_DEVICE_ID, (void*)device_id, sizeof(device_id));
-	if (size > 0) {
-		plog("got device_id: %s", device_id);
-		return device_id;
+	switch(id_code) {
+	case IC_GET_DEVICE_ID:
+		id = device_id;
+		break;
+	case IC_GET_HARDWARE_ID:
+		id = hardware_id;
+		break;
+	default:
+		plog("req_id: unknown ID requested");
+		return NULL;
 	}
 
-	plog("failed to read device_id");
+	memset(id, 0, MAX_PATH_LENGTH);
+	size = request_data(id_code, (void*)id, MAX_PATH_LENGTH);
+	if (size > 0) {
+		plog("got %s_id: %s", (id_code==IC_GET_DEVICE_ID)?"device":"hardware", id);
+		return id;
+	}
+
+	plog("failed to read %s_id", (id_code==IC_GET_DEVICE_ID)?"device":"hardware");
 	return NULL;
 }
 
-// Setup a DifXAPI Log
-void __cdecl log_callback(DIFXAPI_LOG Event, DWORD Error, const char *pEventDescription, PVOID CallbackContext)
+// Query parent app for hardware ID
+char* req_hardware_id(void)
 {
-	if (Error == 0){
-		plog("(%u) %s", Event, pEventDescription);
-	} else {
-		plog("(%u) Error:%u - %s", Event, Error, pEventDescription);
+	int size;
+	static char hardware_id[MAX_PATH_LENGTH];
+
+	memset(hardware_id, 0, MAX_PATH_LENGTH);
+	size = request_data(IC_GET_HARDWARE_ID, (void*)hardware_id, sizeof(hardware_id));
+	if (size > 0) {
+		plog("got hardware_id: %s", hardware_id);
+		return hardware_id;
 	}
+
+	plog("failed to read hardware_id");
+	return NULL;
 }
 
 // Force re-enumeration of a device (force installation)
 // TODO: allow root re-enum
 int update_driver(char* device_id)
 {
-	DEVINST     dev_inst;
-	CONFIGRET   status;
+	DEVINST dev_inst;
+	CONFIGRET status;
 
-	plog("updating driver node %s...", device_id);
+	plog("re-enumerating driver node %s...", device_id);
 	status = CM_Locate_DevNode(&dev_inst, device_id, 0);
 	if (status != CR_SUCCESS) {
 		plog("failed to locate device_id %s: %x\n", device_id, status);
@@ -199,10 +249,9 @@ int update_driver(char* device_id)
 		return -1;
 	}
 
-	plog("final installation succeeded...");
+	plog("re-enumeration succeeded...");
 	return 0;
 }
-
 
 // TODO: allow commandline options
 int
@@ -212,13 +261,13 @@ __cdecl
 main(int argc, char** argv)
 {
 	DWORD r;
+	BOOL b;
+	char* hardware_id;
 	char* device_id;
-	BOOL reboot_needed = FALSE;
 	char path[MAX_PATH_LENGTH];
 	char log[MAX_PATH_LENGTH];
+	char destname[MAX_PATH_LENGTH];
 	FILE *fd;
-	OSVERSIONINFO os_version;
-	DWORD legacy_flag = DRIVER_PACKAGE_LEGACY_MODE;
 
 	// Connect to the messaging pipe
 	pipe_handle = CreateFile("\\\\.\\pipe\\libusb-installer", GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
@@ -248,35 +297,30 @@ main(int argc, char** argv)
 		printf("got param %s", argv[1]);
 	}
 
-	// TODO: use GetFullPathName() to get full inf path
 	r = GetFullPathNameA(".", MAX_PATH_LENGTH, path, NULL);
 	if ((r == 0) || (r > MAX_PATH_LENGTH)) {
-		plog("could not retreive absolute path of working directory");
+		plog("could not retrieve absolute path of working directory");
 		goto out;
 	}
-
-//	_getcwd(path, MAX_PATH_LENGTH);
 	safe_strcat(path, MAX_PATH_LENGTH, "\\");
 	safe_strcat(path, MAX_PATH_LENGTH, INF_NAME);
 
-	device_id = req_device_id();
+	device_id = req_id(IC_GET_DEVICE_ID);
+	hardware_id = req_id(IC_GET_HARDWARE_ID);
 
-	// using DRIVER_PACKAGE_LEGACY_MODE generates a warning on Vista and later
-	memset(&os_version, 0, sizeof(OSVERSIONINFO));
-	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if ( (GetVersionEx(&os_version) != 0)
-	  && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)
-	  && (os_version.dwMajorVersion >= 6) ) {
-		// Vista and later produce a warning with DRIVER_PACKAGE_LEGACY_MODE
-		legacy_flag = 0;
+	// Find if the device is plugged in
+	send_status(IC_SET_TIMEOUT_INFINITE);
+	plog("Installing driver - please wait...");
+	r = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
+	send_status(IC_SET_TIMEOUT_DEFAULT);
+	if (r == true) {
+		// Success
+		plog("driver update completed");
+		// TODO: remove this?
+		update_driver(device_id);
+		goto out;
 	}
 
-	plog("Installing driver - please wait...");
-	DIFXAPISetLogCallbackA(log_callback, NULL);
-	// TODO: set app dependency?
-	r = DriverPackageInstallA(path, legacy_flag|DRIVER_PACKAGE_REPAIR|DRIVER_PACKAGE_FORCE,
-		NULL, &reboot_needed);
-	DIFXAPISetLogCallbackA(NULL, NULL);
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
@@ -289,17 +333,13 @@ main(int argc, char** argv)
 	// r = 0xE0000247 ERROR_DRIVER_STORE_ADD_FAILED if user decided not to install on warnings
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
-	switch(r) {
-	case 0:
-		plog("  completed");
-		plog("reboot %s needed", reboot_needed?"IS":"not");
-		break;
+	switch(r = GetLastError()) {
 	case ERROR_NO_MORE_ITEMS:
-		plog("more recent driver was found (DRIVER_PACKAGE_FORCE option required)");
+		plog("more recent driver was found (INSTALLFLAG_FORCE option required)");
 		goto out;
 	case ERROR_NO_SUCH_DEVINST:
-		plog("device not detected (DRIVER_PACKAGE_ONLY_IF_DEVICE_PRESENT needs to be disabled)");
-		goto out;
+		plog("device not detected (copying driver files for next time device is plugged in)");
+		break;
 	case ERROR_INVALID_PARAMETER:
 		plog("invalid path");
 		goto out;
@@ -324,7 +364,6 @@ main(int argc, char** argv)
 	case ERROR_DRIVER_STORE_ADD_FAILED:
 		plog("operation cancelled by the user");
 		goto out;
-	// TODO: make DRIVER_PACKAGE_REPAIR optional
 	case ERROR_ALREADY_EXISTS:
 		plog("driver already exists");
 		goto out;
@@ -333,7 +372,21 @@ main(int argc, char** argv)
 		goto out;
 	}
 
-	update_driver(device_id);
+	// TODO: try URL for OEMSourceMediaLocation
+	send_status(IC_SET_TIMEOUT_INFINITE);
+	b = SetupCopyOEMInfA(path, NULL, SPOST_NONE, SP_COPY_DELETESOURCE, destname, MAX_PATH_LENGTH, NULL, NULL);
+	send_status(IC_SET_TIMEOUT_DEFAULT);
+	if (b) {
+		plog("copied inf to %s", destname);
+	} else {
+		switch(r = GetLastError()) {
+		default:
+			plog("SetupCopyOEMInf error %X", r);
+			break;
+		}
+	}
+
+	// TODO: remove phantom drivers as per http://msdn.microsoft.com/en-us/library/aa906206.aspx
 
 out:
 	CloseHandle(pipe_handle);

@@ -32,10 +32,8 @@
 #include "resource.h"	// auto-generated during compilation
 
 #define INF_NAME "libusb-device.inf"
-// Make sure the delay is not too small!
-// TODO: remove timeout when we are waiting for user input
-#define INSTALLER_TIMEOUT 60000
-#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
+// Initial timeout delay to wait for the installer to run
+#define DEFAULT_TIMEOUT 10000
 
 // These warnings are taken care off in configure for other platforms
 #if defined(_MSC_VER)
@@ -60,20 +58,12 @@
 
 #endif /* _MSC_VER */
 
-enum windows_version {
-	WINDOWS_UNDEFINED,
-	WINDOWS_UNSUPPORTED,
-	WINDOWS_2K,
-	WINDOWS_XP,
-	WINDOWS_VISTA,
-	WINDOWS_7
-};
-
 /*
  * Global variables
  */
-char* req_device_id;
+char *req_device_id, *req_hardware_id;
 bool dlls_available = false;
+DWORD timeout = DEFAULT_TIMEOUT;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
@@ -99,10 +89,13 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
+// This call is only available on XP and later
+DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
 // Detect Windows version
+#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
 void detect_version(void)
 {
 	OSVERSIONINFO os_version;
@@ -180,6 +173,51 @@ static char err_string[STR_BUFFER_SIZE];
 	return err_string;
 }
 
+/*
+ * Returns a constant string with an English short description of the given
+ * error code. The caller should never free() the returned pointer since it
+ * points to a constant string.
+ * The returned string is encoded in ASCII form and always starts with a
+ * capital letter and ends without any dot.
+ * \param errcode the error code whose description is desired
+ * \returns a short description of the error code in English
+ */
+const char* wdi_strerror(enum wdi_error errcode)
+{
+	switch (errcode)
+	{
+	case WDI_SUCCESS:
+		return "Success";
+	case WDI_ERROR_IO:
+		return "Input/output error";
+	case WDI_ERROR_INVALID_PARAM:
+		return "Invalid parameter";
+	case WDI_ERROR_ACCESS:
+		return "Access denied (insufficient permissions)";
+	case WDI_ERROR_NO_DEVICE:
+		return "No such device (it may have been disconnected)";
+	case WDI_ERROR_NOT_FOUND:
+		return "Entity not found";
+	case WDI_ERROR_BUSY:
+		return "Resource busy";
+	case WDI_ERROR_TIMEOUT:
+		return "Operation timed out";
+	case WDI_ERROR_OVERFLOW:
+		return "Overflow";
+	case WDI_ERROR_PENDING_INSTALLATION:
+		return "Another installer is already running";
+	case WDI_ERROR_INTERRUPTED:
+		return "System call interrupted (perhaps due to signal)";
+	case WDI_ERROR_NO_MEM:
+		return "Insufficient memory";
+	case WDI_ERROR_NOT_SUPPORTED:
+		return "Operation not supported or unimplemented on this platform";
+	case WDI_ERROR_OTHER:
+		return "Other error";
+	}
+	return "Unknown error";
+}
+
 // convert a GUID to an hex GUID string
 char* guid_to_string(const GUID guid)
 {
@@ -211,6 +249,7 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Child, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Sibling, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
+	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
 	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
 	return 0;
 }
@@ -226,12 +265,11 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 	SP_DEVINFO_DATA dev_info_data;
 	char *prefix[3] = {"VID_", "PID_", "MI_"};
 	char *token;
-	char path[MAX_PATH_LENGTH];
+	char strbuf[STR_BUFFER_SIZE];
 	WCHAR desc[MAX_DESC_LENGTH];
-	char driver[MAX_DESC_LENGTH];
-	struct wdi_device_info *ret = NULL, *cur = NULL, *device_info;
+	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	bool driverless;
-	const char keep_ddk_happy[] = "usbhub";
+	const char usbhub_name[] = "usbhub";
 
 	if (!dlls_available) {
 		init_dlls();
@@ -248,24 +286,25 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 	{
 		driverless = false;
 
+		// Free any invalid previously allocated struct
+		free_di(device_info);
+
 		dev_info_data.cbSize = sizeof(dev_info_data);
 		if (!SetupDiEnumDeviceInfo(dev_info, i, &dev_info_data)) {
 			break;
 		}
 
-		// Eliminate USB hubs by checking the driver string
-		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_SERVICE,
-			&reg_type, (BYTE*)driver, MAX_DESC_LENGTH, &size)) {
-			driver[0] = 0;
-		}
-		if (safe_strcmp(driver, keep_ddk_happy) == 0) {
-			continue;
+		// Allocate a driver_info struct to store our data
+		device_info = calloc(1, sizeof(struct wdi_device_info));
+		if (device_info == NULL) {
+			wdi_destroy_list(start);
+			return NULL;
 		}
 
 		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
 		// SPDRP_INSTALL_STATE
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_DRIVER,
-			&reg_type, (BYTE*)path, MAX_PATH_LENGTH, &size)) {
+			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
 			if (driverless_only) {
 				continue;
 			}
@@ -274,38 +313,37 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			driverless = true;
 		}
 
-		// Allocate a driver_info struct to store our data
-		device_info = calloc(1, sizeof(struct wdi_device_info));
-		if (device_info == NULL) {
-			free_di(ret);
-			return NULL;
-		}
-		if (cur == NULL) {
-			ret = device_info;
+		// Eliminate USB hubs by checking the driver string
+		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_SERVICE,
+			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
+			device_info->driver = NULL;
 		} else {
-			cur->next = device_info;
+			device_info->driver = safe_strdup(strbuf);
 		}
-		cur = device_info;
+		if (safe_strcmp(strbuf, usbhub_name) == 0) {
+			continue;
+		}
 
-		// Copy the driver name (this will be used to detect driverless)
-		if (driverless) {
-			cur->driver = NULL;
+		// Retrieve the hardware ID
+		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_HARDWAREID,
+			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
+			device_info->hardware_id = safe_strdup(strbuf);
+			usbi_dbg("so that's a hardware ID: %s", device_info->hardware_id);
 		} else {
-			cur->driver = safe_strdup(driver);
+			usbi_err(NULL, "could not get hardware ID");
 		}
 
 		// Retrieve device ID. This is needed to re-enumerate our device and force
 		// the final driver installation
-		r = CM_Get_Device_IDA(dev_info_data.DevInst, path, MAX_PATH_LENGTH, 0);
+		r = CM_Get_Device_IDA(dev_info_data.DevInst, strbuf, STR_BUFFER_SIZE, 0);
 		if (r != CR_SUCCESS) {
-			usbi_err(NULL, "could not retrieve simple path for device %d: CR error %d",
-				i, r);
+			usbi_err(NULL, "could not retrieve simple path for device %d: CR error %d", i, r);
 			continue;
 		} else {
 			usbi_dbg("%s USB device (%d): %s",
-				cur->driver?cur->driver:"Driverless", i, path);
+				device_info->driver?device_info->driver:"Driverless", i, strbuf);
 		}
-		device_info->device_id = _strdup(path);
+		device_info->device_id = safe_strdup(strbuf);
 
 		GET_WINDOWS_VERSION;
 		if (windows_version < WINDOWS_7) {
@@ -334,7 +372,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			}
 		}
 
-		token = strtok (path, "\\#&");
+		token = strtok (strbuf, "\\#&");
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
 				if (safe_strncmp(token, prefix[j], strlen(prefix[j])) == 0) {
@@ -365,9 +403,18 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 		device_info->desc = wchar_to_utf8(desc);
 		usbi_dbg("Device description: %s", device_info->desc);
 
+		// Only at this stage do we know we have a valid current element
+		if (cur == NULL) {
+			start = device_info;
+		} else {
+			cur->next = device_info;
+		}
+		cur = device_info;
+		// Ensure that we don't free a valid structure
+		device_info = NULL;
 	}
 
-	return ret;
+	return start;
 }
 
 void wdi_destroy_list(struct wdi_device_info* list)
@@ -416,7 +463,7 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int wdi_create_inf(struct wdi_device_info* device_info, char* path, int type)
+int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -427,8 +474,8 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, int type)
 		return -1;
 	}
 
-	if ((type < USE_WINUSB) && (type > USE_LIBUSB)) {
-		return -1;
+	if (type == WDI_LIBUSB) {
+		usbi_err(NULL, "libusb support is not implemented yet");
 	}
 
 	// Try to create directory if it doesn't exist
@@ -476,11 +523,17 @@ int process_message(char* buffer, DWORD size)
 	if (size <= 0)
 		return -1;
 
+	// Note: this is a message pipe, so we don't need to care about
+	// multiple messages coexisting in our buffer.
 	switch(buffer[0])
 	{
 	case IC_GET_DEVICE_ID:
 		usbi_dbg("got request for device_id");
 		WriteFile(pipe_handle, req_device_id, strlen(req_device_id), &junk, NULL);
+		break;
+	case IC_GET_HARDWARE_ID:
+		usbi_dbg("got request for hardware_id");
+		WriteFile(pipe_handle, req_hardware_id, strlen(req_hardware_id), &junk, NULL);
 		break;
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
@@ -488,6 +541,15 @@ int process_message(char* buffer, DWORD size)
 			return -1;
 		}
 		usbi_dbg("[installer process] %s", buffer+1);
+		break;
+	// TODO: only do that if UAC
+	case IC_SET_TIMEOUT_INFINITE:
+		usbi_dbg("switching timeout to infinite");
+		timeout = INFINITE;
+		break;
+	case IC_SET_TIMEOUT_DEFAULT:
+		usbi_dbg("switching timeout back to finite");
+		timeout = DEFAULT_TIMEOUT;
 		break;
 	default:
 		usbi_err(NULL, "unrecognized installer message");
@@ -497,7 +559,7 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int wdi_run_installer(char* path, char* device_id)
+int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 {
 	SHELLEXECUTEINFO shExecInfo;
     STARTUPINFO si;
@@ -510,10 +572,20 @@ int wdi_run_installer(char* path, char* device_id)
 	BOOL is_x64 = false;
 	char buffer[STR_BUFFER_SIZE];
 
-	req_device_id = device_id;
-	memset(&si, 0, sizeof(si));
-    si.cb = sizeof(si);
-    memset(&pi, 0, sizeof(pi));
+	req_device_id = device_info->device_id;
+	req_hardware_id = device_info->hardware_id;
+
+	// Detect if another installation is in process
+	if (CMP_WaitNoPendingInstallEvents != NULL) {
+		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
+			usbi_dbg("detected another pending installation - aborting");
+			return WDI_ERROR_PENDING_INSTALLATION;
+		} else {
+			usbi_dbg("all clean");
+		}
+	} else {
+		usbi_dbg("CMP_WaitNoPendingInstallEvents not available");
+	}
 
 	// Detect whether if we should run the 64 bit installer, without
 	// relying on external libs
@@ -594,7 +666,11 @@ int wdi_run_installer(char* path, char* device_id)
 
 		handle[1] = shExecInfo.hProcess;
 	} else {
-		// On XP and earlier, simply yse CreateProcess
+		// On XP and earlier, simply use CreateProcess
+		memset(&si, 0, sizeof(si));
+		si.cb = sizeof(si);
+		memset(&pi, 0, sizeof(pi));
+
 		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
 		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
 			usbi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
@@ -610,7 +686,7 @@ int wdi_run_installer(char* path, char* device_id)
 			switch(GetLastError()) {
 			case ERROR_BROKEN_PIPE:
 				// The pipe has been ended - wait for installer to finish
-				if ((WaitForSingleObject(handle[1], INSTALLER_TIMEOUT) == WAIT_TIMEOUT)) {
+				if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 					TerminateProcess(handle[1], 0);
 				}
 				r = 0; goto out;
@@ -619,7 +695,7 @@ int wdi_run_installer(char* path, char* device_id)
 				Sleep(100);
 				continue;
 			case ERROR_IO_PENDING:
-				switch(WaitForMultipleObjects(2, handle, FALSE, INSTALLER_TIMEOUT)) {
+				switch(WaitForMultipleObjects(2, handle, FALSE, timeout)) {
 				case WAIT_OBJECT_0: // Pipe event
 					if (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) {
 						// Message was read asynchronously
@@ -628,7 +704,7 @@ int wdi_run_installer(char* path, char* device_id)
 						switch(GetLastError()) {
 						case ERROR_BROKEN_PIPE:
 							// The pipe has been ended - wait for installer to finish
-							if ((WaitForSingleObject(handle[1], INSTALLER_TIMEOUT) == WAIT_TIMEOUT)) {
+							if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 								TerminateProcess(handle[1], 0);
 							}
 							r = 0; goto out;
@@ -667,5 +743,3 @@ out:
 	safe_closehandle(pipe_handle);
 	return r;
 }
-
-//TODO: add a call to free strings & list

@@ -21,6 +21,7 @@
  * WARNING: if any part of the resulting executable name contains "setup" or "instal(l)"
  * it will require UAC elevation on Vista and later, and, when run from a cygwin/MSYS
  * shell, will produce a "sh: Bad file number" message.
+ * See the paragraph on Automatic Elevation at http://helpware.net/VistaCompat.htm
  */
 
 #include <stdio.h>
@@ -29,6 +30,7 @@
 #define FLUSHER	while(getchar() != 0x0A)
 
 int
+// The following is necessary when compiled from a WDK/DDK environment
 #ifdef _MSC_VER
 __cdecl
 #endif
@@ -39,7 +41,7 @@ main(void)
 
 	list = wdi_create_list(true);
 	if (list == NULL) {
-		printf("No driverless USB devices were found.\n");
+		printf("No USB devices were found.\n");
 		return 0;
 	}
 
@@ -51,8 +53,8 @@ main(void)
 		if ((c!='y') && (c!='Y')) {
 			continue;
 		}
-		if (wdi_create_inf(device, "C:\\test", USE_WINUSB) == 0) {
-			wdi_run_installer("C:\\test", device->device_id);
+		if (wdi_create_inf(device, "C:\\test", WDI_WINUSB) == 0) {
+			wdi_install_driver("C:\\test", device);
 		}
 	}
 	wdi_destroy_list(list);

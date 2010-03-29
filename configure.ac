@@ -141,12 +141,12 @@ fi
 # check that the required DDK files are available
 if test "x$enable_64bit" != "xno"; then
 # NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll $DDK_DIR/redist/DIFx/DIFxAPI/amd64/DIFxAPI.dll],,
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
 	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
 configure: error: must be provided to compile this library (--with-ddkdir)])])
 fi
 if test "x$enable_32bit" != "xno"; then
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll $DDK_DIR/redist/DIFx/DIFxAPI/x86/DIFxAPI.dll],,
+AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
 	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
 configure: error: must be provided to compile this library (--with-ddkdir)])])
 fi

@@ -1,5 +1,6 @@
 /*
- * Convert binary resources into a .h include
+ * embedder : converts binary resources into a .h include
+ * "If you can think of a better way to get ice, I'd like to hear it."
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -81,13 +82,11 @@ struct emb embeddable[] = {
 #if defined(OPT_M32)
 	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86_dll1", "x86", "WdfCoInstaller" WDF_VER ".dll" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
-	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\x86\\DIFxAPI.dll", "x86_dll3", "x86", "DIFxAPI.dll" },
 	{ INSTALLER_PATH_32 "\\installer_x86.exe", "installer_32", ".", "installer_x86.exe" },
 #endif
 #if defined(OPT_M64)
 	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64_dll1", "amd64", "WdfCoInstaller" WDF_VER ".dll" },
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
-	{ DDK_DIR "\\redist\\DIFx\\DIFxAPI\\amd64\\DIFxAPI.dll", "amd64_dll3", "amd64", "DIFxAPI.dll" },
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "installer_64", ".", "installer_x64.exe" },
 #endif
 };

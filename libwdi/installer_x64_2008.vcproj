@@ -62,6 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="newdev.lib setupapi.lib"
 				OutputFile="$(OutDir)\installer_x64.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -137,6 +138,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="newdev.lib setupapi.lib"
 				OutputFile="$(OutDir)\installer_x64.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="false"
