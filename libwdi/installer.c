@@ -373,19 +373,53 @@ main(int argc, char** argv)
 	}
 
 	// TODO: try URL for OEMSourceMediaLocation
+	plog("Copying inf file - please wait...");
 	send_status(IC_SET_TIMEOUT_INFINITE);
 	b = SetupCopyOEMInfA(path, NULL, SPOST_NONE, SP_COPY_DELETESOURCE, destname, MAX_PATH_LENGTH, NULL, NULL);
 	send_status(IC_SET_TIMEOUT_DEFAULT);
 	if (b) {
 		plog("copied inf to %s", destname);
-	} else {
-		switch(r = GetLastError()) {
-		default:
-			plog("SetupCopyOEMInf error %X", r);
-			break;
-		}
+		goto out;
 	}
 
+	switch(r = GetLastError()) {
+	case ERROR_NO_MORE_ITEMS:
+		plog("more recent driver was found");
+		goto out;
+	case ERROR_NO_SUCH_DEVINST:
+		plog("device not detected");
+		break;
+	case ERROR_INVALID_PARAMETER:
+		plog("invalid path");
+		goto out;
+	case ERROR_FILE_NOT_FOUND:
+		plog("failed to open %s", path);
+		goto out;
+	case ERROR_ACCESS_DENIED:
+		plog("this process needs to be run with administrative privileges");
+		goto out;
+	case ERROR_IN_WOW64:
+		plog("attempted to use a 32 bit installer on a 64 bit machine");
+		goto out;
+	case ERROR_INVALID_DATA:
+	case ERROR_WRONG_INF_STYLE:
+	case ERROR_GENERAL_SYNTAX:
+		plog("the syntax of the inf is invalid");
+		goto out;
+	case ERROR_INVALID_CATALOG_DATA:
+		plog("unable to locate cat file");
+		goto out;
+	case ERROR_NO_AUTHENTICODE_CATALOG:
+	case ERROR_DRIVER_STORE_ADD_FAILED:
+		plog("operation cancelled by the user");
+		goto out;
+	case ERROR_ALREADY_EXISTS:
+		plog("driver already exists");
+		goto out;
+	default:
+		plog("unhandled error %X", r);
+		goto out;
+	}
 	// TODO: remove phantom drivers as per http://msdn.microsoft.com/en-us/library/aa906206.aspx
 
 out:
