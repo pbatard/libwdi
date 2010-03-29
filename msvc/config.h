@@ -5,8 +5,10 @@
 #error "Please make sure the msvc/ directory is removed from your build path."
 #endif
 
-/* DDK directory */
+/* DDK directory - automatically supplied when building from DDK */
+#ifndef DDKBUILD
 #define DDK_DIR "E:/WinDDK/7600.16385.0"
+#endif
 
 /* DDK WDF coinstaller version (string) */
 #define WDF_VER "01009"

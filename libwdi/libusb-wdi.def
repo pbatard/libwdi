@@ -1,6 +1,0 @@
-LIBRARY
-EXPORTS
-	list_driverless
-	create_inf
-	run_installer
-	update_drivers

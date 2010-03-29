@@ -1,0 +1,7 @@
+LIBRARY
+EXPORTS
+	wdi_strerror
+	wdi_create_list
+	wdi_destroy_list
+	wdi_create_inf
+	wdi_install_driver

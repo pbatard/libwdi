@@ -1,7 +1,7 @@
+#TARGETTYPE is not defined, to allow selection between static lib or DLL with ddk_build
 TARGETNAME=libwdi
-TARGETTYPE=LIBRARY
 
-#DLLDEF=..\libwdi.def
+DLLDEF=libwdi.def
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3
@@ -16,6 +16,7 @@ LINKER_FLAGS=/ignore:4006
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\advapi32.lib \
            $(SDK_LIB_PATH)\user32.lib \
+           $(SDK_LIB_PATH)\shell32.lib \
            $(SDK_LIB_PATH)\setupapi.lib \
            $(SDK_LIB_PATH)\ole32.lib
 

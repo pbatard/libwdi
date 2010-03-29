@@ -1,6 +1,10 @@
 @echo off
+
+rem default builds static library. Pass argument 'DLL' to build a DLL
+
 if Test%BUILD_ALT_DIR%==Test goto usage
 
+set DDK_DIR=%BASEDIR:\=\\%
 set ORG_BUILD_ALT_DIR=%BUILD_ALT_DIR%
 set ORG_BUILDARCH=%_BUILDARCH%
 set ORG_PATH=%PATH%
@@ -18,7 +22,7 @@ rem set BUILD_ALT_DIR=x64
 cd libwdi
 set srcPath=obj%BUILD_ALT_DIR%\%cpudir%
 
-del /F Makefile
+del /F Makefile >NUL 2>&1
 copy embedder_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
@@ -68,7 +72,12 @@ echo.
 echo Embedding binary resources
 embedder.exe resource.h
 
-copy libwdi_sources sources >NUL 2>&1
+rem DLL or static lib selection (must use concatenation)
+set TARGET=LIBRARY
+if Test%1==TestDLL set TARGET=DYNLINK
+echo TARGETTYPE=%TARGET% > target
+copy target+libwdi_sources sources >NUL 2>&1
+del target
 @echo on
 build -cwgZ
 @echo off
@@ -77,7 +86,7 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 
 cd ..\examples
 
-del /F Makefile 
+del /F Makefile  >NUL 2>&1
 copy setdrv_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
@@ -88,8 +97,6 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv.exe . >NUL 2>&1
 cd ..
 
 goto done
-
-rem TODO: feed Basepath to embedder
 
 :builderror
 cd ..
