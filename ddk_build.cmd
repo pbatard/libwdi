@@ -93,6 +93,15 @@ build -cwgZ
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv.exe . >NUL 2>&1
 
+echo #include ^<windows.h^> > afxres.h
+copy setdrv_gui_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+rem del afxres.h
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv_gui.exe . >NUL 2>&1
+
 cd ..
 
 goto done
@@ -117,7 +126,7 @@ if Test%DDK_TARGET_OS%==TestWinXP goto nowarn
 
 echo.
 echo.
-echo WARNING: You do not seem to have used the Windows XP DDK build environment.
+echo WARNING: You do not seem to use the Windows XP DDK build environment.
 echo Be mindful that using the Windows Vista or Windows 7 DDK build environments
 echo will result in library and applications that do NOT run on Windows XP.
 echo.

@@ -1,0 +1,23 @@
+TARGETNAME=setdrv_gui
+TARGETTYPE=PROGRAM
+UMTYPE=windows
+UMENTRY=winmain
+
+!IFNDEF MSC_WARNING_LEVEL
+MSC_WARNING_LEVEL=/W3
+!ENDIF
+
+USE_MSVCRT=1
+
+INCLUDES=..\msvc;$(DDK_INC_PATH)
+C_DEFINES = $(C_DEFINES) /DDDKBUILD
+
+TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
+           $(SDK_LIB_PATH)\user32.lib \
+           $(SDK_LIB_PATH)\setupapi.lib \
+           $(SDK_LIB_PATH)\ole32.lib \
+           $(SDK_LIB_PATH)\shell32.lib \
+           ..\libwdi\libwdi.lib
+
+SOURCES=setdrv_gui.c \
+        setdrv_gui.rc
