@@ -1,5 +1,4 @@
 @echo off
-
 rem default builds static library. Pass argument 'DLL' to build a DLL
 
 if Test%BUILD_ALT_DIR%==Test goto usage
@@ -113,3 +112,14 @@ set BUILD_ALT_DIR=%ORG_BUILD_ALT_DIR%
 set _BUILDARCH=%ORG_BUILDARCH%
 set PATH=%ORG_PATH%
 set BUILD_DEFAULT_TARGETS=%ORG_BUILD_DEFAULT_TARGETS%
+
+if Test%DDK_TARGET_OS%==TestWinXP goto nowarn
+
+echo.
+echo.
+echo WARNING: You do not seem to have used the Windows XP DDK build environment.
+echo Be mindful that using the Windows Vista or Windows 7 DDK build environments
+echo will result in library and applications that do NOT run on Windows XP.
+echo.
+
+:nowarn
