@@ -41,7 +41,7 @@ main(void)
 
 	list = wdi_create_list(true);
 	if (list == NULL) {
-		printf("No USB devices were found.\n");
+		printf("No driverless USB devices were found.\n");
 		return 0;
 	}
 

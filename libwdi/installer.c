@@ -51,6 +51,7 @@ typedef DEVINSTID_A DEVINSTID;
 
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNode, (PDEVINST, DEVINSTID, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
 
 /*
  * Globals
@@ -64,34 +65,9 @@ static int init_dlls(void)
 {
 	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
+	DLL_LOAD(Cfgmgr32.dll, CM_Get_DevNode_Status, TRUE);
 	return 0;
 }
-
-/*
-// Detect Windows version
-#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
-void detect_version(void)
-{
-	OSVERSIONINFO os_version;
-
-	memset(&os_version, 0, sizeof(OSVERSIONINFO));
-	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	windows_version = WINDOWS_UNSUPPORTED;
-	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
-		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
-			windows_version = WINDOWS_2K;
-		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
-			windows_version = WINDOWS_XP;
-		} else if (os_version.dwMajorVersion >= 6) {
-			if (os_version.dwBuildNumber < 7000) {
-				windows_version = WINDOWS_VISTA;
-			} else {
-				windows_version = WINDOWS_7;
-			}
-		}
-	}
-}
-*/
 
 // Log data with parent app through the pipe
 // TODO: return a status byte along with the message
@@ -212,23 +188,6 @@ char* req_id(enum installer_code id_code)
 	return NULL;
 }
 
-// Query parent app for hardware ID
-char* req_hardware_id(void)
-{
-	int size;
-	static char hardware_id[MAX_PATH_LENGTH];
-
-	memset(hardware_id, 0, MAX_PATH_LENGTH);
-	size = request_data(IC_GET_HARDWARE_ID, (void*)hardware_id, sizeof(hardware_id));
-	if (size > 0) {
-		plog("got hardware_id: %s", hardware_id);
-		return hardware_id;
-	}
-
-	plog("failed to read hardware_id");
-	return NULL;
-}
-
 // Force re-enumeration of a device (force installation)
 // TODO: allow root re-enum
 int update_driver(char* device_id)
@@ -253,7 +212,73 @@ int update_driver(char* device_id)
 	return 0;
 }
 
+/*
+ * Flag phantom/removed devices for reinstallation. See:
+ * http://msdn.microsoft.com/en-us/library/aa906206.aspx
+ */
+void check_removed(char* device_hardware_id)
+{
+	unsigned i, removed = 0;
+	DWORD size, reg_type, config_flags;
+	ULONG status, pbm_number;
+	HDEVINFO dev_info;
+	SP_DEVINFO_DATA dev_info_data;
+	char hardware_id[STR_BUFFER_SIZE];
+
+	// List all known USB devices (including non present ones)
+	dev_info = SetupDiGetClassDevs(NULL, "USB", NULL, DIGCF_ALLCLASSES);
+	if (dev_info == INVALID_HANDLE_VALUE) {
+		return;
+	}
+
+	// Find the ones that are driverless
+	for (i = 0; ; i++)
+	{
+		dev_info_data.cbSize = sizeof(dev_info_data);
+		if (!SetupDiEnumDeviceInfo(dev_info, i, &dev_info_data)) {
+			break;
+		}
+
+		// Find the hardware ID
+		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_HARDWAREID,
+			&reg_type, (BYTE*)hardware_id, STR_BUFFER_SIZE, &size)) {
+			continue;
+		}
+
+		// Match?
+		if (safe_strncmp(hardware_id, device_hardware_id, STR_BUFFER_SIZE) != 0) {
+			continue;
+		}
+
+		// Unplugged?
+		if (CM_Get_DevNode_Status(&status, &pbm_number, dev_info_data.DevInst, 0) != CR_NO_SUCH_DEVNODE) {
+			continue;
+		}
+
+		// Flag for reinstall on next plugin
+		if (!SetupDiGetDeviceRegistryProperty(dev_info, &dev_info_data, SPDRP_CONFIGFLAGS,
+			&reg_type, (BYTE*)&config_flags, sizeof(DWORD), &size)) {
+			plog("could not read SPDRP_CONFIGFLAGS for phantom device %s", hardware_id);
+			continue;
+		}
+		config_flags |= CONFIGFLAG_REINSTALL;
+		if (!SetupDiSetDeviceRegistryProperty(dev_info, &dev_info_data, SPDRP_CONFIGFLAGS,
+			(BYTE*)&config_flags, sizeof(DWORD))) {
+			plog("could not write SPDRP_CONFIGFLAGS for phantom device %s", hardware_id);
+			continue;
+		}
+		removed++;
+	}
+
+	if (removed) {
+		plog("flagged %d removed devices for reinstallation", removed);
+	}
+}
+
 // TODO: allow commandline options
+// TODO: return status on error
+// TODO: remove existing infs for similar devices?
+// TODO: use DifXAPI for
 int
 #ifdef _MSC_VER
 __cdecl
@@ -375,7 +400,7 @@ main(int argc, char** argv)
 	// TODO: try URL for OEMSourceMediaLocation
 	plog("Copying inf file - please wait...");
 	send_status(IC_SET_TIMEOUT_INFINITE);
-	b = SetupCopyOEMInfA(path, NULL, SPOST_NONE, SP_COPY_DELETESOURCE, destname, MAX_PATH_LENGTH, NULL, NULL);
+	b = SetupCopyOEMInfA(path, NULL, SPOST_PATH, 0, destname, MAX_PATH_LENGTH, NULL, NULL);
 	send_status(IC_SET_TIMEOUT_DEFAULT);
 	if (b) {
 		plog("copied inf to %s", destname);
@@ -420,7 +445,10 @@ main(int argc, char** argv)
 		plog("unhandled error %X", r);
 		goto out;
 	}
-	// TODO: remove phantom drivers as per http://msdn.microsoft.com/en-us/library/aa906206.aspx
+
+	// If needed, flag removed devices for reinstallation. see:
+	// http://msdn.microsoft.com/en-us/library/aa906206.aspx
+	check_removed(hardware_id);
 
 out:
 	CloseHandle(pipe_handle);

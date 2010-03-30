@@ -52,6 +52,9 @@
 #define safe_vsnprintf vsnprintf
 #endif
 
+/*
+ * For communications between installer <-> libwdi
+ */
 enum installer_code {
 	IC_PRINT_MESSAGE,
 	IC_GET_DEVICE_ID,
@@ -60,6 +63,9 @@ enum installer_code {
 	IC_SET_TIMEOUT_DEFAULT,
 };
 
+/*
+ * Windows versions
+ */
 enum windows_version {
 	WINDOWS_UNDEFINED,
 	WINDOWS_UNSUPPORTED,
@@ -105,6 +111,7 @@ typedef RETURN_TYPE	CONFIGRET;
 
 #define CR_SUCCESS                        0x00000000
 #define CR_NO_SUCH_DEVNODE                0x0000000D
+#define CONFIGFLAG_REINSTALL              0x00000020
 
 #define CM_REENUMERATE_NORMAL             0x00000000
 #define CM_REENUMERATE_SYNCHRONOUS        0x00000001

@@ -61,7 +61,7 @@
 /*
  * Global variables
  */
-char *req_device_id, *req_hardware_id;
+struct wdi_device_info *current_device = NULL;
 bool dlls_available = false;
 DWORD timeout = DEFAULT_TIMEOUT;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
@@ -327,11 +327,12 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 		// Retrieve the hardware ID
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_HARDWAREID,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			device_info->hardware_id = safe_strdup(strbuf);
-			usbi_dbg("so that's a hardware ID: %s", device_info->hardware_id);
+			usbi_dbg("got hardware ID: %s", strbuf);
 		} else {
 			usbi_err(NULL, "could not get hardware ID");
+			strbuf[0] = 0;
 		}
+		device_info->hardware_id = safe_strdup(strbuf);
 
 		// Retrieve device ID. This is needed to re-enumerate our device and force
 		// the final driver installation
@@ -529,11 +530,20 @@ int process_message(char* buffer, DWORD size)
 	{
 	case IC_GET_DEVICE_ID:
 		usbi_dbg("got request for device_id");
-		WriteFile(pipe_handle, req_device_id, strlen(req_device_id), &junk, NULL);
+		// TODO use device instead of req_ duplication!
+		if (current_device != NULL) {
+			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
+		} else {
+			usbi_err(NULL, "program assertion failed - no current device");
+		}
 		break;
 	case IC_GET_HARDWARE_ID:
 		usbi_dbg("got request for hardware_id");
-		WriteFile(pipe_handle, req_hardware_id, strlen(req_hardware_id), &junk, NULL);
+		if (current_device != NULL) {
+			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
+		} else {
+			usbi_err(NULL, "program assertion failed - no current device");
+		}
 		break;
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
@@ -572,8 +582,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 	BOOL is_x64 = false;
 	char buffer[STR_BUFFER_SIZE];
 
-	req_device_id = device_info->device_id;
-	req_hardware_id = device_info->hardware_id;
+	current_device = device_info;
 
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
@@ -738,6 +747,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 		}
 	}
 out:
+	current_device = NULL;
 	safe_closehandle(handle[0]);
 	safe_closehandle(handle[1]);
 	safe_closehandle(pipe_handle);
