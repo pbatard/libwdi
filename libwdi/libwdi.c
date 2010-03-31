@@ -270,6 +270,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	bool driverless;
 	const char usbhub_name[] = "usbhub";
+	const char usbccgp_name[] = "usbccgp";
 
 	if (!dlls_available) {
 		init_dlls();
@@ -321,6 +322,11 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			device_info->driver = safe_strdup(strbuf);
 		}
 		if (safe_strcmp(strbuf, usbhub_name) == 0) {
+			continue;
+		}
+		// Also eliminate composite devices parent drivers, as replacing these drivers
+		// is a bad idea
+		if (safe_strcmp(strbuf, usbccgp_name) == 0) {
 			continue;
 		}
 
