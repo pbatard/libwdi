@@ -1,5 +1,5 @@
+@rem default builds static library. Pass argument 'DLL' to build a DLL
 @echo off
-rem default builds static library. Pass argument 'DLL' to build a DLL
 
 if Test%BUILD_ALT_DIR%==Test goto usage
 
@@ -21,7 +21,7 @@ rem set BUILD_ALT_DIR=x64
 cd libwdi
 set srcPath=obj%BUILD_ALT_DIR%\%cpudir%
 
-del /F Makefile >NUL 2>&1
+if EXIST Makefile ren Makefile Makefile.hide
 copy embedder_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
@@ -83,9 +83,10 @@ build -cwgZ
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 
+if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..\examples
 
-del /F Makefile  >NUL 2>&1
+if EXIST Makefile ren Makefile Makefile.hide
 copy setdrv_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
@@ -98,15 +99,18 @@ copy setdrv_gui_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
-rem del afxres.h
 if errorlevel 1 goto builderror
+del afxres.h
 copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv_gui.exe . >NUL 2>&1
 
+if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..
 
 goto done
 
 :builderror
+if EXIST Makefile.hid ren Makefile.hid Makefile
+if EXIST afxres.h del afxres.h
 cd ..
 echo Build failed
 goto done
