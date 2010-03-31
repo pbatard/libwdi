@@ -94,7 +94,11 @@ build -cwgZ
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv.exe . >NUL 2>&1
 
+rem Work around MS's VC++ and DDK weird icompatibilities wth regards to rc files
 echo #include ^<windows.h^> > afxres.h
+echo #ifndef IDC_STATIC >> afxres.h
+echo #define IDC_STATIC -1 >> afxres.h
+echo #endif >> afxres.h
 copy setdrv_gui_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
