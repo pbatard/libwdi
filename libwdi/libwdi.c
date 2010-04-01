@@ -492,8 +492,13 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 		return -1;
 	}
 
+	if (device_info->desc == NULL) {
+		usbi_err(NULL, "no description was given for the device - aborting");
+		return -1;
+	}
+
 	if (type == WDI_LIBUSB) {
-		usbi_err(NULL, "libusb support is not implemented yet");
+		usbi_err(NULL, "libusb support is not implemented yet - defaulting to WinUSB");
 	}
 
 	// Try to create directory if it doesn't exist
@@ -541,6 +546,11 @@ int process_message(char* buffer, DWORD size)
 	if (size <= 0)
 		return -1;
 
+	if (current_device == NULL) {
+		usbi_err(NULL, "program assertion failed - no current device");
+		return -1;
+	}
+
 	// Note: this is a message pipe, so we don't need to care about
 	// multiple messages coexisting in our buffer.
 	switch(buffer[0])
@@ -548,18 +558,20 @@ int process_message(char* buffer, DWORD size)
 	case IC_GET_DEVICE_ID:
 		usbi_dbg("got request for device_id");
 		// TODO use device instead of req_ duplication!
-		if (current_device != NULL) {
+		if (current_device->device_id != NULL) {
 			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
 		} else {
-			usbi_err(NULL, "program assertion failed - no current device");
+			usbi_warn(NULL, "no device_id - sending empty string");
+			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
 	case IC_GET_HARDWARE_ID:
 		usbi_dbg("got request for hardware_id");
-		if (current_device != NULL) {
+		if (current_device->hardware_id != NULL) {
 			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
 		} else {
-			usbi_err(NULL, "program assertion failed - no current device");
+			usbi_warn(NULL, "no hardware_id - sending empty string");
+			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
 	case IC_PRINT_MESSAGE:
