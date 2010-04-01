@@ -432,6 +432,8 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 		device_info = NULL;
 	}
 
+	SetupDiDestroyDeviceInfoList(dev_info);
+
 	return start;
 }
 
