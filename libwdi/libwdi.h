@@ -43,12 +43,12 @@ struct wdi_device_info {
 	char* desc;
 	/** Windows' driver (service) name */
 	char* driver;
-	/** USB VID; hex string, prefixed by "VID_" */
-	char vid[9];
-	/** USB PID; hex string, prefixed by "PID_" */
-	char pid[9];
-	/** Optional USB Interface Number for composite devices, prefixed by "MI_" */
-	char mi[6];
+	/** USB VID */
+	unsigned short vid;
+	/** USB PID */
+	unsigned short pid;
+	/** Optional USB Interface Number. Negative if none */
+	short mi;
 };
 
 /*

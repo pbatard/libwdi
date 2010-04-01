@@ -257,7 +257,7 @@ static int init_dlls(void)
 // List USB devices
 struct wdi_device_info* wdi_create_list(bool driverless_only)
 {
-	unsigned i, j, interface_number;
+	unsigned i, j, tmp;
 	DWORD size, reg_type;
 	ULONG devprop_type;
 	CONFIGRET r;
@@ -379,23 +379,35 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			}
 		}
 
+		device_info->mi = -1;	// No interface number by default
 		token = strtok (strbuf, "\\#&");
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
 				if (safe_strncmp(token, prefix[j], strlen(prefix[j])) == 0) {
 					switch(j) {
 					case 0:
-						safe_strcpy(device_info->vid, sizeof(device_info->vid), token);
+						if (sscanf(token, "VID_%04X", &tmp) != 1) {
+							usbi_err(NULL, "could not convert VID string");
+						} else {
+							device_info->vid = (unsigned short)tmp;
+						}
 						break;
 					case 1:
-						safe_strcpy(device_info->pid, sizeof(device_info->pid), token);
+						if (sscanf(token, "PID_%04X", &tmp) != 1) {
+							usbi_err(NULL, "could not convert PID string");
+						} else {
+							device_info->pid = (unsigned short)tmp;
+						}
 						break;
 					case 2:
-						safe_strcpy(device_info->mi, sizeof(device_info->mi), token);
-						// Add the interface if we have space
-						if ( (sscanf(token, "MI_%02X", &interface_number) == 1)
-						  && (wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH ) {
-							_snwprintf(&desc[wcslen(desc)], sizeof(" (Interface ###)"), L" (Interface %d)", interface_number);
+						if (sscanf(token, "MI_%02X", &tmp) != 1) {
+							usbi_err(NULL, "could not convert MI string");
+						} else {
+							device_info->mi = (short)tmp;
+							if ((wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH) {
+								_snwprintf(&desc[wcslen(desc)], sizeof(" (Interface ###)"),
+									L" (Interface %d)", device_info->mi);
+							}
 						}
 						break;
 					default:
@@ -406,7 +418,6 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 			}
 			token = strtok (NULL, "\\#&");
 		}
-
 		device_info->desc = wchar_to_utf8(desc);
 		usbi_dbg("Device description: %s", device_info->desc);
 
@@ -507,9 +518,9 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 	fprintf(fd, "; Copyright (c) 2010 libusb (GNU LGPL)\n");
 	fprintf(fd, "[Strings]\n");
 	fprintf(fd, "DeviceName = \"%s\"\n", device_info->desc);
-	fprintf(fd, "DeviceID = \"%s&%s", device_info->vid, device_info->pid);
-	if (device_info->mi[0] != 0) {
-		fprintf(fd, "&%s\"\n", device_info->mi);
+	fprintf(fd, "DeviceID = \"VID_%04X&PID_%04X", device_info->vid, device_info->pid);
+	if (device_info->mi >= 0) {
+		fprintf(fd, "&MI_%02X\"\n", device_info->mi);
 	} else {
 		fprintf(fd, "\"\n");
 	}
