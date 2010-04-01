@@ -46,7 +46,7 @@ main(void)
 	}
 
 	for (device = list; device != NULL; device = device->next) {
-		printf("Found driverless USB device: \"%s\" (%s:%s)\n", device->desc, device->vid, device->pid);
+		printf("Found driverless USB device: \"%s\" (%04X:%04X)\n", device->desc, device->vid, device->pid);
 		printf("Do you want to install a driver for this device (y/n)?\n");
 		c = (char) getchar();
 		FLUSHER;

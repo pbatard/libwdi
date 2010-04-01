@@ -145,9 +145,11 @@ void combo_breaker(DWORD type)
  */
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-static struct wdi_device_info device, *dev, *list = NULL;
+static struct wdi_device_info *device, *list = NULL;
 static bool list_driverless_only = true;
-static char edited_desc[STR_BUFFER_SIZE];
+static char folder[STR_BUFFER_SIZE];
+static char* editable_desc = NULL;
+char vidpid[5];
 
 int nb_devices;
 
@@ -157,17 +159,20 @@ int nb_devices;
 	hDriver = GetDlgItem(hDlg, IDC_DRIVER);
 
 	switch (message) {
+
 	case WM_INITDIALOG:
+		SetDlgItemText(hMain, IDC_FOLDER, "C:\\test");
 		CheckDlgButton(hMain, IDC_DRIVERLESSONLY, list_driverless_only?BST_CHECKED:BST_UNCHECKED);
 		// Try without... and lament for the lack of consistancy of MS controls.
 		combo_breaker(CBS_DROPDOWNLIST);
+
 	case WM_APP:	// WM_APP is not sent on focus, unlike WM_USER
 		dclear();
 		if (list != NULL) wdi_destroy_list(list);
 		list = wdi_create_list(list_driverless_only);
 		if (list != NULL) {
 			nb_devices = display_devices(list);
-			dprintf("%d device%s found.", nb_devices+1, nb_devices?"s":"");
+			dprintf("%d device%s found.", nb_devices+1, (nb_devices>0)?"s":"");
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM) hDeviceList);
@@ -177,23 +182,31 @@ int nb_devices;
 			dprintf("No devices found.");
 		}
 		break;
+
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDC_DRIVERLESSONLY:
 			list_driverless_only = (IsDlgButtonChecked(hMain, IDC_DRIVERLESSONLY) == BST_CHECKED);
 			// Reset Edit button
 			CheckDlgButton(hMain, IDC_EDITNAME, 0);
+			// Reset Combo
+			combo_breaker(CBS_DROPDOWNLIST);
 			PostMessage(hMain, WM_APP, 0, 0);
 			break;
 		case IDC_EDITNAME:
 			if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 				combo_breaker(CBS_SIMPLE);
-				// TODO: empty string
-				if (device.desc != NULL) {
-					ComboBox_AddString(hDeviceList, device.desc);
-				} else {
-					ComboBox_AddString(hDeviceList, "Unknown Device");
+				if (device->desc != editable_desc) {
+					editable_desc = malloc(STR_BUFFER_SIZE);
+					if (editable_desc == NULL) {
+						// TODO
+					} else {
+						safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
+						free(device->desc);	// No longer needed
+						device->desc = editable_desc;
+					}
 				}
+				ComboBox_AddString(hDeviceList, editable_desc);
 				SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
 			} else {
 				combo_breaker(CBS_DROPDOWNLIST);
@@ -203,28 +216,48 @@ int nb_devices;
 		case IDC_DEVICELIST:
 			switch (HIWORD(wParam)) {
 			case CBN_SELCHANGE:
-				dprintf("got selchange");
-				dev = get_selected_device();
-				if (dev != NULL) {
-					// Need to work on a copy to be safe
-					memcpy(&device, dev, sizeof(struct wdi_device_info));
-					// Change the description string to our editable buffer
-					if (device.desc != NULL) {
-						safe_strcpy(edited_desc, STR_BUFFER_SIZE, device.desc);
-					} else {
-						safe_sprintf(edited_desc, STR_BUFFER_SIZE, "(Unknown Device)");
+				device = get_selected_device();
+				if (device != NULL) {
+					// Change the description string if needed
+					if (device->desc == NULL) {
+						editable_desc = malloc(STR_BUFFER_SIZE);
+						if (editable_desc == NULL) {
+							// TODO
+						} else {
+							safe_sprintf(editable_desc, STR_BUFFER_SIZE, "(Unknown Device)");
+							device->desc = editable_desc;
+						}
 					}
-					device.desc = edited_desc;
+					if (device->driver != NULL) {
+						SendMessage(hDriver, WM_SETTEXT, 0, (LPARAM)device->driver);
+					} else {
+						SendMessage(hDriver, WM_SETTEXT, 0, (LPARAM)"(NONE)");
+					}
+					safe_sprintf(vidpid, 5, "%04X", device->vid);
+					SetDlgItemText(hMain, IDC_VID, vidpid);
+					safe_sprintf(vidpid, 5, "%04X", device->pid);
+					SetDlgItemText(hMain, IDC_PID, vidpid);
 					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
-					SendMessage(hDriver, WM_SETTEXT, 0, (LPARAM) device.driver);
 				}
 				break;
 			case CBN_EDITCHANGE:
-				ComboBox_GetText(hDeviceList, edited_desc, STR_BUFFER_SIZE);
+				ComboBox_GetText(hDeviceList, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
-//				dprintf("got whaaa %X", HIWORD(wParam));
 				break;
+			}
+			break;
+		case IDC_INSTALL:
+			GetDlgItemText(hMain, IDC_FOLDER, folder, STR_BUFFER_SIZE);
+			if (wdi_create_inf(device, folder, WDI_WINUSB) == 0) {
+				dprintf("Extracted driver files to %s", folder);
+				if (wdi_install_driver(folder, device) == 0) {
+					dprintf("SUCCESS");
+				} else {
+					dprintf("DRIVER INSTALLATION FAILED");
+				}
+			} else {
+				dprintf("Could not create/extract files in %s", folder);
 			}
 			break;
 		case IDOK:
@@ -236,8 +269,10 @@ int nb_devices;
 			break;
 		}
 		break;
+
 	default:
 		break;
+
 	}
 	return FALSE;
 }
