@@ -24,6 +24,7 @@
 #include <objbase.h>
 #include <shellapi.h>
 #include <config.h>
+#include <shlobj.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -677,7 +678,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 	}
 
 	GET_WINDOWS_VERSION;
-	if (windows_version >= WINDOWS_VISTA) {
+	if ( (windows_version >= WINDOWS_VISTA) && (!IsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
@@ -708,7 +709,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 
 		handle[1] = shExecInfo.hProcess;
 	} else {
-		// On XP and earlier, simply use CreateProcess
+		// On XP and earlier, or if app is already elevated, simply use CreateProcess
 		memset(&si, 0, sizeof(si));
 		si.cb = sizeof(si);
 		memset(&pi, 0, sizeof(pi));
