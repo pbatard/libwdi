@@ -208,10 +208,12 @@ const char* wdi_strerror(enum wdi_error errcode)
 		return "Another installer is already running";
 	case WDI_ERROR_INTERRUPTED:
 		return "System call interrupted (perhaps due to signal)";
-	case WDI_ERROR_NO_MEM:
-		return "Insufficient memory";
+	case WDI_ERROR_RESOURCE:
+		return "Could not acquire resource (insufficient memory, etc.)";
 	case WDI_ERROR_NOT_SUPPORTED:
 		return "Operation not supported or unimplemented on this platform";
+	case WDI_ERROR_EXISTS:
+		return "Resource already exists";
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
@@ -643,7 +645,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 	}
 
 	// Use a pipe to communicate with our installer
-	pipe_handle = CreateNamedPipe("\\\\.\\pipe\\libusb-installer", PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
+	pipe_handle = CreateNamedPipe(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		usbi_err(NULL, "could not create read pipe: %s", windows_error_str(0));

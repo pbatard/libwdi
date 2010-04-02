@@ -159,7 +159,7 @@ main (int argc, char *argv[])
     }
 
 	if (!rebuild) {
-		printf("  files haven't changed - skipping step\n");
+		printf("  resources haven't changed - skipping step\n");
 		return 0;
 	}
 

@@ -1,6 +1,7 @@
 /*
- * libwdi logging functions - copied from libusb:
+ * libwdi logging functions
  * Copyright (c) Johannes Erdfelt, Daniel Drake et al.
+ * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,12 +19,17 @@
  */
 #pragma once
 
-enum usbi_log_level {
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_ERROR,
-};
+#define LOGGER_PIPE_NAME           "\\\\.\\pipe\\libwdi-logger"
+#define LOGBUF_SIZE                256
+
+#if defined(_MSC_VER)
+#define safe_vsnprintf vsprintf_s
+#define safe_snprintf sprintf_s
+#else
+#define safe_vsnprintf vsnprintf
+#define safe_snprintf snprintf
+#endif
+
 
 #if !defined(_MSC_VER) || _MSC_VER > 1200
 

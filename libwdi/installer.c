@@ -295,7 +295,7 @@ main(int argc, char** argv)
 	FILE *fd;
 
 	// Connect to the messaging pipe
-	pipe_handle = CreateFile("\\\\.\\pipe\\libusb-installer", GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		printf("could not open pipe for writing: errcode %d\n", (int)GetLastError());

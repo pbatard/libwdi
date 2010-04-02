@@ -60,6 +60,16 @@ enum wdi_driver_type {
 };
 
 /*
+ * Log level
+ */
+enum usbi_log_level {
+	LOG_LEVEL_DEBUG,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_WARNING,
+	LOG_LEVEL_ERROR,
+};
+
+/*
  * Error codes. Most libwdi functions return 0 on success or one of these
  * codes on failure.
  * You can use wdi_strerror() to retrieve a short string description of
@@ -99,11 +109,14 @@ enum wdi_error {
 	/** System call interrupted (perhaps due to signal) */
 	WDI_ERROR_INTERRUPTED = -10,
 
-	/** Insufficient memory */
-	WDI_ERROR_NO_MEM = -11,
+	/** Could not acquire resource (Insufficient memory, etc) */
+	WDI_ERROR_RESOURCE = -11,
 
 	/** Operation not supported or unimplemented on this platform */
 	WDI_ERROR_NOT_SUPPORTED = -12,
+
+	/** Emtity already exists */
+	WDI_ERROR_EXISTS = -13,
 
 	/** Other error */
 	WDI_ERROR_OTHER = -99
@@ -121,3 +134,5 @@ struct wdi_device_info* wdi_create_list(bool driverless_only);
 void wdi_destroy_list(struct wdi_device_info* list);
 int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type);
 int wdi_install_driver(char *path, struct wdi_device_info* device_info);
+DWORD wdi_read_logger(char* buffer, DWORD length);
+int wdi_register_logger(HWND hWnd, UINT message);

@@ -34,6 +34,7 @@
 // WM_APP is not sent on focus, unlike WM_USER
 #define UM_REFRESH_LIST             WM_APP
 #define UM_DEVICE_EVENT            (WM_APP+1)
+#define UM_LOGGER_EVENT            (WM_APP+2)
 
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))

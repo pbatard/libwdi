@@ -164,6 +164,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static char* editable_desc = NULL;
 	static HANDLE delay_thread = NULL;
 	char str_tmp[5];
+	char log_buf[STR_BUFFER_SIZE];
 	int nb_devices, tmp, junk;
 	DWORD delay;
 
@@ -195,6 +196,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		break;
 
 	case UM_DEVICE_EVENT:
+		// TODO: don't handle these events when installation has started!
 		delay_thread = NULL;
 		if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 			if (MessageBox(hMain, "The device list has changed.\n"
@@ -211,6 +213,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		break;
 
+	case UM_LOGGER_EVENT:
+		// TODO: use different colours according to the log level?
+//		dprintf("log level: %d", wParam);
+		if (wdi_read_logger(log_buf, STR_BUFFER_SIZE) != 0) {
+			dprintf(log_buf);
+		} else {
+			dprintf("wdi_read_logger returned 0");
+		}
+		break;
+
 	case WM_INITDIALOG:
 
 		// Quite a burden to carry around as parameters
@@ -222,6 +234,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		CheckDlgButton(hMain, IDC_DRIVERLESSONLY, list_driverless_only?BST_CHECKED:BST_UNCHECKED);
 		// Try without... and lament for the lack of consistancy of MS controls.
 		combo_breaker(CBS_DROPDOWNLIST);
+
+		wdi_register_logger(hMain, UM_LOGGER_EVENT);
+
 		// Fall through
 	case UM_REFRESH_LIST:
 		dclear();
