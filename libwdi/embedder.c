@@ -115,6 +115,10 @@ main (int argc, char *argv[])
 	size_t size;
 	size_t* file_size;
 	FILE *fd, *header_fd;
+	HANDLE header_handle = INVALID_HANDLE_VALUE, file_handle = INVALID_HANDLE_VALUE;
+	FILETIME header_time, file_time;
+	BOOL rebuild = TRUE;
+
 	unsigned char* buffer;
 	char fullpath[MAX_PATH_LENGTH];
 
@@ -124,6 +128,39 @@ main (int argc, char *argv[])
 	if (argc != 2) {
 		fprintf(stderr, "You must supply a header name\n");
 		return 1;
+	}
+
+	// Check if any of the embedded files have changed
+	header_handle = CreateFileA(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	if (header_handle != INVALID_HANDLE_VALUE) {
+		// Header already exists
+		header_time.dwHighDateTime = 0; header_time.dwLowDateTime = 0;
+		GetFileTime(header_handle, NULL, NULL, &header_time);
+		rebuild = FALSE;
+		for (i=0; ; i++) {
+			if (file_handle != INVALID_HANDLE_VALUE) {
+				CloseHandle(file_handle);
+				file_handle = INVALID_HANDLE_VALUE;
+			}
+			if ( (i>=nb_embeddables) || (rebuild) )
+				break;
+			file_handle = CreateFileA(embeddable[i].file_name, GENERIC_READ, FILE_SHARE_READ,
+				NULL, OPEN_EXISTING, 0, NULL);
+			if (file_handle != INVALID_HANDLE_VALUE) {
+				file_time.dwHighDateTime = 0; file_time.dwLowDateTime = 0;
+				GetFileTime(file_handle, NULL, NULL, &file_time);
+				if (CompareFileTime(&header_time, &file_time) <= 0) {
+					rebuild = TRUE;
+					break;
+				}
+			}
+		}
+		CloseHandle(header_handle);
+    }
+
+	if (!rebuild) {
+		printf("  files haven't changed - skipping step\n");
+		return 0;
 	}
 
 	size = sizeof(size_t)*nb_embeddables;
@@ -152,10 +189,6 @@ main (int argc, char *argv[])
 		fd = fopen(embeddable[i].file_name, "rb");
 		if (fd == NULL) {
 			fprintf(stderr, "Couldn't open file '%s'\n", fullpath);
-			if (i>=nb_embeddables-2) {
-				fprintf(stderr, "Please make sure you compiled BOTH the 64 and 32 bit "
-					"versions of the installer executables before compiling this library.\n");
-			}
 			ret = 1;
 			goto out2;
 		}
@@ -186,12 +219,12 @@ main (int argc, char *argv[])
 		fclose(fd);
 	}
 
-fprintf(header_fd, "struct res {\n" \
-	"\tchar* subdir;\n" \
-	"\tchar* name;\n" \
-	"\tsize_t size;\n" \
-	"\tconst unsigned char* data;\n" \
-	"};\n\n");
+	fprintf(header_fd, "struct res {\n" \
+		"\tchar* subdir;\n" \
+		"\tchar* name;\n" \
+		"\tsize_t size;\n" \
+		"\tconst unsigned char* data;\n" \
+		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {

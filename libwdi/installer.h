@@ -35,6 +35,9 @@
 #define STR_BUFFER_SIZE             256
 #define MAX_GUID_STRING_LENGTH      40
 
+#define INSTALLER_PIPE_NAME         "\\\\.\\pipe\\libwdi-installer"
+#define LOGGING_PIPE_NAME           "\\\\.\\pipe\\libwdi-logger"
+
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)

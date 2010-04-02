@@ -299,6 +299,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\installer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\libwdi.h"
 				>
 			</File>
