@@ -58,5 +58,9 @@ main(void)
 		}
 	}
 	wdi_destroy_list(list);
+
+	// This is needed when ran in UAC mode
+	printf("\nPress Enter to exit this program\n");
+	FLUSHER;
 	return 0;
 }

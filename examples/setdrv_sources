@@ -1,14 +1,13 @@
 TARGETNAME=setdrv
 TARGETTYPE=PROGRAM
+UMTYPE=console
+UMENTRY=main
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3
 !ENDIF
 
 USE_MSVCRT=1
-
-UMTYPE=console
-UMBASE=0x01000000
 
 INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD
@@ -20,4 +19,12 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\shell32.lib \
            ..\libwdi\libwdi.lib
 
-SOURCES=setdrv.c
+# http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/
+# NB: you need to have a matching resource file (.rc) with version info
+SXS_APPLICATION_MANIFEST=setdrv.manifest
+SXS_ASSEMBLY_VERSION=1.0
+SXS_ASSEMBLY_NAME=setdrv
+SXS_ASSEMBLY_LANGUAGE=0000
+
+SOURCES=setdrv.c \
+        setdrv.rc
