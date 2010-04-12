@@ -357,6 +357,7 @@ main(int argc, char** argv)
 	// r = 0xE0000235 ERROR_IN_WOW64 => trying to run a 32 bit installer on a 64 bit machine
 	// r = 0xE0000247 ERROR_DRIVER_STORE_ADD_FAILED if user decided not to install on warnings
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
+	// r = 0xE000022F ERROR_NO_CATALOG_FOR_OEM_INF => "reject unsigned driver" policy is enforced
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
 	switch(r = GetLastError()) {
 	case ERROR_NO_MORE_ITEMS:
@@ -391,6 +392,11 @@ main(int argc, char** argv)
 		goto out;
 	case ERROR_ALREADY_EXISTS:
 		plog("driver already exists");
+		goto out;
+	case ERROR_NO_CATALOG_FOR_OEM_INF:
+		plog("your system policy has been modified from Windows defaults, and is set to reject unsigned drivers");
+		plog("you must revert the driver installation policy to default if you want to install this driver");
+		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
 		goto out;
 	default:
 		plog("unhandled error %X", r);
@@ -440,6 +446,11 @@ main(int argc, char** argv)
 		goto out;
 	case ERROR_ALREADY_EXISTS:
 		plog("driver already exists");
+		goto out;
+	case ERROR_NO_CATALOG_FOR_OEM_INF:
+		plog("your system policy has been modified from Windows defaults, and is set to reject unsigned drivers");
+		plog("you must revert the driver installation policy to default if you want to install this driver");
+		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
 		goto out;
 	default:
 		plog("unhandled error %X", r);
