@@ -115,8 +115,11 @@ enum wdi_error {
 	/** Operation not supported or unimplemented on this platform */
 	WDI_ERROR_NOT_SUPPORTED = -12,
 
-	/** Emtity already exists */
+	/** Entity already exists */
 	WDI_ERROR_EXISTS = -13,
+
+	/** Cancelled by user */
+	WDI_USER_CANCEL = -14,
 
 	/** Other error */
 	WDI_ERROR_OTHER = -99

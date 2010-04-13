@@ -215,6 +215,8 @@ const char* wdi_strerror(enum wdi_error errcode)
 		return "Operation not supported or unimplemented on this platform";
 	case WDI_ERROR_EXISTS:
 		return "Resource already exists";
+	case WDI_USER_CANCEL:
+		return "Cancelled by user";
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
@@ -254,7 +256,7 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
 	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
-	return 0;
+	return WDI_SUCCESS;
 }
 
 // List USB devices
@@ -464,7 +466,7 @@ int extract_binaries(char* path)
 
 		if ( (_access(filename, 02) != 0) && (CreateDirectory(filename, 0) == 0) ) {
 			usbi_err(NULL, "could not access directory: %s", filename);
-			return -1;
+			return WDI_ERROR_ACCESS;
 		}
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
@@ -473,7 +475,7 @@ int extract_binaries(char* path)
 		fd = fopen(filename, "wb");
 		if (fd == NULL) {
 			usbi_err(NULL, "failed to create file: %s", filename);
-			return -1;
+			return WDI_ERROR_RESOURCE;
 		}
 
 		fwrite(resource[i].data, resource[i].size, 1, fd);
@@ -481,7 +483,7 @@ int extract_binaries(char* path)
 	}
 
 	usbi_dbg("successfully extracted files to %s", path);
-	return 0;
+	return WDI_SUCCESS;
 }
 
 // Create an inf and extract coinstallers in the directory pointed by path
@@ -499,7 +501,7 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 
 	if (device_info->desc == NULL) {
 		usbi_err(NULL, "no description was given for the device - aborting");
-		return -1;
+		return WDI_ERROR_NOT_FOUND;
 	}
 
 	if (type == WDI_LIBUSB) {
@@ -509,7 +511,7 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 	// Try to create directory if it doesn't exist
 	if ( (_access(path, 02) != 0) && (CreateDirectory(path, 0) == 0) ) {
 		usbi_err(NULL, "could not access directory: %s", path);
-		return -1;
+		return WDI_ERROR_ACCESS;
 	}
 
 	extract_binaries(path);
@@ -521,7 +523,7 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
 		usbi_err(NULL, "failed to create file: %s", filename);
-		return -1;
+		return WDI_ERROR_RESOURCE;
 	}
 
 	fprintf(fd, "; libusb_device.inf\n");
@@ -540,7 +542,7 @@ int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_dri
 	fclose(fd);
 
 	usbi_dbg("succesfully created %s", filename);
-	return 0;
+	return WDI_SUCCESS;
 }
 
 // Handle messages received from the elevated installer through the pipe
@@ -549,11 +551,11 @@ int process_message(char* buffer, DWORD size)
 	DWORD junk;
 
 	if (size <= 0)
-		return -1;
+		return WDI_ERROR_INVALID_PARAM;
 
 	if (current_device == NULL) {
 		usbi_err(NULL, "program assertion failed - no current device");
-		return -1;
+		return WDI_ERROR_NOT_FOUND;
 	}
 
 	// Note: this is a message pipe, so we don't need to care about
@@ -582,7 +584,7 @@ int process_message(char* buffer, DWORD size)
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
 			usbi_err(NULL, "print_message: no data");
-			return -1;
+			return WDI_ERROR_NOT_FOUND;
 		}
 		usbi_dbg("[installer process] %s", buffer+1);
 		break;
@@ -597,9 +599,9 @@ int process_message(char* buffer, DWORD size)
 		break;
 	default:
 		usbi_err(NULL, "unrecognized installer message");
-		return -1;
+		return WDI_ERROR_OTHER;
 	}
-	return 0;
+	return WDI_SUCCESS;
 }
 
 // Run the elevated installer
@@ -623,8 +625,6 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
 			usbi_dbg("detected another pending installation - aborting");
 			return WDI_ERROR_PENDING_INSTALLATION;
-		} else {
-			usbi_dbg("all clean");
 		}
 	} else {
 		usbi_dbg("CMP_WaitNoPendingInstallEvents not available");
@@ -650,14 +650,14 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		usbi_err(NULL, "could not create read pipe: %s", windows_error_str(0));
-		r = -1; goto out;
+		r = WDI_ERROR_RESOURCE; goto out;
 	}
 
 	// Set the overlapped for messaging
 	memset(&overlapped, 0, sizeof(OVERLAPPED));
 	handle[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if(handle[0] == NULL) {
-		r = -1; goto out;
+		r = WDI_ERROR_RESOURCE; goto out;
 	}
 	overlapped.hEvent = handle[0];
 
@@ -674,7 +674,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 	if (_access(exename, 00) != 0) {
 		usbi_err(NULL, "this application does not contain the required %s bit installer", is_x64?"64":"32");
 		usbi_err(NULL, "please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
-		r = -1; goto out;
+		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
 	GET_WINDOWS_VERSION;
@@ -701,7 +701,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 
 		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
 			usbi_dbg("operation cancelled by the user");
-			r = -1; goto out;
+			r = WDI_USER_CANCEL; goto out;
 		}
 		else if (err) {
 			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
@@ -732,7 +732,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 				if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 					TerminateProcess(handle[1], 0);
 				}
-				r = 0; goto out;
+				r = WDI_SUCCESS; goto out;
 			case ERROR_PIPE_LISTENING:
 				// Wait for installer to open the pipe
 				Sleep(100);
@@ -750,7 +750,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 							if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 								TerminateProcess(handle[1], 0);
 							}
-							r = 0; goto out;
+							r = WDI_SUCCESS; goto out;
 						case ERROR_MORE_DATA:
 							usbi_warn(NULL, "program assertion failed: message overflow");
 							process_message(buffer, rd_count);
@@ -765,10 +765,10 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 					// Lost contact
 					usbi_err(NULL, "installer failed to respond - aborting");
 					TerminateProcess(handle[1], 0);
-					r = -1; goto out;
+					r = WDI_ERROR_TIMEOUT; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
-					r = 0; goto out;
+					r = WDI_SUCCESS; goto out;
 				default:
 					usbi_err(NULL, "could not read from pipe (wait): %s", windows_error_str(0));
 					break;
