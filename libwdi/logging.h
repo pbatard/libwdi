@@ -33,13 +33,13 @@
 
 #if !defined(_MSC_VER) || _MSC_VER > 1200
 
-#ifdef ENABLE_LOGGING
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 #define _wdi_log(level, ...) wdi_log(level, __FUNCTION__, __VA_ARGS__)
 #else
 #define _wdi_log(level, ...)
 #endif
 
-#ifdef ENABLE_DEBUG_LOGGING
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 #define wdi_dbg(...) _wdi_log(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define wdi_dbg(...)
@@ -54,7 +54,7 @@
 void wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args);
 
-#ifdef ENABLE_LOGGING
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 #define LOG_BODY(level)       \
 {                             \
 	va_list args;             \
@@ -74,7 +74,7 @@ void inline wdi_err( const char *format, ...)
 	LOG_BODY(LOG_LEVEL_ERROR)
 
 void inline wdi_dbg(const char *format, ...)
-#ifdef ENABLE_DEBUG_LOGGING
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 	LOG_BODY(LOG_LEVEL_DEBUG)
 #else
 { }

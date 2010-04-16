@@ -35,6 +35,8 @@ HWND logger_dest = NULL;
 UINT logger_msg = 0;
 // Detect spurious log readouts
 unsigned log_messages_pending = 0;
+// Global debug level
+static int global_log_level = LOG_LEVEL_WARNING;
 
 extern char *windows_error_str(uint32_t retval);
 int create_logger(void);
@@ -49,6 +51,11 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 
 	if (logger_wr_handle == INVALID_HANDLE_VALUE)
 		return;
+
+#ifndef ENABLE_DEBUG_LOGGING
+	if (level < global_log_level)
+		return;
+#endif
 
 	switch (level) {
 	case LOG_LEVEL_INFO:
@@ -97,14 +104,8 @@ void console_wdi_log_v(enum wdi_log_level level,
 
 	stream = stdout;
 
-// TODO: init default context
 #ifndef ENABLE_DEBUG_LOGGING
-	wdi_GET_CONTEXT(ctx);
-	if (!ctx->debug)
-		return;
-	if (level == LOG_LEVEL_WARNING && ctx->debug < 2)
-		return;
-	if (level == LOG_LEVEL_INFO && ctx->debug < 3)
+	if (level < global_log_level)
 		return;
 #endif
 
@@ -234,4 +235,19 @@ DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length)
 	}
 
 	return 0;
+}
+
+/*
+ * Set the global log level. Only works if ENABLE_DEBUG_LOGGING is not set
+ */
+int LIBWDI_API wdi_set_log_level(int level)
+{
+#if defined(ENABLE_DEBUG_LOGGING)
+	return WDI_ERROR_NOT_SUPPORTED;
+#endif
+	if ( (level < LOG_LEVEL_DEBUG) || (level > LOG_LEVEL_ERROR) ) {
+		return WDI_ERROR_INVALID_PARAM;
+	}
+	global_log_level = level;
+	return WDI_SUCCESS;
 }

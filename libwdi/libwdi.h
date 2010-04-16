@@ -71,10 +71,10 @@ enum wdi_driver_type {
  * Log level
  */
 enum wdi_log_level {
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_ERROR,
+	LOG_LEVEL_DEBUG = 0,
+	LOG_LEVEL_INFO = 1,
+	LOG_LEVEL_WARNING = 2,
+	LOG_LEVEL_ERROR = 3
 };
 
 /*
@@ -162,3 +162,4 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 int LIBWDI_API wdi_install_driver(char *path, struct wdi_device_info* device_info);
 DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
 int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
+int LIBWDI_API wdi_set_log_level(int level);

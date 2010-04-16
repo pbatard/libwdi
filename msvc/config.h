@@ -20,7 +20,10 @@
 #define OPT_M64
 
 /* Debug message logging */
-#define ENABLE_DEBUG_LOGGING 1
+//#define ENABLE_DEBUG_LOGGING
+
+/* Debug message logging (toggable) */
+#define INCLUDE_DEBUG_LOGGING
 
 /* Message logging */
 #define ENABLE_LOGGING 1
