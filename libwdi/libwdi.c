@@ -353,9 +353,9 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 		// Retrieve the hardware ID
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_HARDWAREID,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			usbi_dbg("got hardware ID: %s", strbuf);
+			wdi_dbg("got hardware ID: %s", strbuf);
 		} else {
-			usbi_err(NULL, "could not get hardware ID");
+			wdi_err(NULL, "could not get hardware ID");
 			strbuf[0] = 0;
 		}
 		device_info->hardware_id = safe_strdup(strbuf);
@@ -364,10 +364,10 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 		// the final driver installation
 		r = CM_Get_Device_IDA(dev_info_data.DevInst, strbuf, STR_BUFFER_SIZE, 0);
 		if (r != CR_SUCCESS) {
-			usbi_err(NULL, "could not retrieve simple path for device %d: CR error %d", i, r);
+			wdi_err(NULL, "could not retrieve simple path for device %d: CR error %d", i, r);
 			continue;
 		} else {
-			usbi_dbg("%s USB device (%d): %s",
+			wdi_dbg("%s USB device (%d): %s",
 				device_info->driver?device_info->driver:"Driverless", i, strbuf);
 		}
 		device_info->device_id = safe_strdup(strbuf);
@@ -377,7 +377,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			// On Vista and earlier, we can use SPDRP_DEVICEDESC
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-				usbi_warn(NULL, "could not read device description for %d: %s",
+				wdi_warn(NULL, "could not read device description for %d: %s",
 					i, windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 			}
@@ -385,14 +385,14 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			// On Windows 7, the information we want ("Bus reported device description") is
 			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
 			if (SetupDiGetDeviceProperty == NULL) {
-				usbi_warn(NULL, "failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
+				wdi_warn(NULL, "failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
 				desc[0] = 0;
 			} else if (!SetupDiGetDeviceProperty(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
 				// fallback to SPDRP_DEVICEDESC (USB husb still use it)
 				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-					usbi_warn(NULL, "could not read device description for %d: %s",
+					wdi_warn(NULL, "could not read device description for %d: %s",
 						i, windows_error_str(0));
 					safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 				}
@@ -407,21 +407,21 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 					switch(j) {
 					case 0:
 						if (sscanf(token, "VID_%04X", &tmp) != 1) {
-							usbi_err(NULL, "could not convert VID string");
+							wdi_err(NULL, "could not convert VID string");
 						} else {
 							device_info->vid = (unsigned short)tmp;
 						}
 						break;
 					case 1:
 						if (sscanf(token, "PID_%04X", &tmp) != 1) {
-							usbi_err(NULL, "could not convert PID string");
+							wdi_err(NULL, "could not convert PID string");
 						} else {
 							device_info->pid = (unsigned short)tmp;
 						}
 						break;
 					case 2:
 						if (sscanf(token, "MI_%02X", &tmp) != 1) {
-							usbi_err(NULL, "could not convert MI string");
+							wdi_err(NULL, "could not convert MI string");
 						} else {
 							device_info->mi = (short)tmp;
 							if ((wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH) {
@@ -431,7 +431,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 						}
 						break;
 					default:
-						usbi_err(NULL, "unexpected case");
+						wdi_err(NULL, "unexpected case");
 						break;
 					}
 				}
@@ -439,7 +439,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			token = strtok (NULL, "\\#&");
 		}
 		device_info->desc = wchar_to_utf8(desc);
-		usbi_dbg("Device description: %s", device_info->desc);
+		wdi_dbg("Device description: %s", device_info->desc);
 
 		// Only at this stage do we know we have a valid current element
 		if (cur == NULL) {
@@ -480,7 +480,7 @@ int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].subdir);
 
 		if ( (_access(filename, 02) != 0) && (CreateDirectory(filename, 0) == 0) ) {
-			usbi_err(NULL, "could not access directory: %s", filename);
+			wdi_err(NULL, "could not access directory: %s", filename);
 			return WDI_ERROR_ACCESS;
 		}
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
@@ -489,7 +489,7 @@ int extract_binaries(char* path)
 
 		fd = fopen(filename, "wb");
 		if (fd == NULL) {
-			usbi_err(NULL, "failed to create file: %s", filename);
+			wdi_err(NULL, "failed to create file: %s", filename);
 			return WDI_ERROR_RESOURCE;
 		}
 
@@ -497,7 +497,7 @@ int extract_binaries(char* path)
 		fclose(fd);
 	}
 
-	usbi_dbg("successfully extracted files to %s", path);
+	wdi_dbg("successfully extracted files to %s", path);
 	return WDI_SUCCESS;
 }
 
@@ -515,17 +515,17 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 	}
 
 	if (device_info->desc == NULL) {
-		usbi_err(NULL, "no description was given for the device - aborting");
+		wdi_err(NULL, "no description was given for the device - aborting");
 		return WDI_ERROR_NOT_FOUND;
 	}
 
 	if (type == WDI_LIBUSB) {
-		usbi_err(NULL, "libusb support is not implemented yet - defaulting to WinUSB");
+		wdi_err(NULL, "libusb support is not implemented yet - defaulting to WinUSB");
 	}
 
 	// Try to create directory if it doesn't exist
 	if ( (_access(path, 02) != 0) && (CreateDirectory(path, 0) == 0) ) {
-		usbi_err(NULL, "could not access directory: %s", path);
+		wdi_err(NULL, "could not access directory: %s", path);
 		return WDI_ERROR_ACCESS;
 	}
 
@@ -537,7 +537,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
-		usbi_err(NULL, "failed to create file: %s", filename);
+		wdi_err(NULL, "failed to create file: %s", filename);
 		return WDI_ERROR_RESOURCE;
 	}
 
@@ -556,7 +556,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 	fwrite(inf[type], strlen(inf[type]), 1, fd);
 	fclose(fd);
 
-	usbi_dbg("succesfully created %s", filename);
+	wdi_dbg("succesfully created %s", filename);
 	return WDI_SUCCESS;
 }
 
@@ -569,7 +569,7 @@ int process_message(char* buffer, DWORD size)
 		return WDI_ERROR_INVALID_PARAM;
 
 	if (current_device == NULL) {
-		usbi_err(NULL, "program assertion failed - no current device");
+		wdi_err(NULL, "program assertion failed - no current device");
 		return WDI_ERROR_NOT_FOUND;
 	}
 
@@ -578,49 +578,49 @@ int process_message(char* buffer, DWORD size)
 	switch(buffer[0])
 	{
 	case IC_GET_DEVICE_ID:
-		usbi_dbg("got request for device_id");
+		wdi_dbg("got request for device_id");
 		// TODO use device instead of req_ duplication!
 		if (current_device->device_id != NULL) {
 			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
 		} else {
-			usbi_warn(NULL, "no device_id - sending empty string");
+			wdi_warn(NULL, "no device_id - sending empty string");
 			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
 	case IC_GET_HARDWARE_ID:
-		usbi_dbg("got request for hardware_id");
+		wdi_dbg("got request for hardware_id");
 		if (current_device->hardware_id != NULL) {
 			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
 		} else {
-			usbi_warn(NULL, "no hardware_id - sending empty string");
+			wdi_warn(NULL, "no hardware_id - sending empty string");
 			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
-			usbi_err(NULL, "print_message: no data");
+			wdi_err(NULL, "print_message: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
-		usbi_dbg("[installer process] %s", buffer+1);
+		wdi_dbg("[installer process] %s", buffer+1);
 		break;
 	case IC_SET_STATUS:
 		if (size < 2) {
-			usbi_err(NULL, "set status: no data");
+			wdi_err(NULL, "set status: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
 		return (int)buffer[1];
 		break;
 	// TODO: only do that if UAC
 	case IC_SET_TIMEOUT_INFINITE:
-		usbi_dbg("switching timeout to infinite");
+		wdi_dbg("switching timeout to infinite");
 		timeout = INFINITE;
 		break;
 	case IC_SET_TIMEOUT_DEFAULT:
-		usbi_dbg("switching timeout back to finite");
+		wdi_dbg("switching timeout back to finite");
 		timeout = DEFAULT_TIMEOUT;
 		break;
 	default:
-		usbi_err(NULL, "unrecognized installer message");
+		wdi_err(NULL, "unrecognized installer message");
 		return WDI_ERROR_OTHER;
 	}
 	return WDI_SUCCESS;
@@ -645,11 +645,11 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
 		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
-			usbi_dbg("detected another pending installation - aborting");
+			wdi_dbg("detected another pending installation - aborting");
 			return WDI_ERROR_PENDING_INSTALLATION;
 		}
 	} else {
-		usbi_dbg("CMP_WaitNoPendingInstallEvents not available");
+		wdi_dbg("CMP_WaitNoPendingInstallEvents not available");
 	}
 
 	// Detect whether if we should run the 64 bit installer, without
@@ -671,7 +671,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	pipe_handle = CreateNamedPipe(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
-		usbi_err(NULL, "could not create read pipe: %s", windows_error_str(0));
+		wdi_err(NULL, "could not create read pipe: %s", windows_error_str(0));
 		r = WDI_ERROR_RESOURCE; goto out;
 	}
 
@@ -694,8 +694,8 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
 	if (_access(exename, 00) != 0) {
-		usbi_err(NULL, "this application does not contain the required %s bit installer", is_x64?"64":"32");
-		usbi_err(NULL, "please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
+		wdi_err(NULL, "this application does not contain the required %s bit installer", is_x64?"64":"32");
+		wdi_err(NULL, "please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
@@ -722,11 +722,11 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 		}
 
 		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
-			usbi_dbg("operation cancelled by the user");
+			wdi_dbg("operation cancelled by the user");
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 		else if (err) {
-			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
+			wdi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 
@@ -739,7 +739,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 
 		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
 		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
-			usbi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
+			wdi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
@@ -777,30 +777,30 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 							}
 							r = WDI_SUCCESS; goto out;
 						case ERROR_MORE_DATA:
-							usbi_warn(NULL, "program assertion failed: message overflow");
+							wdi_warn(NULL, "program assertion failed: message overflow");
 							r = process_message(buffer, rd_count);
 							break;
 						default:
-							usbi_err(NULL, "could not read from pipe (async): %s", windows_error_str(0));
+							wdi_err(NULL, "could not read from pipe (async): %s", windows_error_str(0));
 							break;
 						}
 					}
 					break;
 				case WAIT_TIMEOUT:
 					// Lost contact
-					usbi_err(NULL, "installer failed to respond - aborting");
+					wdi_err(NULL, "installer failed to respond - aborting");
 					TerminateProcess(handle[1], 0);
 					r = WDI_ERROR_TIMEOUT; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
 					r = WDI_SUCCESS; goto out;
 				default:
-					usbi_err(NULL, "could not read from pipe (wait): %s", windows_error_str(0));
+					wdi_err(NULL, "could not read from pipe (wait): %s", windows_error_str(0));
 					break;
 				}
 				break;
 			default:
-				usbi_err(NULL, "could not read from pipe (sync): %s", windows_error_str(0));
+				wdi_err(NULL, "could not read from pipe (sync): %s", windows_error_str(0));
 				break;
 			}
 		}

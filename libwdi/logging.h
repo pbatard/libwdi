@@ -34,61 +34,52 @@
 #if !defined(_MSC_VER) || _MSC_VER > 1200
 
 #ifdef ENABLE_LOGGING
-#define _usbi_log(ctx, level, ...) usbi_log(ctx, level, __FUNCTION__, __VA_ARGS__)
+#define _wdi_log(level, ...) wdi_log(level, __FUNCTION__, __VA_ARGS__)
 #else
-#define _usbi_log(ctx, level, ...)
+#define _wdi_log(level, ...)
 #endif
 
 #ifdef ENABLE_DEBUG_LOGGING
-#define usbi_dbg(...) _usbi_log(NULL, LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define wdi_dbg(...) _wdi_log(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
-#define usbi_dbg(...)
+#define wdi_dbg(...)
 #endif
 
-#define usbi_info(ctx, ...) _usbi_log(ctx, LOG_LEVEL_INFO, __VA_ARGS__)
-#define usbi_warn(ctx, ...) _usbi_log(ctx, LOG_LEVEL_WARNING, __VA_ARGS__)
-#define usbi_err(ctx, ...) _usbi_log(ctx, LOG_LEVEL_ERROR, __VA_ARGS__)
+#define wdi_info(ctx, ...) _wdi_log(LOG_LEVEL_INFO, __VA_ARGS__)
+#define wdi_warn(ctx, ...) _wdi_log(LOG_LEVEL_WARNING, __VA_ARGS__)
+#define wdi_err(ctx, ...) _wdi_log(LOG_LEVEL_ERROR, __VA_ARGS__)
 
 #else /* !defined(_MSC_VER) || _MSC_VER > 1200 */
 
-void usbi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
+void wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args);
 
 #ifdef ENABLE_LOGGING
-#define LOG_BODY(ctxt, level) \
+#define LOG_BODY(level)       \
 {                             \
 	va_list args;             \
 	va_start (args, format);  \
-	usbi_log_v(ctxt, level, "", format, args); \
+	wdi_log_v(level, "", format, args); \
 	va_end(args);             \
 }
 #else
-#define LOG_BODY(ctxt, level) { }
+#define LOG_BODY(level) { }
 #endif
 
-void inline usbi_info(struct libusb_context *ctx, const char *format, ...)
-	LOG_BODY(ctx,LOG_LEVEL_INFO)
-void inline usbi_warn(struct libusb_context *ctx, const char *format, ...)
-	LOG_BODY(ctx,LOG_LEVEL_WARNING)
-void inline usbi_err( struct libusb_context *ctx, const char *format, ...)
-	LOG_BODY(ctx,LOG_LEVEL_ERROR)
+void inline wdi_info(const char *format, ...)
+	LOG_BODY(LOG_LEVEL_INFO)
+void inline wdi_warn(const char *format, ...)
+	LOG_BODY(LOG_LEVEL_WARNING)
+void inline wdi_err( const char *format, ...)
+	LOG_BODY(LOG_LEVEL_ERROR)
 
-void inline usbi_dbg(const char *format, ...)
+void inline wdi_dbg(const char *format, ...)
 #ifdef ENABLE_DEBUG_LOGGING
-	LOG_BODY(NULL,LOG_LEVEL_DEBUG)
+	LOG_BODY(LOG_LEVEL_DEBUG)
 #else
 { }
 #endif
 
 #endif /* !defined(_MSC_VER) || _MSC_VER > 1200 */
 
-struct libusb_context {
-	int debug;
-	int debug_fixed;
-};
-
-// TODO: ensure we get an error as a reminder
-//#define USBI_GET_CONTEXT(ctx) if (!(ctx)) (ctx) = usbi_default_context
-
-extern void usbi_log(struct libusb_context *ctx, enum usbi_log_level level,
-					 const char *function, const char *format, ...);
+extern void wdi_log(enum wdi_log_level level, const char *function, const char *format, ...);

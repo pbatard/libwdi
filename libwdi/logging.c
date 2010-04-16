@@ -28,7 +28,6 @@
 #include "libwdi.h"
 #include "logging.h"
 
-struct libusb_context *usbi_default_context = NULL;
 HANDLE logger_rd_handle = INVALID_HANDLE_VALUE;
 HANDLE logger_wr_handle = INVALID_HANDLE_VALUE;
 // Handle and Message for the destination Window when registered
@@ -40,7 +39,7 @@ unsigned log_messages_pending = 0;
 extern char *windows_error_str(uint32_t retval);
 int create_logger(void);
 
-void wdi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
+void pipe_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
 	char buffer[LOGBUF_SIZE];
@@ -90,7 +89,7 @@ void wdi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
 	SendMessage(logger_dest, logger_msg, level, 0);
 }
 
-void usbi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
+void console_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
 	FILE *stream;
@@ -100,7 +99,7 @@ void usbi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
 
 // TODO: init default context
 #ifndef ENABLE_DEBUG_LOGGING
-	USBI_GET_CONTEXT(ctx);
+	wdi_GET_CONTEXT(ctx);
 	if (!ctx->debug)
 		return;
 	if (level == LOG_LEVEL_WARNING && ctx->debug < 2)
@@ -139,16 +138,16 @@ void usbi_log_v(struct libusb_context *ctx, enum usbi_log_level level,
 
 }
 
-void usbi_log(struct libusb_context *ctx, enum usbi_log_level level,
+void wdi_log(enum wdi_log_level level,
 	const char *function, const char *format, ...)
 {
 	va_list args;
 
 	va_start (args, format);
 	if (logger_dest != NULL) {
-		wdi_log_v(ctx, level, function, format, args);
+		pipe_wdi_log_v(level, function, format, args);
 	} else {
-		usbi_log_v(ctx, level, function, format, args);
+		console_wdi_log_v(level, function, format, args);
 	}
 	va_end (args);
 }
