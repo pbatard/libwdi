@@ -186,7 +186,7 @@ static char err_string[STR_BUFFER_SIZE];
  * \param errcode the error code whose description is desired
  * \returns a short description of the error code in English
  */
-const char* wdi_strerror(enum wdi_error errcode)
+const char* LIBWDI_API wdi_strerror(enum wdi_error errcode)
 {
 	switch (errcode)
 	{
@@ -274,7 +274,7 @@ static int init_dlls(void)
 }
 
 // List USB devices
-struct wdi_device_info* wdi_create_list(bool driverless_only)
+struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 {
 	unsigned i, j, tmp;
 	unsigned unknown_count = 1;
@@ -457,7 +457,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 	return start;
 }
 
-void wdi_destroy_list(struct wdi_device_info* list)
+void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 {
 	struct wdi_device_info *tmp;
 	while(list != NULL) {
@@ -503,7 +503,7 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type)
+int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -627,7 +627,7 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int wdi_install_driver(char* path, struct wdi_device_info* device_info)
+int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_info)
 {
 	SHELLEXECUTEINFO shExecInfo;
     STARTUPINFO si;

@@ -31,6 +31,13 @@
 #endif
 
 /*
+ * Set the default calling convention to WINAPI (__stdcall)
+ */
+#if !defined(LIBWDI_API)
+#define LIBWDI_API WINAPI
+#endif
+
+/*
  * Device information structure, use by libwdi functions
  */
 struct wdi_device_info {
@@ -148,10 +155,10 @@ enum wdi_error {
  * returns a driver_info list of USB devices
  * parameter: driverless_only - boolean
  */
-const char* wdi_strerror(enum wdi_error errcode);
-struct wdi_device_info* wdi_create_list(bool driverless_only);
-void wdi_destroy_list(struct wdi_device_info* list);
-int wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type);
-int wdi_install_driver(char *path, struct wdi_device_info* device_info);
-DWORD wdi_read_logger(char* buffer, DWORD length);
-int wdi_register_logger(HWND hWnd, UINT message);
+const char* LIBWDI_API wdi_strerror(enum wdi_error errcode);
+struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only);
+void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
+int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type);
+int LIBWDI_API wdi_install_driver(char *path, struct wdi_device_info* device_info);
+DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
+int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);

@@ -190,7 +190,7 @@ int create_logger(void)
  * This Window will be notified with a message event and should call
  * wdi_read_logger() to retreive the message data
  */
-int wdi_register_logger(HWND hWnd, UINT message)
+int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message)
 {
 	int r;
 
@@ -210,7 +210,7 @@ int wdi_register_logger(HWND hWnd, UINT message)
 /*
  * Read a log message
  */
-DWORD wdi_read_logger(char* buffer, DWORD length)
+DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length)
 {
 	DWORD read_size;
 	int size;
