@@ -32,6 +32,7 @@
 #include <ddk/newdev.h>
 #endif
 #include "installer.h"
+#include "libwdi.h"
 
 #define INF_NAME "libusb-device.inf"
 #define REQUEST_TIMEOUT 5000
@@ -104,6 +105,17 @@ void send_status(char status)
 {
 	DWORD junk;
 	WriteFile(pipe_handle, &status, 1, &junk, NULL);
+}
+
+// Post a WDI status code
+void pstat(int status)
+{
+	char data[2];
+	DWORD junk;
+
+	data[0] = IC_SET_STATUS;
+	data[1] = (char)status;
+	WriteFile(pipe_handle, data, 2, &junk, NULL);
 }
 
 // Query the parent app for data
@@ -275,77 +287,7 @@ void check_removed(char* device_hardware_id)
 	}
 }
 
-// TODO: allow commandline options
-// TODO: return status on error
-// TODO: remove existing infs for similar devices?
-// TODO: use DifXAPI for
-int
-#ifdef _MSC_VER
-__cdecl
-#endif
-main(int argc, char** argv)
-{
-	DWORD r;
-	BOOL b;
-	char* hardware_id;
-	char* device_id;
-	char path[MAX_PATH_LENGTH];
-	char log[MAX_PATH_LENGTH];
-	char destname[MAX_PATH_LENGTH];
-	FILE *fd;
-
-	// Connect to the messaging pipe
-	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
-	if (pipe_handle == INVALID_HANDLE_VALUE) {
-		printf("could not open pipe for writing: errcode %d\n", (int)GetLastError());
-		return -1;
-	}
-
-	if (init_dlls()) {
-		plog("could not init DLLs");
-		return -1;
-	}
-
-	safe_strcpy(log, MAX_PATH_LENGTH, argv[0]);
-	// TODO - seek for terminal '.exe' and change extension if needed
-	safe_strcat(log, MAX_PATH_LENGTH, ".log");
-
-	fd = fopen(log, "w");
-	if (fd == NULL) {
-		plog("could not open logfile");
-		goto out;
-	}
-
-	if (argc >= 2) {
-		plog("got parameter %s", argv[1]);
-		printf("got param %s", argv[1]);
-	}
-
-	r = GetFullPathNameA(".", MAX_PATH_LENGTH, path, NULL);
-	if ((r == 0) || (r > MAX_PATH_LENGTH)) {
-		plog("could not retrieve absolute path of working directory");
-		goto out;
-	}
-	safe_strcat(path, MAX_PATH_LENGTH, "\\");
-	safe_strcat(path, MAX_PATH_LENGTH, INF_NAME);
-
-	device_id = req_id(IC_GET_DEVICE_ID);
-	hardware_id = req_id(IC_GET_HARDWARE_ID);
-
-	// Find if the device is plugged in
-	send_status(IC_SET_TIMEOUT_INFINITE);
-	plog("Installing driver - please wait...");
-	r = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
-	send_status(IC_SET_TIMEOUT_DEFAULT);
-	if (r == true) {
-		// Success
-		plog("driver update completed");
-		// TODO: remove this?
-		update_driver(device_id);
-		goto out;
-	}
-
+static __inline int process_error(DWORD r, char* path) {
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
@@ -359,101 +301,145 @@ main(int argc, char** argv)
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xE000022F ERROR_NO_CATALOG_FOR_OEM_INF => "reject unsigned driver" policy is enforced
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
-	switch(r = GetLastError()) {
+	switch(r) {
 	case ERROR_NO_MORE_ITEMS:
-		plog("more recent driver was found (INSTALLFLAG_FORCE option required)");
-		goto out;
+		plog("more recent driver was found (force option required)");
+		return WDI_ERROR_EXISTS;
 	case ERROR_NO_SUCH_DEVINST:
+		// TODO: break down the plog
 		plog("device not detected (copying driver files for next time device is plugged in)");
-		break;
+		return WDI_SUCCESS;
 	case ERROR_INVALID_PARAMETER:
 		plog("invalid path");
-		goto out;
+		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
 		plog("failed to open %s", path);
-		goto out;
+		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");
-		goto out;
+		return WDI_ERROR_ACCESS;
 	case ERROR_IN_WOW64:
 		plog("attempted to use a 32 bit installer on a 64 bit machine");
-		goto out;
+		return WDI_ERROR_WOW64;
 	case ERROR_INVALID_DATA:
 	case ERROR_WRONG_INF_STYLE:
 	case ERROR_GENERAL_SYNTAX:
 		plog("the syntax of the inf is invalid");
-		goto out;
+		return WDI_ERROR_INF_SYNTAX;
 	case ERROR_INVALID_CATALOG_DATA:
 		plog("unable to locate cat file");
-		goto out;
+		return WDI_ERROR_CAT_MISSING;
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
 		plog("operation cancelled by the user");
-		goto out;
+		return WDI_ERROR_USER_CANCEL;
 	case ERROR_ALREADY_EXISTS:
 		plog("driver already exists");
-		goto out;
+		return WDI_ERROR_EXISTS;
 	case ERROR_NO_CATALOG_FOR_OEM_INF:
-		plog("your system policy has been modified from Windows defaults, and is set to reject unsigned drivers");
-		plog("you must revert the driver installation policy to default if you want to install this driver");
+		plog("your system policy has been modified from Windows defaults, and");
+		plog("is set to reject unsigned drivers. You must revert the driver");
+		plog("installation policy to default if you want to install this driver.");
 		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
-		goto out;
+		return WDI_ERROR_UNSIGNED;
 	default:
 		plog("unhandled error %X", r);
+		return WDI_ERROR_OTHER;
+	}
+}
+
+// TODO: allow commandline options
+// TODO: remove existing infs for similar devices?
+int
+#ifdef _MSC_VER
+__cdecl
+#endif
+main(int argc, char** argv)
+{
+	DWORD r;
+	int ret;
+	BOOL b;
+	char* hardware_id;
+	char* device_id;
+	char path[MAX_PATH_LENGTH];
+	char log[MAX_PATH_LENGTH];
+	char destname[MAX_PATH_LENGTH];
+	FILE *fd;
+
+	// Connect to the messaging pipe
+	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
+	if (pipe_handle == INVALID_HANDLE_VALUE) {
+		printf("could not open pipe for writing: errcode %d\n", (int)GetLastError());
+		return WDI_ERROR_RESOURCE;
+	}
+
+	if (init_dlls()) {
+		plog("could not init DLLs");
+		ret = WDI_ERROR_RESOURCE;
+		goto out;
+	}
+
+	safe_strcpy(log, MAX_PATH_LENGTH, argv[0]);
+	// TODO - seek for terminal '.exe' and change extension if needed
+	safe_strcat(log, MAX_PATH_LENGTH, ".log");
+
+	fd = fopen(log, "w");
+	if (fd == NULL) {
+		plog("could not open logfile");
+		ret = WDI_ERROR_ACCESS;
+		goto out;
+	}
+
+	if (argc >= 2) {
+		plog("got parameter %s", argv[1]);
+		printf("got param %s", argv[1]);
+	}
+
+	r = GetFullPathNameA(".", MAX_PATH_LENGTH, path, NULL);
+	if ((r == 0) || (r > MAX_PATH_LENGTH)) {
+		plog("could not retrieve absolute path of working directory");
+		ret = WDI_ERROR_ACCESS;
+		goto out;
+	}
+	safe_strcat(path, MAX_PATH_LENGTH, "\\");
+	safe_strcat(path, MAX_PATH_LENGTH, INF_NAME);
+
+	device_id = req_id(IC_GET_DEVICE_ID);
+	hardware_id = req_id(IC_GET_HARDWARE_ID);
+
+	// Find if the device is plugged in
+	send_status(IC_SET_TIMEOUT_INFINITE);
+	plog("Installing driver - please wait...");
+	b = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
+	send_status(IC_SET_TIMEOUT_DEFAULT);
+	if (b == true) {
+		// Success
+		plog("driver update completed");
+		// TODO: remove this?
+		update_driver(device_id);
+		ret = WDI_SUCCESS;
+		goto out;
+	}
+
+	ret = process_error(GetLastError(), path);
+	if (ret != WDI_SUCCESS) {
 		goto out;
 	}
 
 	// TODO: try URL for OEMSourceMediaLocation
-	plog("Copying inf file - please wait...");
+	plog("Copying inf file (for next time device is plugged in) - please wait...");
 	send_status(IC_SET_TIMEOUT_INFINITE);
 	b = SetupCopyOEMInfA(path, NULL, SPOST_PATH, 0, destname, MAX_PATH_LENGTH, NULL, NULL);
 	send_status(IC_SET_TIMEOUT_DEFAULT);
 	if (b) {
 		plog("copied inf to %s", destname);
+		ret = WDI_SUCCESS;
 		goto out;
 	}
 
-	switch(r = GetLastError()) {
-	case ERROR_NO_MORE_ITEMS:
-		plog("more recent driver was found");
-		goto out;
-	case ERROR_NO_SUCH_DEVINST:
-		plog("device not detected");
-		break;
-	case ERROR_INVALID_PARAMETER:
-		plog("invalid path");
-		goto out;
-	case ERROR_FILE_NOT_FOUND:
-		plog("failed to open %s", path);
-		goto out;
-	case ERROR_ACCESS_DENIED:
-		plog("this process needs to be run with administrative privileges");
-		goto out;
-	case ERROR_IN_WOW64:
-		plog("attempted to use a 32 bit installer on a 64 bit machine");
-		goto out;
-	case ERROR_INVALID_DATA:
-	case ERROR_WRONG_INF_STYLE:
-	case ERROR_GENERAL_SYNTAX:
-		plog("the syntax of the inf is invalid");
-		goto out;
-	case ERROR_INVALID_CATALOG_DATA:
-		plog("unable to locate cat file");
-		goto out;
-	case ERROR_NO_AUTHENTICODE_CATALOG:
-	case ERROR_DRIVER_STORE_ADD_FAILED:
-		plog("operation cancelled by the user");
-		goto out;
-	case ERROR_ALREADY_EXISTS:
-		plog("driver already exists");
-		goto out;
-	case ERROR_NO_CATALOG_FOR_OEM_INF:
-		plog("your system policy has been modified from Windows defaults, and is set to reject unsigned drivers");
-		plog("you must revert the driver installation policy to default if you want to install this driver");
-		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
-		goto out;
-	default:
-		plog("unhandled error %X", r);
+	ret = process_error(GetLastError(), path);
+	if (ret != WDI_SUCCESS) {
 		goto out;
 	}
 
@@ -462,6 +448,9 @@ main(int argc, char** argv)
 	check_removed(hardware_id);
 
 out:
+	// Report any error status code and wait for target app to read it
+	pstat(ret);
+	Sleep(500);
 	CloseHandle(pipe_handle);
-	return 0;
+	return ret;
 }

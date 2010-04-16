@@ -1,6 +1,7 @@
 /*
  * Library for USB automated driver installation
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -109,6 +110,8 @@ void detect_version(void)
 			windows_version = WINDOWS_2K;
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
 			windows_version = WINDOWS_XP;
+		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
+			windows_version = WINDOWS_2003;	// also applies to XP64
 		} else if (os_version.dwMajorVersion >= 6) {
 			if (os_version.dwBuildNumber < 7000) {
 				windows_version = WINDOWS_VISTA;
@@ -215,8 +218,19 @@ const char* wdi_strerror(enum wdi_error errcode)
 		return "Operation not supported or unimplemented on this platform";
 	case WDI_ERROR_EXISTS:
 		return "Resource already exists";
-	case WDI_USER_CANCEL:
+	case WDI_ERROR_USER_CANCEL:
 		return "Cancelled by user";
+	// The errors below are generated during driver installation
+	case WDI_ERROR_NEEDS_ADMIN:
+		return "Unable to run installer process with administrative privileges";
+	case WDI_ERROR_WOW64:
+		return "Attempted to use a 32 bit installer on a 64 bit machine";
+	case WDI_ERROR_INF_SYNTAX:
+		return "The syntax of the inf is invalid";
+	case WDI_ERROR_CAT_MISSING:
+		return "Unable to locate cat file";
+	case WDI_ERROR_UNSIGNED:
+		return "System policy has been modified from Windows defaults to reject unsigned drivers";
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
@@ -263,6 +277,7 @@ static int init_dlls(void)
 struct wdi_device_info* wdi_create_list(bool driverless_only)
 {
 	unsigned i, j, tmp;
+	unsigned unknown_count = 1;
 	DWORD size, reg_type;
 	ULONG devprop_type;
 	CONFIGRET r;
@@ -364,7 +379,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
 				usbi_warn(NULL, "could not read device description for %d: %s",
 					i, windows_error_str(0));
-				desc[0] = 0;
+				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 			}
 		} else {
 			// On Windows 7, the information we want ("Bus reported device description") is
@@ -379,7 +394,7 @@ struct wdi_device_info* wdi_create_list(bool driverless_only)
 					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
 					usbi_warn(NULL, "could not read device description for %d: %s",
 						i, windows_error_str(0));
-					desc[0] = 0;
+					safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 				}
 			}
 		}
@@ -588,6 +603,13 @@ int process_message(char* buffer, DWORD size)
 		}
 		usbi_dbg("[installer process] %s", buffer+1);
 		break;
+	case IC_SET_STATUS:
+		if (size < 2) {
+			usbi_err(NULL, "set status: no data");
+			return WDI_ERROR_NOT_FOUND;
+		}
+		return (int)buffer[1];
+		break;
 	// TODO: only do that if UAC
 	case IC_SET_TIMEOUT_INFINITE:
 		usbi_dbg("switching timeout to infinite");
@@ -701,10 +723,11 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 
 		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
 			usbi_dbg("operation cancelled by the user");
-			r = WDI_USER_CANCEL; goto out;
+			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 		else if (err) {
 			usbi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
+			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 
 		handle[1] = shExecInfo.hProcess;
@@ -717,14 +740,16 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
 		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
 			usbi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
+			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
 	}
 
-	while (1) {
+	r = WDI_SUCCESS;
+	while (r == WDI_SUCCESS) {
 		if (ReadFile(pipe_handle, buffer, STR_BUFFER_SIZE, &rd_count, &overlapped)) {
 			// Message was read synchronously
-			process_message(buffer, rd_count);
+			r = process_message(buffer, rd_count);
 		} else {
 			switch(GetLastError()) {
 			case ERROR_BROKEN_PIPE:
@@ -742,7 +767,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 				case WAIT_OBJECT_0: // Pipe event
 					if (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) {
 						// Message was read asynchronously
-						process_message(buffer, rd_count);
+						r = process_message(buffer, rd_count);
 					} else {
 						switch(GetLastError()) {
 						case ERROR_BROKEN_PIPE:
@@ -753,7 +778,7 @@ int wdi_install_driver(char* path, struct wdi_device_info* device_info)
 							r = WDI_SUCCESS; goto out;
 						case ERROR_MORE_DATA:
 							usbi_warn(NULL, "program assertion failed: message overflow");
-							process_message(buffer, rd_count);
+							r = process_message(buffer, rd_count);
 							break;
 						default:
 							usbi_err(NULL, "could not read from pipe (async): %s", windows_error_str(0));

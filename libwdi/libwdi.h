@@ -1,6 +1,7 @@
 /*
  * Library for WinUSB/libusb automated driver installation
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,7 +63,7 @@ enum wdi_driver_type {
 /*
  * Log level
  */
-enum usbi_log_level {
+enum wdi_log_level {
 	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_WARNING,
@@ -119,7 +120,22 @@ enum wdi_error {
 	WDI_ERROR_EXISTS = -13,
 
 	/** Cancelled by user */
-	WDI_USER_CANCEL = -14,
+	WDI_ERROR_USER_CANCEL = -14,
+
+	/** Couldn't run installer with required privileges */
+	WDI_ERROR_NEEDS_ADMIN = -15,
+
+	/** Attempted to run the 32 bit installer on 64 bit */
+	WDI_ERROR_WOW64 = -16,
+
+	/* Bad inf syntax */
+	WDI_ERROR_INF_SYNTAX = -17,
+
+	/* Missing cat file */
+	WDI_ERROR_CAT_MISSING = -18,
+
+	/** System policy prevents the installation of unsigned drivers */
+	WDI_ERROR_UNSIGNED = -19,
 
 	/** Other error */
 	WDI_ERROR_OTHER = -99

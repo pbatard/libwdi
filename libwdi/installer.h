@@ -46,6 +46,7 @@
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
+#define safe_swprintf _snwprintf
 #define safe_strdup _strdup
 
 #if defined(_MSC_VER)
@@ -63,6 +64,7 @@ enum installer_code {
 	IC_GET_HARDWARE_ID,
 	IC_SET_TIMEOUT_INFINITE,
 	IC_SET_TIMEOUT_DEFAULT,
+	IC_SET_STATUS,
 };
 
 /*
@@ -73,6 +75,7 @@ enum windows_version {
 	WINDOWS_UNSUPPORTED,
 	WINDOWS_2K,
 	WINDOWS_XP,
+	WINDOWS_2003,	// also includes XP64
 	WINDOWS_VISTA,
 	WINDOWS_7
 };
