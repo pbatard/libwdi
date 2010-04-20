@@ -229,6 +229,7 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 	switch(uMsg)
 	{
 	case BFFM_INITIALIZED:
+		// Invalid path will just be ignored
 		SendMessageA(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)path);
 		break;
 	case BFFM_SELCHANGED:
@@ -241,9 +242,158 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 	return 0;
 }
 
+/*
+ * Browse for a folder and update the folder edit box
+ * Will use the newer IFileOpenDialog if compiled for Vista and later
+ */
+void browse_for_folder(void) {
 
-// TODO: use DlgDirListComboBox for directory control
-// TODO: create subs for this
+	BROWSEINFO bi;
+	LPITEMIDLIST pidl;
+#if (_WIN32_WINNT >= 0x0600)	// Vista and later
+	size_t i;
+	HRESULT hr;
+	IShellItem *psi = NULL;
+	IShellItem *si_path = NULL;
+	IFileOpenDialog *pfod = NULL;
+	WCHAR *wpath, *fname;
+	char* tmp_path = NULL;
+#endif
+
+	// Retrieve the path to use as the starting folder
+	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
+
+#if (_WIN32_WINNT >= 0x0600)
+	hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
+		&IID_IFileOpenDialog, (LPVOID) &pfod);
+	if (FAILED(hr)) {
+		dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
+		pfod = NULL;	// Just in case
+		goto fallback;
+	}
+	hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
+	if (FAILED(hr)) {
+		dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+		goto fallback;
+	}
+	// Set the initial folder (if the path is invalid, will simply use last)
+	wpath = utf8_to_wchar(path);
+	// The new IFileOpenDialog makes us split the path
+	fname = NULL;
+	if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
+		for (i=wcslen(wpath)-1; i!=0; i--) {
+			if (wpath[i] == L'\\') {
+				wpath[i] = 0;
+				fname = &wpath[i+1];
+				break;
+			}
+		}
+	}
+
+	hr = SHCreateItemFromParsingName(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+	if (SUCCEEDED(hr)) {
+		if (wpath != NULL) {
+			hr = pfod->lpVtbl->SetFolder(pfod, si_path);
+		}
+		if (fname != NULL) {
+			hr = pfod->lpVtbl->SetFileName(pfod, fname);
+		}
+	}
+	safe_free(wpath);
+
+	hr = pfod->lpVtbl->Show(pfod, hMain);
+	if (SUCCEEDED(hr)) {
+		hr = pfod->lpVtbl->GetResult(pfod, &psi);
+		if (SUCCEEDED(hr)) {
+			psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
+			tmp_path = wchar_to_utf8(wpath);
+			if (tmp_path == NULL) {
+				dprintf("Could not convert path");
+			} else {
+				SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
+				safe_free(tmp_path);
+			}
+		} else {
+			dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+		}
+	} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
+		// If it's not a user cancel, assume the dialog didn't show and fallback
+		dprintf("could not show FileOpenDialog: error %X", hr);
+		goto fallback;
+	}
+	pfod->lpVtbl->Release(pfod);
+	return;
+fallback:
+	if (pfod != NULL) {
+		pfod->lpVtbl->Release(pfod);
+	}
+#endif
+	memset(&bi, 0, sizeof(BROWSEINFO));
+	bi.hwndOwner = hMain;
+	bi.lpszTitle = "Please select directory";
+	bi.pidlRoot = NULL;
+	bi.lpfn = BrowseCallbackProc;
+	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
+		BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
+	pidl = SHBrowseForFolder(&bi);
+	if (pidl != NULL) {
+		// get the name of the folder
+		if (SHGetPathFromIDListA(pidl, path)) {
+			SetDlgItemTextA(hMain, IDC_FOLDER, path);
+		}
+		CoTaskMemFree(pidl);
+	}
+}
+
+/*
+ * Perform the driver installation
+ * dev: currently selected device (will be ignored if create new is selected)
+ */
+void install_driver(struct wdi_device_info *dev)
+{
+	struct wdi_device_info* device = dev;
+	static char str_buf[STR_BUFFER_SIZE];
+	int tmp;
+
+	if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
+		device = calloc(1, sizeof(struct wdi_device_info));
+		if (device != NULL) {
+			GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
+			device->desc = safe_strdup(str_buf);
+			GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
+			// TODO: use custom scanf for hex
+			if (sscanf(str_buf, "%4x", &tmp) != 1) {
+				dprintf("could not convert VID string - aborting");
+				return;
+			}
+			device->vid = (unsigned short)tmp;
+			GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
+			if (sscanf(str_buf, "%4x", &tmp) != 1) {
+				dprintf("could not convert PID string - aborting");
+				return;
+			}
+			device->pid = (unsigned short)tmp;
+			GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
+			if ( (strlen(str_buf) != 0)
+			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
+				device->mi = (short)tmp;
+			} else {
+				device->mi = -1;
+			}
+		}
+	}
+	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
+	if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
+		dprintf("Extracted driver files to %s", str_buf);
+		if (wdi_install_driver(path, device) == 0) {
+			dprintf("SUCCESS");
+		} else {
+			dprintf("DRIVER INSTALLATION FAILED");
+		}
+	} else {
+		dprintf("Could not create/extract files in %s", str_buf);
+	}
+}
 
 /*
  * Main dialog callback
@@ -252,23 +402,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 {
 	static struct wdi_device_info *device, *list = NULL;
 	static bool list_driverless_only = true;
-	static char str_buf[STR_BUFFER_SIZE];
 	static char* editable_desc = NULL;
 	static HANDLE delay_thread = NULL;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
-	WCHAR* wpath;
-	char* tmp_path = NULL;
-	int nb_devices, tmp, junk;
+	int nb_devices, junk;
 	DWORD delay;
-	BROWSEINFO bi;
-	LPITEMIDLIST pidl;
-	HRESULT hr;
-//#define VISTA_AND_LATER
-#ifdef VISTA_AND_LATER
-	IShellItem *psi = NULL;
-	IFileOpenDialog *pfod;
-#endif
 
 	switch (message) {
 
@@ -326,7 +465,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		break;
 
 	case WM_INITDIALOG:
-
 		// Quite a burden to carry around as parameters
 		hMain = hDlg;
 		hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
@@ -361,7 +499,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetDlgItemText(hMain, IDC_MI, "");
 			SetDlgItemText(hMain, IDC_DRIVER, "");
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-			dprintf("No devices found.");
+			dprintf("No device found.");
 		}
 		break;
 
@@ -418,7 +556,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DRIVERLESSONLY, CBN_SELCHANGE), 0);
 			}
 			break;
-		case IDC_DEVICELIST:		// dropdown/field for device desc
+		case IDC_DEVICELIST:		// dropdown/field: device description
 			switch (HIWORD(wParam)) {
 			case CBN_SELCHANGE:
 				device = get_selected_device();
@@ -456,86 +594,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				break;
 			}
 			break;
-		case IDC_INSTALL: // button: Install
-			if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
-				device = calloc(1, sizeof(struct wdi_device_info));
-				if (device != NULL) {
-					GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
-					device->desc = safe_strdup(str_buf);
-					GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
-					// TODO: use custom scanf for hex
-					if (sscanf(str_buf, "%4x", &tmp) != 1) {
-						dprintf("could not convert VID string - aborting");
-						break;
-					}
-					device->vid = (unsigned short)tmp;
-					GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
-					if (sscanf(str_buf, "%4x", &tmp) != 1) {
-						dprintf("could not convert PID string - aborting");
-						break;
-					}
-					device->pid = (unsigned short)tmp;
-					GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
-					if ( (strlen(str_buf) != 0)
-					  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-						device->mi = (short)tmp;
-					} else {
-						device->mi = -1;
-					}
-				}
-			}
-			GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-			if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
-				dprintf("Extracted driver files to %s", str_buf);
-				if (wdi_install_driver(path, device) == 0) {
-					dprintf("SUCCESS");
-				} else {
-					dprintf("DRIVER INSTALLATION FAILED");
-				}
-			} else {
-				dprintf("Could not create/extract files in %s", str_buf);
-			}
+		case IDC_INSTALL:	// button: Install
+			install_driver(device);
 			break;
-		case IDC_BROWSE:
-#ifndef VISTA_AND_LATER
-			memset(&bi, 0, sizeof(BROWSEINFO));
-			bi.hwndOwner = hMain;
-			bi.lpszTitle = "Please select directory";
-			bi.pidlRoot = NULL;
-			bi.lpfn = BrowseCallbackProc;
-			// Retrieve the path for the callback
-			GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-			bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
-				BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
-			pidl = SHBrowseForFolder(&bi);
-			if (pidl != NULL) {
-				// get the name of the folder
-				if (SHGetPathFromIDListA(pidl, path)) {
-					SetDlgItemTextA(hMain, IDC_FOLDER, path);
-				}
-				CoTaskMemFree(pidl);
-			}
-#else
-//TODO: check version
-//TODO: init directory selection
-			// Vista and later only
-			hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
-				&IID_IFileOpenDialog, (LPVOID) &pfod);
-			// TODO: cleanup this mess!!
-			if (SUCCEEDED(hr)) {
-				if (SUCCEEDED(pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS))) {
-					if (SUCCEEDED(pfod->lpVtbl->Show(pfod, hMain))) {
-						if (SUCCEEDED(pfod->lpVtbl->GetResult(pfod, &psi))) {
-							psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
-							tmp_path = wchar_to_utf8(wpath);
-							SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
-							safe_free(tmp_path);
-						}
-					}
-				}
-				pfod->lpVtbl->Release(pfod);
-			}
-#endif
+		case IDC_BROWSE:	// button: Browse
+			browse_for_folder();
 			break;
 		case IDOK:
 		case IDCANCEL:
