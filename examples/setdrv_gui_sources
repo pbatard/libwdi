@@ -17,6 +17,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\setupapi.lib \
            $(SDK_LIB_PATH)\ole32.lib \
            $(SDK_LIB_PATH)\shell32.lib \
+           $(SDK_LIB_PATH)\uuid.lib \
            ..\libwdi\libwdi.lib
 
 # http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/

@@ -51,6 +51,7 @@ BEGIN
     LTEXT           "Description:",IDC_STATIC,19,21,39,8
     LTEXT           "MI:",IDC_STATIC,352,21,12,8
     EDITTEXT        IDC_MI,348,31,16,14,ES_UPPERCASE | WS_DISABLED
+    PUSHBUTTON      "Browse",IDC_BROWSE,315,68,50,14
 END
 
 
@@ -147,6 +148,15 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "icon1.ico"
 #endif    // English (Ireland) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -161,3 +171,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

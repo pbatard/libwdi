@@ -28,8 +28,13 @@
 #include <windowsx.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <io.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <process.h>
+#include <shlobj.h>
+//#include <shobjidl.h>
 
 #include "../libwdi/libwdi.h"
 
@@ -49,6 +54,7 @@ static HINSTANCE main_instance;
 static HWND hDeviceList;
 static HWND hDriver;
 static HWND hMain;
+char   path[MAX_PATH];
 
 /*
  * On screen logging
@@ -75,6 +81,69 @@ void w_printf(int dialog, const char *format, ...)
 	va_start (args, format);
 	w_printf_v(hWnd, format, args);
 	va_end (args);
+}
+
+/*
+ * Converts a WCHAR string to UTF8 (allocate returned string)
+ * Returns NULL on error
+ */
+char* wchar_to_utf8(WCHAR* wstr)
+{
+	int size;
+	char* str;
+
+	// Find out the size we need to allocate for our converted string
+	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+	if (size <= 1)	// An empty string would be size 1
+		return NULL;
+
+	if ((str = malloc(size)) == NULL)
+		return NULL;
+
+	if (WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, size, NULL, NULL) != size) {
+		free(str);
+		return NULL;
+	}
+
+	return str;
+}
+
+/*
+ * Converts an UTF8 string to WCHAR (allocate returned string)
+ * Returns NULL on error
+ */
+WCHAR* utf8_to_wchar(char* str)
+{
+	int size;
+	WCHAR* wstr;
+
+	// Find out the size we need to allocate for our converted string
+	size = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+	if (size <= 1)	// An empty string would be size 1
+		return NULL;
+
+	if ((wstr = (WCHAR*) malloc(2*size)) == NULL)
+		return NULL;
+
+	if (MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, size) != size) {
+		free(wstr);
+		return NULL;
+	}
+	return wstr;
+}
+
+/*
+ * returns true if the path is a directory with write access
+ */
+static __inline bool check_dir(char* cpath)
+{
+	struct _stat st;
+	if ( (_access(cpath, 02) == 0)
+	  && (_stat(cpath, &st) == 0)
+	  && (st.st_mode & _S_IFDIR) ) {
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -150,8 +219,31 @@ void __cdecl notification_delay_thread(void* param)
 	PostMessage(hMain, UM_DEVICE_EVENT, 0, 0);
 }
 
+/*
+ * We need a callback to set the initial directory
+ */
+INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
+{
+	char szDir[MAX_PATH];
+
+	switch(uMsg)
+	{
+	case BFFM_INITIALIZED:
+		SendMessageA(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)path);
+		break;
+	case BFFM_SELCHANGED:
+	  // Update the status
+	  if (SHGetPathFromIDListA((LPITEMIDLIST) lp ,szDir)) {
+		 SendMessageA(hwnd,BFFM_SETSTATUSTEXT,0,(LPARAM)szDir);
+	  }
+	  break;
+	}
+	return 0;
+}
+
 
 // TODO: use DlgDirListComboBox for directory control
+// TODO: create subs for this
 
 /*
  * Main dialog callback
@@ -165,8 +257,18 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HANDLE delay_thread = NULL;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
+	WCHAR* wpath;
+	char* tmp_path = NULL;
 	int nb_devices, tmp, junk;
 	DWORD delay;
+	BROWSEINFO bi;
+	LPITEMIDLIST pidl;
+	HRESULT hr;
+//#define VISTA_AND_LATER
+#ifdef VISTA_AND_LATER
+	IShellItem *psi = NULL;
+	IFileOpenDialog *pfod;
+#endif
 
 	switch (message) {
 
@@ -230,12 +332,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
 		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
 
+		// Initialize COM for folder selection
+		CoInitialize(NULL);
+
 		SetDlgItemText(hMain, IDC_FOLDER, "C:\\test");
 		CheckDlgButton(hMain, IDC_DRIVERLESSONLY, list_driverless_only?BST_CHECKED:BST_UNCHECKED);
 		// Try without... and lament for the lack of consistancy of MS controls.
 		combo_breaker(CBS_DROPDOWNLIST);
 
 		wdi_register_logger(hMain, UM_LOGGER_EVENT);
+		wdi_set_log_level(LOG_LEVEL_DEBUG);
 
 		// Fall through
 	case UM_REFRESH_LIST:
@@ -378,10 +484,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 				}
 			}
-			GetDlgItemText(hMain, IDC_FOLDER, str_buf, STR_BUFFER_SIZE);
-			if (wdi_create_inf(device, str_buf, WDI_WINUSB) == 0) {
+			GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
+			if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
 				dprintf("Extracted driver files to %s", str_buf);
-				if (wdi_install_driver(str_buf, device) == 0) {
+				if (wdi_install_driver(path, device) == 0) {
 					dprintf("SUCCESS");
 				} else {
 					dprintf("DRIVER INSTALLATION FAILED");
@@ -389,6 +495,47 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			} else {
 				dprintf("Could not create/extract files in %s", str_buf);
 			}
+			break;
+		case IDC_BROWSE:
+#ifndef VISTA_AND_LATER
+			memset(&bi, 0, sizeof(BROWSEINFO));
+			bi.hwndOwner = hMain;
+			bi.lpszTitle = "Please select directory";
+			bi.pidlRoot = NULL;
+			bi.lpfn = BrowseCallbackProc;
+			// Retrieve the path for the callback
+			GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
+			bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
+				BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
+			pidl = SHBrowseForFolder(&bi);
+			if (pidl != NULL) {
+				// get the name of the folder
+				if (SHGetPathFromIDListA(pidl, path)) {
+					SetDlgItemTextA(hMain, IDC_FOLDER, path);
+				}
+				CoTaskMemFree(pidl);
+			}
+#else
+//TODO: check version
+//TODO: init directory selection
+			// Vista and later only
+			hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
+				&IID_IFileOpenDialog, (LPVOID) &pfod);
+			// TODO: cleanup this mess!!
+			if (SUCCEEDED(hr)) {
+				if (SUCCEEDED(pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS))) {
+					if (SUCCEEDED(pfod->lpVtbl->Show(pfod, hMain))) {
+						if (SUCCEEDED(pfod->lpVtbl->GetResult(pfod, &psi))) {
+							psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
+							tmp_path = wchar_to_utf8(wpath);
+							SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
+							safe_free(tmp_path);
+						}
+					}
+				}
+				pfod->lpVtbl->Release(pfod);
+			}
+#endif
 			break;
 		case IDOK:
 		case IDCANCEL:
@@ -423,5 +570,4 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	return (0);
 }
-
 
