@@ -21,6 +21,7 @@ rem set BUILD_ALT_DIR=x64
 cd libwdi
 set srcPath=obj%BUILD_ALT_DIR%\%cpudir%
 
+del Makefile.hide
 if EXIST Makefile ren Makefile Makefile.hide
 copy embedder_sources sources >NUL 2>&1
 @echo on
@@ -86,6 +87,7 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..\examples
 
+del Makefile.hide
 if EXIST Makefile ren Makefile Makefile.hide
 copy setdrv_sources sources >NUL 2>&1
 @echo on
