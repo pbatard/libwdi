@@ -75,7 +75,7 @@ enum windows_version {
 	WINDOWS_UNSUPPORTED,
 	WINDOWS_2K,
 	WINDOWS_XP,
-	WINDOWS_2003,	// also includes XP64
+	WINDOWS_2003_XP64,
 	WINDOWS_VISTA,
 	WINDOWS_7
 };

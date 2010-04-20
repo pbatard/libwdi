@@ -27,7 +27,6 @@
 #include <objbase.h>
 #include <shellapi.h>
 #include <config.h>
-#include <shlobj.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -97,6 +96,7 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG)
 DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
+DLL_DECLARE(WINAPI, BOOL, IsUserAnAdmin, (void));
 
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
@@ -110,15 +110,20 @@ static void detect_version(void)
 	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
 		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
 			windows_version = WINDOWS_2K;
+			wdi_dbg("Windows 2000");
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
 			windows_version = WINDOWS_XP;
+			wdi_dbg("Windows XP");
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
-			windows_version = WINDOWS_2003;	// also applies to XP64
+			windows_version = WINDOWS_2003_XP64;
+			wdi_dbg("Windows 2003 or Windows XP 64 bit");
 		} else if (os_version.dwMajorVersion >= 6) {
 			if (os_version.dwBuildNumber < 7000) {
 				windows_version = WINDOWS_VISTA;
+				wdi_dbg("Windows Vista");
 			} else {
 				windows_version = WINDOWS_7;
+				wdi_dbg("Windows 7");
 			}
 		}
 	}
@@ -187,7 +192,6 @@ static int check_dir(char* path, bool create)
 {
 	struct _stat st;
 
-	wdi_dbg("path = %s", path);
 	if (_access(path, 02) == 0) {
 		memset(&st, 0, sizeof(st));
 		if (_stat(path, &st) == 0) {
@@ -306,6 +310,7 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
 	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
+	DLL_LOAD(Shell32.dll, IsUserAnAdmin, FALSE);
 	return WDI_SUCCESS;
 }
 
@@ -737,7 +742,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	}
 
 	GET_WINDOWS_VERSION;
-	if ( (windows_version >= WINDOWS_VISTA) && (!IsUserAnAdmin()) )  {
+	if ( (windows_version >= WINDOWS_VISTA) && (IsUserAnAdmin != NULL) && (!IsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
