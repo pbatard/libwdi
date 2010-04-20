@@ -20,6 +20,8 @@
 #include <windows.h>
 #include <setupapi.h>
 #include <io.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <objbase.h>
@@ -98,7 +100,7 @@ DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA,
 
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
-void detect_version(void)
+static void detect_version(void)
 {
 	OSVERSIONINFO os_version;
 
@@ -126,7 +128,7 @@ void detect_version(void)
  * Converts a WCHAR string to UTF8 (allocate returned string)
  * Returns NULL on error
  */
-char* wchar_to_utf8(LPCWSTR wstr)
+static char* wchar_to_utf8(WCHAR* wstr)
 {
 	int size;
 	char* str;
@@ -175,6 +177,40 @@ static char err_string[STR_BUFFER_SIZE];
 			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", errcode);
 	}
 	return err_string;
+}
+
+/*
+ * Check whether the path is a directory with write access
+ * if create is true, create directory if it doesn't exist
+ */
+static int check_dir(char* path, bool create)
+{
+	struct _stat st;
+
+	wdi_dbg("path = %s", path);
+	if (_access(path, 02) == 0) {
+		memset(&st, 0, sizeof(st));
+		if (_stat(path, &st) == 0) {
+			if (!(st.st_mode & _S_IFDIR)) {
+				wdi_err("%s is a file, not a directory");
+				return WDI_ERROR_ACCESS;
+			}
+			return WDI_SUCCESS;
+		}
+		return WDI_ERROR_ACCESS;
+	}
+
+	if (!create) {
+		wdi_err("%s doesn't exist");
+		return WDI_ERROR_ACCESS;
+	}
+
+	if (CreateDirectoryA(path, 0) == 0) {
+		wdi_err("could not create directory %s", path);
+		return WDI_ERROR_ACCESS;
+	}
+
+	return WDI_SUCCESS;
 }
 
 /*
@@ -355,7 +391,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
 			wdi_dbg("got hardware ID: %s", strbuf);
 		} else {
-			wdi_err(NULL, "could not get hardware ID");
+			wdi_err("could not get hardware ID");
 			strbuf[0] = 0;
 		}
 		device_info->hardware_id = safe_strdup(strbuf);
@@ -364,7 +400,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 		// the final driver installation
 		r = CM_Get_Device_IDA(dev_info_data.DevInst, strbuf, STR_BUFFER_SIZE, 0);
 		if (r != CR_SUCCESS) {
-			wdi_err(NULL, "could not retrieve simple path for device %d: CR error %d", i, r);
+			wdi_err("could not retrieve simple path for device %d: CR error %d", i, r);
 			continue;
 		} else {
 			wdi_dbg("%s USB device (%d): %s",
@@ -377,7 +413,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			// On Vista and earlier, we can use SPDRP_DEVICEDESC
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-				wdi_warn(NULL, "could not read device description for %d: %s",
+				wdi_warn("could not read device description for %d: %s",
 					i, windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 			}
@@ -385,14 +421,14 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 			// On Windows 7, the information we want ("Bus reported device description") is
 			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
 			if (SetupDiGetDeviceProperty == NULL) {
-				wdi_warn(NULL, "failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
+				wdi_warn("failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
 				desc[0] = 0;
 			} else if (!SetupDiGetDeviceProperty(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
 				// fallback to SPDRP_DEVICEDESC (USB husb still use it)
 				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-					wdi_warn(NULL, "could not read device description for %d: %s",
+					wdi_warn("could not read device description for %d: %s",
 						i, windows_error_str(0));
 					safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 				}
@@ -407,21 +443,21 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 					switch(j) {
 					case 0:
 						if (sscanf(token, "VID_%04X", &tmp) != 1) {
-							wdi_err(NULL, "could not convert VID string");
+							wdi_err("could not convert VID string");
 						} else {
 							device_info->vid = (unsigned short)tmp;
 						}
 						break;
 					case 1:
 						if (sscanf(token, "PID_%04X", &tmp) != 1) {
-							wdi_err(NULL, "could not convert PID string");
+							wdi_err("could not convert PID string");
 						} else {
 							device_info->pid = (unsigned short)tmp;
 						}
 						break;
 					case 2:
 						if (sscanf(token, "MI_%02X", &tmp) != 1) {
-							wdi_err(NULL, "could not convert MI string");
+							wdi_err("could not convert MI string");
 						} else {
 							device_info->mi = (short)tmp;
 							if ((wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH) {
@@ -431,7 +467,7 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 						}
 						break;
 					default:
-						wdi_err(NULL, "unexpected case");
+						wdi_err("unexpected case");
 						break;
 					}
 				}
@@ -472,16 +508,16 @@ int extract_binaries(char* path)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
-	int i;
+	int i, r;
 
 	for (i=0; i<nb_resources; i++) {
 		safe_strcpy(filename, MAX_PATH_LENGTH, path);
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].subdir);
 
-		if ( (_access(filename, 02) != 0) && (CreateDirectory(filename, 0) == 0) ) {
-			wdi_err(NULL, "could not access directory: %s", filename);
-			return WDI_ERROR_ACCESS;
+		r = check_dir(filename, true);
+		if (r != WDI_SUCCESS) {
+			return r;
 		}
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
@@ -489,7 +525,7 @@ int extract_binaries(char* path)
 
 		fd = fopen(filename, "wb");
 		if (fd == NULL) {
-			wdi_err(NULL, "failed to create file: %s", filename);
+			wdi_err("failed to create file: %s", filename);
 			return WDI_ERROR_RESOURCE;
 		}
 
@@ -508,6 +544,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
+	int r;
 
 	// TODO? create a reusable temp dir if path is NULL?
 	if ((path == NULL) || (device_info == NULL)) {
@@ -515,18 +552,18 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 	}
 
 	if (device_info->desc == NULL) {
-		wdi_err(NULL, "no description was given for the device - aborting");
+		wdi_err("no description was given for the device - aborting");
 		return WDI_ERROR_NOT_FOUND;
 	}
 
 	if (type == WDI_LIBUSB) {
-		wdi_err(NULL, "libusb support is not implemented yet - defaulting to WinUSB");
+		wdi_err("libusb support is not implemented yet - defaulting to WinUSB");
 	}
 
 	// Try to create directory if it doesn't exist
-	if ( (_access(path, 02) != 0) && (CreateDirectory(path, 0) == 0) ) {
-		wdi_err(NULL, "could not access directory: %s", path);
-		return WDI_ERROR_ACCESS;
+	r = check_dir(path, true);
+	if (r != WDI_SUCCESS) {
+		return r;
 	}
 
 	extract_binaries(path);
@@ -537,7 +574,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
-		wdi_err(NULL, "failed to create file: %s", filename);
+		wdi_err("failed to create file: %s", filename);
 		return WDI_ERROR_RESOURCE;
 	}
 
@@ -569,7 +606,7 @@ int process_message(char* buffer, DWORD size)
 		return WDI_ERROR_INVALID_PARAM;
 
 	if (current_device == NULL) {
-		wdi_err(NULL, "program assertion failed - no current device");
+		wdi_err("program assertion failed - no current device");
 		return WDI_ERROR_NOT_FOUND;
 	}
 
@@ -583,7 +620,7 @@ int process_message(char* buffer, DWORD size)
 		if (current_device->device_id != NULL) {
 			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
 		} else {
-			wdi_warn(NULL, "no device_id - sending empty string");
+			wdi_warn("no device_id - sending empty string");
 			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
@@ -592,20 +629,20 @@ int process_message(char* buffer, DWORD size)
 		if (current_device->hardware_id != NULL) {
 			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
 		} else {
-			wdi_warn(NULL, "no hardware_id - sending empty string");
+			wdi_warn("no hardware_id - sending empty string");
 			WriteFile(pipe_handle, "", 1, &junk, NULL);
 		}
 		break;
 	case IC_PRINT_MESSAGE:
 		if (size < 2) {
-			wdi_err(NULL, "print_message: no data");
+			wdi_err("print_message: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
 		wdi_dbg("[installer process] %s", buffer+1);
 		break;
 	case IC_SET_STATUS:
 		if (size < 2) {
-			wdi_err(NULL, "set status: no data");
+			wdi_err("set status: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
 		return (int)buffer[1];
@@ -620,7 +657,7 @@ int process_message(char* buffer, DWORD size)
 		timeout = DEFAULT_TIMEOUT;
 		break;
 	default:
-		wdi_err(NULL, "unrecognized installer message");
+		wdi_err("unrecognized installer message");
 		return WDI_ERROR_OTHER;
 	}
 	return WDI_SUCCESS;
@@ -671,7 +708,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	pipe_handle = CreateNamedPipe(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
-		wdi_err(NULL, "could not create read pipe: %s", windows_error_str(0));
+		wdi_err("could not create read pipe: %s", windows_error_str(0));
 		r = WDI_ERROR_RESOURCE; goto out;
 	}
 
@@ -694,8 +731,8 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
 	if (_access(exename, 00) != 0) {
-		wdi_err(NULL, "this application does not contain the required %s bit installer", is_x64?"64":"32");
-		wdi_err(NULL, "please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
+		wdi_err("this application does not contain the required %s bit installer", is_x64?"64":"32");
+		wdi_err("please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
@@ -726,7 +763,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 		else if (err) {
-			wdi_err(NULL, "ShellExecuteEx failed: %s", windows_error_str(err));
+			wdi_err("ShellExecuteEx failed: %s", windows_error_str(err));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 
@@ -739,7 +776,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 
 		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
 		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
-			wdi_err(NULL, "CreateProcess failed: %s", windows_error_str(0));
+			wdi_err("CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
@@ -777,30 +814,30 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 							}
 							r = WDI_SUCCESS; goto out;
 						case ERROR_MORE_DATA:
-							wdi_warn(NULL, "program assertion failed: message overflow");
+							wdi_warn("program assertion failed: message overflow");
 							r = process_message(buffer, rd_count);
 							break;
 						default:
-							wdi_err(NULL, "could not read from pipe (async): %s", windows_error_str(0));
+							wdi_err("could not read from pipe (async): %s", windows_error_str(0));
 							break;
 						}
 					}
 					break;
 				case WAIT_TIMEOUT:
 					// Lost contact
-					wdi_err(NULL, "installer failed to respond - aborting");
+					wdi_err("installer failed to respond - aborting");
 					TerminateProcess(handle[1], 0);
 					r = WDI_ERROR_TIMEOUT; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
 					r = WDI_SUCCESS; goto out;
 				default:
-					wdi_err(NULL, "could not read from pipe (wait): %s", windows_error_str(0));
+					wdi_err("could not read from pipe (wait): %s", windows_error_str(0));
 					break;
 				}
 				break;
 			default:
-				wdi_err(NULL, "could not read from pipe (sync): %s", windows_error_str(0));
+				wdi_err("could not read from pipe (sync): %s", windows_error_str(0));
 				break;
 			}
 		}

@@ -45,9 +45,9 @@
 #define wdi_dbg(...)
 #endif
 
-#define wdi_info(ctx, ...) _wdi_log(LOG_LEVEL_INFO, __VA_ARGS__)
-#define wdi_warn(ctx, ...) _wdi_log(LOG_LEVEL_WARNING, __VA_ARGS__)
-#define wdi_err(ctx, ...) _wdi_log(LOG_LEVEL_ERROR, __VA_ARGS__)
+#define wdi_info(...) _wdi_log(LOG_LEVEL_INFO, __VA_ARGS__)
+#define wdi_warn(...) _wdi_log(LOG_LEVEL_WARNING, __VA_ARGS__)
+#define wdi_err(...) _wdi_log(LOG_LEVEL_ERROR, __VA_ARGS__)
 
 #else /* !defined(_MSC_VER) || _MSC_VER > 1200 */
 
