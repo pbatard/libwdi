@@ -395,11 +395,11 @@ void install_driver(struct wdi_device_info *dev)
 	}
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 	if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
-		dprintf("Extracted driver files to %s\n", str_buf);
+		dprintf("Extracted driver files to %s\n", path);
 		if (wdi_install_driver(path, device) == 0) {
-			dprintf("SUCCESS");
+			dprintf("SUCCESS\n");
 		} else {
-			dprintf("DRIVER INSTALLATION FAILED");
+			dprintf("DRIVER INSTALLATION FAILED\n");
 		}
 	} else {
 		dprintf("Could not create/extract files in %s\n", str_buf);
