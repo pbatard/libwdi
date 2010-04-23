@@ -296,7 +296,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib"
+				AdditionalDependencies="setupapi.lib newdev.lib dwmapi.lib"
 				LinkIncremental="1"
 				UACExecutionLevel="2"
 				GenerateDebugInformation="false"

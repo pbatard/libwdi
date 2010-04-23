@@ -34,7 +34,8 @@
 #include <string.h>
 #include <process.h>
 #include <shlobj.h>
-//#include <shobjidl.h>
+
+//#include <dwmapi.h>
 
 #include "../libwdi/libwdi.h"
 
@@ -68,7 +69,8 @@ void w_printf_v(HWND hWnd, const char *format, va_list args)
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
 	}
-	SendMessage(hWnd, LB_ADDSTRING, 0, (LPARAM) str);
+	Edit_SetSel(hWnd, -1, -1);
+	Edit_ReplaceSel(hWnd, str);
 }
 
 void w_printf(int dialog, const char *format, ...)
@@ -162,7 +164,7 @@ int display_devices(struct wdi_device_info* list)
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
 			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM) device);
 		} else {
-			dprintf("could not populate dropdown list past device #%d", index);
+			dprintf("could not populate dropdown list past device #%d\n", index);
 		}
 	}
 
@@ -267,13 +269,13 @@ void browse_for_folder(void) {
 	hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
 		&IID_IFileOpenDialog, (LPVOID) &pfod);
 	if (FAILED(hr)) {
-		dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
+		dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
 		pfod = NULL;	// Just in case
 		goto fallback;
 	}
 	hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
 	if (FAILED(hr)) {
-		dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+		dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
 		goto fallback;
 	}
 	// Set the initial folder (if the path is invalid, will simply use last)
@@ -308,17 +310,17 @@ void browse_for_folder(void) {
 			psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
 			tmp_path = wchar_to_utf8(wpath);
 			if (tmp_path == NULL) {
-				dprintf("Could not convert path");
+				dprintf("Could not convert path\n");
 			} else {
 				SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
 				safe_free(tmp_path);
 			}
 		} else {
-			dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+			dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
 		}
 	} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
 		// If it's not a user cancel, assume the dialog didn't show and fallback
-		dprintf("could not show FileOpenDialog: error %X", hr);
+		dprintf("could not show FileOpenDialog: error %X\n", hr);
 		goto fallback;
 	}
 	pfod->lpVtbl->Release(pfod);
@@ -363,13 +365,13 @@ void install_driver(struct wdi_device_info *dev)
 			GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 			// TODO: use custom scanf for hex
 			if (sscanf(str_buf, "%4x", &tmp) != 1) {
-				dprintf("could not convert VID string - aborting");
+				dprintf("could not convert VID string - aborting\n");
 				return;
 			}
 			device->vid = (unsigned short)tmp;
 			GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
 			if (sscanf(str_buf, "%4x", &tmp) != 1) {
-				dprintf("could not convert PID string - aborting");
+				dprintf("could not convert PID string - aborting\n");
 				return;
 			}
 			device->pid = (unsigned short)tmp;
@@ -384,14 +386,14 @@ void install_driver(struct wdi_device_info *dev)
 	}
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 	if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
-		dprintf("Extracted driver files to %s", str_buf);
+		dprintf("Extracted driver files to %s\n", str_buf);
 		if (wdi_install_driver(path, device) == 0) {
 			dprintf("SUCCESS");
 		} else {
 			dprintf("DRIVER INSTALLATION FAILED");
 		}
 	} else {
-		dprintf("Could not create/extract files in %s", str_buf);
+		dprintf("Could not create/extract files in %s\n", str_buf);
 	}
 }
 
@@ -408,6 +410,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[STR_BUFFER_SIZE];
 	int nb_devices, junk;
 	DWORD delay;
+	bool damn_you_aero = false;
 
 	switch (message) {
 
@@ -431,7 +434,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			delay = NOTIFICATION_DELAY;
 			delay_thread = (HANDLE)_beginthread(notification_delay_thread, 0, (void*)(uintptr_t)delay);
 			if (delay_thread == NULL) {
-				dprintf("Unable to create notification delay thread - notification events will be disabled");
+				dprintf("Unable to create notification delay thread - notification events will be disabled\n");
 			}
 		}
 		break;
@@ -456,11 +459,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case UM_LOGGER_EVENT:
 		// TODO: use different colours according to the log level?
-//		dprintf("log level: %d", wParam);
+//		dprintf("log level: %d\n", wParam);
 		if (wdi_read_logger(log_buf, STR_BUFFER_SIZE) != 0) {
-			dprintf(log_buf);
+			dprintf("%s\n", log_buf);
 		} else {
-			dprintf("wdi_read_logger returned 0");
+			dprintf("wdi_read_logger returned 0\n");
 		}
 		break;
 
@@ -483,12 +486,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Fall through
 	case UM_REFRESH_LIST:
+		// TODO: replace with a manual clear button
 		dclear();
+//		DwmIsCompositionEnabled(&damn_you_aero);
+//		dprintf("damn_you_aero is %s\n", damn_you_aero?"enabled":"disabled");
+
 		if (list != NULL) wdi_destroy_list(list);
 		list = wdi_create_list(list_driverless_only);
 		if (list != NULL) {
 			nb_devices = display_devices(list);
-			dprintf("%d device%s found.", nb_devices+1, (nb_devices>0)?"s":"");
+			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM) hDeviceList);
@@ -499,7 +506,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetDlgItemText(hMain, IDC_MI, "");
 			SetDlgItemText(hMain, IDC_DRIVER, "");
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-			dprintf("No device found.");
+			dprintf("No device found.\n");
 		}
 		break;
 

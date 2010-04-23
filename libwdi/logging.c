@@ -231,6 +231,7 @@ DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length)
 
 	// TODO: use a flag to prevent readout if no data
 	if (ReadFile(logger_rd_handle, (void*)buffer, length, &read_size, NULL)) {
+		// TODO: add LF?
 		return read_size;
 	}
 
