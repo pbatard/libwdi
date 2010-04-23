@@ -37,6 +37,10 @@
 #define LIBWDI_API WINAPI
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Device information structure, use by libwdi functions
  */
@@ -163,3 +167,7 @@ int LIBWDI_API wdi_install_driver(char *path, struct wdi_device_info* device_inf
 DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
 int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
 int LIBWDI_API wdi_set_log_level(int level);
+
+#ifdef __cplusplus
+}
+#endif
