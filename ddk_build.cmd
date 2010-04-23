@@ -115,7 +115,7 @@ cd ..
 goto done
 
 :builderror
-if EXIST Makefile.hid ren Makefile.hid Makefile
+if EXIST Makefile.hide ren Makefile.hide Makefile
 if EXIST afxres.h del afxres.h
 cd ..
 echo Build failed
