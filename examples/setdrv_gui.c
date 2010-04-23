@@ -156,10 +156,18 @@ int display_devices(struct wdi_device_info* list)
 	struct wdi_device_info *device;
 	int index = -1;
 	int junk;
+	HDC hdc;
+	SIZE size;
+	LONG max_width = 0;
 
+	hdc = GetDC(hDeviceList);
 	junk = ComboBox_ResetContent(hDeviceList);
 
 	for (device = list; device != NULL; device = device->next) {
+		// The dropdown width needs to accomodate our text
+		GetTextExtentPoint(hdc, device->desc, (int)strlen(device->desc)+1, &size);
+		max_width = max(max_width, size.cx);
+
 		index = ComboBox_AddString(hDeviceList, device->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
 			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM) device);
@@ -169,6 +177,7 @@ int display_devices(struct wdi_device_info* list)
 	}
 
 	SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
+	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
 	return index;
 }
@@ -410,7 +419,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[STR_BUFFER_SIZE];
 	int nb_devices, junk;
 	DWORD delay;
-	bool damn_you_aero = false;
 
 	switch (message) {
 
@@ -488,8 +496,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case UM_REFRESH_LIST:
 		// TODO: replace with a manual clear button
 		dclear();
-//		DwmIsCompositionEnabled(&damn_you_aero);
-//		dprintf("damn_you_aero is %s\n", damn_you_aero?"enabled":"disabled");
 
 		if (list != NULL) wdi_destroy_list(list);
 		list = wdi_create_list(list_driverless_only);
