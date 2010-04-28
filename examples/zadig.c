@@ -407,6 +407,27 @@ void install_driver(struct wdi_device_info *dev)
 }
 
 /*
+ * About dialog callback
+ */
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}
+
+/*
  * Main dialog callback
  */
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -617,6 +638,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDCANCEL:
 			wdi_destroy_list(list);
 			EndDialog(hDlg, 0);
+			break;
+		case IDM_ABOUT:
+			DialogBoxA(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
 			break;
 		default:
 			break;
