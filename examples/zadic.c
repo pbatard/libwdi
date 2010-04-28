@@ -1,5 +1,5 @@
 /*
- * setup driver for driverless USB devices
+ * Zadic: Automated Driver Installer for USB devices (Console version)
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or

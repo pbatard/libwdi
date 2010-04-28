@@ -1,5 +1,5 @@
 /*
- * List and install driver for USB devices (GUI version)
+ * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@
 #include "../libwdi/libwdi.h"
 
 #include "resource.h"
-#include "setdrv_gui.h"
+#include "zadig.h"
 
 #define dclear() SendDlgItemMessage(hMain, IDC_INFO, LB_RESETCONTENT, 0, 0)
 #define dprintf(...) w_printf(IDC_INFO, __VA_ARGS__)

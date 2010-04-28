@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by setdrv_gui.rc
+// Used by zadig.rc
 //
 #define IDI_ICON1                       102
 #define IDC_COMBO1                      1001

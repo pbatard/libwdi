@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedder", "libwdi\embedder_2008.vcproj", "{792D44D5-28A7-4EB3-B84B-8021FE3189F9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setdrv", "examples\setdrv_2008.vcproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadic", "examples\zadic_2008.vcproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9} = {9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "setdrv_gui", "examples\setdrv_gui_2008.vcproj", "{F7F7842F-2912-454E-ADF5-0B22987946E2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadig", "examples\zadig_2008.vcproj", "{F7F7842F-2912-454E-ADF5-0B22987946E2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9} = {9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9}
 	EndProjectSection

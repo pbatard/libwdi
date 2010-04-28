@@ -89,25 +89,25 @@ cd ..\examples
 
 del Makefile.hide
 if EXIST Makefile ren Makefile Makefile.hide
-copy setdrv_sources sources >NUL 2>&1
+copy zadic_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
-copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv.exe . >NUL 2>&1
+copy obj%BUILD_ALT_DIR%\%cpudir%\zadic.exe . >NUL 2>&1
 
 rem Work around MS's VC++ and DDK weird icompatibilities wth regards to rc files
 echo #include ^<windows.h^> > afxres.h
 echo #ifndef IDC_STATIC >> afxres.h
 echo #define IDC_STATIC -1 >> afxres.h
 echo #endif >> afxres.h
-copy setdrv_gui_sources sources >NUL 2>&1
+copy zadig_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
 del afxres.h
-copy obj%BUILD_ALT_DIR%\%cpudir%\setdrv_gui.exe . >NUL 2>&1
+copy obj%BUILD_ALT_DIR%\%cpudir%\zadig.exe . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..

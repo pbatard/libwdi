@@ -20,13 +20,13 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "CompanyName", "libusb.org"
-            VALUE "FileDescription", "SetDrv Application"
+            VALUE "FileDescription", "Zadic Application"
             VALUE "FileVersion", "1, 0, 0, 1"
-            VALUE "InternalName", "setdrv"
+            VALUE "InternalName", "zadic"
             VALUE "LegalCopyright", "See individual source files, GNU LGPL v2.1 or later."
             VALUE "LegalTrademarks", "http://www.gnu.org/licenses/lgpl-2.1.html"
-            VALUE "OriginalFilename", "setdrv.exe"
-            VALUE "ProductName", "setdrv"
+            VALUE "OriginalFilename", "zadic.exe"
+            VALUE "ProductName", "zadic"
             VALUE "ProductVersion", "1, 0, 0, 1"
         END
     END

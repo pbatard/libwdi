@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="setdrv_gui"
-	ProjectGUID="{F7F7842F-2912-454E-ADF5-0B22987946E2}"
-	RootNamespace="setdrvgui"
+	Name="zadic"
+	ProjectGUID="{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
+	RootNamespace="zadic"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -21,8 +21,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\examples"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\examples\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			BuildLogFile="$(IntDir)\$(ProjectName).htm"
@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -67,9 +67,11 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
 				LinkIncremental="2"
-				UACExecutionLevel="1"
+				AdditionalLibraryDirectories=""
+				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				ProgramDatabaseFile="$(TargetDir)$(ProjectName).pdb"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -122,7 +124,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -143,9 +145,11 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
 				LinkIncremental="2"
-				UACExecutionLevel="1"
+				AdditionalLibraryDirectories=""
+				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				ProgramDatabaseFile="$(TargetDir)$(ProjectName).pdb"
+				SubSystem="1"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -199,7 +203,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -219,9 +223,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
 				LinkIncremental="1"
-				UACExecutionLevel="1"
+				AdditionalLibraryDirectories=""
+				UACExecutionLevel="2"
 				GenerateDebugInformation="false"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -278,7 +283,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -296,11 +301,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib dwmapi.lib"
+				AdditionalDependencies="setupapi.lib newdev.lib"
 				LinkIncremental="1"
-				UACExecutionLevel="1"
+				AdditionalLibraryDirectories=""
+				UACExecutionLevel="2"
 				GenerateDebugInformation="false"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="17"
@@ -337,35 +343,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\setdrv_gui.c"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-			<File
-				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
-				RelativePath=".\setdrv_gui.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-			<File
-				RelativePath=".\icon1.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\setdrv_gui.rc"
+				RelativePath=".\zadic.c"
 				>
 			</File>
 		</Filter>
