@@ -67,7 +67,6 @@
  */
 struct emb {
 	char* file_name;
-	char* internal_name;
 	char* extraction_subdir;
 	char* extraction_name;
 };
@@ -80,14 +79,14 @@ struct emb embeddable[] = {
 #endif
 
 #if defined(OPT_M32)
-	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86_dll1", "x86", "WdfCoInstaller" WDF_VER ".dll" },
-	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86_dll2", "x86", "winusbcoinstaller2.dll" },
-	{ INSTALLER_PATH_32 "\\installer_x86.exe", "installer_32", ".", "installer_x86.exe" },
+	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86", "WdfCoInstaller" WDF_VER ".dll" },
+	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86", "winusbcoinstaller2.dll" },
+	{ INSTALLER_PATH_32 "\\installer_x86.exe", ".", "installer_x86.exe" },
 #endif
 #if defined(OPT_M64)
-	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64_dll1", "amd64", "WdfCoInstaller" WDF_VER ".dll" },
-	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64_dll2", "amd64", "winusbcoinstaller2.dll" },
-	{ INSTALLER_PATH_64 "\\installer_x64.exe", "installer_64", ".", "installer_x64.exe" },
+	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64", "WdfCoInstaller" WDF_VER ".dll" },
+	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64", "winusbcoinstaller2.dll" },
+	{ INSTALLER_PATH_64 "\\installer_x64.exe", ".", "installer_x64.exe" },
 #endif
 };
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
@@ -118,6 +117,7 @@ main (int argc, char *argv[])
 	HANDLE header_handle = INVALID_HANDLE_VALUE, file_handle = INVALID_HANDLE_VALUE;
 	FILETIME header_time, file_time;
 	BOOL rebuild = TRUE;
+	char internal_name[] = "file_##";
 
 	unsigned char* buffer;
 	char fullpath[MAX_PATH_LENGTH];
@@ -212,7 +212,8 @@ main (int argc, char *argv[])
 		}
 		fclose(fd);
 
-		fprintf(header_fd, "const unsigned char %s[] = {", embeddable[i].internal_name);
+		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
+		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
 		dump_buffer_hex(header_fd, buffer, size);
 		fprintf(header_fd, "};\n\n");
 		free(buffer);
@@ -228,9 +229,10 @@ main (int argc, char *argv[])
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {
+		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"%s\", \"%s\", %d, %s },\n",
 			embeddable[i].extraction_subdir, embeddable[i].extraction_name,
-			(int)file_size[i], embeddable[i].internal_name);
+			(int)file_size[i], internal_name);
 	}
 	fprintf(header_fd, "};\n");
 	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
