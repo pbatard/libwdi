@@ -55,6 +55,7 @@ static HINSTANCE main_instance;
 static HWND hDeviceList;
 static HWND hDriver;
 static HWND hMain;
+static HMENU hMenu;
 char   path[MAX_PATH];
 
 /*
@@ -476,7 +477,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				"Do you want to refresh the list\n"
 				"and lose all your modifications?", "Device Event Notification",
 				MB_YESNO | MB_ICONINFORMATION) == IDYES) {
-				CheckDlgButton(hMain, IDC_CREATE, 0);
+				CheckDlgButton(hMain, IDC_CREATE, BST_UNCHECKED);
 				EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), true);
 				combo_breaker(CBS_DROPDOWNLIST);
 				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
@@ -501,6 +502,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hMain = hDlg;
 		hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
 		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
+		hMenu = GetSubMenu(GetMenu(hDlg), 0);
 
 		// Initialize COM for folder selection
 		CoInitialize(NULL);
@@ -542,7 +544,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDC_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
 			list_driverless_only = (IsDlgButtonChecked(hMain, IDC_DRIVERLESSONLY) == BST_CHECKED);
 			// Reset Edit button
-			CheckDlgButton(hMain, IDC_EDITNAME, 0);
+			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 			// Reset Combo
 			combo_breaker(CBS_DROPDOWNLIST);
 			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
@@ -639,8 +641,19 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			wdi_destroy_list(list);
 			EndDialog(hDlg, 0);
 			break;
+		// Menus
 		case IDM_ABOUT:
-			DialogBoxA(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
+			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
+			break;
+		case IDM_BASICMODE:
+			CheckMenuItem(hMenu, IDM_BASICMODE, MF_CHECKED);
+			CheckMenuItem(hMenu, IDM_ADVANCEDMODE, MF_UNCHECKED);
+			// TODO: switch dialog
+			break;
+		case IDM_ADVANCEDMODE:
+			CheckMenuItem(hMenu, IDM_ADVANCEDMODE, MF_CHECKED);
+			CheckMenuItem(hMenu, IDM_BASICMODE, MF_UNCHECKED);
+			// TODO: switch dialog
 			break;
 		default:
 			break;
