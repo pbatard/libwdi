@@ -346,6 +346,14 @@
 				RelativePath="..\msvc\config.h"
 				>
 			</File>
+			<File
+				RelativePath=".\embedder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\embedder_files.h"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

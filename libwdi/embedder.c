@@ -31,64 +31,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
-
 #include <config.h>
+#include "embedder.h"
+#include "embedder_files.h"
 
-#define MAX_PATH_LENGTH 256
-
-#if defined(_MSC_VER)
-#define __STR2__(x) #x
-#define __STR1__(x) __STR2__(x)
-// TODO: feed preprocessor arg to custom step?
-#if defined(_WIN64) && defined(OPT_M32)
-// a 64 bit application/library CANNOT be used on 32 bit platforms
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support")
-#undef OPT_M32
-#endif
-#endif
-
-#if defined(_MSC_VER) && !defined(DDKBUILD)
-#if defined(_DEBUG)
-#define INSTALLER_PATH_32 "..\\Win32\\Debug\\lib"
-#define INSTALLER_PATH_64 "..\\x64\\Debug\\lib"
-#else
-#define INSTALLER_PATH_32 "..\\Win32\\Release\\lib"
-#define INSTALLER_PATH_64 "..\\x64\\Release\\lib"
-#endif
-#else
-// If you compile with shared libs, DON'T PICK THE EXE IN "installer",
-// as it won't run from ANYWHERE ELSE! Use the one from .libs instead.
-#define INSTALLER_PATH_32 "."
-#define INSTALLER_PATH_64 "."
-#endif
-
-/*
- * files to embed
- */
-struct emb {
-	char* file_name;
-	char* extraction_subdir;
-	char* extraction_name;
-};
-
-
-struct emb embeddable[] = {
-	// WinUSB driver DLLs (32 and 64 bit)
-#if !defined(OPT_M32) && !defined(OPT_M64)
-#error both 32 and 64 bit support have been disabled - check your config.h
-#endif
-
-#if defined(OPT_M32)
-	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86", "WdfCoInstaller" WDF_VER ".dll" },
-	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86", "winusbcoinstaller2.dll" },
-	{ INSTALLER_PATH_32 "\\installer_x86.exe", ".", "installer_x86.exe" },
-#endif
-#if defined(OPT_M64)
-	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64", "WdfCoInstaller" WDF_VER ".dll" },
-	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64", "winusbcoinstaller2.dll" },
-	{ INSTALLER_PATH_64 "\\installer_x64.exe", ".", "installer_x64.exe" },
-#endif
-};
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
 
 void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
@@ -118,9 +64,10 @@ main (int argc, char *argv[])
 	FILETIME header_time, file_time;
 	BOOL rebuild = TRUE;
 	char internal_name[] = "file_##";
-
 	unsigned char* buffer;
-	char fullpath[MAX_PATH_LENGTH];
+	char fullpath[MAX_PATH];
+	char fname[_MAX_FNAME];
+	char ext[_MAX_EXT];
 
 	// Disable stdout bufferring
 	setvbuf(stdout, NULL, _IONBF,0);
@@ -179,8 +126,8 @@ main (int argc, char *argv[])
 	fprintf(header_fd, "#pragma once\n");
 
 	for (i=0; i<nb_embeddables; i++) {
-		r = GetFullPathNameA(embeddable[i].file_name, MAX_PATH_LENGTH, fullpath, NULL);
-		if ((r == 0) || (r > MAX_PATH_LENGTH)) {
+		r = GetFullPathNameA(embeddable[i].file_name, MAX_PATH, fullpath, NULL);
+		if ((r == 0) || (r > MAX_PATH)) {
 			fprintf(stderr, "Unable to get full path for %s\n", embeddable[i].file_name);
 			ret = 1;
 			goto out2;
@@ -229,9 +176,11 @@ main (int argc, char *argv[])
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {
-		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
+		_splitpath(embeddable[i].file_name, NULL, NULL, fname, ext);
+		strncat(fname, ext, sizeof(fname));
+ 		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"%s\", \"%s\", %d, %s },\n",
-			embeddable[i].extraction_subdir, embeddable[i].extraction_name,
+			embeddable[i].extraction_subdir, fname,
 			(int)file_size[i], internal_name);
 	}
 	fprintf(header_fd, "};\n");

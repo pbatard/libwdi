@@ -25,7 +25,7 @@ installer_x64_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x64_LDADD = -lsetupapi -lnewdev
 endif
 
-embedder_SOURCES = embedder.c
+embedder_SOURCES = embedder.h embedder_files.h embedder.c
 
 EXTRA_DIST = $(LIB_SRC)
 
