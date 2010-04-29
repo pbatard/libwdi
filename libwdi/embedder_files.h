@@ -47,6 +47,7 @@ struct emb embeddable[] = {
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64" },
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
+	{ DDK_DIR "\\license.rtf", "." },
 //	{ EXTRA_DIR "\\mydriver.inf", "." },
 //	{ EXTRA_DIR "\\mydriver.cat", "." },
 };
