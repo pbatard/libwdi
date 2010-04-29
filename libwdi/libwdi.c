@@ -550,6 +550,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	FILE* fd;
 	GUID guid;
 	int r;
+	SYSTEMTIME system_time;
 
 	// TODO? create a reusable temp dir if path is NULL?
 	if ((path == NULL) || (device_info == NULL)) {
@@ -595,6 +596,8 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	}
 	CoCreateGuid(&guid);
 	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
+	GetSystemTime(&system_time);
+	fprintf(fd, "Date = \"%02d/%02d/%04d\"\n", system_time.wMonth, system_time.wDay, system_time.wYear);
 	fwrite(inf[type], strlen(inf[type]), 1, fd);
 	fclose(fd);
 

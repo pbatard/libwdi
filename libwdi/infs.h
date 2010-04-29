@@ -18,8 +18,7 @@
  */
 #pragma once
 
-const char winusb_inf[] = "Date = \"03/08/2010\"\n\n" \
-	"ProviderName = \"libusb 1.0\"\n" \
+const char winusb_inf[] = "ProviderName = \"libusb 1.0\"\n" \
 	"WinUSB_SvcDesc = \"WinUSB Driver Service\"\n" \
 	"DiskName = \"libusb (WinUSB) Device Install Disk\"\n" \
 	"ClassName = \"libusb (WinUSB) devices\"\n\n" \
