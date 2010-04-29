@@ -28,6 +28,7 @@
 #include "../libwdi/libwdi.h"
 
 #define FLUSHER	while(getchar() != 0x0A)
+#define INF_NAME "libusb_device.inf"
 
 int
 // The following is necessary when compiled from a WDK/DDK environment
@@ -53,8 +54,8 @@ main(void)
 		if ((c!='y') && (c!='Y')) {
 			continue;
 		}
-		if (wdi_create_inf(device, "C:\\test", WDI_WINUSB) == 0) {
-			wdi_install_driver("C:\\test", device);
+		if (wdi_create_inf(device, "C:\\test", INF_NAME, WDI_WINUSB) == 0) {
+			wdi_install_driver(device, "C:\\test", INF_NAME);
 		}
 	}
 	wdi_destroy_list(list);

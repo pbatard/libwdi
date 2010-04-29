@@ -34,7 +34,6 @@
 #include "infs.h"
 #include "resource.h"	// auto-generated during compilation
 
-#define INF_NAME "libusb-device.inf"
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
 
@@ -544,7 +543,8 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type)
+int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
+							  char* inf_name, enum wdi_driver_type type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -575,7 +575,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
-	safe_strcat(filename, MAX_PATH_LENGTH, INF_NAME);
+	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
 
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
@@ -583,7 +583,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, e
 		return WDI_ERROR_RESOURCE;
 	}
 
-	fprintf(fd, "; libusb_device.inf\n");
+	fprintf(fd, "; %s\n", inf_name);
 	fprintf(fd, "; Copyright (c) 2010 libusb (GNU LGPL)\n");
 	fprintf(fd, "[Strings]\n");
 	fprintf(fd, "DeviceName = \"%s\"\n", device_info->desc);
@@ -669,7 +669,7 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_info)
+int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path, char* inf_name)
 {
 	SHELLEXECUTEINFO shExecInfo;
     STARTUPINFO si;
@@ -751,7 +751,7 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 		shExecInfo.lpVerb = "runas";
 		shExecInfo.lpFile = exename;
 		// if INF_NAME ever has a space, it will be seen as multiple parameters
-		shExecInfo.lpParameters = INF_NAME;
+		shExecInfo.lpParameters = inf_name;
 		shExecInfo.lpDirectory = path;
 		// TODO: hide
 		//shExecInfo.nShow = SW_NORMAL;
@@ -779,7 +779,8 @@ int LIBWDI_API wdi_install_driver(char* path, struct wdi_device_info* device_inf
 		si.cb = sizeof(si);
 		memset(&pi, 0, sizeof(pi));
 
-		safe_strcat(exename, STR_BUFFER_SIZE, " " INF_NAME);
+		safe_strcat(exename, STR_BUFFER_SIZE, " ");
+		safe_strcat(exename, STR_BUFFER_SIZE, inf_name);
 		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
 			wdi_err("CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;

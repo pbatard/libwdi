@@ -34,7 +34,6 @@
 #include "installer.h"
 #include "libwdi.h"
 
-#define INF_NAME "libusb-device.inf"
 #define REQUEST_TIMEOUT 5000
 
 /*
@@ -58,8 +57,6 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, 
  * Globals
  */
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
-//enum windows_version windows_version = WINDOWS_UNDEFINED;
-
 
 // Setup the Cfgmgr32 DLLs
 static int init_dlls(void)
@@ -71,7 +68,6 @@ static int init_dlls(void)
 }
 
 // Log data with parent app through the pipe
-// TODO: return a status byte along with the message
 void plog_v(const char *format, va_list args)
 {
 	char buffer[256];
@@ -361,6 +357,7 @@ main(int argc, char** argv)
 	BOOL b;
 	char* hardware_id;
 	char* device_id;
+	char* inf_name;
 	char path[MAX_PATH_LENGTH];
 	char log[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
@@ -381,7 +378,7 @@ main(int argc, char** argv)
 	}
 
 	safe_strcpy(log, MAX_PATH_LENGTH, argv[0]);
-	// TODO - seek for terminal '.exe' and change extension if needed
+	// TODO - use the infname + seek for terminal '.exe' and change extension if needed
 	safe_strcat(log, MAX_PATH_LENGTH, ".log");
 
 	fd = fopen(log, "w");
@@ -391,10 +388,14 @@ main(int argc, char** argv)
 		goto out;
 	}
 
-	if (argc >= 2) {
-		plog("got parameter %s", argv[1]);
-		printf("got param %s", argv[1]);
+	if (argc < 2) {
+		printf("usage: %s <inf_name>\n", argv[0]);
+		plog("missing inf_name parameter");
+		return 0;
 	}
+
+	inf_name = argv[1];
+	plog("got parameter %s", argv[1]);
 
 	r = GetFullPathNameA(".", MAX_PATH_LENGTH, path, NULL);
 	if ((r == 0) || (r > MAX_PATH_LENGTH)) {
@@ -403,7 +404,7 @@ main(int argc, char** argv)
 		goto out;
 	}
 	safe_strcat(path, MAX_PATH_LENGTH, "\\");
-	safe_strcat(path, MAX_PATH_LENGTH, INF_NAME);
+	safe_strcat(path, MAX_PATH_LENGTH, inf_name);
 
 	device_id = req_id(IC_GET_DEVICE_ID);
 	hardware_id = req_id(IC_GET_HARDWARE_ID);

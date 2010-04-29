@@ -45,6 +45,8 @@
 #define dclear() SendDlgItemMessage(hMain, IDC_INFO, LB_RESETCONTENT, 0, 0)
 #define dprintf(...) w_printf(IDC_INFO, __VA_ARGS__)
 
+#define INF_NAME "libusb_device.inf"
+
 #define EX_STYLE    (WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE | WS_EX_STATICEDGE | WS_EX_APPWINDOW)
 #define COMBO_STYLE (WS_CHILD | WS_VISIBLE | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP | CBS_NOINTEGRALHEIGHT)
 
@@ -275,7 +277,7 @@ void browse_for_folder(void) {
 	// Retrieve the path to use as the starting folder
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 
-#if (_WIN32_WINNT >= 0x0600)
+#if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
 		&IID_IFileOpenDialog, (LPVOID) &pfod);
 	if (FAILED(hr)) {
@@ -395,9 +397,9 @@ void install_driver(struct wdi_device_info *dev)
 		}
 	}
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-	if (wdi_create_inf(device, path, WDI_WINUSB) == 0) {
+	if (wdi_create_inf(device, path, INF_NAME, WDI_WINUSB) == 0) {
 		dprintf("Extracted driver files to %s\n", path);
-		if (wdi_install_driver(path, device) == 0) {
+		if (wdi_install_driver(device, path, INF_NAME) == 0) {
 			dprintf("SUCCESS\n");
 		} else {
 			dprintf("DRIVER INSTALLATION FAILED\n");

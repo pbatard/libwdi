@@ -49,7 +49,7 @@ struct wdi_device_info {
 	struct wdi_device_info *next;
 	/** Microsoft's device URI string */
 	char* device_id;
-	/** Yet another Microsoft ID */
+	/** Microsoft's hardware ID string */
 	char* hardware_id;
 	/** USB Device description, usually provided by the device irself */
 	char* desc;
@@ -59,7 +59,7 @@ struct wdi_device_info {
 	unsigned short vid;
 	/** USB PID */
 	unsigned short pid;
-	/** Optional USB Interface Number. Negative if none */
+	/** Optional composite USB interface number. Negative if none */
 	short mi;
 };
 
@@ -156,17 +156,46 @@ enum wdi_error {
 };
 
 /*
- * returns a driver_info list of USB devices
- * parameter: driverless_only - boolean
+ * Convert a libwdi error to a human readable error message
  */
 const char* LIBWDI_API wdi_strerror(enum wdi_error errcode);
+
+/*
+ * Return a wdi_device_info list of USB devices
+ * parameter: driverless_only - boolean
+ */
 struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only);
+
+/*
+ * Release a wdi_device_info list allocated by the previous call
+ */
 void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
-int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path, enum wdi_driver_type type);
-int LIBWDI_API wdi_install_driver(char *path, struct wdi_device_info* device_info);
-DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
-int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
+
+/*
+ * Create an inf file for a specific device
+ */
+int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
+							  char* inf_name, enum wdi_driver_type type);
+
+/*
+ * Install a driver for a specific device
+ */
+int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info,
+								  char* path, char* inf_name);
+/*
+ * Set the log verobosity
+ */
 int LIBWDI_API wdi_set_log_level(int level);
+
+/*
+ * Set the Windows callback message for log notification
+ */
+int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
+
+/*
+ * Read a log message after a log notification
+ */
+DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
 
 #ifdef __cplusplus
 }
