@@ -34,11 +34,9 @@
 #include <string.h>
 #include <process.h>
 #include <shlobj.h>
-
-//#include <dwmapi.h>
+#include <shellapi.h>
 
 #include "../libwdi/libwdi.h"
-
 #include "resource.h"
 #include "zadig.h"
 
@@ -410,19 +408,60 @@ void install_driver(struct wdi_device_info *dev)
 }
 
 /*
+ * Another callback is needed to change the cursor when hovering over the URL
+ * Why don't we use syslink? Because it requires Unicode
+ */
+INT_PTR CALLBACK About_URL(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	WNDPROC original_wndproc;
+	HCURSOR hCursor;
+
+	original_wndproc = (WNDPROC)GetProp(hDlg, "PROP_ORIGINAL_PROC");
+	switch (message)
+	{
+	case WM_SETCURSOR:
+		if ((HWND)wParam == GetDlgItem(hDlg, IDC_URL)) {
+			hCursor = LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND));
+			SetCursor(hCursor);
+			return (INT_PTR)TRUE;
+		}
+	}
+	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
+}
+
+/*
  * About dialog callback
  */
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
+	HDC hdcStatic;
+	WNDPROC original_wndproc;
 
+	switch (message) {
+	case WM_INITDIALOG:
+		// Subclass the callback so that we can change the cursor
+		original_wndproc = (WNDPROC)GetWindowLongPtr(hDlg, GWLP_WNDPROC);
+		SetPropA(hDlg, "PROP_ORIGINAL_PROC", (HANDLE)original_wndproc);
+		SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)About_URL);
+		return (INT_PTR)TRUE;
+	case WM_CTLCOLORSTATIC:
+		// Change the link colour to blue
+		hdcStatic = (HDC)wParam;
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_URL)) {
+			SetTextColor(hdcStatic, RGB(0,0,255));
+			SetBkMode(hdcStatic, TRANSPARENT);
+			return (INT_PTR)GetStockObject(NULL_BRUSH);
+		}
+		break;
 	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
+		switch (LOWORD(wParam)) {
+		case IDOK:
+		case IDCANCEL:
 			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		case IDC_URL:	// NB: control must have Notify enabled
+			ShellExecute(hDlg, "open", "http://libusb.org/wiki/libwdi",
+				NULL, NULL, SW_SHOWNORMAL);
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -557,7 +596,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				if (device->desc != editable_desc) {
 					editable_desc = malloc(STR_BUFFER_SIZE);
 					if (editable_desc == NULL) {
-						// TODO
+						dprintf("could not use modified device description\n");
+						editable_desc = device->desc;
 					} else {
 						safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
 						free(device->desc);	// No longer needed
@@ -568,7 +608,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
 				PostMessage(hDeviceList, WM_SETFOCUS, 0, 0);
 			} else {
-
 				combo_breaker(CBS_DROPDOWNLIST);
 				display_devices(list);
 			}
@@ -603,7 +642,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					if (device->desc == NULL) {
 						editable_desc = malloc(STR_BUFFER_SIZE);
 						if (editable_desc == NULL) {
-							// TODO
+							dprintf("could not use modified device description\n");
+							editable_desc = device->desc;
 						} else {
 							safe_sprintf(editable_desc, STR_BUFFER_SIZE, "(Unknown Device)");
 							device->desc = editable_desc;
