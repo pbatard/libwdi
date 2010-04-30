@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\installer_x64"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -93,8 +93,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\installer_x64"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"

@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\installer_x86"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -92,8 +92,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\installer"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\installer_x86"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"

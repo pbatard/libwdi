@@ -83,6 +83,7 @@ build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
+copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.dll . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..\examples

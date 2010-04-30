@@ -21,8 +21,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			BuildLogFile="$(IntDir)\$(ProjectName).htm"
@@ -96,8 +96,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			BuildLogFile="$(IntDir)\$(ProjectName).htm"
@@ -172,8 +172,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -249,8 +249,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			WholeProgramOptimization="1"

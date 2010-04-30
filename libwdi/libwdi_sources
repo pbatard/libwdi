@@ -21,4 +21,5 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\ole32.lib
 
 SOURCES=logging.c \
-	libwdi.c
+	libwdi.c \
+	libwdi.rc

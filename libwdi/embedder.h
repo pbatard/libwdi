@@ -40,11 +40,11 @@
  */
 #if defined(_MSC_VER) && !defined(DDKBUILD)
 #if defined(_DEBUG)
-#define INSTALLER_PATH_32 "..\\Win32\\Debug\\lib"
-#define INSTALLER_PATH_64 "..\\x64\\Debug\\lib"
+#define INSTALLER_PATH_32 "..\\Win32\\Debug\\helper"
+#define INSTALLER_PATH_64 "..\\x64\\Debug\\helper"
 #else
-#define INSTALLER_PATH_32 "..\\Win32\\Release\\lib"
-#define INSTALLER_PATH_64 "..\\x64\\Release\\lib"
+#define INSTALLER_PATH_32 "..\\Win32\\Release\\helper"
+#define INSTALLER_PATH_64 "..\\x64\\Release\\helper"
 #endif
 #else
 // If you compile with shared libs, DON'T PICK THE EXE IN "installer",
