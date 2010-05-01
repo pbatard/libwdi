@@ -28,4 +28,5 @@ SXS_ASSEMBLY_NAME=zadig
 SXS_ASSEMBLY_LANGUAGE=0000
 
 SOURCES=zadig.c \
+        zadig_stdlg.c \
         zadig.rc

@@ -340,6 +340,10 @@
 				RelativePath=".\zadig.c"
 				>
 			</File>
+			<File
+				RelativePath=".\zadig_stdlg.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

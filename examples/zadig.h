@@ -52,3 +52,21 @@
 #else
 #define safe_vsnprintf vsnprintf
 #endif
+
+/*
+ * Shared prototypes
+ */
+#define dprintf(...) w_printf(IDC_INFO, __VA_ARGS__)
+void w_printf(int dialog, const char *format, ...);
+void browse_for_folder(void);
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+
+/*
+ * Globals
+ */
+extern HINSTANCE main_instance;
+extern HWND hDeviceList;
+extern HWND hDriver;
+extern HWND hMain;
+extern HMENU hMenu;
+extern char path[MAX_PATH];
