@@ -35,6 +35,18 @@
 #include "embedder.h"
 #include "embedder_files.h"
 
+#if defined(__CYGWIN__ )
+#include <libgen.h>
+// cygwin produces a warning unless these prototypes are defined
+extern int _snprintf(char *buffer, size_t count, const char *format, ...);
+void __inline _splitpath(char *path, char *drive, char *dir, char *fname, char *ext) {
+	fname = basename(path);
+	ext = "";
+}
+#define _MAX_FNAME 256
+#define _MAX_EXT 256
+#endif
+
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
 
 void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
