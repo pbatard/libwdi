@@ -36,15 +36,15 @@
 #include "embedder_files.h"
 
 #if defined(__CYGWIN__ )
-#include <libgen.h>
-// cygwin produces a warning unless these prototypes are defined
-extern int _snprintf(char *buffer, size_t count, const char *format, ...);
-void __inline _splitpath(char *path, char *drive, char *dir, char *fname, char *ext) {
-	fname = basename(path);
-	ext = "";
-}
+#include <libgen.h>	// for basename()
 #define _MAX_FNAME 256
 #define _MAX_EXT 256
+extern int _snprintf(char *buffer, size_t count, const char *format, ...);
+// Hack a _splitpath() for cygwin, according to our *very specific* needs
+void __inline _splitpath(char *path, char *drive, char *dir, char *fname, char *ext) {
+	strncpy(fname, basename(path), _MAX_FNAME);
+	ext[0] = 0;
+}
 #endif
 
 const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
