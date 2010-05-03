@@ -47,13 +47,14 @@ HINSTANCE main_instance;
 HWND hDeviceList;
 HWND hDriver;
 HWND hMain;
+HWND hInfo;
 HMENU hMenu;
 char path[MAX_PATH];
 
 /*
  * On screen logging
  */
-void w_printf_v(HWND hWnd, const char *format, va_list args)
+void w_printf_v(const char *format, va_list args)
 {
 	char str[STR_BUFFER_SIZE];
 	int size;
@@ -62,19 +63,16 @@ void w_printf_v(HWND hWnd, const char *format, va_list args)
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
 	}
-	Edit_SetSel(hWnd, -1, -1);
-	Edit_ReplaceSel(hWnd, str);
+	Edit_SetSel(hInfo, -1, -1);
+	Edit_ReplaceSel(hInfo, str);
 }
 
-void w_printf(int dialog, const char *format, ...)
+void w_printf(const char *format, ...)
 {
 	va_list args;
-	HWND hWnd;
-
-	hWnd = GetDlgItem(hMain, dialog);
 
 	va_start (args, format);
-	w_printf_v(hWnd, format, args);
+	w_printf_v(format, args);
 	va_end (args);
 }
 
@@ -284,6 +282,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hMain = hDlg;
 		hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
 		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
+		hInfo = GetDlgItem(hDlg, IDC_INFO);
 		hMenu = GetSubMenu(GetMenu(hDlg), 0);
 
 		// Initialize COM for folder selection
@@ -299,7 +298,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Fall through
 	case UM_REFRESH_LIST:
-		// TODO: add a manual clear button
 		if (list != NULL) wdi_destroy_list(list);
 		list = wdi_create_list(list_driverless_only);
 		if (list != NULL) {
@@ -416,6 +414,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_BROWSE:	// button: Browse
 			browse_for_folder();
+			break;
+		case IDC_CLEAR:
+			Edit_SetText(hInfo, "");
 			break;
 		case IDOK:
 		case IDCANCEL:

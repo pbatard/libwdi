@@ -25,19 +25,22 @@
 #define IDC_EDIT1                       1022
 #define IDC_RICHEDIT21                  1033
 #define IDC_URL                         1034
+#define IDC_CLEAR                       1036
 #define IDC_FOLDER                      1148
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
 #define IDM_ADVANCEDMODE                40003
+#define ID_OPTIONS_LISTONLYDRIVERLESSDEVICES 40004
+#define ID_OPTIONS_CREATENEWDEVICE      40005
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        104
-#define _APS_NEXT_COMMAND_VALUE         40004
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_COMMAND_VALUE         40006
+#define _APS_NEXT_CONTROL_VALUE         1037
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
