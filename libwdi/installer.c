@@ -359,9 +359,7 @@ main(int argc, char** argv)
 	char* device_id;
 	char* inf_name;
 	char path[MAX_PATH_LENGTH];
-	char log[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
-	FILE *fd;
 
 	// Connect to the messaging pipe
 	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
@@ -374,17 +372,6 @@ main(int argc, char** argv)
 	if (init_dlls()) {
 		plog("could not init DLLs");
 		ret = WDI_ERROR_RESOURCE;
-		goto out;
-	}
-
-	safe_strcpy(log, MAX_PATH_LENGTH, argv[0]);
-	// TODO - use the infname + seek for terminal '.exe' and change extension if needed
-	safe_strcat(log, MAX_PATH_LENGTH, ".log");
-
-	fd = fopen(log, "w");
-	if (fd == NULL) {
-		plog("could not open logfile");
-		ret = WDI_ERROR_ACCESS;
 		goto out;
 	}
 
