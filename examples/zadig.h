@@ -30,6 +30,7 @@
 
 #define STR_BUFFER_SIZE             256
 #define NOTIFICATION_DELAY          500
+#define DEFAULT_DIR                 "C:\\usb_driver"
 
 // WM_APP is not sent on focus, unlike WM_USER
 #define UM_REFRESH_LIST             WM_APP

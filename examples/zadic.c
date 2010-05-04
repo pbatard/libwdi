@@ -29,6 +29,7 @@
 
 #define FLUSHER	while(getchar() != 0x0A)
 #define INF_NAME "libusb_device.inf"
+#define DEFAULT_DIR "C:\\usb_driver"
 
 int
 // The following is necessary when compiled from a WDK/DDK environment
@@ -54,8 +55,8 @@ main(void)
 		if ((c!='y') && (c!='Y')) {
 			continue;
 		}
-		if (wdi_create_inf(device, "C:\\test", INF_NAME, WDI_WINUSB) == 0) {
-			wdi_install_driver(device, "C:\\test", INF_NAME);
+		if (wdi_create_inf(device, DEFAULT_DIR, INF_NAME, WDI_WINUSB) == 0) {
+			wdi_install_driver(device, DEFAULT_DIR, INF_NAME);
 		}
 	}
 	wdi_destroy_list(list);
