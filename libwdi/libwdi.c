@@ -596,7 +596,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	}
 	CoCreateGuid(&guid);
 	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
-	GetSystemTime(&system_time);
+	GetLocalTime(&system_time);
 	fprintf(fd, "Date = \"%02d/%02d/%04d\"\n", system_time.wMonth, system_time.wDay, system_time.wYear);
 	fwrite(inf[type], strlen(inf[type]), 1, fd);
 	fclose(fd);
