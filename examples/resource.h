@@ -26,6 +26,7 @@
 #define IDC_RICHEDIT21                  1033
 #define IDC_URL                         1034
 #define IDC_CLEAR                       1036
+#define IDC_SAVE                        1037
 #define IDC_FOLDER                      1148
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
