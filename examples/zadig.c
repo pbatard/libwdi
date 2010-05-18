@@ -36,6 +36,8 @@
 #include "resource.h"
 #include "zadig.h"
 
+// TODO: add config.h to find out if libusb0.sys is present
+
 #define INF_NAME "libusb_device.inf"
 #define EX_STYLE    (WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE | WS_EX_STATICEDGE | WS_EX_APPWINDOW)
 #define COMBO_STYLE (WS_CHILD | WS_VISIBLE | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP | CBS_NOINTEGRALHEIGHT)
@@ -221,8 +223,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HANDLE delay_thread = NULL;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
-	int nb_devices, junk;
-	DWORD delay;
+	int nb_devices, junk, r;
+	DWORD delay, read_size;
 
 	switch (message) {
 
@@ -272,10 +274,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case UM_LOGGER_EVENT:
 		// TODO: use different colours according to the log level?
 //		dprintf("log level: %d\n", wParam);
-		if (wdi_read_logger(log_buf, STR_BUFFER_SIZE) != 0) {
+		r = wdi_read_logger(log_buf, STR_BUFFER_SIZE, &read_size);
+		if (r == WDI_SUCCESS) {
 			dprintf("%s\n", log_buf);
 		} else {
-			dprintf("wdi_read_logger returned 0\n");
+			dprintf("wdi_read_logger: error %s\n", wdi_strerror(r));
 		}
 		break;
 
@@ -301,8 +304,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// Fall through
 	case UM_REFRESH_LIST:
 		if (list != NULL) wdi_destroy_list(list);
-		list = wdi_create_list(list_driverless_only);
-		if (list != NULL) {
+		r = wdi_create_list(&list, list_driverless_only);
+		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices(list);
 			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
 			// Send a dropdown selection message to update fields

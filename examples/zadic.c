@@ -40,10 +40,17 @@ main(void)
 {
 	struct wdi_device_info *device, *list;
 	char c;
+	int r;
 
-	list = wdi_create_list(true);
-	if (list == NULL) {
+	r = wdi_create_list(&list, true);
+	switch (r) {
+	case WDI_SUCCESS:
+		break;
+	case WDI_ERROR_NO_DEVICE:
 		printf("No driverless USB devices were found.\n");
+		return 0;
+	default:
+		printf("wdi_create_list: error %s\n", wdi_strerror(r));
 		return 0;
 	}
 

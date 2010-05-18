@@ -210,13 +210,13 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message)
 /*
  * Read a log message
  */
-DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length)
+int LIBWDI_API wdi_read_logger(char* buffer, DWORD length, DWORD* read_size)
 {
-	DWORD read_size;
 	int size;
 
 	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger() != 0) ) {
-		return 0;
+		*read_size = 0;
+		return WDI_ERROR_NOT_FOUND;
 	}
 
 	if (log_messages_pending == 0) {
@@ -225,17 +225,19 @@ DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length)
 			buffer[length-1] = 0;
 			return length;
 		}
-		return (DWORD)size;
+		*read_size = (DWORD)size;
+		return WDI_SUCCESS;
 	}
 	log_messages_pending--;
 
 	// TODO: use a flag to prevent readout if no data
-	if (ReadFile(logger_rd_handle, (void*)buffer, length, &read_size, NULL)) {
+	if (ReadFile(logger_rd_handle, (void*)buffer, length, read_size, NULL)) {
 		// TODO: add LF?
-		return read_size;
+		return WDI_SUCCESS;
 	}
 
-	return 0;
+	*read_size = 0;
+	return WDI_ERROR_IO;
 }
 
 /*

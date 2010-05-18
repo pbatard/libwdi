@@ -314,7 +314,7 @@ static int init_dlls(void)
 }
 
 // List USB devices
-struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
+int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_only)
 {
 	unsigned i, j, tmp;
 	unsigned unknown_count = 1;
@@ -339,7 +339,8 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 	// List all connected USB devices
 	dev_info = SetupDiGetClassDevs(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
 	if (dev_info == INVALID_HANDLE_VALUE) {
-		return NULL;
+		*list = NULL;
+		return WDI_ERROR_NO_DEVICE;
 	}
 
 	// Find the ones that are driverless
@@ -359,7 +360,8 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 		device_info = calloc(1, sizeof(struct wdi_device_info));
 		if (device_info == NULL) {
 			wdi_destroy_list(start);
-			return NULL;
+			*list = NULL;
+			return WDI_ERROR_RESOURCE;
 		}
 
 		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
@@ -494,7 +496,8 @@ struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only)
 
 	SetupDiDestroyDeviceInfoList(dev_info);
 
-	return start;
+	*list = start;
+	return WDI_SUCCESS;
 }
 
 void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)

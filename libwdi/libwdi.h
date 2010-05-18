@@ -139,10 +139,10 @@ enum wdi_error {
 	/** Attempted to run the 32 bit installer on 64 bit */
 	WDI_ERROR_WOW64 = -16,
 
-	/* Bad inf syntax */
+	/** Bad inf syntax */
 	WDI_ERROR_INF_SYNTAX = -17,
 
-	/* Missing cat file */
+	/** Missing cat file */
 	WDI_ERROR_CAT_MISSING = -18,
 
 	/** System policy prevents the installation of unsigned drivers */
@@ -151,7 +151,7 @@ enum wdi_error {
 	/** Other error */
 	WDI_ERROR_OTHER = -99
 
-	/* IMPORTANT: when adding new values to this enum, remember to
+	/** IMPORTANT: when adding new values to this enum, remember to
 	   update the wdi_strerror() function implementation! */
 };
 
@@ -164,7 +164,7 @@ const char* LIBWDI_API wdi_strerror(enum wdi_error errcode);
  * Return a wdi_device_info list of USB devices
  * parameter: driverless_only - boolean
  */
-struct wdi_device_info* LIBWDI_API wdi_create_list(bool driverless_only);
+int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_only);
 
 /*
  * Release a wdi_device_info list allocated by the previous call
@@ -195,7 +195,7 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
 /*
  * Read a log message after a log notification
  */
-DWORD LIBWDI_API wdi_read_logger(char* buffer, DWORD length);
+int LIBWDI_API wdi_read_logger(char* buffer, DWORD length, DWORD* read_size);
 
 #ifdef __cplusplus
 }
