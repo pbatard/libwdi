@@ -290,6 +290,7 @@ static __inline int process_error(DWORD r, char* path) {
 	// r = 5 ERROR_ACCESS_DENIED if needs admin elevation
 	// r = 0xD ERROR_INVALID_DATA => inf is missing some data
 	// r = 0xE0000003 ERROR_GENERAL_SYNTAX the syntax of the inf is invalid or the inf is empty
+	// r = 0xE0000217 ERROR_BAD_SERVICE_INSTALLSECT happens if referencing a non present sys in svc section
 	// r = 0xE0000304 ERROR_INVALID_CATALOG_DATA => no cat
 	// r = 0xE000023F ERROR_NO_AUTHENTICODE_CATALOG => user cancelled on warnings
 	// r = 0xE0000235 ERROR_IN_WOW64 => trying to run a 32 bit installer on a 64 bit machine
@@ -321,6 +322,9 @@ static __inline int process_error(DWORD r, char* path) {
 	case ERROR_WRONG_INF_STYLE:
 	case ERROR_GENERAL_SYNTAX:
 		plog("the syntax of the inf is invalid");
+		return WDI_ERROR_INF_SYNTAX;
+	case ERROR_BAD_SERVICE_INSTALLSECT:
+		plog("a section of the inf has a problem");
 		return WDI_ERROR_INF_SYNTAX;
 	case ERROR_INVALID_CATALOG_DATA:
 		plog("unable to locate cat file");

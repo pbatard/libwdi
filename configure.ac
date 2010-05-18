@@ -19,7 +19,13 @@ AC_ARG_WITH(ddkdir,
 	DDK_DIR=$withval,
 	DDK_DIR="C:/WinDDK/7600.16385.0")
 
-# TODO: better CFLAGS
+AC_ARG_WITH(libusb0,
+ 	AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location]),
+ 	LIBUSB0_DIR=$withval,
+ 	LIBUSB0_DIR="")
+if test "x$LIBUSB0_DIR" != "x"; then
+	AC_DEFINE_UNQUOTED([LIBUSB0_DIR], ["${LIBUSB0_DIR}"], [embed libusb0 driver files from the following location])
+fi	
 
 AC_MSG_CHECKING([development environment])
 case $host in
@@ -31,7 +37,6 @@ case $host in
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
 	AM_CFLAGS=""	
-	# -mno-cygwin
 	save_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} -mno-cygwin"
 	AC_MSG_CHECKING([if -mno-cygwin is supported])
@@ -53,7 +58,6 @@ case $host in
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
-#LIBS="-lsetupapi -lole32"
 AM_LDFLAGS="-no-undefined -avoid-version"
 AC_CHECK_TOOL(RC, windres, no)
 

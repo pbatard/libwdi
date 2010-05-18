@@ -68,7 +68,7 @@ struct wdi_device_info {
  */
 enum wdi_driver_type {
 	WDI_WINUSB,
-	WDI_LIBUSB		// NOT IMPLEMENTED!
+	WDI_LIBUSB
 };
 
 /*

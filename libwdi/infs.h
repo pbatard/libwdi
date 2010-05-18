@@ -82,6 +82,106 @@ const char winusb_inf[] = "ProviderName = \"libusb 1.0\"\n" \
 	"WdfCoInstaller01009.dll=2\n\n" \
 	"[SourceDisksFiles.ia64]\n";
 
-const char libusb_inf[] = "NOT IMPLEMENTED YET\n";
+const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
+	"libusb0SvcDesc = \"libusb-win32 Driver Service\"\n" \
+	"DiskName = \"libusb-win32 Device Install Disk\"\n" \
+	"ClassName = \"libusb-win32 devices\"\n\n" \
+	"[Version]\n" \
+	"DriverVer = %Date%,1\n" \
+	"Signature = \"$Windows NT$\"\n" \
+	"Class = %ClassName%\n" \
+	"ClassGuid = {EB781AAF-9C70-4523-A5DF-642A87ECA567}\n" \
+	"Provider = %ProviderName%\n" \
+	"CatalogFile = libusb0_device.cat\n\n" \
+	"[ClassInstall32]\n" \
+	"Addreg = libusb0DeviceClassReg\n\n" \
+	"[libusb0DeviceClassReg]\n" \
+	"HKR,,,0,%ClassName%\n" \
+	"HKR,,Icon,,-20\n\n" \
+	"[Manufacturer]\n" \
+	"%ProviderName% = libusb0Device,NTx86,NTamd64\n\n" \
+	"[libusb0Device.NTx86]\n" \
+	"%DeviceName% = LIBUSB0_DEV, USB\\%DeviceID%\n\n" \
+	"[libusb0Device.NTamd64]\n" \
+	"%DeviceName% = LIBUSB0_DEV, USB\\%DeviceID%\n\n" \
+	";--------------------------------------------------------------------------\n" \
+	"; Files\n" \
+	";--------------------------------------------------------------------------\n\n" \
+	"[SourceDisksNames]\n" \
+	"1 = %DiskName%,,,\\x86\n" \
+	"2 = %DiskName%,,,\\amd64\n" \
+	"3 = %DiskName%,,,\\ia64\n\n" \
+	"[SourceDisksFiles.x86]\n" \
+	"libusb0.sys = 1\n" \
+	"libusb0.dll = 1\n\n" \
+	"[SourceDisksFiles.amd64]\n" \
+	"libusb0_x64.sys = 2\n" \
+	"libusb0_x64.dll = 2\n\n" \
+	"[SourceDisksFiles.ia64]\n\n" \
+	"[DestinationDirs]\n" \
+	"libusb_files_sys = 10,system32\\drivers\n" \
+	"libusb_files_sys_x64 = 10,system32\\drivers\n" \
+	"libusb_files_dll = 10,system32\n" \
+	"libusb_files_dll_wow64 = 10,syswow64\n" \
+	"libusb_files_dll_x64 = 10,system32\n\n" \
+	"[libusb_files_sys]\n" \
+	"libusb0.sys\n\n" \
+	"[libusb_files_sys_x64]\n" \
+	"libusb0_x64.sys\n\n" \
+	"[libusb_files_dll]\n" \
+	"libusb0.dll\n\n" \
+	"[libusb_files_dll_wow64]\n" \
+	"libusb0_x64.dll\n\n" \
+	"[libusb_files_dll_x64]\n" \
+	"libusb0_x64.dll\n\n" \
+	";--------------------------------------------------------------------------\n" \
+	"; Device driver\n" \
+	";--------------------------------------------------------------------------\n\n" \
+	"[LIBUSB0_DEV]\n" \
+	"CopyFiles = libusb_files_sys, libusb_files_dll\n" \
+	"AddReg    = libusb_add_reg\n\n" \
+	"[LIBUSB0_DEV.NT]\n" \
+	"CopyFiles = libusb_files_sys, libusb_files_dll\n\n" \
+	"[LIBUSB0_DEV.NTAMD64]\n" \
+	"CopyFiles = libusb_files_sys_x64, libusb_files_dll_wow64, libusb_files_dll_x64\n\n" \
+	"[LIBUSB0_DEV.HW]\n" \
+	"DelReg = libusb_del_reg_hw\n" \
+	"AddReg = libusb_add_reg_hw\n\n" \
+	"[LIBUSB0_DEV.NT.HW]\n" \
+	"DelReg = libusb_del_reg_hw\n" \
+	"AddReg = libusb_add_reg_hw\n\n" \
+	"[LIBUSB0_DEV.NTAMD64.HW]\n" \
+	"DelReg = libusb_del_reg_hw\n" \
+	"AddReg = libusb_add_reg_hw\n\n" \
+	"[LIBUSB0_DEV.NT.Services]\n" \
+	"AddService = libusb0, 0x00000002, libusb_add_service\n\n" \
+	"[LIBUSB0_DEV.NTAMD64.Services]\n" \
+	"AddService = libusb0, 0x00000002, libusb_add_service_x64\n\n" \
+	"[libusb_add_reg]\n" \
+	"HKR,,DevLoader,,*ntkern\n" \
+	"HKR,,NTMPDriver,,libusb0.sys\n\n" \
+	"; Older versions of this .inf file installed filter drivers. They are not\n" \
+	"; needed any more and must be removed\n" \
+	"[libusb_del_reg_hw]\n" \
+	"HKR,,LowerFilters\n" \
+	"HKR,,UpperFilters\n\n" \
+	"; Device properties\n" \
+	"[libusb_add_reg_hw]\n" \
+	"HKR,,SurpriseRemovalOK, 0x00010001, 1\n\n" \
+	";--------------------------------------------------------------------------\n" \
+	"; Services\n" \
+	";--------------------------------------------------------------------------\n\n" \
+	"[libusb_add_service]\n" \
+	"DisplayName    = %libusb0SvcDesc%\n" \
+	"ServiceType    = 1\n" \
+	"StartType      = 3\n" \
+	"ErrorControl   = 0\n" \
+	"ServiceBinary  = %12%\\libusb0.sys\n" \
+	"[libusb_add_service_x64]\n" \
+	"DisplayName    = %libusb0SvcDesc%\n" \
+	"ServiceType    = 1\n" \
+	"StartType      = 3\n" \
+	"ErrorControl   = 0\n" \
+	"ServiceBinary  = %12%\\libusb0_x64.sys\n";
 
 const char* inf[2] = {winusb_inf, libusb_inf};

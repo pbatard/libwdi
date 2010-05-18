@@ -562,8 +562,9 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 		return WDI_ERROR_NOT_FOUND;
 	}
 
-	if (type == WDI_LIBUSB) {
-		wdi_err("libusb support is not implemented yet - defaulting to WinUSB");
+	if ( (type != WDI_LIBUSB) && (type != WDI_WINUSB) )  {
+		wdi_err("unknown type");
+		return WDI_ERROR_INVALID_PARAM;
 	}
 
 	// Try to create directory if it doesn't exist

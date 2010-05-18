@@ -10,6 +10,9 @@
 #define DDK_DIR "E:/WinDDK/7600.16385.0"
 #endif
 
+/* embed libusb0 driver files from the following location */
+#define LIBUSB0_DIR "D:/libusb0"
+
 /* DDK WDF coinstaller version (string) */
 #define WDF_VER "01009"
 

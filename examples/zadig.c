@@ -50,6 +50,7 @@ HWND hMain;
 HWND hInfo;
 HMENU hMenu;
 char path[MAX_PATH];
+bool use_winusb = true;
 
 /*
  * On screen logging
@@ -174,7 +175,8 @@ void install_driver(struct wdi_device_info *dev)
 		}
 	}
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-	if (wdi_create_inf(device, path, INF_NAME, WDI_WINUSB) == 0) {
+	if (wdi_create_inf(device, path, INF_NAME,
+		use_winusb?WDI_WINUSB:WDI_LIBUSB) == 0) {
 		dprintf("Extracted driver files to %s\n", path);
 		if (wdi_install_driver(device, path, INF_NAME) == 0) {
 			dprintf("SUCCESS\n");
@@ -317,6 +319,18 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		break;
 
+	case WM_VSCROLL:
+		// TODO: ability to scroll existing driver text
+		if (LOWORD(wParam) == 4) {
+			use_winusb = !(use_winusb);
+			if (use_winusb) {
+				SetDlgItemText(hMain, IDC_TARGET_DRIVER, "WinUSB");
+			} else {
+				SetDlgItemText(hMain, IDC_TARGET_DRIVER, "libusb0");
+			}
+		}
+		break;
+
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDC_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
@@ -387,10 +401,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						}
 					}
 					if (device->driver != NULL) {
-						SendMessage(hDriver, WM_SETTEXT, 0, (LPARAM)device->driver);
+						SetDlgItemText(hMain, IDC_DRIVER, device->driver);
 					} else {
-						SendMessage(hDriver, WM_SETTEXT, 0, (LPARAM)"(NONE)");
+						SetDlgItemText(hMain, IDC_DRIVER, "(NONE)");
 					}
+					use_winusb = true;
+					SetDlgItemText(hMain, IDC_TARGET_DRIVER, "WinUSB");
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
@@ -446,6 +462,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		break;
 
 	}
+	// TODO: return TRUE on handled messages
 	return FALSE;
 }
 

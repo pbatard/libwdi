@@ -22,10 +22,10 @@
 /*
  * This include defines the driver files that should be embedded in the library
  * If you want to add extra files from a specific directory (eg signed inf and cat)
- * you could define the macro below and uncomment the 2 lines starting by EXTRA_DIR
+ * you could define the macro below and uncomment the 2 lines starting by USER_DIR
  * in the embeddable[] table
  */
-#define EXTRA_DIR "C:\\signeddriver"
+#define USER_DIR "C:\\signeddriver"
 
 struct emb {
 	char* file_name;
@@ -36,20 +36,33 @@ struct emb {
  * files to embed
  */
 struct emb embeddable[] = {
-	// WinUSB driver DLLs (32 and 64 bit)
+
 #if defined(OPT_M32)
 	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86" },
+#if defined(LIBUSB0_DIR)
+	{ LIBUSB0_DIR "\\x86\\libusb0.dll", "x86" },
+	{ LIBUSB0_DIR "\\x86\\libusb0.sys", "x86" },
+#endif
 	{ INSTALLER_PATH_32 "\\installer_x86.exe", "." },
 #endif
+
 #if defined(OPT_M64)
 	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64" },
+#if defined(LIBUSB0_DIR)
+	{ LIBUSB0_DIR "\\amd64\\libusb0_x64.dll", "amd64" },
+	{ LIBUSB0_DIR "\\amd64\\libusb0_x64.sys", "amd64" },
+#endif
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
-	{ DDK_DIR "\\license.rtf", "." },
-//	{ EXTRA_DIR "\\mydriver.inf", "." },
-//	{ EXTRA_DIR "\\mydriver.cat", "." },
+
+	{ DDK_DIR "\\license.rtf", "." },	// WinUSB License file
+// TODO: include libusb0.sys license
+
+	// User supplied files
+//	{ USER_DIR "\\mydriver.inf", "." },
+//	{ USER_DIR "\\mydriver.cat", "." },
 };
 
 
