@@ -73,14 +73,12 @@ const char winusb_inf[] = "ProviderName = \"libusb 1.0\"\n" \
 	"[SourceDisksNames]\n" \
 	"1 = %DiskName%,,,\\x86\n" \
 	"2 = %DiskName%,,,\\amd64\n" \
-	"3 = %DiskName%,,,\\ia64\n\n" \
 	"[SourceDisksFiles.x86]\n" \
 	"WinUSBCoInstaller2.dll=1\n" \
 	"WdfCoInstaller01009.dll=1\n\n" \
 	"[SourceDisksFiles.amd64]\n" \
 	"WinUSBCoInstaller2.dll=2\n" \
-	"WdfCoInstaller01009.dll=2\n\n" \
-	"[SourceDisksFiles.ia64]\n";
+	"WdfCoInstaller01009.dll=2\n";
 
 const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"libusb0SvcDesc = \"libusb-win32 Driver Service\"\n" \
@@ -110,14 +108,12 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"[SourceDisksNames]\n" \
 	"1 = %DiskName%,,,\\x86\n" \
 	"2 = %DiskName%,,,\\amd64\n" \
-	"3 = %DiskName%,,,\\ia64\n\n" \
 	"[SourceDisksFiles.x86]\n" \
 	"libusb0.sys = 1\n" \
 	"libusb0.dll = 1\n\n" \
 	"[SourceDisksFiles.amd64]\n" \
 	"libusb0_x64.sys = 2\n" \
 	"libusb0_x64.dll = 2\n\n" \
-	"[SourceDisksFiles.ia64]\n\n" \
 	"[DestinationDirs]\n" \
 	"libusb_files_sys = 10,system32\\drivers\n" \
 	"libusb_files_sys_x64 = 10,system32\\drivers\n" \
