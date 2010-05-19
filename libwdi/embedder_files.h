@@ -51,8 +51,8 @@ struct emb embeddable[] = {
 	{ DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64" },
 #if defined(LIBUSB0_DIR)
-	{ LIBUSB0_DIR "\\amd64\\libusb0_x64.dll", "amd64" },
-	{ LIBUSB0_DIR "\\amd64\\libusb0_x64.sys", "amd64" },
+	{ LIBUSB0_DIR "\\amd64\\libusb0.dll", "amd64" },
+	{ LIBUSB0_DIR "\\amd64\\libusb0.sys", "amd64" },
 #endif
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif

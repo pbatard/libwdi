@@ -112,8 +112,8 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"libusb0.sys = 1\n" \
 	"libusb0.dll = 1\n\n" \
 	"[SourceDisksFiles.amd64]\n" \
-	"libusb0_x64.sys = 2\n" \
-	"libusb0_x64.dll = 2\n\n" \
+	"libusb0.sys = 2\n" \
+	"libusb0.dll = 2\n\n" \
 	"[DestinationDirs]\n" \
 	"libusb_files_sys = 10,system32\\drivers\n" \
 	"libusb_files_sys_x64 = 10,system32\\drivers\n" \
@@ -123,13 +123,13 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"[libusb_files_sys]\n" \
 	"libusb0.sys\n\n" \
 	"[libusb_files_sys_x64]\n" \
-	"libusb0_x64.sys\n\n" \
+	"libusb0.sys\n\n" \
 	"[libusb_files_dll]\n" \
 	"libusb0.dll\n\n" \
 	"[libusb_files_dll_wow64]\n" \
-	"libusb0_x64.dll\n\n" \
+	"libusb0.dll\n\n" \
 	"[libusb_files_dll_x64]\n" \
-	"libusb0_x64.dll\n\n" \
+	"libusb0.dll\n\n" \
 	";--------------------------------------------------------------------------\n" \
 	"; Device driver\n" \
 	";--------------------------------------------------------------------------\n\n" \
@@ -152,7 +152,7 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"[LIBUSB0_DEV.NT.Services]\n" \
 	"AddService = libusb0, 0x00000002, libusb_add_service\n\n" \
 	"[LIBUSB0_DEV.NTAMD64.Services]\n" \
-	"AddService = libusb0, 0x00000002, libusb_add_service_x64\n\n" \
+	"AddService = libusb0, 0x00000002, libusb_add_service\n\n" \
 	"[libusb_add_reg]\n" \
 	"HKR,,DevLoader,,*ntkern\n" \
 	"HKR,,NTMPDriver,,libusb0.sys\n\n" \
@@ -172,12 +172,6 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"ServiceType    = 1\n" \
 	"StartType      = 3\n" \
 	"ErrorControl   = 0\n" \
-	"ServiceBinary  = %12%\\libusb0.sys\n" \
-	"[libusb_add_service_x64]\n" \
-	"DisplayName    = %libusb0SvcDesc%\n" \
-	"ServiceType    = 1\n" \
-	"StartType      = 3\n" \
-	"ErrorControl   = 0\n" \
-	"ServiceBinary  = %12%\\libusb0_x64.sys\n";
+	"ServiceBinary  = %12%\\libusb0.sys\n";
 
 const char* inf[2] = {winusb_inf, libusb_inf};
