@@ -497,7 +497,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	SetupDiDestroyDeviceInfoList(dev_info);
 
 	*list = start;
-	return WDI_SUCCESS;
+	return (*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS;
 }
 
 void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
