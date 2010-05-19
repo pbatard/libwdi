@@ -62,7 +62,7 @@ main(void)
 		if ((c!='y') && (c!='Y')) {
 			continue;
 		}
-		if (wdi_create_inf(device, DEFAULT_DIR, INF_NAME, WDI_WINUSB) == 0) {
+		if (wdi_create_inf(device, DEFAULT_DIR, INF_NAME, WDI_WINUSB) == WDI_SUCCESS) {
 			wdi_install_driver(device, DEFAULT_DIR, INF_NAME);
 		}
 	}
