@@ -170,9 +170,11 @@ void install_driver(struct wdi_device_info *dev)
 			GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
 			if ( (strlen(str_buf) != 0)
 			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-				device->mi = (short)tmp;
+				device->is_composite = true;
+				device->mi = (unsigned char)tmp;
 			} else {
-				device->mi = -1;
+				device->is_composite = false;
+				device->mi = 0;
 			}
 		}
 	}

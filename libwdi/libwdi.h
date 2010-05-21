@@ -45,22 +45,24 @@ extern "C" {
  * Device information structure, use by libwdi functions
  */
 struct wdi_device_info {
-	/** Pointer to the next element in the chained list */
+	/** (Optional) Pointer to the next element in the chained list. NULL if unused */
 	struct wdi_device_info *next;
-	/** Microsoft's device URI string */
-	char* device_id;
-	/** Microsoft's hardware ID string */
-	char* hardware_id;
-	/** USB Device description, usually provided by the device irself */
-	char* desc;
-	/** Windows' driver (service) name */
-	char* driver;
 	/** USB VID */
 	unsigned short vid;
 	/** USB PID */
 	unsigned short pid;
-	/** Optional composite USB interface number. Negative if none */
-	short mi;
+	/** Whether the USB device is composite */
+	bool is_composite;
+	/** (Optional) Composite USB interface number */
+	unsigned char mi;
+	/** USB Device description, usually provided by the device irself */
+	char* desc;
+	/** Windows' driver (service) name */
+	char* driver;
+	/** (Optional) Microsoft's device URI string. NULL if unused */
+	char* device_id;
+	/** (Optional) Microsoft's hardware ID string. NULL if unused */
+	char* hardware_id;
 };
 
 /*
@@ -158,7 +160,7 @@ enum wdi_error {
 /*
  * Convert a libwdi error to a human readable error message
  */
-const char* LIBWDI_API wdi_strerror(enum wdi_error errcode);
+const char* LIBWDI_API wdi_strerror(int errcode);
 
 /*
  * Return a wdi_device_info list of USB devices
@@ -169,7 +171,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 /*
  * Release a wdi_device_info list allocated by the previous call
  */
-void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
+int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
 
 /*
  * Create an inf file for a specific device

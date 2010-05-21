@@ -225,7 +225,7 @@ static int check_dir(char* path, bool create)
  * \param errcode the error code whose description is desired
  * \returns a short description of the error code in English
  */
-const char* LIBWDI_API wdi_strerror(enum wdi_error errcode)
+const char* LIBWDI_API wdi_strerror(int errcode)
 {
 	switch (errcode)
 	{
@@ -441,7 +441,8 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 			}
 		}
 
-		device_info->mi = -1;	// No interface number by default
+		device_info->is_composite = false;	// non composite by default
+		device_info->mi = 0;
 		token = strtok (strbuf, "\\#&");
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
@@ -465,7 +466,8 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 						if (sscanf(token, "MI_%02X", &tmp) != 1) {
 							wdi_err("could not convert MI string");
 						} else {
-							device_info->mi = (short)tmp;
+							device_info->is_composite = true;
+							device_info->mi = (unsigned char)tmp;
 							if ((wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH) {
 								_snwprintf(&desc[wcslen(desc)], sizeof(" (Interface ###)"),
 									L" (Interface %d)", device_info->mi);
@@ -500,7 +502,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	return (*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS;
 }
 
-void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
+int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 {
 	struct wdi_device_info *tmp;
 	while(list != NULL) {
@@ -508,6 +510,7 @@ void LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 		list = list->next;
 		free_di(tmp);
 	}
+	return WDI_SUCCESS;
 }
 
 // extract the embedded binary resources
@@ -593,7 +596,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	fprintf(fd, "[Strings]\n");
 	fprintf(fd, "DeviceName = \"%s\"\n", device_info->desc);
 	fprintf(fd, "DeviceID = \"VID_%04X&PID_%04X", device_info->vid, device_info->pid);
-	if (device_info->mi >= 0) {
+	if (device_info->is_composite) {
 		fprintf(fd, "&MI_%02X\"\n", device_info->mi);
 	} else {
 		fprintf(fd, "\"\n");
