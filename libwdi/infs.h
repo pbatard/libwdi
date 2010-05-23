@@ -97,7 +97,9 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"HKR,,,0,%ClassName%\n" \
 	"HKR,,Icon,,-20\n\n" \
 	"[Manufacturer]\n" \
-	"%ProviderName% = libusb0Device,NTx86,NTamd64\n\n" \
+	"%ProviderName% = libusb0Device,NT,NTx86,NTamd64\n\n" \
+	"[libusb0Device.NT]\n" \
+	"%DeviceName% = LIBUSB0_DEV, USB\\%DeviceID%\n\n" \
 	"[libusb0Device.NTx86]\n" \
 	"%DeviceName% = LIBUSB0_DEV, USB\\%DeviceID%\n\n" \
 	"[libusb0Device.NTamd64]\n" \
@@ -106,43 +108,31 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"; Files\n" \
 	";--------------------------------------------------------------------------\n\n" \
 	"[SourceDisksNames]\n" \
-	"1 = %DiskName%,,,\\x86\n" \
-	"2 = %DiskName%,,,\\amd64\n" \
+	"1 = %DiskName%\n\n" \
 	"[SourceDisksFiles.x86]\n" \
-	"libusb0.sys = 1\n" \
-	"libusb0.dll = 1\n\n" \
+	"libusb0.sys = 1,x86\n" \
+	"libusb0.dll = 1,x86\n\n" \
 	"[SourceDisksFiles.amd64]\n" \
-	"libusb0.sys = 2\n" \
-	"libusb0.dll = 2\n\n" \
+	"libusb0.sys = 1,amd64\n" \
+	"libusb0.dll = 1,amd64\n" \
+	"x86\\libubs0.dll = 1\n\n" \
 	"[DestinationDirs]\n" \
 	"libusb_files_sys = 10,system32\\drivers\n" \
-	"libusb_files_sys_x64 = 10,system32\\drivers\n" \
 	"libusb_files_dll = 10,system32\n" \
-	"libusb_files_dll_wow64 = 10,syswow64\n" \
-	"libusb_files_dll_x64 = 10,system32\n\n" \
+	"libusb_files_dll_wow64 = 10,syswow64\n\n" \
 	"[libusb_files_sys]\n" \
-	"libusb0.sys\n\n" \
-	"[libusb_files_sys_x64]\n" \
 	"libusb0.sys\n\n" \
 	"[libusb_files_dll]\n" \
 	"libusb0.dll\n\n" \
 	"[libusb_files_dll_wow64]\n" \
-	"libusb0.dll\n\n" \
-	"[libusb_files_dll_x64]\n" \
-	"libusb0.dll\n\n" \
+	"libusb0.dll,x86\\libusb0.dll\n\n" \
 	";--------------------------------------------------------------------------\n" \
 	"; Device driver\n" \
 	";--------------------------------------------------------------------------\n\n" \
-	"[LIBUSB0_DEV]\n" \
-	"CopyFiles = libusb_files_sys, libusb_files_dll\n" \
-	"AddReg    = libusb_add_reg\n\n" \
 	"[LIBUSB0_DEV.NT]\n" \
 	"CopyFiles = libusb_files_sys, libusb_files_dll\n\n" \
 	"[LIBUSB0_DEV.NTAMD64]\n" \
-	"CopyFiles = libusb_files_sys_x64, libusb_files_dll_wow64, libusb_files_dll_x64\n\n" \
-	"[LIBUSB0_DEV.HW]\n" \
-	"DelReg = libusb_del_reg_hw\n" \
-	"AddReg = libusb_add_reg_hw\n\n" \
+	"CopyFiles = libusb_files_sys, libusb_files_dll, libusb_files_dll_wow64\n\n" \
 	"[LIBUSB0_DEV.NT.HW]\n" \
 	"DelReg = libusb_del_reg_hw\n" \
 	"AddReg = libusb_add_reg_hw\n\n" \
@@ -153,9 +143,6 @@ const char libusb_inf[] = "ProviderName = \"libusb-win32\"\n" \
 	"AddService = libusb0, 0x00000002, libusb_add_service\n\n" \
 	"[LIBUSB0_DEV.NTAMD64.Services]\n" \
 	"AddService = libusb0, 0x00000002, libusb_add_service\n\n" \
-	"[libusb_add_reg]\n" \
-	"HKR,,DevLoader,,*ntkern\n" \
-	"HKR,,NTMPDriver,,libusb0.sys\n\n" \
 	"; Older versions of this .inf file installed filter drivers. They are not\n" \
 	"; needed any more and must be removed\n" \
 	"[libusb_del_reg_hw]\n" \
