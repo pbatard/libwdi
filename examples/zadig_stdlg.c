@@ -32,6 +32,9 @@
 #include "resource.h"
 #include "zadig.h"
 
+// Available on Vista and later
+static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
+
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
  * Returns NULL on error
@@ -141,65 +144,74 @@ void browse_for_folder(void) {
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
-	hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
-		&IID_IFileOpenDialog, (LPVOID) &pfod);
-	if (FAILED(hr)) {
-		dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
-		pfod = NULL;	// Just in case
-		goto fallback;
-	}
-	hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
-	if (FAILED(hr)) {
-		dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
-		goto fallback;
-	}
-	// Set the initial folder (if the path is invalid, will simply use last)
-	wpath = utf8_to_wchar(path);
-	// The new IFileOpenDialog makes us split the path
-	fname = NULL;
-	if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
-		for (i=wcslen(wpath)-1; i!=0; i--) {
-			if (wpath[i] == L'\\') {
-				wpath[i] = 0;
-				fname = &wpath[i+1];
-				break;
-			}
-		}
+	// Even if we have Vista support with the compiler,
+	// it does not mean we have the Vista API available
+	if (pSHCreateItemFromParsingName == NULL) {
+		pSHCreateItemFromParsingName = (HRESULT (__stdcall *)(PCWSTR, IBindCtx*, REFIID, void **))
+			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");
 	}
 
-	hr = SHCreateItemFromParsingName(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
-	if (SUCCEEDED(hr)) {
-		if (wpath != NULL) {
-			hr = pfod->lpVtbl->SetFolder(pfod, si_path);
+	if (pSHCreateItemFromParsingName != NULL) {
+		hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
+			&IID_IFileOpenDialog, (LPVOID) &pfod);
+		if (FAILED(hr)) {
+			dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
+			pfod = NULL;	// Just in case
+			goto fallback;
 		}
-		if (fname != NULL) {
-			hr = pfod->lpVtbl->SetFileName(pfod, fname);
-		}
-	}
-	safe_free(wpath);
-
-	hr = pfod->lpVtbl->Show(pfod, hMain);
-	if (SUCCEEDED(hr)) {
-		hr = pfod->lpVtbl->GetResult(pfod, &psi);
-		if (SUCCEEDED(hr)) {
-			psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
-			tmp_path = wchar_to_utf8(wpath);
-			if (tmp_path == NULL) {
-				dprintf("Could not convert path\n");
-			} else {
-				SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
-				safe_free(tmp_path);
-			}
-		} else {
+		hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
+		if (FAILED(hr)) {
 			dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
+			goto fallback;
 		}
-	} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
-		// If it's not a user cancel, assume the dialog didn't show and fallback
-		dprintf("could not show FileOpenDialog: error %X\n", hr);
-		goto fallback;
+		// Set the initial folder (if the path is invalid, will simply use last)
+		wpath = utf8_to_wchar(path);
+		// The new IFileOpenDialog makes us split the path
+		fname = NULL;
+		if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
+			for (i=wcslen(wpath)-1; i!=0; i--) {
+				if (wpath[i] == L'\\') {
+					wpath[i] = 0;
+					fname = &wpath[i+1];
+					break;
+				}
+			}
+		}
+
+		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+		if (SUCCEEDED(hr)) {
+			if (wpath != NULL) {
+				hr = pfod->lpVtbl->SetFolder(pfod, si_path);
+			}
+			if (fname != NULL) {
+				hr = pfod->lpVtbl->SetFileName(pfod, fname);
+			}
+		}
+		safe_free(wpath);
+
+		hr = pfod->lpVtbl->Show(pfod, hMain);
+		if (SUCCEEDED(hr)) {
+			hr = pfod->lpVtbl->GetResult(pfod, &psi);
+			if (SUCCEEDED(hr)) {
+				psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
+				tmp_path = wchar_to_utf8(wpath);
+				if (tmp_path == NULL) {
+					dprintf("Could not convert path\n");
+				} else {
+					SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
+					safe_free(tmp_path);
+				}
+			} else {
+				dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
+			}
+		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
+			// If it's not a user cancel, assume the dialog didn't show and fallback
+			dprintf("could not show FileOpenDialog: error %X\n", hr);
+			goto fallback;
+		}
+		pfod->lpVtbl->Release(pfod);
+		return;
 	}
-	pfod->lpVtbl->Release(pfod);
-	return;
 fallback:
 	if (pfod != NULL) {
 		pfod->lpVtbl->Release(pfod);
