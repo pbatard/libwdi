@@ -184,6 +184,28 @@ static char err_string[STR_BUFFER_SIZE];
 }
 
 /*
+ * Find out if the driver selected is actually embedded in this version of the library
+ */
+bool LIBWDI_API wdi_is_driver_supported(int driver_type)
+{
+	switch (driver_type) {
+	case WDI_WINUSB:
+		// For now, WinUSB is always included
+		return true;
+	case WDI_LIBUSB:
+#if defined(LIBUSB0_DIR)
+		return true;
+#else
+		return false;
+#endif
+	// TODO: add custom driver
+	default:
+		wdi_err("unknown driver type");
+		return WDI_ERROR_INVALID_PARAM;
+	}
+}
+
+/*
  * Check whether the path is a directory with write access
  * if create is true, create directory if it doesn't exist
  */
@@ -703,7 +725,6 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 		wdi_err("one of the required parameter is NULL");
 		return WDI_ERROR_INVALID_PARAM;
 	}
-
 
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
