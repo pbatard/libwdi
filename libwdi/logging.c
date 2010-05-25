@@ -157,7 +157,7 @@ void wdi_log(enum wdi_log_level level,
 int create_logger(void)
 {
 	if (logger_wr_handle != INVALID_HANDLE_VALUE) {
-		// We don't have logging, so try to reach a stderr
+		// We (supposedly) don't have logging, so try to reach a stderr
 		fprintf(stderr, "trying to recreate logger pipe\n");
 		return WDI_ERROR_EXISTS;
 	}
@@ -185,6 +185,19 @@ int create_logger(void)
 	return WDI_SUCCESS;
 }
 
+// Destroy the logging pipe
+void destroy_logger(void)
+{
+	if (logger_wr_handle != INVALID_HANDLE_VALUE) {
+		CloseHandle(logger_wr_handle);
+		logger_wr_handle = INVALID_HANDLE_VALUE;
+	}
+	if (logger_rd_handle != INVALID_HANDLE_VALUE) {
+		CloseHandle(logger_rd_handle);
+		logger_rd_handle = INVALID_HANDLE_VALUE;
+	}
+}
+
 /*
  * Register a Window as destination for logging message
  * This Window will be notified with a message event and should call
@@ -208,35 +221,55 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message)
 }
 
 /*
+ * Unregister a Window as destination for logging message
+ */
+int LIBWDI_API wdi_unregister_logger(HWND hWnd)
+{
+	if (logger_dest == NULL) {
+		return WDI_SUCCESS;
+	}
+
+	if (logger_dest != hWnd) {
+		return WDI_ERROR_INVALID_PARAM;
+	}
+
+	destroy_logger();
+	logger_dest = NULL;
+	logger_msg = 0;
+
+	return WDI_SUCCESS;
+}
+
+/*
  * Read a log message
  */
-int LIBWDI_API wdi_read_logger(char* buffer, DWORD length, DWORD* read_size)
+int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size)
 {
 	int size;
 
-	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger() != 0) ) {
-		*read_size = 0;
+	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger() != WDI_SUCCESS) ) {
+		*message_size = 0;
 		return WDI_ERROR_NOT_FOUND;
 	}
 
 	if (log_messages_pending == 0) {
-		size = safe_snprintf(buffer, length, "ERROR: log buffer is empty");
+		size = safe_snprintf(buffer, buffer_size, "ERROR: log buffer is empty");
 		if (size <0) {
-			buffer[length-1] = 0;
-			return length;
+			buffer[buffer_size-1] = 0;
+			return buffer_size;
 		}
-		*read_size = (DWORD)size;
+		*message_size = (DWORD)size;
 		return WDI_SUCCESS;
 	}
 	log_messages_pending--;
 
 	// TODO: use a flag to prevent readout if no data
-	if (ReadFile(logger_rd_handle, (void*)buffer, length, read_size, NULL)) {
+	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
 		// TODO: add LF?
 		return WDI_SUCCESS;
 	}
 
-	*read_size = 0;
+	*message_size = 0;
 	return WDI_ERROR_IO;
 }
 

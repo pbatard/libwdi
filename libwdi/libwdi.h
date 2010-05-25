@@ -177,7 +177,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
  * Create an inf file for a specific device
  */
 int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
-							  char* inf_name, enum wdi_driver_type type);
+							  char* inf_name, int driver_type);
 
 /*
  * Install a driver for a specific device
@@ -195,9 +195,14 @@ int LIBWDI_API wdi_set_log_level(int level);
 int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
 
 /*
+ * Unset the Windows callback message for log notification
+ */
+int LIBWDI_API wdi_unregister_logger(HWND hWnd);
+
+/*
  * Read a log message after a log notification
  */
-int LIBWDI_API wdi_read_logger(char* buffer, DWORD length, DWORD* read_size);
+int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size);
 
 #ifdef __cplusplus
 }

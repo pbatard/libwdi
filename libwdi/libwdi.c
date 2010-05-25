@@ -550,7 +550,7 @@ int extract_binaries(char* path)
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
 int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
-							  char* inf_name, enum wdi_driver_type type)
+							  char* inf_name, int driver_type)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -559,18 +559,19 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	SYSTEMTIME system_time;
 
 	// TODO? create a reusable temp dir if path is NULL?
-	if ((path == NULL) || (device_info == NULL)) {
-		return -1;
+	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
+		wdi_err("one of the required parameter is NULL");
+		return WDI_ERROR_INVALID_PARAM;
+	}
+
+	if ( (driver_type != WDI_LIBUSB) && (driver_type != WDI_WINUSB) )  {
+		wdi_err("unknown type");
+		return WDI_ERROR_INVALID_PARAM;
 	}
 
 	if (device_info->desc == NULL) {
 		wdi_err("no description was given for the device - aborting");
 		return WDI_ERROR_NOT_FOUND;
-	}
-
-	if ( (type != WDI_LIBUSB) && (type != WDI_WINUSB) )  {
-		wdi_err("unknown type");
-		return WDI_ERROR_INVALID_PARAM;
 	}
 
 	// Try to create directory if it doesn't exist
@@ -579,7 +580,10 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 		return r;
 	}
 
-	extract_binaries(path);
+	r = extract_binaries(path);
+	if (r != WDI_SUCCESS) {
+		return r;
+	}
 
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
@@ -588,7 +592,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
 		wdi_err("failed to create file: %s", filename);
-		return WDI_ERROR_RESOURCE;
+		return WDI_ERROR_ACCESS;
 	}
 
 	fprintf(fd, "; %s\n", inf_name);
@@ -605,7 +609,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
 	GetLocalTime(&system_time);
 	fprintf(fd, "Date = \"%02d/%02d/%04d\"\n", system_time.wMonth, system_time.wDay, system_time.wYear);
-	fwrite(inf[type], strlen(inf[type]), 1, fd);
+	fwrite(inf[driver_type], strlen(inf[driver_type]), 1, fd);
 	fclose(fd);
 
 	wdi_dbg("succesfully created %s", filename);
@@ -673,7 +677,7 @@ int process_message(char* buffer, DWORD size)
 		break;
 	default:
 		wdi_err("unrecognized installer message");
-		return WDI_ERROR_OTHER;
+		return WDI_ERROR_NOT_FOUND;
 	}
 	return WDI_SUCCESS;
 }
@@ -693,6 +697,13 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	char buffer[STR_BUFFER_SIZE];
 
 	current_device = device_info;
+
+	// TODO? create a reusable temp dir if path is NULL?
+	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
+		wdi_err("one of the required parameter is NULL");
+		return WDI_ERROR_INVALID_PARAM;
+	}
+
 
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {

@@ -314,7 +314,7 @@ static __inline int process_error(DWORD r, char* path) {
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");
-		return WDI_ERROR_ACCESS;
+		return WDI_ERROR_NEEDS_ADMIN;
 	case ERROR_IN_WOW64:
 		plog("attempted to use a 32 bit installer on a 64 bit machine");
 		return WDI_ERROR_WOW64;
