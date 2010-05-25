@@ -70,17 +70,18 @@ struct wdi_device_info {
  */
 enum wdi_driver_type {
 	WDI_WINUSB,
-	WDI_LIBUSB
+	WDI_LIBUSB,
+	WDI_NB_DRIVERS	// Total number of drivers in the enum
 };
 
 /*
  * Log level
  */
 enum wdi_log_level {
-	LOG_LEVEL_DEBUG = 0,
-	LOG_LEVEL_INFO = 1,
-	LOG_LEVEL_WARNING = 2,
-	LOG_LEVEL_ERROR = 3
+	LOG_LEVEL_DEBUG,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_WARNING,
+	LOG_LEVEL_ERROR
 };
 
 /*

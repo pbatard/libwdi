@@ -36,8 +36,6 @@
 #include "resource.h"
 #include "zadig.h"
 
-// TODO: add config.h to find out if libusb0.sys is present
-
 #define INF_NAME "libusb_device.inf"
 #define EX_STYLE    (WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE | WS_EX_STATICEDGE | WS_EX_APPWINDOW)
 #define COMBO_STYLE (WS_CHILD | WS_VISIBLE | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP | CBS_NOINTEGRALHEIGHT)
@@ -52,7 +50,9 @@ HWND hMain;
 HWND hInfo;
 HMENU hMenu;
 char path[MAX_PATH];
-bool use_winusb = true;
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0" };
+int driver_type = WDI_NB_DRIVERS-1;
+//bool use_winusb = true;
 
 /*
  * On screen logging
@@ -179,8 +179,7 @@ void install_driver(struct wdi_device_info *dev)
 		}
 	}
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-	if (wdi_create_inf(device, path, INF_NAME,
-		use_winusb?WDI_WINUSB:WDI_LIBUSB) == WDI_SUCCESS) {
+	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dprintf("Extracted driver files to %s\n", path);
 		if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
 			dprintf("SUCCESS\n");
@@ -214,6 +213,25 @@ void combo_breaker(DWORD type)
 		hMain, (HMENU)IDC_DEVICELIST, main_instance, NULL);
 }
 
+bool select_next_driver(bool increment)
+{
+	int i;
+	bool found = false;
+
+	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
+		driver_type = (WDI_NB_DRIVERS + driver_type +
+			(increment?1:-1))%WDI_NB_DRIVERS;
+		if (!wdi_is_driver_supported(driver_type)) {
+			continue;
+		}
+		found = true;
+		break;
+	}
+	SetDlgItemText(hMain, IDC_TARGET_DRIVER,
+		found?driver_display_name[driver_type]:"(NONE)");
+	return found;
+}
+
 /*
  * Main dialog callback
  */
@@ -223,6 +241,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static bool list_driverless_only = true;
 	static char* editable_desc = NULL;
 	static HANDLE delay_thread = NULL;
+	static DWORD last_scroll = 0;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
 	int nb_devices, junk, r;
@@ -327,12 +346,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_VSCROLL:
 		// TODO: ability to scroll existing driver text
 		if (LOWORD(wParam) == 4) {
-			use_winusb = !(use_winusb);
-			if (use_winusb) {
-				SetDlgItemText(hMain, IDC_TARGET_DRIVER, "WinUSB");
-			} else {
-				SetDlgItemText(hMain, IDC_TARGET_DRIVER, "libusb0");
+			if (!select_next_driver(HIWORD(wParam) <= last_scroll)) {
+				dprintf("no driver is selectable in libwdi!");
 			}
+			last_scroll = HIWORD(wParam);
 		}
 		break;
 
@@ -410,8 +427,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					} else {
 						SetDlgItemText(hMain, IDC_DRIVER, "(NONE)");
 					}
-					use_winusb = true;
-					SetDlgItemText(hMain, IDC_TARGET_DRIVER, "WinUSB");
+					driver_type = WDI_NB_DRIVERS-1;
+					if (!select_next_driver(true)) {
+						dprintf("no driver is selectable in libwdi!");
+					}
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
