@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <setupapi.h>
+#include <process.h>
 #if defined(_MSC_VER)
 #include <newdev.h>
 #else
@@ -283,6 +284,113 @@ void check_removed(char* device_hardware_id)
 	}
 }
 
+/*
+ * Send individual lines of the syslog section pointed by buffer back to the main application
+ */
+DWORD process_syslog(char* xbuffer, DWORD size)
+{
+	DWORD i, pipe_size, junk, start = 0;
+	char* buffer;
+
+	if (xbuffer == NULL) return 0;
+	// xbuffer has an extra 1 byte at the beginning
+	buffer = xbuffer+1;
+
+	// CR/LF breakdown
+	for (i=0; i<size; i++) {
+		if ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) {
+			pipe_size = i-start+2;	// 1 extra bytes at each end of the message
+			do {
+				buffer[i++] = 0;
+			} while ( ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) && (i <= size) );
+
+			// This is where we use the extra start byte
+			buffer[start-1] = IC_SYSLOG_MESSAGE;
+			WriteFile(pipe_handle, &buffer[start-1], pipe_size, &junk, NULL);
+			start = i;
+		}
+	}
+	return start;
+}
+
+/*
+ * Read from the driver installation syslog in real-time
+ */
+void __cdecl syslog_reader_thread(void* param)
+{
+#define NB_SYSLOGS 3
+	char* syslog_name[NB_SYSLOGS] = { "\\inf\\setupapi.dev.log", "\\setupapi.log", "\\setupact.log" };
+	HANDLE log_handle;
+	DWORD last_offset, size, read_size;
+	char *buffer;
+	char log_path[MAX_PATH_LENGTH];
+	DWORD duration = 500;
+	int i;
+
+	// Try the various driver installation logs
+	for (i=0; i<NB_SYSLOGS; i++) {
+		safe_strcpy(log_path, MAX_PATH_LENGTH, getenv("WINDIR"));	// Use %WINDIR% env variable
+		safe_strcat(log_path, MAX_PATH_LENGTH, syslog_name[i]);
+		log_handle = CreateFileA(log_path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE,
+			NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+		if (log_handle != INVALID_HANDLE_VALUE) {
+			plog("using syslog '%s'", log_path);
+			break;
+		}
+	}
+	if (i == NB_SYSLOGS) {
+		plog("Could not open any syslog");
+		goto out;
+	}
+
+	// We assert that the log file is never gonna be bigger than 2 GB
+	last_offset = SetFilePointer(log_handle, 0, NULL, FILE_END);
+	if (last_offset == INVALID_SET_FILE_POINTER) {
+		plog("Could not set syslog offset");
+		goto out;
+	}
+
+	while(1) {
+		Sleep(duration);
+
+		size = GetFileSize(log_handle, NULL) - last_offset;
+		if (size == INVALID_FILE_SIZE) {
+			plog("could not read syslog file size");
+			goto out;
+		}
+
+		if ((size == 0) && (duration < 500)) {
+			duration += 100;	// read log more frequently on recent update
+		}
+
+		if (size != 0) {
+//			plog("size = %d", size);
+			buffer = malloc(size+2);
+			if (buffer == NULL) {
+				plog("could not alloc buffer for to read syslog");
+				goto out;
+			}
+			// Keep an extra spare byte at the beginning
+			if (!ReadFile(log_handle, buffer+1, size, &read_size, NULL)) {
+				plog("failed to read syslog");
+				goto out;
+			}
+			buffer[read_size+1] = 0;
+//			plog("read_size = %d", read_size);
+			last_offset += process_syslog(buffer, read_size);
+			free(buffer);
+			duration = 0;
+		}
+	}
+
+out:
+	CloseHandle(log_handle);
+}
+
+/*
+ * Convert various installation errors to their WDI counterpart
+ */
 static __inline int process_error(DWORD r, char* path) {
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL
@@ -364,6 +472,7 @@ main(int argc, char** argv)
 	char* inf_name;
 	char path[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
+	HANDLE syslog_thread;
 
 	// Connect to the messaging pipe
 	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
@@ -402,6 +511,10 @@ main(int argc, char** argv)
 
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
+	syslog_thread = (HANDLE)_beginthread(syslog_reader_thread, 0, 0);
+	if (syslog_thread == NULL) {
+		plog("Unable to create syslog reader thread");
+	}
 	plog("Installing driver - please wait...");
 	b = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
 	send_status(IC_SET_TIMEOUT_DEFAULT);
@@ -442,7 +555,8 @@ main(int argc, char** argv)
 out:
 	// Report any error status code and wait for target app to read it
 	pstat(ret);
-	Sleep(500);
+	Sleep(1000);
+	CloseHandle(syslog_thread);
 	CloseHandle(pipe_handle);
 	return ret;
 }

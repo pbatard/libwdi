@@ -679,7 +679,14 @@ int process_message(char* buffer, DWORD size)
 			wdi_err("print_message: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
-		wdi_dbg("[installer process] %s", buffer+1);
+		wdi_log(LOG_LEVEL_DEBUG, "installer process", "%s", buffer+1);
+		break;
+	case IC_SYSLOG_MESSAGE:
+		if (size < 2) {
+			wdi_err("syslog_message: no data");
+			return WDI_ERROR_NOT_FOUND;
+		}
+		wdi_log(LOG_LEVEL_DEBUG, "syslog", "%s", buffer+1);
 		break;
 	case IC_SET_STATUS:
 		if (size < 2) {
