@@ -272,7 +272,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("Unable to create notification delay thread - notification events will be disabled\n");
 			}
 		}
-		break;
+		return TRUE;
 
 	case UM_DEVICE_EVENT:
 		// TODO: don't handle these events when installation has started!
@@ -290,7 +290,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		} else {
 			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 		}
-		break;
+		return TRUE;
 
 	case UM_LOGGER_EVENT:
 		// TODO: use different colours according to the log level?
@@ -301,7 +301,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		} else {
 			dprintf("wdi_read_logger: error %s\n", wdi_strerror(r));
 		}
-		break;
+		return TRUE;
 
 	case WM_INITDIALOG:
 		// Quite a burden to carry around as parameters
@@ -341,7 +341,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 			dprintf("No device found.\n");
 		}
-		break;
+		return TRUE;
 
 	case WM_VSCROLL:
 		// TODO: ability to scroll existing driver text
@@ -350,8 +350,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("no driver is selectable in libwdi!");
 			}
 			last_scroll = HIWORD(wParam);
+			return TRUE;
 		}
-		break;
+		return FALSE;
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
@@ -446,7 +447,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				ComboBox_GetText(hDeviceList, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
-				break;
+				return FALSE;
 			}
 			break;
 		case IDC_INSTALL:	// button: Install
@@ -478,12 +479,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			// TODO: switch dialog
 			break;
 		default:
-			break;
+			return FALSE;
 		}
-		break;
+		return TRUE;
 
 	default:
-		break;
+		return FALSE;
 
 	}
 	// TODO: return TRUE on handled messages
