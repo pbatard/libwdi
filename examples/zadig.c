@@ -39,6 +39,7 @@
 #define INF_NAME "libusb_device.inf"
 #define EX_STYLE    (WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE | WS_EX_STATICEDGE | WS_EX_APPWINDOW)
 #define COMBO_STYLE (WS_CHILD | WS_VISIBLE | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP | CBS_NOINTEGRALHEIGHT)
+#define NOT_DURING_INSTALL if (install_thread != NULL) return FALSE
 
 /*
  * Globals
@@ -52,7 +53,7 @@ HMENU hMenu;
 char path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0" };
 int driver_type = WDI_NB_DRIVERS-1;
-//bool use_winusb = true;
+HANDLE install_thread = NULL;
 
 /*
  * On screen logging
@@ -141,11 +142,14 @@ void __cdecl notification_delay_thread(void* param)
 
 /*
  * Perform the driver installation
- * dev: currently selected device (will be ignored if create new is selected)
+ * param: currently selected device (will be ignored if create new is selected)
+ *
+ * This is created as a thread as the call is blocking and we need to process
+ * Windows messages to prevent application freezout
  */
-void install_driver(struct wdi_device_info *dev)
+void __cdecl install_driver_thread(void* param)
 {
-	struct wdi_device_info* device = dev;
+	struct wdi_device_info* device = (struct wdi_device_info*)(uintptr_t)param;
 	static char str_buf[STR_BUFFER_SIZE];
 	int tmp;
 
@@ -181,14 +185,19 @@ void install_driver(struct wdi_device_info *dev)
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dprintf("Extracted driver files to %s\n", path);
+		toggle_busy();
 		if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
 			dprintf("SUCCESS\n");
 		} else {
 			dprintf("DRIVER INSTALLATION FAILED\n");
 		}
+		toggle_busy();
 	} else {
 		dprintf("Could not create/extract files in %s\n", str_buf);
 	}
+	PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
+	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
+	install_thread = NULL;
 }
 
 /*
@@ -213,6 +222,9 @@ void combo_breaker(DWORD type)
 		hMain, (HMENU)IDC_DEVICELIST, main_instance, NULL);
 }
 
+/*
+ * Select the next available target driver
+ */
 bool select_next_driver(bool increment)
 {
 	int i;
@@ -275,8 +287,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case UM_DEVICE_EVENT:
-		// TODO: don't handle these events when installation has started!
 		delay_thread = NULL;
+		// Don't handle these events when installation has started
+		NOT_DURING_INSTALL;
 		if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 			if (MessageBox(hMain, "The device list has changed.\n"
 				"Do you want to refresh the list\n"
@@ -324,6 +337,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Fall through
 	case UM_REFRESH_LIST:
+		NOT_DURING_INSTALL;
 		if (list != NULL) wdi_destroy_list(list);
 		r = wdi_create_list(&list, list_driverless_only);
 		if (r == WDI_SUCCESS) {
@@ -345,6 +359,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_VSCROLL:
 		// TODO: ability to scroll existing driver text
+		NOT_DURING_INSTALL;
 		if (LOWORD(wParam) == 4) {
 			if (!select_next_driver(HIWORD(wParam) <= last_scroll)) {
 				dprintf("no driver is selectable in libwdi!");
@@ -355,6 +370,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return FALSE;
 
 	case WM_COMMAND:
+		NOT_DURING_INSTALL;
 		switch(LOWORD(wParam)) {
 		case IDC_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
 			list_driverless_only = (IsDlgButtonChecked(hMain, IDC_DRIVERLESSONLY) == BST_CHECKED);
@@ -451,7 +467,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDC_INSTALL:	// button: Install
-			install_driver(device);
+			if (install_thread != NULL) {
+				dprintf("program assertion failed - another install thread is running\n");
+			} else {
+				install_thread = (HANDLE)_beginthread(install_driver_thread, 0, (void*)(uintptr_t)device);
+				if (install_thread == NULL) {
+					dprintf("unable to create install_thread\n");
+				}
+			}
 			break;
 		case IDC_BROWSE:	// button: Browse
 			browse_for_folder();

@@ -61,6 +61,7 @@
 void w_printf(const char *format, ...);
 void browse_for_folder(void);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void toggle_busy(void);
 
 /*
  * Globals
@@ -69,5 +70,6 @@ extern HINSTANCE main_instance;
 extern HWND hDeviceList;
 extern HWND hDriver;
 extern HWND hMain;
+extern HWND hInfo;
 extern HMENU hMenu;
 extern char path[MAX_PATH];

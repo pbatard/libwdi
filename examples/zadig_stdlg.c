@@ -243,15 +243,13 @@ fallback:
 INT_PTR CALLBACK About_URL(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	WNDPROC original_wndproc;
-	HCURSOR hCursor;
 
 	original_wndproc = (WNDPROC)GetProp(hDlg, "PROP_ORIGINAL_PROC");
 	switch (message)
 	{
 	case WM_SETCURSOR:
 		if ((HWND)wParam == GetDlgItem(hDlg, IDC_URL)) {
-			hCursor = LoadCursor(NULL, IDC_HAND);
-			SetCursor(hCursor);
+			SetCursor(LoadCursor(NULL, IDC_HAND));
 			return (INT_PTR)TRUE;
 		}
 	}
@@ -296,4 +294,37 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return (INT_PTR)FALSE;
+}
+
+
+/*
+ * Toggle the application cursor to busy and back
+ */
+void toggle_busy(void)
+{
+	static is_busy = false;
+	static DWORD saved_cursor[5];
+	HCURSOR cursor;
+
+	if (!is_busy) {
+		saved_cursor[0] = GetClassLong(hMain, GCL_HCURSOR);
+		saved_cursor[1] = GetClassLong(hDeviceList, GCL_HCURSOR);
+		saved_cursor[2] = GetClassLong(hInfo, GCL_HCURSOR);
+		saved_cursor[3] = GetClassLong(GetDlgItem(hMain, IDC_INSTALL), GCL_HCURSOR);
+		saved_cursor[4] = GetClassLong(GetDlgItem(hMain, IDC_DRIVERSPIN), GCL_HCURSOR);
+		cursor = LoadCursorA(NULL, IDC_WAIT);
+		SetClassLong(hMain, GCL_HCURSOR, (LONG)cursor);
+		SetClassLong(hDeviceList, GCL_HCURSOR, (LONG)cursor);
+		SetClassLong(hInfo, GCL_HCURSOR, (LONG)cursor);
+		SetClassLong(GetDlgItem(hMain, IDC_INSTALL), GCL_HCURSOR, (LONG)cursor);
+		SetClassLong(GetDlgItem(hMain, IDC_DRIVERSPIN), GCL_HCURSOR, (LONG)cursor);
+	} else {
+		SetClassLong(hMain, GCL_HCURSOR, saved_cursor[0]);
+		SetClassLong(hDeviceList, GCL_HCURSOR, saved_cursor[1]);
+		SetClassLong(hInfo, GCL_HCURSOR, saved_cursor[2]);
+		SetClassLong(GetDlgItem(hMain, IDC_INSTALL), GCL_HCURSOR, saved_cursor[3]);
+		SetClassLong(GetDlgItem(hMain, IDC_DRIVERSPIN), GCL_HCURSOR, saved_cursor[4]);
+	}
+
+	is_busy = !is_busy;
 }
