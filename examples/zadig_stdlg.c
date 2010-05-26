@@ -32,8 +32,10 @@
 #include "resource.h"
 #include "zadig.h"
 
+#if (_WIN32_WINNT >= 0x0600)
 // Available on Vista and later
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
+#endif
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -248,7 +250,7 @@ INT_PTR CALLBACK About_URL(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam
 	{
 	case WM_SETCURSOR:
 		if ((HWND)wParam == GetDlgItem(hDlg, IDC_URL)) {
-			hCursor = LoadCursor(NULL, MAKEINTRESOURCE(IDC_HAND));
+			hCursor = LoadCursor(NULL, IDC_HAND);
 			SetCursor(hCursor);
 			return (INT_PTR)TRUE;
 		}
