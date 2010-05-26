@@ -302,7 +302,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
  */
 void toggle_busy(void)
 {
-	static is_busy = false;
+	static bool is_busy = false;
 	static DWORD saved_cursor[5];
 	HCURSOR cursor;
 

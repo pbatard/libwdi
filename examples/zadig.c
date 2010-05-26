@@ -455,7 +455,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemText(hMain, IDC_PID, str_tmp);
-					if (device->mi >= 0) {
+					if (device->is_composite) {
 						safe_sprintf(str_tmp, 5, "%02X", device->mi);
 						SetDlgItemText(hMain, IDC_MI, str_tmp);
 					}

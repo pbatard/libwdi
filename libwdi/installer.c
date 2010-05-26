@@ -472,7 +472,7 @@ main(int argc, char** argv)
 	char* inf_name;
 	char path[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
-	HANDLE syslog_thread;
+	HANDLE syslog_thread = NULL;
 
 	// Connect to the messaging pipe
 	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
@@ -556,7 +556,9 @@ out:
 	// Report any error status code and wait for target app to read it
 	pstat(ret);
 	Sleep(1000);
-	CloseHandle(syslog_thread);
+	if (syslog_thread != NULL) {
+		CloseHandle(syslog_thread);
+	}
 	CloseHandle(pipe_handle);
 	return ret;
 }
