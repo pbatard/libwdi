@@ -327,6 +327,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// Initialize COM for folder selection
 		CoInitialize(NULL);
 
+		// Increase the size of our log textbox
+		PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
+
 		SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
 		CheckDlgButton(hMain, IDC_DRIVERLESSONLY, list_driverless_only?BST_CHECKED:BST_UNCHECKED);
 		// Try without... and lament for the lack of consistancy of MS controls.
