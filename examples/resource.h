@@ -18,6 +18,7 @@
 #define IDC_INSTALL                     1009
 #define IDC_CREATE                      1010
 #define IDC_TARGET_DRIVER               1011
+#define IDC_EXTRACTONLY                 1012
 #define IDC_BROWSE                      1019
 #define IDC_COMBOBOXEX1                 1021
 #define IDC_EDIT1                       1022

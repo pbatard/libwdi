@@ -86,8 +86,7 @@ void w_printf(const char *format, ...)
 int display_devices(struct wdi_device_info* list)
 {
 	struct wdi_device_info *device;
-	int index = -1;
-	int junk;
+	int junk, index = -1;
 	HDC hdc;
 	SIZE size;
 	LONG max_width = 0;
@@ -96,7 +95,7 @@ int display_devices(struct wdi_device_info* list)
 	junk = ComboBox_ResetContent(hDeviceList);
 
 	for (device = list; device != NULL; device = device->next) {
-		// The dropdown width needs to accomodate our text
+		// Compute the width needs to accomodate our text
 		GetTextExtentPoint(hdc, device->desc, (int)strlen(device->desc)+1, &size);
 		max_width = max(max_width, size.cx);
 
@@ -108,7 +107,9 @@ int display_devices(struct wdi_device_info* list)
 		}
 	}
 
+	// Select first entry
 	SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
+	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
 	return index;
@@ -131,7 +132,8 @@ struct wdi_device_info* get_selected_device(void)
 }
 
 /*
- * Thread that sends a device event notification back to our dialog after a delay
+ * This thread is used to send an event notification back to our app
+ * param: a DWORD delay, in ms
  */
 void __cdecl notification_delay_thread(void* param)
 {
@@ -141,50 +143,61 @@ void __cdecl notification_delay_thread(void* param)
 }
 
 /*
- * Perform the driver installation
- * param: currently selected device (will be ignored if create new is selected)
- *
- * This is created as a thread as the call is blocking and we need to process
- * Windows messages to prevent application freezout
+ * Thread that performs the driver installation
+ * param: a pointer to the currently selected wdi_device_info structure
  */
 void __cdecl install_driver_thread(void* param)
 {
 	struct wdi_device_info* device = (struct wdi_device_info*)(uintptr_t)param;
 	static char str_buf[STR_BUFFER_SIZE];
+	bool need_dealloc = false;
 	int tmp;
 
 	if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
+		// If the device is created friom scratch, ignore the parameter
 		device = calloc(1, sizeof(struct wdi_device_info));
-		if (device != NULL) {
-			GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
-			device->desc = safe_strdup(str_buf);
-			GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
-			// TODO: use custom scanf for hex
-			if (sscanf(str_buf, "%4x", &tmp) != 1) {
-				dprintf("could not convert VID string - aborting\n");
-				return;
-			}
-			device->vid = (unsigned short)tmp;
-			GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
-			if (sscanf(str_buf, "%4x", &tmp) != 1) {
-				dprintf("could not convert PID string - aborting\n");
-				return;
-			}
-			device->pid = (unsigned short)tmp;
-			GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
-			if ( (strlen(str_buf) != 0)
-			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-				device->is_composite = true;
-				device->mi = (unsigned char)tmp;
-			} else {
-				device->is_composite = false;
-				device->mi = 0;
-			}
+		if (device == NULL) {
+			dprintf("could not create new device_info struct for installation\n");
+			goto out;
+		}
+		need_dealloc = true;
+
+		// Retrieve the various device parameters
+		// TODO: actuall test creation!
+		GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
+		device->desc = safe_strdup(str_buf);
+		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
+		// TODO: use custom scanf for hex
+		if (sscanf(str_buf, "%4x", &tmp) != 1) {
+			dprintf("could not convert VID string - aborting\n");
+			return;
+		}
+		device->vid = (unsigned short)tmp;
+		GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
+		if (sscanf(str_buf, "%4x", &tmp) != 1) {
+			dprintf("could not convert PID string - aborting\n");
+			return;
+		}
+		device->pid = (unsigned short)tmp;
+		GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
+		if ( (strlen(str_buf) != 0)
+		  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
+			device->is_composite = true;
+			device->mi = (unsigned char)tmp;
+		} else {
+			device->is_composite = false;
+			device->mi = 0;
 		}
 	}
+
+	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dprintf("Extracted driver files to %s\n", path);
+		// Perform the install if not extracting the files only
+		if (IsDlgButtonChecked(hMain, IDC_EXTRACTONLY) == BST_CHECKED) {
+			goto out2;
+		}
 		toggle_busy();
 		if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
 			dprintf("SUCCESS\n");
@@ -195,8 +208,13 @@ void __cdecl install_driver_thread(void* param)
 	} else {
 		dprintf("Could not create/extract files in %s\n", str_buf);
 	}
+
+out:
 	PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
-	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
+out2:
+	if (need_dealloc) {
+		free(device);
+	}
 	install_thread = NULL;
 }
 
@@ -405,7 +423,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				display_devices(list);
 			}
 			break;
-		case IDC_CREATE:			// checkbox: "Non Listed Device (Create)"
+		case IDC_EXTRACTONLY:		// checkbox: "Extract driver files only"
+			SetDlgItemText(hMain, IDC_INSTALL,
+				(IsDlgButtonChecked(hMain, IDC_EXTRACTONLY) == BST_CHECKED)?
+				"Extract Files":"Install Driver");
+			break;
+		case IDC_CREATE:			// checkbox: "Create New Device)"
 			if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 				combo_breaker(CBS_SIMPLE);
 				EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
@@ -473,6 +496,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			if (install_thread != NULL) {
 				dprintf("program assertion failed - another install thread is running\n");
 			} else {
+				// Using a thread prevents application freezout
 				install_thread = (HANDLE)_beginthread(install_driver_thread, 0, (void*)(uintptr_t)device);
 				if (install_thread == NULL) {
 					dprintf("unable to create install_thread\n");

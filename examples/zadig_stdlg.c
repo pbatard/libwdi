@@ -325,6 +325,6 @@ void toggle_busy(void)
 		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, saved_cursor[3]);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_DRIVERSPIN), GCLP_HCURSOR, saved_cursor[4]);
 	}
-
 	is_busy = !is_busy;
+	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
 }
