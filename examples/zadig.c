@@ -242,6 +242,7 @@ void combo_breaker(DWORD type)
 
 /*
  * Select the next available target driver
+ * increment: go through the list up or down
  */
 bool select_next_driver(bool increment)
 {
@@ -437,6 +438,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				SetDlgItemText(hMain, IDC_PID, "");
 				SetDlgItemText(hMain, IDC_MI, "");
 				SetDlgItemText(hMain, IDC_DRIVER, "");
+				ShowWindow(GetDlgItem(hMain, IDC_MI), SW_SHOW);
+				ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), SW_SHOW);
 				EnableWindow(GetDlgItem(hMain, IDC_PID), true);
 				EnableWindow(GetDlgItem(hMain, IDC_VID), true);
 				EnableWindow(GetDlgItem(hMain, IDC_MI), true);
@@ -481,6 +484,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					if (device->is_composite) {
 						safe_sprintf(str_tmp, 5, "%02X", device->mi);
 						SetDlgItemText(hMain, IDC_MI, str_tmp);
+						// Make sure the MI part is shown
+						ShowWindow(GetDlgItem(hMain, IDC_MI), SW_SHOW);
+						ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), SW_SHOW);
+					} else {
+						// Hide the MI part
+						ShowWindow(GetDlgItem(hMain, IDC_MI), SW_HIDE);
+						ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), SW_HIDE);
 					}
 					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
 				}
