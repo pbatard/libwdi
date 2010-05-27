@@ -52,7 +52,7 @@ BEGIN
     COMBOBOX        IDC_DEVICELIST,20,31,320,88,CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
     EDITTEXT        IDC_INFO,13,150,376,118,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     LTEXT           "Description:",IDC_STATIC,21,20,37,8
-    LTEXT           "Extract driver files to:",IDC_STATIC,222,52,101,8
+    LTEXT           "Extract driver files to:",IDC_STATIC_FOLDER,222,52,101,8
     PUSHBUTTON      "Clear Log",IDC_CLEAR,149,271,50,14
     PUSHBUTTON      "Save Log",IDC_SAVE,204,271,50,14
     CONTROL         "",IDC_DRIVERSPIN,"msctls_updown32",UDS_ARROWKEYS,107,62,11,14
@@ -194,7 +194,6 @@ IDR_MENU1 MENU
 BEGIN
     POPUP "Options"
     BEGIN
-        MENUITEM "Basic Mode",                  IDM_BASICMODE
         MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE, CHECKED
     END
     POPUP "Help"

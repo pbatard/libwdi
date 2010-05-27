@@ -54,6 +54,7 @@ char path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0" };
 int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
+bool advanced_mode = true;
 
 /*
  * On screen logging
@@ -264,6 +265,36 @@ bool select_next_driver(bool increment)
 }
 
 /*
+ * Toggle "advanced" mode on or off
+ */
+void toggle_advanced(void)
+{
+	static LONG org_height = 0;
+	RECT rcWindow;
+	POINT ptDiff;
+	int toggle;
+
+	advanced_mode = !advanced_mode;
+	GetWindowRect(hMain, &rcWindow);
+	ptDiff.x = (rcWindow.right - rcWindow.left);
+	ptDiff.y = (rcWindow.bottom - rcWindow.top);
+	if (org_height == 0) {
+		org_height = ptDiff.y;
+	}
+	MoveWindow(hMain, rcWindow.left, rcWindow.top, ptDiff.x,
+		org_height + (advanced_mode?0:-260) , TRUE);
+
+	// Hide or show the various advanced options
+	toggle = advanced_mode?SW_SHOW:SW_HIDE;
+	ShowWindow(GetDlgItem(hMain, IDC_EXTRACTONLY), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_CREATE), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_FOLDER), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_STATIC_FOLDER), toggle);
+}
+
+/*
  * Main dialog callback
  */
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -351,6 +382,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
 		CheckDlgButton(hMain, IDC_DRIVERLESSONLY, list_driverless_only?BST_CHECKED:BST_UNCHECKED);
+		CheckMenuItem(hMenu, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
 		// Try without... and lament for the lack of consistancy of MS controls.
 		combo_breaker(CBS_DROPDOWNLIST);
 
@@ -528,15 +560,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDM_ABOUT:
 			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
 			break;
-		case IDM_BASICMODE:
-			CheckMenuItem(hMenu, IDM_BASICMODE, MF_CHECKED);
-			CheckMenuItem(hMenu, IDM_ADVANCEDMODE, MF_UNCHECKED);
-			// TODO: switch dialog
-			break;
 		case IDM_ADVANCEDMODE:
-			CheckMenuItem(hMenu, IDM_ADVANCEDMODE, MF_CHECKED);
-			CheckMenuItem(hMenu, IDM_BASICMODE, MF_UNCHECKED);
-			// TODO: switch dialog
+			toggle_advanced();
+			CheckMenuItem(hMenu, IDM_ADVANCEDMODE,
+				advanced_mode?MF_CHECKED:MF_UNCHECKED);
 			break;
 		default:
 			return FALSE;
