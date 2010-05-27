@@ -386,6 +386,7 @@ void __cdecl syslog_reader_thread(void* param)
 
 out:
 	CloseHandle(log_handle);
+	_endthread();
 }
 
 /*

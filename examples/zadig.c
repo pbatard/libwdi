@@ -140,6 +140,7 @@ void __cdecl notification_delay_thread(void* param)
 	DWORD delay = (DWORD)(uintptr_t)param;
 	Sleep(delay);
 	PostMessage(hMain, UM_DEVICE_EVENT, 0, 0);
+	_endthread();
 }
 
 /*
@@ -158,7 +159,8 @@ void __cdecl install_driver_thread(void* param)
 		device = calloc(1, sizeof(struct wdi_device_info));
 		if (device == NULL) {
 			dprintf("could not create new device_info struct for installation\n");
-			goto out;
+			install_thread = NULL;
+			_endthread();
 		}
 		need_dealloc = true;
 
@@ -195,27 +197,25 @@ void __cdecl install_driver_thread(void* param)
 	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dprintf("Extracted driver files to %s\n", path);
 		// Perform the install if not extracting the files only
-		if (IsDlgButtonChecked(hMain, IDC_EXTRACTONLY) == BST_CHECKED) {
-			goto out2;
+		if (IsDlgButtonChecked(hMain, IDC_EXTRACTONLY) == BST_UNCHECKED) {
+			toggle_busy();
+			if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
+				dprintf("SUCCESS\n");
+			} else {
+				dprintf("DRIVER INSTALLATION FAILED\n");
+			}
+			toggle_busy();
+			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
-		toggle_busy();
-		if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
-			dprintf("SUCCESS\n");
-		} else {
-			dprintf("DRIVER INSTALLATION FAILED\n");
-		}
-		toggle_busy();
 	} else {
 		dprintf("Could not create/extract files in %s\n", str_buf);
 	}
 
-out:
-	PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
-out2:
 	if (need_dealloc) {
 		free(device);
 	}
 	install_thread = NULL;
+	_endthread();
 }
 
 /*
@@ -537,7 +537,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return FALSE;
 
 	}
-	// TODO: return TRUE on handled messages
 	return FALSE;
 }
 
