@@ -72,5 +72,4 @@ extern HWND hDeviceList;
 extern HWND hDriver;
 extern HWND hMain;
 extern HWND hInfo;
-extern HMENU hMenu;
 extern char path[MAX_PATH];

@@ -17,7 +17,6 @@
 #define IDC_TARGET                      1011
 #define IDC_EXTRACTONLY                 1012
 #define IDC_BROWSE                      1019
-#define IDC_COMBOBOXEX1                 1021
 #define IDC_URL                         1034
 #define IDC_CLEAR                       1036
 #define IDC_SAVE                        1037
@@ -30,18 +29,19 @@
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
 #define IDM_ADVANCEDMODE                40003
-#define ID_OPTIONS_LISTONLYDRIVERLESSDEVICES 40004
-#define ID_OPTIONS_CREATENEWDEVICE      40005
-#define ID_OPTIONS_LISTONLYDRIVERLESSDEVICES40006 40006
-#define IDM_DRIVERLESSONLY              40007
+#define IDM_DRIVERLESSONLY              40004
+#define IDM_CREATE                      40005
+#define IDM_ONLINEHELP                  40006
+#define IDM_OPEN                        40007
+#define IDM_EXTRACT                     40008
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        104
-#define _APS_NEXT_COMMAND_VALUE         40008
+#define _APS_NEXT_COMMAND_VALUE         40009
 #define _APS_NEXT_CONTROL_VALUE         1049
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
