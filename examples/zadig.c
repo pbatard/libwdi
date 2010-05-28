@@ -24,6 +24,13 @@
  * See the paragraph on Automatic Elevation at http://helpware.net/VistaCompat.htm
  */
 
+// Enable Visual Styles, so that our application looks good on all platforms
+// http://msdn.microsoft.com/en-us/library/bb773175%28v=VS.85%29.aspx
+// NB: This only works with /D "ISOLATION_AWARE_ENABLED"
+#if defined(_MSC_VER)
+// MSVC doesn't actually use our manifest file, so provide the dep as a pragma
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
 #include <windows.h>
 #include <windowsx.h>
 #include <stdlib.h>
