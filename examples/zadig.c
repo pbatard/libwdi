@@ -38,6 +38,7 @@
 #include <string.h>
 #include <objbase.h>
 #include <process.h>
+#include <shellapi.h>
 
 #include "../libwdi/libwdi.h"
 #include "resource.h"

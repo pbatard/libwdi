@@ -2,9 +2,6 @@
 <assembly
      xmlns="urn:schemas-microsoft-com:asm.v1"
      manifestVersion="1.0">
-  <assemblyIdentity version=SXS_ASSEMBLY_VERSION
-     processorArchitecture=SXS_PROCESSOR_ARCHITECTURE
-     name=SXS_ASSEMBLY_NAME/>
   <description>Zadig Application</description>
   <dependency>
     <dependentAssembly>

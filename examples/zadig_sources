@@ -24,9 +24,6 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
 # http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/
 # NB: you need to have a matching resource file (.rc) with version info
 SXS_APPLICATION_MANIFEST=zadig.manifest
-SXS_ASSEMBLY_VERSION=1.0
-SXS_ASSEMBLY_NAME=zadig
-SXS_ASSEMBLY_LANGUAGE=0000
 
 SOURCES=zadig.c \
         zadig_stdlg.c \
