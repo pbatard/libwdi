@@ -224,15 +224,16 @@ void __cdecl install_driver_thread(void* param)
  */
 void combo_breaker(DWORD type)
 {
-	RECT rect, rect2;
+	RECT rect;
 	POINT point;
 	int junk;
 
-	GetClientRect(hDeviceList, &rect);
-	GetWindowRect(hDeviceList, &rect2);
-	point.x = rect2.left;
-	point.y = rect2.top;
+	GetWindowRect(hDeviceList, &rect);
+	point.x = rect.left;
+	point.y = rect.top;
 	ScreenToClient(hMain, &point);
+
+	GetClientRect(hDeviceList, &rect);
 	junk = ComboBox_ResetContent(hDeviceList);
 	DestroyWindow(hDeviceList);
 
@@ -259,7 +260,7 @@ bool select_next_driver(bool increment)
 		found = true;
 		break;
 	}
-	SetDlgItemText(hMain, IDC_TARGET_DRIVER,
+	SetDlgItemText(hMain, IDC_TARGET,
 		found?driver_display_name[driver_type]:"(NONE)");
 	return found;
 }
@@ -269,20 +270,31 @@ bool select_next_driver(bool increment)
  */
 void toggle_advanced(void)
 {
-	static LONG org_height = 0;
-	RECT rcWindow;
-	POINT ptDiff;
+	// How much in y should we move/reduce our controls around
+	const int install_shift = 62;
+	const int dialog_shift = 375;
+	RECT rect;
+	POINT point;
 	int toggle;
 
 	advanced_mode = !advanced_mode;
-	GetWindowRect(hMain, &rcWindow);
-	ptDiff.x = (rcWindow.right - rcWindow.left);
-	ptDiff.y = (rcWindow.bottom - rcWindow.top);
-	if (org_height == 0) {
-		org_height = ptDiff.y;
-	}
-	MoveWindow(hMain, rcWindow.left, rcWindow.top, ptDiff.x,
-		org_height + (advanced_mode?0:-260) , TRUE);
+
+	// Increase or decrease the Window size
+	GetWindowRect(hMain, &rect);
+	point.x = (rect.right - rect.left);
+	point.y = (rect.bottom - rect.top);
+	MoveWindow(hMain, rect.left, rect.top, point.x,
+		point.y + (advanced_mode?dialog_shift:-dialog_shift) , TRUE);
+
+	// Move the install button up or down
+	GetWindowRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
+	point.x = rect.left;
+	point.y = rect.top;
+	ScreenToClient(hMain, &point);
+	GetClientRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
+	MoveWindow(GetDlgItem(hMain, IDC_INSTALL), point.x,
+		point.y + (advanced_mode?install_shift:-install_shift),
+		rect.right, rect.bottom, TRUE);
 
 	// Hide or show the various advanced options
 	toggle = advanced_mode?SW_SHOW:SW_HIDE;
@@ -292,6 +304,12 @@ void toggle_advanced(void)
 	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_FOLDER), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_FOLDER), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_TARGET), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_TARGETSPIN), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_STATIC_TARGET), toggle);
+
+	// Toggle the menu checkmark
+	CheckMenuItem(hMenu, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
 }
 
 /*
@@ -388,6 +406,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		wdi_register_logger(hMain, UM_LOGGER_EVENT);
 		wdi_set_log_level(LOG_LEVEL_DEBUG);
+
+		toggle_advanced();
 
 		// Fall through
 	case UM_REFRESH_LIST:
@@ -562,8 +582,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
-			CheckMenuItem(hMenu, IDM_ADVANCEDMODE,
-				advanced_mode?MF_CHECKED:MF_UNCHECKED);
 			break;
 		default:
 			return FALSE;

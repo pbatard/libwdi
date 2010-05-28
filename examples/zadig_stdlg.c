@@ -311,19 +311,19 @@ void toggle_busy(void)
 		saved_cursor[1] = GetClassLongPtr(hDeviceList, GCLP_HCURSOR);
 		saved_cursor[2] = GetClassLongPtr(hInfo, GCLP_HCURSOR);
 		saved_cursor[3] = GetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR);
-		saved_cursor[4] = GetClassLongPtr(GetDlgItem(hMain, IDC_DRIVERSPIN), GCLP_HCURSOR);
+		saved_cursor[4] = GetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR);
 		cursor = LoadCursorA(NULL, IDC_WAIT);
 		SetClassLongPtr(hMain, GCLP_HCURSOR, (ULONG_PTR)cursor);
 		SetClassLongPtr(hDeviceList, GCLP_HCURSOR, (ULONG_PTR)cursor);
 		SetClassLongPtr(hInfo, GCLP_HCURSOR, (ULONG_PTR)cursor);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, (ULONG_PTR)cursor);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_DRIVERSPIN), GCLP_HCURSOR, (ULONG_PTR)cursor);
+		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, (ULONG_PTR)cursor);
 	} else {
 		SetClassLongPtr(hMain, GCLP_HCURSOR, saved_cursor[0]);
 		SetClassLongPtr(hDeviceList, GCLP_HCURSOR, saved_cursor[1]);
 		SetClassLongPtr(hInfo, GCLP_HCURSOR, saved_cursor[2]);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, saved_cursor[3]);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_DRIVERSPIN), GCLP_HCURSOR, saved_cursor[4]);
+		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, saved_cursor[4]);
 	}
 	is_busy = !is_busy;
 	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
