@@ -37,7 +37,7 @@ BEGIN
 END
 
 // Must reference a manifest for visual styles and elevation
-// Oh, and it must happen here, or MinGW will ignore it!
+// Oh, and it must happen at the end, or MinGW will ignore it!
 #if defined(__MINGW32__) || defined(__CYGWIN__)
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "zadic.manifest"
 #endif
