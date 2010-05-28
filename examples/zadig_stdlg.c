@@ -37,6 +37,11 @@
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
 #endif
 
+void NOT_IMPLEMENTED(void) {
+	MessageBox(NULL, "NOT IMPLEMENTED", "Feature not implemented", MB_ICONSTOP);
+}
+
+
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
  * Returns NULL on error

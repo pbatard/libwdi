@@ -58,6 +58,7 @@
  * Shared prototypes
  */
 #define dprintf(...) w_printf(__VA_ARGS__)
+void NOT_IMPLEMENTED(void);
 void w_printf(const char *format, ...);
 void browse_for_folder(void);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);

@@ -433,6 +433,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetDlgItemText(hMain, IDC_PID, "");
 			SetDlgItemText(hMain, IDC_MI, "");
 			SetDlgItemText(hMain, IDC_DRIVER, "");
+			ShowWindow(GetDlgItem(hMain, IDC_DRIVER), SW_HIDE);
+			ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), SW_HIDE);
+			ShowWindow(GetDlgItem(hMain, IDC_MI), SW_HIDE);
+			ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), SW_HIDE);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 			dprintf("No device found.\n");
 		}
@@ -453,14 +457,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_COMMAND:
 		NOT_DURING_INSTALL;
 		switch(LOWORD(wParam)) {
-		case IDC_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
-			list_driverless_only = (IsDlgButtonChecked(hMain, IDC_DRIVERLESSONLY) == BST_CHECKED);
-			// Reset Edit button
-			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
-			// Reset Combo
-			combo_breaker(CBS_DROPDOWNLIST);
-			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
-			break;
 		case IDC_EDITNAME:			// checkbox: "Edit Device Name"
 			if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 				combo_breaker(CBS_SIMPLE);
@@ -488,7 +484,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				(IsDlgButtonChecked(hMain, IDC_EXTRACTONLY) == BST_CHECKED)?
 				"Extract Files":"Install Driver");
 			break;
-		case IDC_CREATE:			// checkbox: "Create New Device)"
+		case IDC_CREATE:			// checkbox: "Create New Device"
 			if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 				combo_breaker(CBS_SIMPLE);
 				EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
@@ -527,15 +523,21 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							device->desc = editable_desc;
 						}
 					}
+					// Display the current driver info
 					if (device->driver != NULL) {
 						SetDlgItemText(hMain, IDC_DRIVER, device->driver);
+						ShowWindow(GetDlgItem(hMain, IDC_DRIVER), SW_SHOW);
+						ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), SW_SHOW);
 					} else {
 						SetDlgItemText(hMain, IDC_DRIVER, "(NONE)");
+						ShowWindow(GetDlgItem(hMain, IDC_DRIVER), SW_HIDE);
+						ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), SW_HIDE);
 					}
 					driver_type = WDI_NB_DRIVERS-1;
 					if (!select_next_driver(true)) {
 						dprintf("no driver is selectable in libwdi!");
 					}
+					// Disp
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
@@ -561,7 +563,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				return FALSE;
 			}
 			break;
-		case IDC_INSTALL:	// button: Install
+		case IDC_INSTALL:	// button: "Install"
 			if (install_thread != NULL) {
 				dprintf("program assertion failed - another install thread is running\n");
 			} else {
@@ -572,11 +574,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				}
 			}
 			break;
-		case IDC_BROWSE:	// button: Browse
+		case IDC_BROWSE:	// button: "Browse..."
 			browse_for_folder();
 			break;
-		case IDC_CLEAR:
+		case IDC_CLEAR:		// button: "Clear Log"
 			Edit_SetText(hInfo, "");
+			break;
+		case IDC_SAVE:		// button: "Save Log"
+			NOT_IMPLEMENTED();
 			break;
 		case IDOK:
 		case IDCANCEL:
@@ -589,6 +594,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
+			break;
+		case IDM_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
+			list_driverless_only = !list_driverless_only;
+			CheckMenuItem(hMenu, IDM_DRIVERLESSONLY, list_driverless_only?MF_CHECKED:MF_UNCHECKED);
+			// Reset Edit button
+			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+			// Reset Combo
+			combo_breaker(CBS_DROPDOWNLIST);
+			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 			break;
 		default:
 			return FALSE;
