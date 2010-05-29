@@ -57,9 +57,10 @@
 /*
  * Shared prototypes
  */
-#define dprintf(...) w_printf(__VA_ARGS__)
+#define dprintf(...) w_printf(false, __VA_ARGS__)
+#define dsprintf(...) w_printf(true, __VA_ARGS__)
 void NOT_IMPLEMENTED(void);
-void w_printf(const char *format, ...);
+void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
@@ -72,4 +73,5 @@ extern HWND hDeviceList;
 extern HWND hDriver;
 extern HWND hMain;
 extern HWND hInfo;
+extern HWND hStatus;
 extern char path[MAX_PATH];

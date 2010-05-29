@@ -39,6 +39,7 @@
 #include <objbase.h>
 #include <process.h>
 #include <shellapi.h>
+#include <commctrl.h>
 
 #include "../libwdi/libwdi.h"
 #include "resource.h"
@@ -57,6 +58,7 @@ HWND hDeviceList;
 HWND hDriver;
 HWND hMain;
 HWND hInfo;
+HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 char path[MAX_PATH];
@@ -68,9 +70,9 @@ bool create_device = false;
 bool extract_only = false;
 
 /*
- * On screen logging
+ * On screen logging and status
  */
-void w_printf_v(const char *format, va_list args)
+void w_printf_v(bool update_status, const char *format, va_list args)
 {
 	char str[STR_BUFFER_SIZE];
 	int size;
@@ -81,14 +83,17 @@ void w_printf_v(const char *format, va_list args)
 	}
 	Edit_SetSel(hInfo, -1, -1);
 	Edit_ReplaceSel(hInfo, str);
+	if (update_status) {
+		SetDlgItemText(hMain, IDC_STATUS, str);
+	}
 }
 
-void w_printf(const char *format, ...)
+void w_printf(bool update_status, const char *format, ...)
 {
 	va_list args;
 
 	va_start (args, format);
-	w_printf_v(format, args);
+	w_printf_v(update_status, format, args);
 	va_end (args);
 }
 
@@ -207,20 +212,21 @@ void __cdecl install_driver_thread(void* param)
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
 	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
-		dprintf("Extracted driver files to %s\n", path);
+		dsprintf("Succesfully extracted driver files to %s\n", path);
 		// Perform the install if not extracting the files only
 		if (!extract_only) {
 			toggle_busy();
+			dsprintf("Installing driver, please wait...\n");
 			if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
-				dprintf("SUCCESS\n");
+				dsprintf("Driver Installation: SUCCESS\n");
 			} else {
-				dprintf("DRIVER INSTALLATION FAILED\n");
+				dsprintf("Driver Installation: FAILED\n");
 			}
 			toggle_busy();
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
 	} else {
-		dprintf("Could not create/extract files in %s\n", str_buf);
+		dsprintf("Could not create/extract files in %s\n", str_buf);
 	}
 
 	if (need_dealloc) {
@@ -307,6 +313,15 @@ void toggle_advanced(void)
 		point.y + (advanced_mode?install_shift:-install_shift),
 		rect.right, rect.bottom, TRUE);
 
+	// Move the status bar up or down
+	GetWindowRect(hStatus, &rect);
+	point.x = rect.left;
+	point.y = rect.top;
+	ScreenToClient(hMain, &point);
+	GetClientRect(hStatus, &rect);
+	MoveWindow(hStatus, point.x, point.y + (advanced_mode?dialog_shift:-dialog_shift),
+		(rect.right - rect.left), (rect.bottom - rect.top), TRUE);
+
 	// Hide or show the various advanced options
 	toggle = advanced_mode?SW_SHOW:SW_HIDE;
 	ShowWindow(GetDlgItem(hMain, IDC_EXTRACTONLY), toggle);
@@ -337,6 +352,24 @@ void display_mi(bool show)
 	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
 }
+
+// Create the status bar
+void create_status_bar()
+{
+    RECT rect;
+	int edge[2];
+
+    // Create the status bar.
+    hStatus = CreateWindowEx(0, STATUSCLASSNAME, NULL, WS_CHILD | WS_VISIBLE,
+        0, 0, 0, 0, hMain, (HMENU)IDC_STATUS,  main_instance, NULL);
+
+    // Create 2 status areas
+    GetClientRect(hMain, &rect);
+	edge[0] = rect.right - 100;
+	edge[1] = rect.right;
+    SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
+}
+
 
 /*
  * Main dialog callback
@@ -418,6 +451,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 		hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
 
+		create_status_bar(3);
+//		CreateStatusWindow(WS_CHILD|WS_VISIBLE, "Blah", hMain, 1234);
 		// Increase the size of our log textbox to 64 KB
 		PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
 		// Set the default extraction dir
@@ -439,7 +474,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		r = wdi_create_list(&list, list_driverless_only);
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices(list);
-			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
+			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM) hDeviceList);
@@ -450,7 +485,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			display_driver(false);
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-			dprintf("No device found.\n");
+			dsprintf("No device found.\n");
 		}
 		return TRUE;
 
