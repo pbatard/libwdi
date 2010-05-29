@@ -37,10 +37,10 @@
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
 #endif
 
+// TODO: make sure this is never called in release
 void NOT_IMPLEMENTED(void) {
-	MessageBox(NULL, "NOT IMPLEMENTED", "Feature not implemented", MB_ICONSTOP);
+	MessageBox(NULL, "NOT IMPLEMENTED", "Feature not implemented yet", MB_ICONSTOP);
 }
-
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -242,6 +242,26 @@ fallback:
 }
 
 /*
+ * Create the application status bar
+ */
+void create_status_bar(void)
+{
+    RECT rect;
+	int edge[2];
+
+    // Create the status bar.
+    hStatus = CreateWindowEx(0, STATUSCLASSNAME, NULL, WS_CHILD | WS_VISIBLE,
+        0, 0, 0, 0, hMain, (HMENU)IDC_STATUS,  main_instance, NULL);
+
+    // Create 2 status areas
+    GetClientRect(hMain, &rect);
+	edge[0] = rect.right - 100;
+	edge[1] = rect.right;
+    SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
+}
+
+
+/*
  * Another callback is needed to change the cursor when hovering over the URL
  * Why don't we use syslink? Because it requires Unicode
  */
@@ -300,7 +320,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return (INT_PTR)FALSE;
 }
-
 
 /*
  * Toggle the application cursor to busy and back

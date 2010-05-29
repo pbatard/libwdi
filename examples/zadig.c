@@ -62,12 +62,16 @@ HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 char path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
 int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
+// Application states
 bool advanced_mode = true;	// So that we can toggle to basic during init
+							// Make sure advanced mode is checked in the menu as well!
 bool create_device = false;
 bool extract_only = false;
+bool from_install = false;
+bool list_driverless_only = true;
 
 /*
  * On screen logging and status
@@ -169,7 +173,7 @@ void __cdecl install_driver_thread(void* param)
 	struct wdi_device_info* device = (struct wdi_device_info*)(uintptr_t)param;
 	static char str_buf[STR_BUFFER_SIZE];
 	bool need_dealloc = false;
-	int tmp;
+	int r, tmp;
 
 	if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 		// If the device is created friom scratch, ignore the parameter
@@ -216,11 +220,14 @@ void __cdecl install_driver_thread(void* param)
 		// Perform the install if not extracting the files only
 		if (!extract_only) {
 			toggle_busy();
-			dsprintf("Installing driver, please wait...\n");
-			if (wdi_install_driver(device, path, INF_NAME) == WDI_SUCCESS) {
+			dsprintf("Installing driver. Please wait...\n");
+			r = wdi_install_driver(device, path, INF_NAME);
+			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
+			} else if (r == WDI_ERROR_USER_CANCEL) {
+				dsprintf("Driver Installation: Cancelled by User\n");
 			} else {
-				dsprintf("Driver Installation: FAILED\n");
+				dsprintf("Driver Installation: FAILED (Error Code %d)\n", r);
 			}
 			toggle_busy();
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
@@ -233,6 +240,7 @@ void __cdecl install_driver_thread(void* param)
 		free(device);
 	}
 	install_thread = NULL;
+	from_install = true;
 	_endthread();
 }
 
@@ -282,9 +290,27 @@ bool select_next_driver(bool increment)
 	return found;
 }
 
+// Hide or Show the MI/Driver fields
+void display_driver(bool show)
+{
+	int cmd = show?SW_SHOW:SW_HIDE;
+	ShowWindow(GetDlgItem(hMain, IDC_DRIVER), cmd);
+	ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), cmd);
+}
+
+void display_mi(bool show)
+{
+	int cmd = show?SW_SHOW:SW_HIDE;
+	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
+	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
+}
+
+
 /*
- * Toggle "advanced" mode on or off
+ * Application state functions
  */
+
+// Toggle "advanced" mode
 void toggle_advanced(void)
 {
 	// How much in y should we move/reduce our controls around
@@ -294,7 +320,7 @@ void toggle_advanced(void)
 	POINT point;
 	int toggle;
 
-	advanced_mode = !advanced_mode;
+	advanced_mode = !(GetMenuState(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED) & MF_CHECKED);
 
 	// Increase or decrease the Window size
 	GetWindowRect(hMain, &rect);
@@ -338,38 +364,80 @@ void toggle_advanced(void)
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
 }
 
-// Hide or Show the MI/Driver fields
-void display_driver(bool show)
+// Toggle device creation mode
+void toggle_create(bool refresh)
 {
-	int cmd = show?SW_SHOW:SW_HIDE;
-	ShowWindow(GetDlgItem(hMain, IDC_DRIVER), cmd);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), cmd);
+	create_device = !(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED);
+	EnableWindow(GetDlgItem(hMain, IDC_PID), create_device);
+	EnableWindow(GetDlgItem(hMain, IDC_VID), create_device);
+	EnableWindow(GetDlgItem(hMain, IDC_MI), create_device);
+	if (create_device) {
+		combo_breaker(CBS_SIMPLE);
+		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
+		EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), false);
+		SetDlgItemText(hMain, IDC_VID, "");
+		SetDlgItemText(hMain, IDC_PID, "");
+		SetDlgItemText(hMain, IDC_MI, "");
+		display_mi(true);
+		display_driver(false);
+		PostMessage(hDeviceList, WM_SETFOCUS, 0, 0);
+	} else {
+		combo_breaker(CBS_DROPDOWNLIST);
+		EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), true);
+		if (refresh) {
+			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+		}
+	}
+	CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
 }
 
-void display_mi(bool show)
+// Toggle files extraction mode
+void toggle_extract(void)
 {
-	int cmd = show?SW_SHOW:SW_HIDE;
-	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
+	extract_only = !(GetMenuState(hMenuOptions, IDM_EXTRACT, MF_CHECKED) & MF_CHECKED);
+	CheckMenuItem(hMenuOptions, IDM_EXTRACT, extract_only?MF_CHECKED:MF_UNCHECKED);
+	SetDlgItemText(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
 }
 
-// Create the status bar
-void create_status_bar()
+// Toggle driverless device listing
+void toggle_driverless(void)
 {
-    RECT rect;
-	int edge[2];
+	list_driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
 
-    // Create the status bar.
-    hStatus = CreateWindowEx(0, STATUSCLASSNAME, NULL, WS_CHILD | WS_VISIBLE,
-        0, 0, 0, 0, hMain, (HMENU)IDC_STATUS,  main_instance, NULL);
-
-    // Create 2 status areas
-    GetClientRect(hMain, &rect);
-	edge[0] = rect.right - 100;
-	edge[1] = rect.right;
-    SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
+	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, list_driverless_only?MF_CHECKED:MF_UNCHECKED);
+	// Reset Edit button
+	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+	// Reset Combo
+	combo_breaker(CBS_DROPDOWNLIST);
+	PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 }
 
+void init_dialog(HWND hDlg)
+{
+	// Quite a burden to carry around as parameters
+	hMain = hDlg;
+	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
+	hDriver = GetDlgItem(hDlg, IDC_DRIVER);
+	hInfo = GetDlgItem(hDlg, IDC_INFO);
+	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
+	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
+
+	// Create the status line
+	create_status_bar();
+	// Increase the size of our log textbox to 64 KB
+	PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
+	// Set the default extraction dir
+	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+	// Try without... and lament for the lack of consistancy of MS controls.
+	combo_breaker(CBS_DROPDOWNLIST);
+
+	// Setup logging
+	wdi_register_logger(hMain, UM_LOGGER_EVENT);
+	wdi_set_log_level(LOG_LEVEL_DEBUG);
+
+	// Switch to basic mode
+	toggle_advanced();
+}
 
 /*
  * Main dialog callback
@@ -377,7 +445,6 @@ void create_status_bar()
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static struct wdi_device_info *device, *list = NULL;
-	static bool list_driverless_only = true;
 	static char* editable_desc = NULL;
 	static HANDLE delay_thread = NULL;
 	static DWORD last_scroll = 0;
@@ -421,7 +488,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			if (MessageBox(hMain, "An USB device has been plugged or unplugged.\n"
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
 				"USB Event Notification", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
-				create_device = false;
+				if (create_device) {
+					toggle_create(false);
+				}
 				CheckMenuItem(hMenuDevice, IDM_CREATE, MF_UNCHECKED);
 				combo_breaker(CBS_DROPDOWNLIST);
 				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
@@ -443,49 +512,38 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case WM_INITDIALOG:
-		// Quite a burden to carry around as parameters
-		hMain = hDlg;
-		hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
-		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
-		hInfo = GetDlgItem(hDlg, IDC_INFO);
-		hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
-		hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
-
-		create_status_bar(3);
-//		CreateStatusWindow(WS_CHILD|WS_VISIBLE, "Blah", hMain, 1234);
-		// Increase the size of our log textbox to 64 KB
-		PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
-		// Set the default extraction dir
-		SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
-		// Try without... and lament for the lack of consistancy of MS controls.
-		combo_breaker(CBS_DROPDOWNLIST);
-
-		// Setup logging
-		wdi_register_logger(hMain, UM_LOGGER_EVENT);
-		wdi_set_log_level(LOG_LEVEL_DEBUG);
-
-		// Switch to basic mode
-		toggle_advanced();
+		init_dialog(hDlg);
 
 		// Fall through
 	case UM_REFRESH_LIST:
 		NOT_DURING_INSTALL;
+		// Reset edit mode if selected
+		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
+			combo_breaker(CBS_DROPDOWNLIST);
+			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+		}
 		if (list != NULL) wdi_destroy_list(list);
 		r = wdi_create_list(&list, list_driverless_only);
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices(list);
-			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM) hDeviceList);
 		} else {
+			nb_devices = -1;
 			junk = ComboBox_ResetContent(hDeviceList);
 			SetDlgItemText(hMain, IDC_VID, "");
 			SetDlgItemText(hMain, IDC_PID, "");
 			display_driver(false);
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-			dsprintf("No device found.\n");
+		}
+		// Make sure we don't override the install status on refresh from install
+		if (!from_install) {
+			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
+		} else {
+			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
+			from_install = false;
 		}
 		return TRUE;
 
@@ -547,7 +605,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						SetDlgItemText(hMain, IDC_DRIVER, device->driver);
 						display_driver(true);
 					} else {
-						SetDlgItemText(hMain, IDC_DRIVER, "(NONE)");
 						display_driver(false);
 					}
 					driver_type = WDI_NB_DRIVERS-1;
@@ -596,33 +653,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDC_SAVE:		// button: "Save Log"
 			NOT_IMPLEMENTED();
 			break;
-		case IDOK:
+		case IDOK:			// close application
 		case IDCANCEL:
 			wdi_destroy_list(list);
 			EndDialog(hDlg, 0);
 			break;
 		// Menus
 		case IDM_CREATE:
-			create_device = !create_device;
-			EnableWindow(GetDlgItem(hMain, IDC_PID), create_device);
-			EnableWindow(GetDlgItem(hMain, IDC_VID), create_device);
-			EnableWindow(GetDlgItem(hMain, IDC_MI), create_device);
-			if (create_device) {
-				combo_breaker(CBS_SIMPLE);
-				EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-				EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), false);
-				SetDlgItemText(hMain, IDC_VID, "");
-				SetDlgItemText(hMain, IDC_PID, "");
-				SetDlgItemText(hMain, IDC_MI, "");
-				display_mi(true);
-				display_driver(false);
-				PostMessage(hDeviceList, WM_SETFOCUS, 0, 0);
-			} else {
-				combo_breaker(CBS_DROPDOWNLIST);
-				EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), true);
-				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
-			}
-			CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
+			toggle_create(true);
 			break;
 		case IDM_OPEN:
 			NOT_IMPLEMENTED();
@@ -635,21 +673,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_EXTRACT:
-			extract_only = !extract_only;
-			CheckMenuItem(hMenuOptions, IDM_EXTRACT, extract_only?MF_CHECKED:MF_UNCHECKED);
-			SetDlgItemText(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
+			toggle_extract();
 			break;
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
 			break;
 		case IDM_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
-			list_driverless_only = !list_driverless_only;
-			CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, list_driverless_only?MF_CHECKED:MF_UNCHECKED);
-			// Reset Edit button
-			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
-			// Reset Combo
-			combo_breaker(CBS_DROPDOWNLIST);
-			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+			toggle_driverless();
 			break;
 		default:
 			return FALSE;

@@ -29,7 +29,7 @@
 #endif
 
 #define STR_BUFFER_SIZE             256
-#define NOTIFICATION_DELAY          500
+#define NOTIFICATION_DELAY          1000
 #define DEFAULT_DIR                 "C:\\usb_driver"
 
 // WM_APP is not sent on focus, unlike WM_USER
@@ -64,6 +64,7 @@ void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
+void create_status_bar(void);
 
 /*
  * Globals
