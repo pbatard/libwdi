@@ -103,9 +103,9 @@ void w_printf(bool update_status, const char *format, ...)
 /*
  * Populate the USB device list
  */
-int display_devices(struct wdi_device_info* list)
+int display_devices(void)
 {
-	struct wdi_device_info *device;
+	struct wdi_device_info *dev;
 	int junk, index = -1;
 	HDC hdc;
 	SIZE size;
@@ -114,14 +114,14 @@ int display_devices(struct wdi_device_info* list)
 	hdc = GetDC(hDeviceList);
 	junk = ComboBox_ResetContent(hDeviceList);
 
-	for (device = list; device != NULL; device = device->next) {
+	for (dev = list; dev != NULL; dev = dev->next) {
 		// Compute the width needed to accomodate our text
-		GetTextExtentPoint(hdc, device->desc, (int)strlen(device->desc)+1, &size);
+		GetTextExtentPoint(hdc, dev->desc, (int)strlen(dev->desc)+1, &size);
 		max_width = max(max_width, size.cx);
 
-		index = ComboBox_AddString(hDeviceList, device->desc);
+		index = ComboBox_AddString(hDeviceList, dev->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
-			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM) device);
+			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev);
 		} else {
 			dprintf("could not populate dropdown list past device #%d\n", index);
 		}
@@ -140,15 +140,15 @@ int display_devices(struct wdi_device_info* list)
  */
 struct wdi_device_info* get_selected_device(void)
 {
-	struct wdi_device_info *device = NULL;
+	struct wdi_device_info *dev = NULL;
 	int index;
 	index = (int) SendDlgItemMessage(hMain, IDC_DEVICELIST, CB_GETCURSEL, 0, 0);
 	if (index != CB_ERR) {
 		// Use the device pointers as dropdown values for easy access
-		device = (struct wdi_device_info*) SendDlgItemMessage(hMain, IDC_DEVICELIST,
+		dev = (struct wdi_device_info*) SendDlgItemMessage(hMain, IDC_DEVICELIST,
 			CB_GETITEMDATA, index, 0);
 	}
-	return device;
+	return dev;
 }
 
 /*
@@ -169,15 +169,15 @@ void __cdecl notification_delay_thread(void* param)
  */
 void __cdecl install_driver_thread(void* param)
 {
-	struct wdi_device_info* device = (struct wdi_device_info*)(uintptr_t)param;
+	struct wdi_device_info* dev = (struct wdi_device_info*)(uintptr_t)param;
 	static char str_buf[STR_BUFFER_SIZE];
 	bool need_dealloc = false;
 	int r, tmp;
 
 	if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
 		// If the device is created friom scratch, ignore the parameter
-		device = calloc(1, sizeof(struct wdi_device_info));
-		if (device == NULL) {
+		dev = calloc(1, sizeof(struct wdi_device_info));
+		if (dev == NULL) {
 			dprintf("could not create new device_info struct for installation\n");
 			install_thread = NULL;
 			_endthread();
@@ -187,40 +187,40 @@ void __cdecl install_driver_thread(void* param)
 		// Retrieve the various device parameters
 		// TODO: actuall test creation!
 		GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
-		device->desc = safe_strdup(str_buf);
+		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		// TODO: use custom scanf for hex
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert VID string - aborting\n");
 			return;
 		}
-		device->vid = (unsigned short)tmp;
+		dev->vid = (unsigned short)tmp;
 		GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert PID string - aborting\n");
 			return;
 		}
-		device->pid = (unsigned short)tmp;
+		dev->pid = (unsigned short)tmp;
 		GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
 		if ( (strlen(str_buf) != 0)
 		  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-			device->is_composite = true;
-			device->mi = (unsigned char)tmp;
+			dev->is_composite = true;
+			dev->mi = (unsigned char)tmp;
 		} else {
-			device->is_composite = false;
-			device->mi = 0;
+			dev->is_composite = false;
+			dev->mi = 0;
 		}
 	}
 
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-	if (wdi_create_inf(device, path, INF_NAME, driver_type) == WDI_SUCCESS) {
+	if (wdi_create_inf(dev, path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files to %s\n", path);
 		// Perform the install if not extracting the files only
 		if (!extract_only) {
 			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
-			r = wdi_install_driver(device, path, INF_NAME);
+			r = wdi_install_driver(dev, path, INF_NAME);
 			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
 			} else if (r == WDI_ERROR_USER_CANCEL) {
@@ -236,7 +236,7 @@ void __cdecl install_driver_thread(void* param)
 	}
 
 	if (need_dealloc) {
-		free(device);
+		free(dev);
 	}
 	install_thread = NULL;
 	from_install = true;
@@ -377,7 +377,7 @@ void toggle_edit(void)
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
 		combo_breaker(false);
-		display_devices(list);
+		display_devices();
 		editable_desc = NULL;
 	}
 }
@@ -560,7 +560,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if (list != NULL) wdi_destroy_list(list);
 		r = wdi_create_list(&list, list_driverless_only);
 		if (r == WDI_SUCCESS) {
-			nb_devices = display_devices(list);
+			nb_devices = display_devices();
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM) hDeviceList);
