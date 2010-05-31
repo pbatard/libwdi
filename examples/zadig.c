@@ -430,6 +430,10 @@ void toggle_driverless(void)
 {
 	list_driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
 
+	if (create_device) {
+		toggle_create(true);
+	}
+
 	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, list_driverless_only?MF_CHECKED:MF_UNCHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
@@ -450,17 +454,24 @@ void init_dialog(HWND hDlg)
 
 	// Create the status line
 	create_status_bar();
-	// Increase the size of our log textbox to 64 KB
-	PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
-	// Set the default extraction dir
-	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+
+	// Switch to basic mode
+	toggle_advanced();
 
 	// Setup logging
 	wdi_register_logger(hMain, UM_LOGGER_EVENT);
 	wdi_set_log_level(LOG_LEVEL_DEBUG);
+	// Increase the size of our log textbox to 64 KB
+	PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
 
-	// Switch to basic mode
-	toggle_advanced();
+	// Limit the input size of VID, PID, MI
+	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
+	PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETLIMITTEXT, 4, 0);
+	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
+
+	// Set the default extraction dir
+	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+
 }
 
 /*
