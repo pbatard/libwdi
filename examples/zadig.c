@@ -45,9 +45,6 @@
 #include "resource.h"
 #include "zadig.h"
 
-#define INF_NAME "libusb_device.inf"
-#define EX_STYLE    (WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE | WS_EX_STATICEDGE | WS_EX_APPWINDOW)
-#define COMBO_STYLE (WS_CHILD | WS_VISIBLE | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP | CBS_NOINTEGRALHEIGHT)
 #define NOT_DURING_INSTALL if (install_thread != NULL) return FALSE
 
 /*
@@ -65,6 +62,8 @@ char path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
 int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
+struct wdi_device_info *device, *list = NULL;
+char* editable_desc = NULL;
 // Application states
 bool advanced_mode = true;	// So that we can toggle to basic during init
 							// Make sure advanced mode is checked in the menu as well!
@@ -116,7 +115,7 @@ int display_devices(struct wdi_device_info* list)
 	junk = ComboBox_ResetContent(hDeviceList);
 
 	for (device = list; device != NULL; device = device->next) {
-		// Compute the width needs to accomodate our text
+		// Compute the width needed to accomodate our text
 		GetTextExtentPoint(hdc, device->desc, (int)strlen(device->desc)+1, &size);
 		max_width = max(max_width, size.cx);
 
@@ -245,26 +244,17 @@ void __cdecl install_driver_thread(void* param)
 }
 
 /*
- * The lengths you need to go through just to change a combobox style...
+ * Toggle between combo and edit
  */
-void combo_breaker(DWORD type)
+void combo_breaker(bool edit)
 {
-	RECT rect;
-	POINT point;
-	int junk;
-
-	GetWindowRect(hDeviceList, &rect);
-	point.x = rect.left;
-	point.y = rect.top;
-	ScreenToClient(hMain, &point);
-
-	GetClientRect(hDeviceList, &rect);
-	junk = ComboBox_ResetContent(hDeviceList);
-	DestroyWindow(hDeviceList);
-
-	hDeviceList = CreateWindowEx(0, "COMBOBOX", "", COMBO_STYLE | type,
-		point.x, point.y, rect.right, rect.bottom*((type==CBS_SIMPLE)?1:8),
-		hMain, (HMENU)IDC_DEVICELIST, main_instance, NULL);
+	if (edit) {
+		ShowWindow(GetDlgItem(hMain, IDC_DEVICELIST), SW_HIDE);
+		ShowWindow(GetDlgItem(hMain, IDC_DEVICEEDIT), SW_SHOW);
+	} else {
+		ShowWindow(GetDlgItem(hMain, IDC_DEVICEEDIT), SW_HIDE);
+		ShowWindow(GetDlgItem(hMain, IDC_DEVICELIST), SW_SHOW);
+	}
 }
 
 /*
@@ -364,26 +354,62 @@ void toggle_advanced(void)
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
 }
 
+// Toggle edit description
+void toggle_edit(void)
+{
+	if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
+		combo_breaker(true);
+		if (editable_desc != NULL) {
+			dprintf("program assertion failed - editable_desc != NULL\n");
+			return;
+		}
+		editable_desc = malloc(STR_BUFFER_SIZE);
+		if (editable_desc == NULL) {
+			dprintf("could not allocate buffer to edit description\n");
+			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+			combo_breaker(false);
+			return;
+		}
+		safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
+		free(device->desc);	// No longer needed
+		device->desc = editable_desc;
+		SetDlgItemText(hMain, IDC_DEVICEEDIT, editable_desc);
+		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
+	} else {
+		combo_breaker(false);
+		display_devices(list);
+		editable_desc = NULL;
+	}
+}
+
 // Toggle device creation mode
 void toggle_create(bool refresh)
 {
 	create_device = !(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED);
-	EnableWindow(GetDlgItem(hMain, IDC_PID), create_device);
-	EnableWindow(GetDlgItem(hMain, IDC_VID), create_device);
-	EnableWindow(GetDlgItem(hMain, IDC_MI), create_device);
 	if (create_device) {
-		combo_breaker(CBS_SIMPLE);
+		// Disable Edit Desc. if selected
+		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
+			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+			toggle_edit();
+		}
+		combo_breaker(true);
 		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 		EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), false);
 		SetDlgItemText(hMain, IDC_VID, "");
 		SetDlgItemText(hMain, IDC_PID, "");
 		SetDlgItemText(hMain, IDC_MI, "");
+		SetDlgItemText(hMain, IDC_DEVICEEDIT, "");
+		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		display_mi(true);
 		display_driver(false);
-		PostMessage(hDeviceList, WM_SETFOCUS, 0, 0);
+		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
-		combo_breaker(CBS_DROPDOWNLIST);
-		EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), true);
+		combo_breaker(false);
+		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)TRUE, 0);
 		if (refresh) {
 			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 		}
@@ -408,7 +434,7 @@ void toggle_driverless(void)
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
-	combo_breaker(CBS_DROPDOWNLIST);
+	combo_breaker(false);
 	PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 }
 
@@ -428,8 +454,6 @@ void init_dialog(HWND hDlg)
 	PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
 	// Set the default extraction dir
 	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
-	// Try without... and lament for the lack of consistancy of MS controls.
-	combo_breaker(CBS_DROPDOWNLIST);
 
 	// Setup logging
 	wdi_register_logger(hMain, UM_LOGGER_EVENT);
@@ -444,14 +468,13 @@ void init_dialog(HWND hDlg)
  */
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static struct wdi_device_info *device, *list = NULL;
-	static char* editable_desc = NULL;
 	static HANDLE delay_thread = NULL;
 	static DWORD last_scroll = 0;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
 	int nb_devices, junk, r;
 	DWORD delay, read_size;
+	static HBRUSH white_brush = (HBRUSH)FALSE;
 
 	switch (message) {
 
@@ -492,7 +515,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					toggle_create(false);
 				}
 				CheckMenuItem(hMenuDevice, IDM_CREATE, MF_UNCHECKED);
-				combo_breaker(CBS_DROPDOWNLIST);
+				combo_breaker(false);
 				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 			}
 		} else {
@@ -512,6 +535,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case WM_INITDIALOG:
+		white_brush = CreateSolidBrush(WHITE);
 		init_dialog(hDlg);
 
 		// Fall through
@@ -519,7 +543,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		NOT_DURING_INSTALL;
 		// Reset edit mode if selected
 		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
-			combo_breaker(CBS_DROPDOWNLIST);
+			combo_breaker(false);
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		if (list != NULL) wdi_destroy_list(list);
@@ -559,32 +583,45 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		return FALSE;
 
+	// Change the font colour of editable fields to dark blue
+	case WM_CTLCOLOREDIT:
+		if ( ((HWND)lParam == GetDlgItem(hDlg, IDC_DEVICEEDIT))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_VID))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_PID))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_MI))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_FOLDER)) ) {
+			SetTextColor((HDC)wParam, DARK_BLUE);
+			return (INT_PTR)white_brush;
+		}
+		return (INT_PTR)FALSE;
+
+	// Set background colour of read only fields to white
+	case WM_CTLCOLORSTATIC:
+		if ( ((HWND)lParam == GetDlgItem(hDlg, IDC_VID))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_PID))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_MI))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_DRIVER))
+		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_TARGET)) ) {
+			return (INT_PTR)white_brush;
+		}
+		return (INT_PTR)FALSE;
+
 	case WM_COMMAND:
 		NOT_DURING_INSTALL;
 		switch(LOWORD(wParam)) {
-		case IDC_EDITNAME:			// checkbox: "Edit Device Name"
-			if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
-				combo_breaker(CBS_SIMPLE);
-				if (device->desc != editable_desc) {
-					editable_desc = malloc(STR_BUFFER_SIZE);
-					if (editable_desc == NULL) {
-						dprintf("could not use modified device description\n");
-						editable_desc = device->desc;
-					} else {
-						safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
-						free(device->desc);	// No longer needed
-						device->desc = editable_desc;
-					}
-				}
-				junk = ComboBox_AddString(hDeviceList, editable_desc);
-				SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
-				PostMessage(hDeviceList, WM_SETFOCUS, 0, 0);
-			} else {
-				combo_breaker(CBS_DROPDOWNLIST);
-				display_devices(list);
+		case IDC_EDITNAME:			// checkbox: "Edit Desc."
+			toggle_edit();
+			break;
+		case IDC_DEVICEEDIT:		// edit: device description
+			switch (HIWORD(wParam)) {
+			case EN_CHANGE:
+				GetDlgItemText(hMain, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
+				break;
+			default:
+				return FALSE;
 			}
 			break;
-		case IDC_DEVICELIST:		// dropdown/field: device description
+		case IDC_DEVICELIST:		// dropdown: device description
 			switch (HIWORD(wParam)) {
 			case CBN_SELCHANGE:
 				device = get_selected_device();
@@ -625,9 +662,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
 				}
-				break;
-			case CBN_EDITCHANGE:
-				ComboBox_GetText(hDeviceList, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
 				return FALSE;

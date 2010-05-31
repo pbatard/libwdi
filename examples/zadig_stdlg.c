@@ -39,7 +39,7 @@ static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFI
 
 // TODO: make sure this is never called in release
 void NOT_IMPLEMENTED(void) {
-	MessageBox(NULL, "NOT IMPLEMENTED", "Feature not implemented yet", MB_ICONSTOP);
+	MessageBox(NULL, "Feature not implemented yet", "Not implemented", MB_ICONSTOP);
 }
 
 /*
