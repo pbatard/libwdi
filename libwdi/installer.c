@@ -294,6 +294,7 @@ DWORD process_syslog(char* xbuffer, DWORD size)
 {
 	DWORD i, write_size, junk, start = 0;
 	char* buffer;
+	char* ins_string = "<ins>";
 
 	if (xbuffer == NULL) return 0;
 	// xbuffer has an extra 1 byte at the beginning
@@ -309,7 +310,7 @@ DWORD process_syslog(char* xbuffer, DWORD size)
 
 			// The setupapi.dev.log uses a dubious method to mark its current position
 			// If there's any "<ins>" line in any log file, it's game over then
-			if (safe_strcmp("<ins>", buffer + start) == 0) {
+			if (safe_strcmp(ins_string, buffer + start) == 0) {
 				return start;
 			}
 
