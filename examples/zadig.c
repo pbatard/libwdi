@@ -226,7 +226,7 @@ void __cdecl install_driver_thread(void* param)
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User\n");
 			} else {
-				dsprintf("Driver Installation: FAILED (Error Code %d)\n", r);
+				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
 			}
 			toggle_busy();
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
