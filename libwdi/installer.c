@@ -58,6 +58,8 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, 
  * Globals
  */
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
+HANDLE syslog_ready_event = INVALID_HANDLE_VALUE;
+HANDLE syslog_terminate_event = INVALID_HANDLE_VALUE;
 
 // Setup the Cfgmgr32 DLLs
 static int init_dlls(void)
@@ -286,10 +288,11 @@ void check_removed(char* device_hardware_id)
 
 /*
  * Send individual lines of the syslog section pointed by buffer back to the main application
+ * xbuffer's payload MUST start at byte 1 to accomodate the SYSLOG_MESSAGE prefix
  */
 DWORD process_syslog(char* xbuffer, DWORD size)
 {
-	DWORD i, pipe_size, junk, start = 0;
+	DWORD i, write_size, junk, start = 0;
 	char* buffer;
 
 	if (xbuffer == NULL) return 0;
@@ -299,17 +302,24 @@ DWORD process_syslog(char* xbuffer, DWORD size)
 	// CR/LF breakdown
 	for (i=0; i<size; i++) {
 		if ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) {
-			pipe_size = i-start+2;	// 1 extra bytes at each end of the message
+			write_size = i-start + 2;	// extra preceding byte + 0 terminator => +2
 			do {
 				buffer[i++] = 0;
 			} while ( ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) && (i <= size) );
 
+			// The setupapi.dev.log uses a dubious method to mark its current position
+			// If there's any "<ins>" line in any log file, it's game over then
+			if (safe_strcmp("<ins>", buffer + start) == 0) {
+				return start;
+			}
+
 			// This is where we use the extra start byte
-			buffer[start-1] = IC_SYSLOG_MESSAGE;
-			WriteFile(pipe_handle, &buffer[start-1], pipe_size, &junk, NULL);
+			xbuffer[start] = IC_SYSLOG_MESSAGE;
+			WriteFile(pipe_handle, &xbuffer[start], write_size, &junk, NULL);
 			start = i;
 		}
 	}
+	// start does not necessarily equate size, if there are truncated lines at the end
 	return start;
 }
 
@@ -321,10 +331,10 @@ void __cdecl syslog_reader_thread(void* param)
 #define NB_SYSLOGS 3
 	char* syslog_name[NB_SYSLOGS] = { "\\inf\\setupapi.dev.log", "\\setupapi.log", "\\setupact.log" };
 	HANDLE log_handle;
-	DWORD last_offset, size, read_size;
-	char *buffer;
+	DWORD last_offset, size, read_size, processed_size;
+	char *buffer = NULL;
 	char log_path[MAX_PATH_LENGTH];
-	DWORD duration = 500;
+	DWORD duration = 0;
 	int i;
 
 	// Try the various driver installation logs
@@ -345,30 +355,33 @@ void __cdecl syslog_reader_thread(void* param)
 	}
 
 	// We assert that the log file is never gonna be bigger than 2 GB
+	// TODO: setupapi.dev.log's end is not the actual end!
 	last_offset = SetFilePointer(log_handle, 0, NULL, FILE_END);
 	if (last_offset == INVALID_SET_FILE_POINTER) {
 		plog("Could not set syslog offset");
 		goto out;
 	}
 
-	while(1) {
-		Sleep(duration);
+	plog("sylog reader thread started");
+	SetEvent(syslog_ready_event);
+	processed_size = 0;
 
-		size = GetFileSize(log_handle, NULL) - last_offset;
+	while(WaitForSingleObject(syslog_terminate_event, 0) != WAIT_OBJECT_0) {
+		// Find out if file size has increased since last time
+		size = GetFileSize(log_handle, NULL);
 		if (size == INVALID_FILE_SIZE) {
 			plog("could not read syslog file size");
 			goto out;
 		}
-
-		if ((size == 0) && (duration < 500)) {
-			duration += 100;	// read log more frequently on recent update
-		}
+		size -= last_offset;
 
 		if (size != 0) {
 //			plog("size = %d", size);
+
+			// Read from file and add a zero terminator
 			buffer = malloc(size+2);
 			if (buffer == NULL) {
-				plog("could not alloc buffer for to read syslog");
+				plog("could not alloc buffer to read syslog");
 				goto out;
 			}
 			// Keep an extra spare byte at the beginning
@@ -378,13 +391,38 @@ void __cdecl syslog_reader_thread(void* param)
 			}
 			buffer[read_size+1] = 0;
 //			plog("read_size = %d", read_size);
-			last_offset += process_syslog(buffer, read_size);
-			free(buffer);
-			duration = 0;
+
+			// Send all the complete lines through the pipe
+			processed_size = process_syslog(buffer, read_size);
+			safe_free(buffer);
+//			plog("processed_size = %d", processed_size);
+			last_offset += processed_size;
+
+			// Reposition at start of last line if needed
+			if (processed_size != read_size) {
+				last_offset = SetFilePointer(log_handle, processed_size-read_size, NULL, FILE_CURRENT);
+				if (last_offset == INVALID_SET_FILE_POINTER) {
+					plog("Could not set syslog offset");
+					goto out;
+				}
+			}
+
+			// Reset adaptive sleep duration if we did send data out
+			if (processed_size !=0) {
+				duration = 0;
+			}
 		}
+
+		// Compute adaptive sleep duration
+		if (((size == 0) || (processed_size == 0)) && (duration < 500)) {
+			duration += 100;	// read log more frequently on recent update
+		}
+		Sleep(duration);
 	}
 
 out:
+	plog("syslog reader thread terminating");
+	safe_free(buffer);
 	CloseHandle(log_handle);
 	_endthread();
 }
@@ -510,12 +548,20 @@ main(int argc, char** argv)
 	device_id = req_id(IC_GET_DEVICE_ID);
 	hardware_id = req_id(IC_GET_HARDWARE_ID);
 
+	// Setup the syslog reader thread
+	syslog_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	syslog_terminate_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	syslog_thread = (HANDLE)_beginthread(syslog_reader_thread, 0, 0);
+	if ( (syslog_thread == NULL)
+	  || (WaitForSingleObject(syslog_ready_event, 2000) != WAIT_OBJECT_0) )	{
+		plog("Unable to create syslog reader thread");
+		SetEvent(syslog_terminate_event);
+		// NB: if you try to close the syslog reader thread handle, you get a
+		// "more recent driver was found" error from UpdateForPnP. Weird...
+	}
+
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
-	syslog_thread = (HANDLE)_beginthread(syslog_reader_thread, 0, 0);
-	if (syslog_thread == NULL) {
-		plog("Unable to create syslog reader thread");
-	}
 	plog("Installing driver - please wait...");
 	b = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
 	send_status(IC_SET_TIMEOUT_DEFAULT);
@@ -557,9 +603,10 @@ out:
 	// Report any error status code and wait for target app to read it
 	pstat(ret);
 	Sleep(1000);
-	if (syslog_thread != NULL) {
-		CloseHandle(syslog_thread);
-	}
+	SetEvent(syslog_terminate_event);
+	CloseHandle(syslog_ready_event);
+	CloseHandle(syslog_terminate_event);
+	CloseHandle(syslog_thread);
 	CloseHandle(pipe_handle);
 	return ret;
 }
