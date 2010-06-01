@@ -601,6 +601,7 @@ main(int argc, char** argv)
 
 out:
 	// Report any error status code and wait for target app to read it
+	send_status(IC_INSTALLER_COMPLETED);
 	pstat(ret);
 	Sleep(1000);
 	SetEvent(syslog_terminate_event);

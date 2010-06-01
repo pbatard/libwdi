@@ -36,6 +36,8 @@
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
+// Check if we unexpectedly lose communication with the installer process
+#define CHECK_COMPLETION (installer_completed?WDI_SUCCESS:WDI_ERROR_TIMEOUT)
 
 // These warnings are taken care off in configure for other platforms
 #if defined(_MSC_VER)
@@ -65,6 +67,7 @@
  */
 struct wdi_device_info *current_device = NULL;
 bool dlls_available = false;
+bool installer_completed = false;
 DWORD timeout = DEFAULT_TIMEOUT;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 // for 64 bit platforms detection
@@ -262,15 +265,13 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_NO_DEVICE:
 		return "No such device (it may have been disconnected)";
 	case WDI_ERROR_NOT_FOUND:
-		return "Entity not found";
+		return "Requested resource not found";
 	case WDI_ERROR_BUSY:
-		return "Resource busy";
+		return "Requested resource busy";
 	case WDI_ERROR_TIMEOUT:
 		return "Operation timed out";
 	case WDI_ERROR_OVERFLOW:
 		return "Overflow";
-	case WDI_ERROR_PENDING_INSTALLATION:
-		return "Another installer is already running";
 	case WDI_ERROR_INTERRUPTED:
 		return "System call interrupted (perhaps due to signal)";
 	case WDI_ERROR_RESOURCE:
@@ -282,6 +283,8 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_USER_CANCEL:
 		return "Cancelled by user";
 	// The errors below are generated during driver installation
+	case WDI_ERROR_PENDING_INSTALLATION:
+		return "Another installer is already running";
 	case WDI_ERROR_NEEDS_ADMIN:
 		return "Unable to run installer process with administrative privileges";
 	case WDI_ERROR_WOW64:
@@ -291,7 +294,7 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_CAT_MISSING:
 		return "Unable to locate cat file";
 	case WDI_ERROR_UNSIGNED:
-		return "System policy has been modified from Windows defaults to reject unsigned drivers";
+		return "System policy has been modified to reject unsigned drivers";
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
@@ -695,7 +698,6 @@ int process_message(char* buffer, DWORD size)
 		}
 		return (int)buffer[1];
 		break;
-	// TODO: only do that if UAC
 	case IC_SET_TIMEOUT_INFINITE:
 		wdi_dbg("switching timeout to infinite");
 		timeout = INFINITE;
@@ -703,6 +705,10 @@ int process_message(char* buffer, DWORD size)
 	case IC_SET_TIMEOUT_DEFAULT:
 		wdi_dbg("switching timeout back to finite");
 		timeout = DEFAULT_TIMEOUT;
+		break;
+	case IC_INSTALLER_COMPLETED:
+		wdi_dbg("installer process completed");
+		installer_completed = true;
 		break;
 	default:
 		wdi_err("unrecognized installer message");
@@ -790,6 +796,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
+	installer_completed = false;
 	GET_WINDOWS_VERSION;
 	if ( (windows_version >= WINDOWS_VISTA) && (IsUserAnAdmin != NULL) && (!IsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
@@ -799,11 +806,9 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
 		shExecInfo.lpFile = exename;
-		// if INF_NAME ever has a space, it will be seen as multiple parameters
+		// TODO: if INF_NAME ever has a space, it will be seen as multiple parameters
 		shExecInfo.lpParameters = inf_name;
 		shExecInfo.lpDirectory = path;
-		// TODO: hide
-		//shExecInfo.nShow = SW_NORMAL;
 		shExecInfo.nShow = SW_HIDE;
 		shExecInfo.hInstApp = NULL;
 
@@ -849,7 +854,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 				if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 					TerminateProcess(handle[1], 0);
 				}
-				r = WDI_SUCCESS; goto out;
+				r = CHECK_COMPLETION; goto out;
 			case ERROR_PIPE_LISTENING:
 				// Wait for installer to open the pipe
 				Sleep(100);
@@ -867,7 +872,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 							if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 								TerminateProcess(handle[1], 0);
 							}
-							r = WDI_SUCCESS; goto out;
+							r = CHECK_COMPLETION; goto out;
 						case ERROR_MORE_DATA:
 							wdi_warn("program assertion failed: message overflow");
 							r = process_message(buffer, rd_count);
@@ -885,7 +890,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 					r = WDI_ERROR_TIMEOUT; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
-					r = WDI_SUCCESS; goto out;
+					r = CHECK_COMPLETION; goto out;
 				default:
 					wdi_err("could not read from pipe (wait): %s", windows_error_str(0));
 					break;
