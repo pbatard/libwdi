@@ -58,7 +58,7 @@ HWND hInfo;
 HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
-char path[MAX_PATH];
+char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
 int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
@@ -213,14 +213,14 @@ void __cdecl install_driver_thread(void* param)
 	}
 
 	// Perform extraction/installation
-	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
-	if (wdi_create_inf(dev, path, INF_NAME, driver_type) == WDI_SUCCESS) {
-		dsprintf("Succesfully extracted driver files to %s\n", path);
+	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
+	if (wdi_create_inf(dev, extraction_path, INF_NAME, driver_type) == WDI_SUCCESS) {
+		dsprintf("Succesfully extracted driver files to %s\n", extraction_path);
 		// Perform the install if not extracting the files only
 		if (!extract_only) {
 			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
-			r = wdi_install_driver(dev, path, INF_NAME);
+			r = wdi_install_driver(dev, extraction_path, INF_NAME);
 			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
 			} else if (r == WDI_ERROR_USER_CANCEL) {
@@ -471,7 +471,6 @@ void init_dialog(HWND hDlg)
 
 	// Set the default extraction dir
 	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
-
 }
 
 /*
@@ -483,7 +482,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static DWORD last_scroll = 0;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
-	int nb_devices, junk, r;
+	char* log_buffer;
+	int nb_devices, junk, r, log_size;
 	DWORD delay, read_size;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 
@@ -696,7 +696,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			Edit_SetText(hInfo, "");
 			break;
 		case IDC_SAVE:		// button: "Save Log"
-			NOT_IMPLEMENTED();
+			log_size = GetWindowTextLength(hInfo);
+			log_buffer = malloc(log_size);
+			if (log_buffer != NULL) {
+				log_size = GetDlgItemTextA(hMain, IDC_INFO, log_buffer, log_size);
+				save_file("C:", "zadig.log", "log", "Zadig log", log_buffer, log_size);
+				safe_free(log_buffer);
+			} else {
+				dprintf("could not allocate buffer to save log\n");
+			}
 			break;
 		case IDOK:			// close application
 		case IDCANCEL:

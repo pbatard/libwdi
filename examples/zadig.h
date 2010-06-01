@@ -41,7 +41,7 @@
 #define UM_DEVICE_EVENT            (WM_APP+1)
 #define UM_LOGGER_EVENT            (WM_APP+2)
 
-#define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
+#define safe_free(p) do {if ((void*)p != NULL) {free((void*)p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, min(count, dst_max - strlen(dst) - 1))
@@ -66,6 +66,7 @@
 void NOT_IMPLEMENTED(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
+void save_file(char* path, char* filename, char* ext, char* ext_desc, void* buffer, DWORD size);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
 void create_status_bar(void);
@@ -79,4 +80,4 @@ extern HWND hDriver;
 extern HWND hMain;
 extern HWND hInfo;
 extern HWND hStatus;
-extern char path[MAX_PATH];
+extern char extraction_path[MAX_PATH];

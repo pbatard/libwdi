@@ -28,6 +28,7 @@
 #include <string.h>
 #include <shlobj.h>
 #include <shellapi.h>
+#include <commdlg.h>
 
 #include "resource.h"
 #include "zadig.h"
@@ -41,6 +42,12 @@ static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFI
 void NOT_IMPLEMENTED(void) {
 	MessageBox(NULL, "Feature not implemented yet", "Not implemented", MB_ICONSTOP);
 }
+
+#define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {								\
+	pSHCreateItemFromParsingName = (HRESULT (__stdcall *)(PCWSTR, IBindCtx*, REFIID, void **))	\
+			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");			\
+	}
+#define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -117,7 +124,7 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 	{
 	case BFFM_INITIALIZED:
 		// Invalid path will just be ignored
-		SendMessageA(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)path);
+		SendMessageA(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)extraction_path);
 		break;
 	case BFFM_SELCHANGED:
 	  // Update the status
@@ -131,7 +138,7 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 
 /*
  * Browse for a folder and update the folder edit box
- * Will use the newer IFileOpenDialog if compiled for Vista and later
+ * Will use the newer IFileOpenDialog if running on Vista and later
  */
 void browse_for_folder(void) {
 
@@ -141,26 +148,22 @@ void browse_for_folder(void) {
 	size_t i;
 	HRESULT hr;
 	IShellItem *psi = NULL;
-	IShellItem *si_path = NULL;
+	IShellItem *si_path = NULL;	// Automatically freed
 	IFileOpenDialog *pfod = NULL;
 	WCHAR *wpath, *fname;
 	char* tmp_path = NULL;
 #endif
 
 	// Retrieve the path to use as the starting folder
-	GetDlgItemText(hMain, IDC_FOLDER, path, MAX_PATH);
+	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	// Even if we have Vista support with the compiler,
 	// it does not mean we have the Vista API available
-	if (pSHCreateItemFromParsingName == NULL) {
-		pSHCreateItemFromParsingName = (HRESULT (__stdcall *)(PCWSTR, IBindCtx*, REFIID, void **))
-			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");
-	}
-
-	if (pSHCreateItemFromParsingName != NULL) {
+	INIT_VISTA_SHELL32;
+	if (IS_VISTA_SHELL32_AVAILABLE) {
 		hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
-			&IID_IFileOpenDialog, (LPVOID) &pfod);
+			&IID_IFileOpenDialog, (LPVOID)&pfod);
 		if (FAILED(hr)) {
 			dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
 			pfod = NULL;	// Just in case
@@ -172,7 +175,7 @@ void browse_for_folder(void) {
 			goto fallback;
 		}
 		// Set the initial folder (if the path is invalid, will simply use last)
-		wpath = utf8_to_wchar(path);
+		wpath = utf8_to_wchar(extraction_path);
 		// The new IFileOpenDialog makes us split the path
 		fname = NULL;
 		if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
@@ -185,7 +188,7 @@ void browse_for_folder(void) {
 			}
 		}
 
-		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
 		if (SUCCEEDED(hr)) {
 			if (wpath != NULL) {
 				hr = pfod->lpVtbl->SetFolder(pfod, si_path);
@@ -202,6 +205,7 @@ void browse_for_folder(void) {
 			if (SUCCEEDED(hr)) {
 				psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
 				tmp_path = wchar_to_utf8(wpath);
+				CoTaskMemFree(wpath);
 				if (tmp_path == NULL) {
 					dprintf("Could not convert path\n");
 				} else {
@@ -234,12 +238,154 @@ fallback:
 	pidl = SHBrowseForFolder(&bi);
 	if (pidl != NULL) {
 		// get the name of the folder
-		if (SHGetPathFromIDListA(pidl, path)) {
-			SetDlgItemTextA(hMain, IDC_FOLDER, path);
+		if (SHGetPathFromIDListA(pidl, extraction_path)) {
+			SetDlgItemTextA(hMain, IDC_FOLDER, extraction_path);
 		}
 		CoTaskMemFree(pidl);
 	}
 }
+
+/*
+ * Save a binary buffer through a save as dialog
+ * Will use the newer IFileOpenDialog if running on Vista and later
+ */
+void save_file(char* path, char* filename, char* ext, char* ext_desc,
+			   void* buffer, DWORD size)
+{
+	HANDLE handle;
+	DWORD tmp;
+	OPENFILENAME ofn;
+	char selected_name[STR_BUFFER_SIZE];
+	char* ext_string = NULL;
+	size_t i, ext_strlen;
+#if (_WIN32_WINNT >= 0x0600)	// Vista and later
+	HRESULT hr = FALSE;
+	IFileDialog *pfd;
+	IShellItem *psiResult;
+	COMDLG_FILTERSPEC filter_spec[2];
+	char* ext_filter;
+	WCHAR *wpath = NULL, *wfilename = NULL;
+	IShellItem *si_path = NULL;	// Automatically freed
+
+	INIT_VISTA_SHELL32;
+	if (IS_VISTA_SHELL32_AVAILABLE) {
+		// Setup the file extension filter table
+		ext_filter = malloc(strlen(ext)+3);
+		if (ext_filter != NULL) {
+			safe_sprintf(ext_filter, strlen(ext)+3, "*.%s", ext);
+			filter_spec[0].pszSpec = utf8_to_wchar(ext_filter);
+			safe_free(ext_filter);
+			filter_spec[0].pszName = utf8_to_wchar(ext_desc);
+			filter_spec[1].pszSpec = L"*.*";
+			filter_spec[1].pszName = L"All files";
+		}
+
+		hr = CoCreateInstance(&CLSID_FileSaveDialog, NULL, CLSCTX_INPROC,
+			&IID_IFileDialog, (LPVOID)&pfd);
+
+		if (FAILED(hr)) {
+			dprintf("CoCreateInstance for FileSaveDialog failed: error %X\n", hr);
+			pfd = NULL;	// Just in case
+			goto fallback;
+		}
+
+		// Set the file extension filters
+		pfd->lpVtbl->SetFileTypes(pfd, 2, filter_spec);
+
+		// Set the default directory
+		wpath = utf8_to_wchar(path);
+		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+		if (SUCCEEDED(hr)) {
+			pfd->lpVtbl->SetFolder(pfd, si_path);
+		}
+		safe_free(wpath);
+
+		// Set the default filename
+		wfilename = utf8_to_wchar(filename);
+		if (wfilename != NULL) {
+			pfd->lpVtbl->SetFileName(pfd, wfilename);
+		}
+
+		// Display the dialog
+		hr = pfd->lpVtbl->Show(pfd, hMain);
+
+		// Cleanup
+		safe_free(wfilename);
+		safe_free(filter_spec[0].pszSpec);
+		safe_free(filter_spec[0].pszName);
+
+		if (SUCCEEDED(hr)) {
+			// Obtain the result of the user's interaction with the dialog.
+			hr = pfd->lpVtbl->GetResult(pfd, &psiResult);
+			if (SUCCEEDED(hr)) {
+				hr = psiResult->lpVtbl->GetDisplayName(psiResult, SIGDN_FILESYSPATH, &wpath);
+				if (SUCCEEDED(hr)) {
+					handle = CreateFileW(wpath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
+					if (handle != INVALID_HANDLE_VALUE) {
+						WriteFile(handle, buffer, size, &tmp, NULL);
+						CloseHandle(handle);
+						path = wchar_to_utf8(wpath);
+						dsprintf("Saved log as '%s'\n", path);
+						safe_free(path);
+					}
+					CoTaskMemFree(wpath);
+				}
+				// Do something with the result.
+				psiResult->lpVtbl->Release(psiResult);
+			}
+		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
+			// If it's not a user cancel, assume the dialog didn't show and fallback
+			dprintf("could not show FileOpenDialog: error %X\n", hr);
+			goto fallback;
+		}
+		pfd->lpVtbl->Release(pfd);
+		return;
+	}
+
+fallback:
+	if (pfd != NULL) {
+		pfd->lpVtbl->Release(pfd);
+	}
+#endif
+
+	memset(&ofn, 0, sizeof(OPENFILENAME));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = hMain;
+	// File name
+	safe_strcpy(selected_name, STR_BUFFER_SIZE, filename);
+	ofn.lpstrFile = selected_name;
+	ofn.nMaxFile = STR_BUFFER_SIZE;
+	// Set the file extension filters
+	ext_strlen = strlen(ext_desc) + 2*strlen(ext) + sizeof(" (*.)\0*.\0All Files (*.*)\0*.*\0\0");
+	ext_string = malloc(ext_strlen);
+	safe_sprintf(ext_string, ext_strlen, "%s (*.%s)\r*.%s\rAll Files (*.*)\r*.*\r\0", ext_desc, ext, ext);
+	// Why couldn't Microsoft use a better delimiter
+	for (i=0; i<ext_strlen; i++) {
+		if (ext_string[i] == '\r') {
+			ext_string[i] = 0;
+		}
+	}
+	ofn.lpstrFilter = ext_string;
+	// Initial dir
+	ofn.lpstrInitialDir = path;
+	ofn.Flags = OFN_OVERWRITEPROMPT;
+	// Show Dialog
+	if (GetSaveFileNameA(&ofn)) {
+		handle = CreateFileA(selected_name, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
+		if (handle != INVALID_HANDLE_VALUE) {
+			WriteFile(handle, buffer, size, &tmp, NULL);
+			CloseHandle(handle);
+			dsprintf("Saved log as '%s'\n", selected_name);
+		}
+	} else {
+		tmp = CommDlgExtendedError();
+		if (tmp != 0) {
+			dprintf("Could not save file. Error %X\n", tmp);
+		}
+	}
+	safe_free(ext_string);
+}
+
 
 /*
  * Create the application status bar
