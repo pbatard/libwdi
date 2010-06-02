@@ -63,6 +63,7 @@ char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.s
 int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
 struct wdi_device_info *device, *list = NULL;
+int current_device_index = CB_ERR;
 char* editable_desc = NULL;
 // Application states
 bool advanced_mode = false;
@@ -126,8 +127,8 @@ int display_devices(void)
 		}
 	}
 
-	// Select first entry
-	SendMessage(hDeviceList, CB_SETCURSEL, 0, 0);
+	// Select current entry
+	SendMessage(hDeviceList, CB_SETCURSEL, (LPARAM)current_device_index, 0);
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
@@ -140,12 +141,12 @@ int display_devices(void)
 struct wdi_device_info* get_selected_device(void)
 {
 	struct wdi_device_info *dev = NULL;
-	int index;
-	index = (int) SendDlgItemMessage(hMain, IDC_DEVICELIST, CB_GETCURSEL, 0, 0);
-	if (index != CB_ERR) {
+
+	current_device_index = (int) SendDlgItemMessage(hMain, IDC_DEVICELIST, CB_GETCURSEL, 0, 0);
+	if (current_device_index != CB_ERR) {
 		// Use the device pointers as dropdown values for easy access
 		dev = (struct wdi_device_info*) SendDlgItemMessage(hMain, IDC_DEVICELIST,
-			CB_GETITEMDATA, index, 0);
+			CB_GETITEMDATA, (WPARAM)current_device_index, 0);
 	}
 	return dev;
 }
@@ -206,7 +207,7 @@ void __cdecl install_driver_thread(void* param)
 		need_dealloc = true;
 
 		// Retrieve the various device parameters
-		// TODO: actuall test creation!
+		// TODO: actually test creation!
 		GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
