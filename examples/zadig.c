@@ -46,6 +46,7 @@
 #include "zadig.h"
 
 #define NOT_DURING_INSTALL if (install_thread != NULL) return FALSE
+void toggle_driverless(bool refresh);
 
 /*
  * Globals
@@ -64,6 +65,7 @@ int driver_type = WDI_NB_DRIVERS-1;
 HANDLE install_thread = NULL;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
+char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
 // Application states
 bool advanced_mode = false;
@@ -125,9 +127,18 @@ int display_devices(void)
 		} else {
 			dprintf("could not populate dropdown list past device #%d\n", index);
 		}
+
+		// Select by Hardware ID if one's available
+		if (safe_strcmp(current_device_hardware_id, dev->hardware_id) == 0) {
+			current_device_index = index;
+			safe_free(current_device_hardware_id);
+		}
 	}
 
 	// Select current entry
+	if (current_device_index == CB_ERR) {
+		current_device_index = 0;
+	}
 	SendMessage(hDeviceList, CB_SETCURSEL, (LPARAM)current_device_index, 0);
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
@@ -167,7 +178,7 @@ void __cdecl notification_delay_thread(void* param)
 int get_driver_type(struct wdi_device_info* dev)
 {
 	const char* winusb_name = "WinUSB";
-	const char* libusb_name = "libusb";
+	const char* libusb_name = "libusb0";
 	const char* usbstor_name = "USBSTOR";
 	const char* hidusb_name = "HidUsb";
 
@@ -257,6 +268,11 @@ void __cdecl install_driver_thread(void* param)
 				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
 			}
 			toggle_busy();
+			// Switch to non driverless-only mode and set hw ID to show the newly installed device
+			current_device_hardware_id = safe_strdup(dev->hardware_id);
+			if (list_driverless_only) {
+				toggle_driverless(false);
+			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
 	} else {
@@ -454,7 +470,7 @@ void toggle_extract(void)
 }
 
 // Toggle driverless device listing
-void toggle_driverless(void)
+void toggle_driverless(bool refresh)
 {
 	list_driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
 
@@ -467,7 +483,9 @@ void toggle_driverless(void)
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
 	combo_breaker(false);
-	PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+	if (refresh) {
+		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+	}
 }
 
 void init_dialog(HWND hDlg)
@@ -793,7 +811,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_advanced();
 			break;
 		case IDM_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
-			toggle_driverless();
+			toggle_driverless(true);
 			break;
 		default:
 			return FALSE;
