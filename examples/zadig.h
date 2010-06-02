@@ -28,6 +28,15 @@
 #define false FALSE
 #endif
 
+// These are used to flag end users about the driver they are going to replace
+enum driver_type {
+	DT_SYSTEM,
+	DT_LIBUSB,
+	DT_UNKNOWN,
+	DT_NONE,
+	NB_DRIVER_TYPES,
+};
+
 #define STR_BUFFER_SIZE             256
 #define NOTIFICATION_DELAY          1000
 #define DEFAULT_DIR                 "C:\\usb_driver"
@@ -35,6 +44,8 @@
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define WHITE                       RGB(255,255,255)
+#define GREEN                       RGB(232,255,232)
+#define RED                         RGB(255,207,207)
 
 // WM_APP is not sent on focus, unlike WM_USER
 #define UM_REFRESH_LIST             WM_APP

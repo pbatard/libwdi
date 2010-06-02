@@ -294,6 +294,28 @@ void display_mi(bool show)
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
 }
 
+// Retrieve the driver type according to its service string
+int get_driver_type(struct wdi_device_info* dev)
+{
+	const char* winusb_name = "WinUSB";
+	const char* libusb_name = "libusb";
+	const char* usbstor_name = "USBSTOR";
+	const char* hidusb_name = "HidUsb";
+
+	if ((dev == NULL) || (dev->driver == NULL)) {
+		return DT_NONE;
+	}
+	if ( (safe_strcmp(dev->driver, winusb_name) == 0)
+	  || (safe_strcmp(dev->driver, libusb_name) == 0) ) {
+		return DT_LIBUSB;
+	}
+	if ( (safe_strcmp(dev->driver, usbstor_name) == 0)
+	  || (safe_strcmp(dev->driver, hidusb_name) == 0) ) {
+		return DT_SYSTEM;
+	}
+	return DT_UNKNOWN;
+}
+
 
 /*
  * Application state functions
@@ -477,6 +499,7 @@ void init_dialog(HWND hDlg)
 	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
 }
 
+
 /*
  * Main dialog callback
  */
@@ -489,7 +512,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char* log_buffer;
 	int nb_devices, junk, r, log_size;
 	DWORD delay, read_size;
+
+	// The following local variables are used to change the visual aspect of the fields
+	static HWND hDeviceEdit;
+	static HWND hVid, hPid, hMi;
+	static HWND hFolder, hDriver, hTarget;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
+	static HBRUSH green_brush = (HBRUSH)FALSE;
+	static HBRUSH red_brush = (HBRUSH)FALSE;
+	static HBRUSH driver_background[NB_DRIVER_TYPES];
 
 	switch (message) {
 
@@ -550,7 +581,25 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case WM_INITDIALOG:
+		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
+		green_brush = CreateSolidBrush(GREEN);
+		red_brush = CreateSolidBrush(RED);
+		driver_background[DT_NONE] = white_brush;
+		driver_background[DT_LIBUSB] = green_brush;
+		driver_background[DT_SYSTEM] = red_brush;
+		driver_background[DT_UNKNOWN] = (HBRUSH)FALSE;
+
+		// Speedup checks for WM_CTLCOLOR
+		hDeviceEdit = GetDlgItem(hDlg, IDC_DEVICEEDIT);
+		hVid = GetDlgItem(hDlg, IDC_VID);
+		hPid = GetDlgItem(hDlg, IDC_PID);
+		hMi = GetDlgItem(hDlg, IDC_MI);
+		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
+		hTarget = GetDlgItem(hDlg, IDC_TARGET);
+		hFolder = GetDlgItem(hDlg, IDC_FOLDER);
+
+		// Main init
 		init_dialog(hDlg);
 
 		// Fall through
@@ -600,11 +649,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	// Change the font colour of editable fields to dark blue
 	case WM_CTLCOLOREDIT:
-		if ( ((HWND)lParam == GetDlgItem(hDlg, IDC_DEVICEEDIT))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_VID))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_PID))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_MI))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_FOLDER)) ) {
+		if ( ((HWND)lParam == hDeviceEdit)
+		  || ((HWND)lParam == hVid)
+		  || ((HWND)lParam == hPid)
+		  || ((HWND)lParam == hMi)
+		  || ((HWND)lParam == hFolder) ) {
 			SetTextColor((HDC)wParam, DARK_BLUE);
 			return (INT_PTR)white_brush;
 		}
@@ -612,12 +661,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	// Set background colour of read only fields to white
 	case WM_CTLCOLORSTATIC:
-		if ( ((HWND)lParam == GetDlgItem(hDlg, IDC_VID))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_PID))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_MI))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_DRIVER))
-		  || ((HWND)lParam == GetDlgItem(hDlg, IDC_TARGET)) ) {
+		if ( ((HWND)lParam == hVid)
+		  || ((HWND)lParam == hPid)
+		  || ((HWND)lParam == hMi)
+		  || ((HWND)lParam == hTarget) ) {
 			return (INT_PTR)white_brush;
+		} else if ((HWND)lParam == hDriver) {
+			return (INT_PTR)driver_background[get_driver_type(device)];
 		}
 		return (INT_PTR)FALSE;
 
