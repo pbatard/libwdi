@@ -371,8 +371,6 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	// Find the ones that are driverless
 	for (i = 0; ; i++)
 	{
-		driverless = false;
-
 		// Free any invalid previously allocated struct
 		free_di(device_info);
 
@@ -396,12 +394,10 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 			if (driverless_only) {
 				continue;
 			}
-		} else {
-			// Driverless devices will return an error
-			driverless = true;
 		}
 
 		// Eliminate USB hubs by checking the driver string
+		strbuf[0] = 0;
 		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_SERVICE,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
 			device_info->driver = NULL;
