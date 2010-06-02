@@ -162,6 +162,28 @@ void __cdecl notification_delay_thread(void* param)
 	_endthread();
 }
 
+// Retrieve the driver type according to its service string
+int get_driver_type(struct wdi_device_info* dev)
+{
+	const char* winusb_name = "WinUSB";
+	const char* libusb_name = "libusb";
+	const char* usbstor_name = "USBSTOR";
+	const char* hidusb_name = "HidUsb";
+
+	if ((dev == NULL) || (dev->driver == NULL)) {
+		return DT_NONE;
+	}
+	if ( (safe_strcmp(dev->driver, winusb_name) == 0)
+	  || (safe_strcmp(dev->driver, libusb_name) == 0) ) {
+		return DT_LIBUSB;
+	}
+	if ( (safe_strcmp(dev->driver, usbstor_name) == 0)
+	  || (safe_strcmp(dev->driver, hidusb_name) == 0) ) {
+		return DT_SYSTEM;
+	}
+	return DT_UNKNOWN;
+}
+
 /*
  * Thread that performs the driver installation
  * param: a pointer to the currently selected wdi_device_info structure
@@ -217,6 +239,12 @@ void __cdecl install_driver_thread(void* param)
 		dsprintf("Succesfully extracted driver files to %s\n", extraction_path);
 		// Perform the install if not extracting the files only
 		if (!extract_only) {
+			if ( (get_driver_type(dev) == DT_SYSTEM)
+			  && (MessageBox(hMain, "You are about to replace a system driver.\n"
+					"Are you sure this is what you want?", "Warning - System Driver",
+					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
+				goto out;
+			}
 			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
 			r = wdi_install_driver(dev, extraction_path, INF_NAME);
@@ -233,7 +261,7 @@ void __cdecl install_driver_thread(void* param)
 	} else {
 		dsprintf("Could not create/extract files in %s\n", str_buf);
 	}
-
+out:
 	if (need_dealloc) {
 		free(dev);
 	}
@@ -292,28 +320,6 @@ void display_mi(bool show)
 	int cmd = show?SW_SHOW:SW_HIDE;
 	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
-}
-
-// Retrieve the driver type according to its service string
-int get_driver_type(struct wdi_device_info* dev)
-{
-	const char* winusb_name = "WinUSB";
-	const char* libusb_name = "libusb";
-	const char* usbstor_name = "USBSTOR";
-	const char* hidusb_name = "HidUsb";
-
-	if ((dev == NULL) || (dev->driver == NULL)) {
-		return DT_NONE;
-	}
-	if ( (safe_strcmp(dev->driver, winusb_name) == 0)
-	  || (safe_strcmp(dev->driver, libusb_name) == 0) ) {
-		return DT_LIBUSB;
-	}
-	if ( (safe_strcmp(dev->driver, usbstor_name) == 0)
-	  || (safe_strcmp(dev->driver, hidusb_name) == 0) ) {
-		return DT_SYSTEM;
-	}
-	return DT_UNKNOWN;
 }
 
 
