@@ -203,7 +203,7 @@ BEGIN
     BEGIN
         MENUITEM "List Only Driverless Devices", IDM_DRIVERLESSONLY, CHECKED
         MENUITEM "Extract files only",          IDM_EXTRACT
-        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE, CHECKED
+        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
     END
     POPUP "Help"
     BEGIN

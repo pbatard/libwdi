@@ -65,8 +65,7 @@ HANDLE install_thread = NULL;
 struct wdi_device_info *device, *list = NULL;
 char* editable_desc = NULL;
 // Application states
-bool advanced_mode = true;	// So that we can toggle to basic during init
-							// Make sure advanced mode is checked in the menu as well!
+bool advanced_mode = false;
 bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
@@ -455,8 +454,13 @@ void init_dialog(HWND hDlg)
 	// Create the status line
 	create_status_bar();
 
-	// Switch to basic mode
-	toggle_advanced();
+	// The application always starts in advanced mode
+	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
+
+	// Switch to basic mode if needed
+	if (!advanced_mode) {
+		toggle_advanced();
+	}
 
 	// Setup logging
 	wdi_register_logger(hMain, UM_LOGGER_EVENT);
