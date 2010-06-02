@@ -504,7 +504,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 			token = strtok (NULL, "\\#&");
 		}
 		device_info->desc = wchar_to_utf8(desc);
-		wdi_dbg("Device description: %s", device_info->desc);
+		wdi_dbg("Device description: '%s'", device_info->desc);
 
 		// Only at this stage do we know we have a valid current element
 		if (cur == NULL) {
