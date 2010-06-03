@@ -221,5 +221,5 @@ AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
 AC_SUBST(NO_CYGWIN)
 
-AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/libconfig/Makefile] [examples/Makefile])
 AC_OUTPUT

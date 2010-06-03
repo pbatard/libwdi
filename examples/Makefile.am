@@ -15,4 +15,4 @@ zadig_SOURCES = zadig.c zadig_stdlg.c
 zadig_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS)
 # static ensures that the exe can be shared as a standalone, and still allow driver installation
 zadig_LDFLAGS = -mwindows $(NO_CYGWIN) $(AM_LDFLAGS) -static
-zadig_LDADD = zadig_rc.o -L../libwdi/.libs -lwdi
+zadig_LDADD = zadig_rc.o -L../libwdi/.libs -L./libconfig/.libs -lwdi -lconfig

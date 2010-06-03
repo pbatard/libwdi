@@ -86,7 +86,19 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.dll . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
-cd ..\examples
+cd ..\examples\libconfig
+
+del Makefile.hide
+if EXIST Makefile ren Makefile Makefile.hide
+copy libconfig_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\libconfig.lib . >NUL 2>&1
+
+if EXIST Makefile.hide ren Makefile.hide Makefile
+cd ..
 
 del Makefile.hide
 if EXIST Makefile ren Makefile Makefile.hide
