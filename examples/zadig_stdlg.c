@@ -281,31 +281,26 @@ fallback:
  * read or write I/O to a file
  * buffer is allocated by the procedure
  */
-bool file_io(void* path, bool wide, void** buffer, DWORD* size, bool load)
+bool file_io(bool save, char* path, void** buffer, DWORD* size)
 {
 	HANDLE handle;
-	char* str = NULL;
 	BOOL r;
 	bool ret = false;
 
-	if (load) {
+	if (!save) {
 		*buffer = NULL;
 	}
-	if (wide) {
-		handle = CreateFileW((WCHAR*)path, load?GENERIC_READ:GENERIC_WRITE, FILE_SHARE_READ,
-			NULL, load?OPEN_EXISTING:CREATE_ALWAYS, 0, NULL);
-		str = wchar_to_utf8((WCHAR*)path);
-	} else {
-		handle = CreateFileA((char*)path, load?GENERIC_READ:GENERIC_WRITE, FILE_SHARE_READ,
-			NULL, load?OPEN_EXISTING:CREATE_ALWAYS, 0, NULL);
-		str = (char*)path;
-	}
+	handle = CreateFileA(path, save?GENERIC_WRITE:GENERIC_READ, FILE_SHARE_READ,
+		NULL, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
+
 	if (handle == INVALID_HANDLE_VALUE) {
-		dprintf("Could not %s file '%s'\n", load?"open":"create", str);
+		dprintf("Could not %s file '%s'\n", save?"create":"open", path);
 		goto out;
 	}
 
-	if (load) {
+	if (save) {
+		r = WriteFile(handle, *buffer, *size, size, NULL);
+	} else {
 		*size = GetFileSize(handle, NULL);
 		*buffer = malloc(*size);
 		if (*buffer == NULL) {
@@ -313,8 +308,6 @@ bool file_io(void* path, bool wide, void** buffer, DWORD* size, bool load)
 			goto out;
 		}
 		r = ReadFile(handle, *buffer, *size, size, NULL);
-	} else {
-		r = WriteFile(handle, *buffer, *size, size, NULL);
 	}
 
 	if (!r) {
@@ -323,18 +316,15 @@ bool file_io(void* path, bool wide, void** buffer, DWORD* size, bool load)
 		goto out;
 	}
 
-	dsprintf("%s '%s'\n", load?"Opened file":"Saved file as", str);
+	dsprintf("%s '%s'\n", save?"Saved file as":"Opened file", path);
 	ret = true;
 
 out:
 	CloseHandle(handle);
-	if (wide) {
-		safe_free(str);
-	}
 	if (!ret) {
 		// Only leave a buffer allocated if successful
 		*size = 0;
-		if (load) {
+		if (!save) {
 			safe_free(*buffer);
 		}
 	}
@@ -342,11 +332,10 @@ out:
 }
 
 /*
- * Load or save a file through a dialog
+ * Return the UTF8 path of a file selected through a load or save dialog
  * Will use the newer IFileOpenDialog if running on Vista and later
  */
-bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
-				 void** buffer, DWORD* size, bool load)
+char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc)
 {
 	DWORD tmp;
 	OPENFILENAME ofn;
@@ -354,7 +343,7 @@ bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
 	char* ext_string = NULL;
 	size_t i, ext_strlen;
 	BOOL r;
-	bool ret = false;
+	char* filepath = NULL;
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	HRESULT hr = FALSE;
@@ -378,7 +367,7 @@ bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
 			filter_spec[1].pszName = L"All files";
 		}
 
-		hr = CoCreateInstance(load?&CLSID_FileOpenDialog:&CLSID_FileSaveDialog, NULL, CLSCTX_INPROC,
+		hr = CoCreateInstance(save?&CLSID_FileSaveDialog:&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
 			&IID_IFileDialog, (LPVOID)&pfd);
 
 		if (FAILED(hr)) {
@@ -418,7 +407,7 @@ bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
 			if (SUCCEEDED(hr)) {
 				hr = psiResult->lpVtbl->GetDisplayName(psiResult, SIGDN_FILESYSPATH, &wpath);
 				if (SUCCEEDED(hr)) {
-					ret = file_io(wpath, true, buffer, size, load);
+					filepath = wchar_to_utf8(wpath);
 					CoTaskMemFree(wpath);
 				}
 				psiResult->lpVtbl->Release(psiResult);
@@ -429,7 +418,7 @@ bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
 			goto fallback;
 		}
 		pfd->lpVtbl->Release(pfd);
-		return ret;
+		return filepath;
 	}
 
 fallback:
@@ -460,46 +449,21 @@ fallback:
 	ofn.lpstrInitialDir = path;
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 	// Show Dialog
-	if (load) {
-		r = GetOpenFileNameA(&ofn);
-	} else {
+	if (save) {
 		r = GetSaveFileNameA(&ofn);
+	} else {
+		r = GetOpenFileNameA(&ofn);
 	}
 	if (r) {
-		ret = file_io(selected_name, false, buffer, size, load);
+		filepath = safe_strdup(selected_name);
 	} else {
 		tmp = CommDlgExtendedError();
 		if (tmp != 0) {
-			dprintf("Could not %s file. Error %X\n", load?"open":"save", tmp);
+			dprintf("Could not selected file for %s. Error %X\n", save?"save":"open", tmp);
 		}
 	}
 	safe_free(ext_string);
-	return ret;
-}
-
-/*
- * Save a binary buffer through a save dialog
- */
-DWORD save_file(char* path, char* filename, char* ext, char* ext_desc,
-			   void* buffer, DWORD size)
-{
-	DWORD write_size = size;
-	if (!file_dialog(path, filename, ext, ext_desc, &buffer, &write_size, false)) {
-		return 0;
-	}
-	return write_size;
-}
-
-/*
- * Load an entire file into a buffer through a load dialog
- */
-DWORD load_file(char* path, char* filename, char* ext, char* ext_desc, void** buffer)
-{
-	DWORD read_size;
-	if (!file_dialog(path, filename, ext, ext_desc, buffer, &read_size, true)) {
-		return 0;
-	}
-	return read_size;
+	return filepath;
 }
 
 /*
