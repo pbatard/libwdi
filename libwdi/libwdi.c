@@ -353,7 +353,6 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	char strbuf[STR_BUFFER_SIZE];
 	WCHAR desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
-	bool driverless;
 	const char usbhub_name[] = "usbhub";
 	const char usbccgp_name[] = "usbccgp";
 
