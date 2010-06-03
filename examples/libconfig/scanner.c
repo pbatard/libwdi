@@ -23,6 +23,10 @@
 #include <stdlib.h>
 #include <io.h>
 
+#if defined(__CYGWIN__ )
+extern long long atoll (const char *_c);
+#endif
+
 /* end standard C headers. */
 
 /* flex integer type definitions */

@@ -69,7 +69,7 @@ void scanctx_init(struct scan_context *ctx, const char *top_filename)
 {
   memset(ctx, 0, sizeof(struct scan_context));
   if(top_filename)
-    ctx->top_filename = __scanctx_add_filename(ctx, _strdup(top_filename));
+    ctx->top_filename = __scanctx_add_filename(ctx, strdup(top_filename));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -144,7 +144,7 @@ char *scanctx_take_string(struct scan_context *ctx)
 {
   char *r = strbuf_release(&(ctx->string));
 
-  return(r ? r : _strdup(""));
+  return(r ? r : strdup(""));
 }
 
 /* ------------------------------------------------------------------------- */

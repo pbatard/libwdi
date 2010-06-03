@@ -33,6 +33,8 @@ case $host in
 	AC_MSG_RESULT([MinGW])
 	AM_CFLAGS="-Wshadow"
 	NO_CYGWIN=""
+	LIBCONFIG_LIBADD=""
+	LIBCONFIG_CFLAGS=""
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
@@ -53,6 +55,8 @@ case $host in
 	# if you try to redefine CC to "gcc -mno-cygwin", all kind of bad things happen
 	# => use a variable instead
 	NO_CYGWIN="-mno-cygwin"
+	LIBCONFIG_LIBADD="-L/lib/mingw -lcrtdll -lmingwex"
+	LIBCONFIG_CFLAGS="-static -I/usr/include/mingw -D__MINGW_FEATURES__"
 	;;	
 *)
 	AC_MSG_ERROR([unsupported development environment])
@@ -220,6 +224,8 @@ AC_SUBST(VISIBILITY_CFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_LDFLAGS)
 AC_SUBST(NO_CYGWIN)
+AC_SUBST(LIBCONFIG_CFLAGS)
+AC_SUBST(LIBCONFIG_LIBADD)
 
 AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/libconfig/Makefile] [examples/Makefile])
 AC_OUTPUT
