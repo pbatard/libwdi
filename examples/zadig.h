@@ -77,7 +77,8 @@ enum driver_type {
 void NOT_IMPLEMENTED(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
-void save_file(char* path, char* filename, char* ext, char* ext_desc, void* buffer, DWORD size);
+DWORD save_file(char* path, char* filename, char* ext, char* ext_desc, void* buffer, DWORD size);
+DWORD load_file(char* path, char* filename, char* ext, char* ext_desc, void** buffer);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
 void create_status_bar(void);

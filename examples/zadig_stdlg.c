@@ -114,6 +114,37 @@ static __inline bool check_dir(char* cpath)
 }
 
 /*
+ * Converts a windows error to human readable string
+ * uses retval as errorcode, or, if 0, use GetLastError()
+ */
+static char *windows_error_str(DWORD retval)
+{
+#define ERR_BUFFER_SIZE             256
+static char err_string[ERR_BUFFER_SIZE];
+
+	DWORD size;
+	DWORD errcode, format_errcode;
+
+	errcode = retval?retval:GetLastError();
+
+	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", errcode);
+
+	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
+		ERR_BUFFER_SIZE, NULL);
+	if (size == 0)
+	{
+		format_errcode = GetLastError();
+		if (format_errcode)
+			safe_sprintf(err_string, ERR_BUFFER_SIZE,
+				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
+		else
+			safe_sprintf(err_string, ERR_BUFFER_SIZE, "Unknown error code %u", errcode);
+	}
+	return err_string;
+}
+
+/*
  * We need a callback to set the initial directory
  */
 INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
@@ -144,6 +175,7 @@ void browse_for_folder(void) {
 
 	BROWSEINFO bi;
 	LPITEMIDLIST pidl;
+
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	size_t i;
 	HRESULT hr;
@@ -246,18 +278,84 @@ fallback:
 }
 
 /*
- * Save a binary buffer through a save as dialog
- * Will use the newer IFileOpenDialog if running on Vista and later
+ * read or write I/O to a file
+ * buffer is allocated by the procedure
  */
-void save_file(char* path, char* filename, char* ext, char* ext_desc,
-			   void* buffer, DWORD size)
+bool file_io(void* path, bool wide, void** buffer, DWORD* size, bool load)
 {
 	HANDLE handle;
+	char* str = NULL;
+	BOOL r;
+	bool ret = false;
+
+	if (load) {
+		*buffer = NULL;
+	}
+	if (wide) {
+		handle = CreateFileW((WCHAR*)path, load?GENERIC_READ:GENERIC_WRITE, FILE_SHARE_READ,
+			NULL, load?OPEN_EXISTING:CREATE_ALWAYS, 0, NULL);
+		str = wchar_to_utf8((WCHAR*)path);
+	} else {
+		handle = CreateFileA((char*)path, load?GENERIC_READ:GENERIC_WRITE, FILE_SHARE_READ,
+			NULL, load?OPEN_EXISTING:CREATE_ALWAYS, 0, NULL);
+		str = (char*)path;
+	}
+	if (handle == INVALID_HANDLE_VALUE) {
+		dprintf("Could not %s file '%s'\n", load?"open":"create", str);
+		goto out;
+	}
+
+	if (load) {
+		*size = GetFileSize(handle, NULL);
+		*buffer = malloc(*size);
+		if (*buffer == NULL) {
+			dprintf("Could not allocate buffer for reading file\n");
+			goto out;
+		}
+		r = ReadFile(handle, *buffer, *size, size, NULL);
+	} else {
+		r = WriteFile(handle, *buffer, *size, size, NULL);
+	}
+
+	if (!r) {
+		// TODO: GetLastError
+		dprintf("I/O Error: %s\n", windows_error_str(0));
+		goto out;
+	}
+
+	dsprintf("%s '%s'\n", load?"Opened file":"Saved file as", str);
+	ret = true;
+
+out:
+	CloseHandle(handle);
+	if (wide) {
+		safe_free(str);
+	}
+	if (!ret) {
+		// Only leave a buffer allocated if successful
+		*size = 0;
+		if (load) {
+			safe_free(*buffer);
+		}
+	}
+	return ret;
+}
+
+/*
+ * Load or save a file through a dialog
+ * Will use the newer IFileOpenDialog if running on Vista and later
+ */
+bool file_dialog(char* path, char* filename, char* ext, char* ext_desc,
+				 void** buffer, DWORD* size, bool load)
+{
 	DWORD tmp;
 	OPENFILENAME ofn;
 	char selected_name[STR_BUFFER_SIZE];
 	char* ext_string = NULL;
 	size_t i, ext_strlen;
+	BOOL r;
+	bool ret = false;
+
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	HRESULT hr = FALSE;
 	IFileDialog *pfd;
@@ -280,11 +378,11 @@ void save_file(char* path, char* filename, char* ext, char* ext_desc,
 			filter_spec[1].pszName = L"All files";
 		}
 
-		hr = CoCreateInstance(&CLSID_FileSaveDialog, NULL, CLSCTX_INPROC,
+		hr = CoCreateInstance(load?&CLSID_FileOpenDialog:&CLSID_FileSaveDialog, NULL, CLSCTX_INPROC,
 			&IID_IFileDialog, (LPVOID)&pfd);
 
 		if (FAILED(hr)) {
-			dprintf("CoCreateInstance for FileSaveDialog failed: error %X\n", hr);
+			dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
 			pfd = NULL;	// Just in case
 			goto fallback;
 		}
@@ -320,17 +418,9 @@ void save_file(char* path, char* filename, char* ext, char* ext_desc,
 			if (SUCCEEDED(hr)) {
 				hr = psiResult->lpVtbl->GetDisplayName(psiResult, SIGDN_FILESYSPATH, &wpath);
 				if (SUCCEEDED(hr)) {
-					handle = CreateFileW(wpath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
-					if (handle != INVALID_HANDLE_VALUE) {
-						WriteFile(handle, buffer, size, &tmp, NULL);
-						CloseHandle(handle);
-						path = wchar_to_utf8(wpath);
-						dsprintf("Saved log as '%s'\n", path);
-						safe_free(path);
-					}
+					ret = file_io(wpath, true, buffer, size, load);
 					CoTaskMemFree(wpath);
 				}
-				// Do something with the result.
 				psiResult->lpVtbl->Release(psiResult);
 			}
 		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
@@ -339,7 +429,7 @@ void save_file(char* path, char* filename, char* ext, char* ext_desc,
 			goto fallback;
 		}
 		pfd->lpVtbl->Release(pfd);
-		return;
+		return ret;
 	}
 
 fallback:
@@ -359,7 +449,7 @@ fallback:
 	ext_strlen = strlen(ext_desc) + 2*strlen(ext) + sizeof(" (*.)\0*.\0All Files (*.*)\0*.*\0\0");
 	ext_string = malloc(ext_strlen);
 	safe_sprintf(ext_string, ext_strlen, "%s (*.%s)\r*.%s\rAll Files (*.*)\r*.*\r\0", ext_desc, ext, ext);
-	// Why couldn't Microsoft use a better delimiter
+	// Microsoft could really have picked a better delimiter!
 	for (i=0; i<ext_strlen; i++) {
 		if (ext_string[i] == '\r') {
 			ext_string[i] = 0;
@@ -370,22 +460,47 @@ fallback:
 	ofn.lpstrInitialDir = path;
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 	// Show Dialog
-	if (GetSaveFileNameA(&ofn)) {
-		handle = CreateFileA(selected_name, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
-		if (handle != INVALID_HANDLE_VALUE) {
-			WriteFile(handle, buffer, size, &tmp, NULL);
-			CloseHandle(handle);
-			dsprintf("Saved log as '%s'\n", selected_name);
-		}
+	if (load) {
+		r = GetOpenFileNameA(&ofn);
+	} else {
+		r = GetSaveFileNameA(&ofn);
+	}
+	if (r) {
+		ret = file_io(selected_name, false, buffer, size, load);
 	} else {
 		tmp = CommDlgExtendedError();
 		if (tmp != 0) {
-			dprintf("Could not save file. Error %X\n", tmp);
+			dprintf("Could not %s file. Error %X\n", load?"open":"save", tmp);
 		}
 	}
 	safe_free(ext_string);
+	return ret;
 }
 
+/*
+ * Save a binary buffer through a save dialog
+ */
+DWORD save_file(char* path, char* filename, char* ext, char* ext_desc,
+			   void* buffer, DWORD size)
+{
+	DWORD write_size = size;
+	if (!file_dialog(path, filename, ext, ext_desc, &buffer, &write_size, false)) {
+		return 0;
+	}
+	return write_size;
+}
+
+/*
+ * Load an entire file into a buffer through a load dialog
+ */
+DWORD load_file(char* path, char* filename, char* ext, char* ext_desc, void** buffer)
+{
+	DWORD read_size;
+	if (!file_dialog(path, filename, ext, ext_desc, buffer, &read_size, true)) {
+		return 0;
+	}
+	return read_size;
+}
 
 /*
  * Create the application status bar
@@ -405,7 +520,6 @@ void create_status_bar(void)
 	edge[1] = rect.right;
     SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
 }
-
 
 /*
  * Another callback is needed to change the cursor when hovering over the URL
