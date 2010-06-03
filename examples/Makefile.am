@@ -1,3 +1,5 @@
+SUBDIRS = libconfig
+
 INCLUDES = -I$(top_srcdir)
 
 noinst_PROGRAMS = zadic zadig
