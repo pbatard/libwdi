@@ -32,6 +32,7 @@ On cygwin/mingw, you need to supply the path to your DDK with the --with-ddkdir
 option when calling configure (see autogen.sh).
 For MSVC, you must edit msvc/config.h and set DDK_PATH path accordingly.
 
-Example:
-setdvr is a sample that will use libwdi to detect all driverless USB devices on
-your system and prompt you to automatically install a WinUSB driver for them.
+Dependencies:
+The Zadig GUI application uses a slightly modified version of libconfig 1.4.5
+(LGPL v2.1), which is copyright Mark Lindner et al.
+See http://www.hyperrealm.com/libconfig/ for details.
