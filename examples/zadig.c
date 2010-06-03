@@ -44,6 +44,7 @@
 #include "../libwdi/libwdi.h"
 #include "resource.h"
 #include "zadig.h"
+#include "libconfig/libconfig.h"
 
 #define NOT_DURING_INSTALL if (install_thread != NULL) return FALSE
 void toggle_driverless(bool refresh);
@@ -53,7 +54,6 @@ void toggle_driverless(bool refresh);
  */
 HINSTANCE main_instance;
 HWND hDeviceList;
-HWND hDriver;
 HWND hMain;
 HWND hInfo;
 HWND hStatus;
@@ -73,6 +73,9 @@ bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
 bool list_driverless_only = true;
+// Libconfig
+config_t cfg;
+config_setting_t *setting;
 
 /*
  * On screen logging and status
@@ -493,7 +496,6 @@ void init_dialog(HWND hDlg)
 	// Quite a burden to carry around as parameters
 	hMain = hDlg;
 	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
-	hDriver = GetDlgItem(hDlg, IDC_DRIVER);
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
@@ -524,6 +526,56 @@ void init_dialog(HWND hDlg)
 	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
 }
 
+/*
+ * Use libconfig to parse a preset device configuration file
+ */
+bool parse_preset(char* buffer)
+{
+	config_setting_t *dev;
+	int tmp;
+	char str_tmp[5];
+	const char* desc;
+
+	if (buffer == NULL) {
+		return false;
+	}
+
+	if (!config_read_file(&cfg, buffer)) {
+		dprintf("%s:%d - %s\n", config_error_file(&cfg),
+			config_error_line(&cfg), config_error_text(&cfg));
+		return false;
+	}
+
+	dev = config_lookup(&cfg, "device");
+	if (dev != NULL) {
+		if (!create_device) {
+			toggle_create(false);
+		}
+
+		if (config_setting_lookup_string(dev, "Description", &desc)) {
+			SetDlgItemText(hMain, IDC_DEVICEEDIT, desc);
+			// TODO: do we need to free that string?
+		}
+
+		if (config_setting_lookup_int(dev, "VID", &tmp)) {
+			safe_sprintf(str_tmp, 5, "%04X", tmp);
+			SetDlgItemText(hMain, IDC_VID, str_tmp);
+		}
+
+		if (config_setting_lookup_int(dev, "PID", &tmp)) {
+			safe_sprintf(str_tmp, 5, "%04X", tmp);
+			SetDlgItemText(hMain, IDC_PID, str_tmp);
+		}
+
+		if (config_setting_lookup_int(dev, "MI", &tmp)) {
+			safe_sprintf(str_tmp, 5, "%02X", tmp);
+			SetDlgItemText(hMain, IDC_MI, str_tmp);
+		}
+		return true;
+	}
+	return false;
+}
+
 
 /*
  * Main dialog callback
@@ -534,9 +586,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static DWORD last_scroll = 0;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
-	char* log_buffer;
-	int nb_devices, junk, r, log_size;
-	DWORD delay, read_size;
+	char *log_buffer, *filepath;
+	int nb_devices, junk, r;
+	DWORD delay, read_size, log_size;
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
@@ -779,7 +831,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			log_buffer = malloc(log_size);
 			if (log_buffer != NULL) {
 				log_size = GetDlgItemTextA(hMain, IDC_INFO, log_buffer, log_size);
-				save_file("C:", "zadig.log", "log", "Zadig log", log_buffer, log_size);
+				// TODO: move outside of C:
+				filepath = file_dialog(true, "C:", "zadig.log", "log", "Zadig log"); //, log_buffer, log_size);
+				if (filepath != NULL) {
+					file_io(true, filepath, &log_buffer, &log_size);
+				}
+				safe_free(filepath);
 				safe_free(log_buffer);
 			} else {
 				dprintf("could not allocate buffer to save log\n");
@@ -795,7 +852,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_create(true);
 			break;
 		case IDM_OPEN:
-			NOT_IMPLEMENTED();
+			filepath = file_dialog(false, "D:", "device.cfg", "cfg", "Predefined device");
+			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
 			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
@@ -837,10 +895,16 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	// Initialize COM for folder selection
 	CoInitialize(NULL);
 
+	// Initialize libconfig
+	config_init(&cfg);
+
 	// Create the main Window
 	if (DialogBox(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
 		MessageBox(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
 	}
+
+	// Exit libconfig
+	config_destroy(&cfg);
 
 	return (0);
 }

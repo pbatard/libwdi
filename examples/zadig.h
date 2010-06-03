@@ -88,7 +88,6 @@ void create_status_bar(void);
  */
 extern HINSTANCE main_instance;
 extern HWND hDeviceList;
-extern HWND hDriver;
 extern HWND hMain;
 extern HWND hInfo;
 extern HWND hStatus;
