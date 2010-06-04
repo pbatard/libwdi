@@ -59,6 +59,7 @@ HWND hInfo;
 HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
+char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
 int driver_type = WDI_NB_DRIVERS-1;
@@ -831,8 +832,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			log_buffer = malloc(log_size);
 			if (log_buffer != NULL) {
 				log_size = GetDlgItemTextA(hMain, IDC_INFO, log_buffer, log_size);
-				// TODO: move outside of C:
-				filepath = file_dialog(true, "C:", "zadig.log", "log", "Zadig log"); //, log_buffer, log_size);
+				filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log"); //, log_buffer, log_size);
 				if (filepath != NULL) {
 					file_io(true, filepath, &log_buffer, &log_size);
 				}
@@ -852,7 +852,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_create(true);
 			break;
 		case IDM_OPEN:
-			filepath = file_dialog(false, "D:", "device.cfg", "cfg", "Predefined device");
+			filepath = file_dialog(false, app_dir, "sample.cfg", "cfg", "Zadig device config");
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
@@ -897,6 +897,9 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	// Initialize libconfig
 	config_init(&cfg);
+
+	// Retrieve the current application directory
+	GetCurrentDirectory(MAX_PATH, app_dir);
 
 	// Create the main Window
 	if (DialogBox(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
