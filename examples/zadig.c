@@ -525,6 +525,9 @@ void init_dialog(HWND hDlg)
 
 	// Set the default extraction dir
 	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+
+	// Set the default target driver
+	select_next_driver(true);
 }
 
 /*
