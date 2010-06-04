@@ -296,7 +296,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib libconfig.lib"
+				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="D:\libwdi\x64\Release\lib"
 				UACExecutionLevel="1"
