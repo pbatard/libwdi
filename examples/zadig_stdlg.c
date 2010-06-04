@@ -281,7 +281,7 @@ fallback:
  * read or write I/O to a file
  * buffer is allocated by the procedure
  */
-bool file_io(bool save, char* path, void** buffer, DWORD* size)
+bool file_io(bool save, char* path, char** buffer, DWORD* size)
 {
 	HANDLE handle;
 	BOOL r;

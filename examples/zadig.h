@@ -78,7 +78,7 @@ void NOT_IMPLEMENTED(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc);
-bool file_io(bool save, char* path, void** buffer, DWORD* size);
+bool file_io(bool save, char* path, char** buffer, DWORD* size);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
 void create_status_bar(void);

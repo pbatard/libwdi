@@ -834,7 +834,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				// TODO: move outside of C:
 				filepath = file_dialog(true, "C:", "zadig.log", "log", "Zadig log"); //, log_buffer, log_size);
 				if (filepath != NULL) {
-					file_io(true, filepath, (void**)&log_buffer, &log_size);
+					file_io(true, filepath, &log_buffer, &log_size);
 				}
 				safe_free(filepath);
 				safe_free(log_buffer);
