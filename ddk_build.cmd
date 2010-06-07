@@ -21,7 +21,7 @@ rem set BUILD_ALT_DIR=x64
 cd libwdi
 set srcPath=obj%BUILD_ALT_DIR%\%cpudir%
 
-del Makefile.hide
+del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
 copy embedder_sources sources >NUL 2>&1
 @echo on
@@ -88,7 +88,7 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.dll . >NUL 2>&1
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..\examples\libconfig
 
-del Makefile.hide
+del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
 copy libconfig_sources sources >NUL 2>&1
 @echo on
@@ -100,7 +100,7 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libconfig.lib . >NUL 2>&1
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..
 
-del Makefile.hide
+del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
 copy zadic_sources sources >NUL 2>&1
 @echo on
