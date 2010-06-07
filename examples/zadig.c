@@ -46,7 +46,7 @@
 #include "zadig.h"
 #include "libconfig/libconfig.h"
 
-#define NOT_DURING_INSTALL if (install_thread != NULL) return FALSE
+#define NOT_DURING_INSTALL if (install_thid != -1L) return FALSE
 void toggle_driverless(bool refresh);
 
 /*
@@ -63,7 +63,7 @@ char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
 int driver_type = WDI_NB_DRIVERS-1;
-HANDLE install_thread = NULL;
+uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -204,7 +204,7 @@ int get_driver_type(struct wdi_device_info* dev)
  * Thread that performs the driver installation
  * param: a pointer to the currently selected wdi_device_info structure
  */
-void __cdecl install_driver_thread(void* param)
+void __cdecl install_thread(void* param)
 {
 	struct wdi_device_info* dev = (struct wdi_device_info*)(uintptr_t)param;
 	static char str_buf[STR_BUFFER_SIZE];
@@ -216,7 +216,7 @@ void __cdecl install_driver_thread(void* param)
 		dev = calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
 			dprintf("could not create new device_info struct for installation\n");
-			install_thread = NULL;
+			install_thid = -1L;
 			_endthread();
 		}
 		need_dealloc = true;
@@ -286,7 +286,7 @@ out:
 	if (need_dealloc) {
 		free(dev);
 	}
-	install_thread = NULL;
+	install_thid = -1L;
 	from_install = true;
 	_endthread();
 }
@@ -586,7 +586,7 @@ bool parse_preset(char* buffer)
  */
 INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	static HANDLE delay_thread = NULL;
+	static uintptr_t notification_delay_thid = -1L;
 	static DWORD last_scroll = 0;
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
@@ -621,17 +621,17 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		 * WM_DEVICECHANGE message we receive, and wait for this thread to send a user defined
 		 * event back to our main callback.
 		 */
-		if (delay_thread == NULL) {
+		if (notification_delay_thid == -1L) {
 			delay = NOTIFICATION_DELAY;
-			delay_thread = (HANDLE)_beginthread(notification_delay_thread, 0, (void*)(uintptr_t)delay);
-			if (delay_thread == NULL) {
+			notification_delay_thid = _beginthread(notification_delay_thread, 0, (void*)(uintptr_t)delay);
+			if (notification_delay_thid == -1L) {
 				dprintf("Unable to create notification delay thread - notification events will be disabled\n");
 			}
 		}
 		return TRUE;
 
 	case UM_DEVICE_EVENT:
-		delay_thread = NULL;
+		notification_delay_thid = -1L;
 		// Don't handle these events when installation has started
 		NOT_DURING_INSTALL;
 		if (create_device) {
@@ -814,12 +814,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDC_INSTALL:	// button: "Install"
-			if (install_thread != NULL) {
+			if (install_thid != -1L) {
 				dprintf("program assertion failed - another install thread is running\n");
 			} else {
 				// Using a thread prevents application freezout
-				install_thread = (HANDLE)_beginthread(install_driver_thread, 0, (void*)(uintptr_t)device);
-				if (install_thread == NULL) {
+				install_thid = _beginthread(install_thread, 0, (void*)(uintptr_t)device);
+				if (install_thid == -1L) {
 					dprintf("unable to create install_thread\n");
 				}
 			}

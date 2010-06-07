@@ -512,7 +512,7 @@ main(int argc, char** argv)
 	char* inf_name;
 	char path[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
-	HANDLE syslog_thread = NULL;
+	uintptr_t syslog_reader_thid = -1L;
 
 	// Connect to the messaging pipe
 	pipe_handle = CreateFile(INSTALLER_PIPE_NAME, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
@@ -552,8 +552,8 @@ main(int argc, char** argv)
 	// Setup the syslog reader thread
 	syslog_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	syslog_terminate_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-	syslog_thread = (HANDLE)_beginthread(syslog_reader_thread, 0, 0);
-	if ( (syslog_thread == NULL)
+	syslog_reader_thid = _beginthread(syslog_reader_thread, 0, 0);
+	if ( (syslog_reader_thid == -1L)
 	  || (WaitForSingleObject(syslog_ready_event, 2000) != WAIT_OBJECT_0) )	{
 		plog("Unable to create syslog reader thread");
 		SetEvent(syslog_terminate_event);
@@ -608,7 +608,7 @@ out:
 	SetEvent(syslog_terminate_event);
 	CloseHandle(syslog_ready_event);
 	CloseHandle(syslog_terminate_event);
-	CloseHandle(syslog_thread);
+	CloseHandle((HANDLE)syslog_reader_thid);
 	CloseHandle(pipe_handle);
 	return ret;
 }
