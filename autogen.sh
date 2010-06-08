@@ -14,4 +14,4 @@ aclocal || exit 1
 autoheader || exit 1
 autoconf || exit 1
 automake -a -c || exit 1
-./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb0" $*
+./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb-win32/bin" $*
