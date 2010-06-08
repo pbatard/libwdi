@@ -28,6 +28,7 @@
 #include <string.h>
 #include <shlobj.h>
 #include <shellapi.h>
+#include <process.h>
 #include <commdlg.h>
 
 #include "resource.h"
@@ -48,6 +49,12 @@ void NOT_IMPLEMENTED(void) {
 			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");			\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
+
+/*
+ * Globals
+ */
+static uintptr_t progress_thid = -1L;
+static HWND hProgress = INVALID_HANDLE_VALUE;
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -546,6 +553,75 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /*
+ * Progress popup callback
+ */
+INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT loc;
+	int i;
+	// coordinates that we want to disable (=> no resize)
+	static LRESULT disabled[9] = { HTLEFT, HTRIGHT, HTTOP, HTBOTTOM, HTSIZE,
+		HTTOPLEFT, HTTOPRIGHT, HTBOTTOMLEFT, HTBOTTOMRIGHT };
+
+	switch (message) {
+	case WM_INITDIALOG:
+		// Toggle the progressbar Marquee animation
+		hProgress = hDlg;
+		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), PBM_SETMARQUEE, TRUE, 0);
+		return (INT_PTR)TRUE;
+	case WM_NCHITTEST:
+		// Check coordinates to prevent resize actions
+		loc = DefWindowProc(hDlg, message, wParam, lParam);
+		for(i = 0; i < 9; i++) {
+			if (loc == disabled[i]) {
+				return (INT_PTR)TRUE;
+			}
+		}
+		return (INT_PTR)FALSE;
+	// TODO: disable close
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+		case IDCANCEL:
+			EndDialog(hDlg, LOWORD(wParam));
+			hProgress = INVALID_HANDLE_VALUE;
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}
+
+/*
+ * Thread that displays the progress dialog
+ */
+void __cdecl progress_thread(void* param)
+{
+	DialogBox(main_instance, MAKEINTRESOURCE(IDD_PROGRESS), NULL, Progress);
+	progress_thid = -1L;
+	_endthread();
+}
+
+
+bool create_progress_bar(void)
+{
+	progress_thid = _beginthread(progress_thread, 0, 0);
+	if (progress_thid == -1L) {
+		return false;
+	}
+	return true;
+}
+
+bool destroy_progress_bar(void)
+{
+	if ( (progress_thid == -1L) || (hProgress == INVALID_HANDLE_VALUE) ) {
+		return false;
+	}
+	EndDialog(hProgress, 0);
+	return true;
+}
+
+/*
  * Toggle the application cursor to busy and back
  */
 void toggle_busy(void)
@@ -566,12 +642,14 @@ void toggle_busy(void)
 		SetClassLongPtr(hInfo, GCLP_HCURSOR, (ULONG_PTR)cursor);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, (ULONG_PTR)cursor);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, (ULONG_PTR)cursor);
+		create_progress_bar();
 	} else {
 		SetClassLongPtr(hMain, GCLP_HCURSOR, saved_cursor[0]);
 		SetClassLongPtr(hDeviceList, GCLP_HCURSOR, saved_cursor[1]);
 		SetClassLongPtr(hInfo, GCLP_HCURSOR, saved_cursor[2]);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, saved_cursor[3]);
 		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, saved_cursor[4]);
+		destroy_progress_bar();
 	}
 	is_busy = !is_busy;
 	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor

@@ -264,6 +264,7 @@ void __cdecl install_thread(void* param)
 			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
 			r = wdi_install_driver(dev, extraction_path, INF_NAME);
+			toggle_busy();
 			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
 			} else if (r == WDI_ERROR_USER_CANCEL) {
@@ -271,7 +272,6 @@ void __cdecl install_thread(void* param)
 			} else {
 				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
 			}
-			toggle_busy();
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
 			if (list_driverless_only) {
