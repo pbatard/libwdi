@@ -39,6 +39,10 @@
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
 #endif
 
+#ifndef PBM_SETMARQUEE
+#define PBM_SETMARQUEE (WM_USER+10)
+#endif
+
 // TODO: make sure this is never called in release
 void NOT_IMPLEMENTED(void) {
 	MessageBox(NULL, "Feature not implemented yet", "Not implemented", MB_ICONSTOP);
