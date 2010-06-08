@@ -144,7 +144,7 @@ int display_devices(void)
 	if (current_device_index == CB_ERR) {
 		current_device_index = 0;
 	}
-	ComboBox_SetCurSel(hDeviceList, current_device_index);
+	junk = ComboBox_SetCurSel(hDeviceList, current_device_index);
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 

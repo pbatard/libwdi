@@ -703,6 +703,7 @@ INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 {
 	LRESULT loc;
 	int i;
+	HICON junk;
 	// Prevent resising
 	static LRESULT disabled[9] = { HTLEFT, HTRIGHT, HTTOP, HTBOTTOM, HTSIZE,
 		HTTOPLEFT, HTTOPRIGHT, HTBOTTOMLEFT, HTBOTTOMRIGHT };
@@ -714,7 +715,7 @@ INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		separator_brush = CreateSolidBrush(SEPARATOR_GREY);
 		center_dialog(hDlg);
 		// Change the default icon
-		Static_SetIcon(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), hMessageIcon);
+		junk = Static_SetIcon(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), hMessageIcon);
 		// Set the dialog title
 		if (message_title != NULL) {
 			SetWindowTextA(hDlg, message_title);
