@@ -267,10 +267,13 @@ void __cdecl install_thread(void* param)
 			toggle_busy();
 			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
+				notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User\n");
+				notification(MSG_WARNING, "The driver installation was cancelled by user.", "Driver Installation");
 			} else {
 				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
+				notification(MSG_ERROR, "The driver installation failed.", "Driver Installation");
 			}
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);

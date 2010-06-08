@@ -59,6 +59,9 @@ void NOT_IMPLEMENTED(void) {
  */
 static uintptr_t progress_thid = -1L;
 static HWND hProgress = INVALID_HANDLE_VALUE;
+static HICON hMessageIcon = INVALID_HANDLE_VALUE;
+static char* message_text = NULL;
+static char* message_title = NULL;
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -603,7 +606,7 @@ INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message) {
 	case WM_INITDIALOG:
 		hProgress = hDlg;
-		center_dialog(hProgress);
+		center_dialog(hDlg);
 		// Toggle the progressbar Marquee animation
 		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), PBM_SETMARQUEE, TRUE, 0);
 		return (INT_PTR)TRUE;
@@ -691,4 +694,86 @@ void toggle_busy(void)
 	}
 	is_busy = !is_busy;
 	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
+}
+
+/*
+ * We use our own MessageBox for notifications to have greater control (center, no close button, etc)
+ */
+INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT loc;
+	int i;
+	// Prevent resising
+	static LRESULT disabled[9] = { HTLEFT, HTRIGHT, HTTOP, HTBOTTOM, HTSIZE,
+		HTTOPLEFT, HTTOPRIGHT, HTBOTTOMLEFT, HTBOTTOMRIGHT };
+	static HBRUSH white_brush, separator_brush;
+
+	switch (message) {
+	case WM_INITDIALOG:
+		white_brush = CreateSolidBrush(WHITE);
+		separator_brush = CreateSolidBrush(SEPARATOR_GREY);
+		center_dialog(hDlg);
+		// Change the default icon
+		SendMessage(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), STM_SETIMAGE, IMAGE_ICON,
+			(LPARAM)hMessageIcon);
+		// Set the dialog title
+		if (message_title != NULL) {
+			SetWindowTextA(hDlg, message_title);
+		}
+		// Set the control text
+		if (message_text != NULL) {
+			SetWindowTextA(GetDlgItem(hDlg, IDC_NOTIFICATION_TEXT), message_text);
+		}
+		return (INT_PTR)TRUE;
+    case WM_CTLCOLORSTATIC:
+		// Change the background colour for static text and icon
+        SetBkMode((HDC)wParam, TRANSPARENT);
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_NOTIFICATION_LINE)) {
+			return (INT_PTR)separator_brush;
+		}
+        return (INT_PTR)white_brush;
+	case WM_NCHITTEST:
+		// Check coordinates to prevent resize actions
+		loc = DefWindowProc(hDlg, message, wParam, lParam);
+		for(i = 0; i < 9; i++) {
+			if (loc == disabled[i]) {
+				return (INT_PTR)TRUE;
+			}
+		}
+		return (INT_PTR)FALSE;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+		case IDCANCEL:
+		case IDC_NOTIFICATION_CLOSE:
+			EndDialog(hDlg, LOWORD(wParam));
+			hProgress = INVALID_HANDLE_VALUE;
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}
+
+/*
+ * Thread that displays the progress dialog
+ */
+void notification(int type, char* text, char* title)
+{
+	message_text = text;
+	message_title = title;
+	switch(type) {
+	case MSG_WARNING:
+		hMessageIcon = LoadIcon(NULL, IDI_WARNING);
+		break;
+	case MSG_ERROR:
+		hMessageIcon = LoadIcon(NULL, IDI_ERROR);
+		break;
+	case MSG_INFO:
+	default:
+		hMessageIcon = LoadIcon(NULL, IDI_INFORMATION);
+		break;
+	}
+	DialogBox(main_instance, MAKEINTRESOURCE(IDD_NOTIFICATION), hMain, Notification);
+	message_text = NULL;
 }

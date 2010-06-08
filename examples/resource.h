@@ -5,6 +5,7 @@
 #define IDI_ICON1                       102
 #define IDD_ABOUTBOX                    103
 #define IDD_PROGRESS                    104
+#define IDD_NOTIFICATION                105
 #define IDC_DEVICELIST                  1001
 #define IDC_VID                         1002
 #define IDC_PID                         1003
@@ -29,6 +30,11 @@
 #define IDC_STATUS                      1049
 #define IDC_DEVICEEDIT                  1050
 #define IDC_PROGRESS                    1051
+#define IDC_ABOUT_ICON                  1054
+#define IDC_NOTIFICATION_ICON           1056
+#define IDC_NOTIFICATION_TEXT           1057
+#define IDC_NOTIFICATION_CLOSE          1059
+#define IDC_NOTIFICATION_LINE           1060
 #define IDC_FOLDER                      1148
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
@@ -46,7 +52,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1061
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

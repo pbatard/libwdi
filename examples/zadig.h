@@ -37,12 +37,20 @@ enum driver_type {
 	NB_DRIVER_TYPES,
 };
 
+// For our custom Notifications
+enum message_type {
+	MSG_INFO,
+	MSG_WARNING,
+	MSG_ERROR
+};
+
 #define STR_BUFFER_SIZE             256
 #define NOTIFICATION_DELAY          1000
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INF_NAME                    "libusb_device.inf"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
+#define SEPARATOR_GREY              RGB(223,223,223)
 #define WHITE                       RGB(255,255,255)
 #define GREEN                       RGB(232,255,232)
 #define RED                         RGB(255,207,207)
@@ -82,6 +90,7 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size);
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void toggle_busy(void);
 void create_status_bar(void);
+void notification(int type, char* text, char* title);
 
 /*
  * Globals
