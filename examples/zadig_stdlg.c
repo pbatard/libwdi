@@ -493,6 +493,38 @@ void create_status_bar(void)
 }
 
 /*
+ * Center a dialog with regards to the main application Window
+ */
+void center_dialog(HWND dialog)
+{
+	POINT Point;
+	RECT DialogRect;
+	RECT ParentRect;
+	int nWidth;
+	int nHeight;
+
+	// Get the size of the dialog box.
+	GetWindowRect(dialog, &DialogRect);
+	GetClientRect(hMain, &ParentRect);
+
+	// Calculate the height and width of the current dialog
+	nWidth = DialogRect.right - DialogRect.left;
+	nHeight = DialogRect.bottom - DialogRect.top;
+
+	// Find the center point and convert to screen coordinates.
+	Point.x = (ParentRect.right - ParentRect.left) / 2;
+	Point.y = (ParentRect.bottom - ParentRect.top) / 2;
+	ClientToScreen(hMain, &Point);
+
+	// Calculate the new x, y starting point.
+	Point.x -= nWidth / 2;
+	Point.y -= nHeight / 2 + 35;
+
+	// Move the window.
+	MoveWindow(dialog, Point.x, Point.y, nWidth, nHeight, FALSE);
+}
+
+/*
  * Another callback is needed to change the cursor when hovering over the URL
  * Why don't we use syslink? Because it requires Unicode
  */
@@ -522,6 +554,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message) {
 	case WM_INITDIALOG:
+		center_dialog(hDlg);
 		// Subclass the callback so that we can change the cursor
 		original_wndproc = (WNDPROC)GetWindowLongPtr(hDlg, GWLP_WNDPROC);
 		SetPropA(hDlg, "PROP_ORIGINAL_PROC", (HANDLE)original_wndproc);
@@ -565,8 +598,9 @@ INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message) {
 	case WM_INITDIALOG:
-		// Toggle the progressbar Marquee animation
 		hProgress = hDlg;
+		center_dialog(hProgress);
+		// Toggle the progressbar Marquee animation
 		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), PBM_SETMARQUEE, TRUE, 0);
 		return (INT_PTR)TRUE;
 	case WM_NCHITTEST:
