@@ -485,18 +485,18 @@ fallback:
  */
 void create_status_bar(void)
 {
-    RECT rect;
+	RECT rect;
 	int edge[2];
 
-    // Create the status bar.
-    hStatus = CreateWindowEx(0, STATUSCLASSNAME, NULL, WS_CHILD | WS_VISIBLE,
-        0, 0, 0, 0, hMain, (HMENU)IDC_STATUS,  main_instance, NULL);
+	// Create the status bar.
+	hStatus = CreateWindowEx(0, STATUSCLASSNAME, NULL, WS_CHILD | WS_VISIBLE,
+		0, 0, 0, 0, hMain, (HMENU)IDC_STATUS,  main_instance, NULL);
 
-    // Create 2 status areas
-    GetClientRect(hMain, &rect);
+	// Create 2 status areas
+	GetClientRect(hMain, &rect);
 	edge[0] = rect.right - 100;
 	edge[1] = rect.right;
-    SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
+	SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
 }
 
 /*
@@ -724,13 +724,13 @@ INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			SetWindowTextA(GetDlgItem(hDlg, IDC_NOTIFICATION_TEXT), message_text);
 		}
 		return (INT_PTR)TRUE;
-    case WM_CTLCOLORSTATIC:
+	case WM_CTLCOLORSTATIC:
 		// Change the background colour for static text and icon
-        SetBkMode((HDC)wParam, TRANSPARENT);
+		SetBkMode((HDC)wParam, TRANSPARENT);
 		if ((HWND)lParam == GetDlgItem(hDlg, IDC_NOTIFICATION_LINE)) {
 			return (INT_PTR)separator_brush;
 		}
-        return (INT_PTR)white_brush;
+		return (INT_PTR)white_brush;
 	case WM_NCHITTEST:
 		// Check coordinates to prevent resize actions
 		loc = DefWindowProc(hDlg, message, wParam, lParam);
