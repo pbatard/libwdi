@@ -90,7 +90,8 @@ void w_printf_v(bool update_status, const char *format, va_list args)
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
 	}
-	Edit_SetSel(hInfo, -1, -1);
+	// Set cursor to the end of the buffer
+	Edit_SetSel(hInfo, MAX_LOG_SIZE , MAX_LOG_SIZE);
 	Edit_ReplaceSel(hInfo, str);
 	if (update_status) {
 		SetDlgItemText(hMain, IDC_STATUS, str);
@@ -518,8 +519,8 @@ void init_dialog(HWND hDlg)
 	// Setup logging
 	wdi_register_logger(hMain, UM_LOGGER_EVENT);
 	wdi_set_log_level(LOG_LEVEL_DEBUG);
-	// Increase the size of our log textbox to 64 KB
-	PostMessage(hInfo, EM_LIMITTEXT, 0xFFFF, 0);
+	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
+	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);

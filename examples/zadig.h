@@ -46,6 +46,7 @@ enum message_type {
 
 #define STR_BUFFER_SIZE             256
 #define NOTIFICATION_DELAY          1000
+#define MAX_LOG_SIZE                0xFFFF
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INF_NAME                    "libusb_device.inf"
 #define DARK_BLUE                   RGB(0,0,125)
