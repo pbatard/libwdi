@@ -144,7 +144,7 @@ int display_devices(void)
 	if (current_device_index == CB_ERR) {
 		current_device_index = 0;
 	}
-	SendMessage(hDeviceList, CB_SETCURSEL, (LPARAM)current_device_index, 0);
+	ComboBox_SetCurSel(hDeviceList, current_device_index);
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
@@ -158,11 +158,10 @@ struct wdi_device_info* get_selected_device(void)
 {
 	struct wdi_device_info *dev = NULL;
 
-	current_device_index = (int) SendDlgItemMessage(hMain, IDC_DEVICELIST, CB_GETCURSEL, 0, 0);
+	current_device_index = ComboBox_SetCurSel(hDeviceList, 0);
 	if (current_device_index != CB_ERR) {
 		// Use the device pointers as dropdown values for easy access
-		dev = (struct wdi_device_info*) SendDlgItemMessage(hMain, IDC_DEVICELIST,
-			CB_GETITEMDATA, (WPARAM)current_device_index, 0);
+		dev = (struct wdi_device_info*)ComboBox_GetItemData(hDeviceList, current_device_index);
 	}
 	return dev;
 }
@@ -224,7 +223,7 @@ void __cdecl install_thread(void* param)
 
 		// Retrieve the various device parameters
 		// TODO: actually test creation!
-		GetDlgItemText(hMain, IDC_DEVICELIST, str_buf, STR_BUFFER_SIZE);
+		ComboBox_GetText(hDeviceList, str_buf, STR_BUFFER_SIZE);
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		// TODO: use custom scanf for hex

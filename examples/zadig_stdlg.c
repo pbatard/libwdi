@@ -714,8 +714,7 @@ INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		separator_brush = CreateSolidBrush(SEPARATOR_GREY);
 		center_dialog(hDlg);
 		// Change the default icon
-		SendMessage(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), STM_SETIMAGE, IMAGE_ICON,
-			(LPARAM)hMessageIcon);
+		Static_SetIcon(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), hMessageIcon);
 		// Set the dialog title
 		if (message_title != NULL) {
 			SetWindowTextA(hDlg, message_title);
