@@ -158,7 +158,7 @@ struct wdi_device_info* get_selected_device(void)
 {
 	struct wdi_device_info *dev = NULL;
 
-	current_device_index = ComboBox_SetCurSel(hDeviceList, 0);
+	current_device_index = ComboBox_GetCurSel(hDeviceList);
 	if (current_device_index != CB_ERR) {
 		// Use the device pointers as dropdown values for easy access
 		dev = (struct wdi_device_info*)ComboBox_GetItemData(hDeviceList, current_device_index);
