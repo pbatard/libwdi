@@ -20,6 +20,7 @@
 #pragma once
 
 #define LOGGER_PIPE_NAME           "\\\\.\\pipe\\libwdi-logger"
+#define LOGGER_PIPE_SIZE           8192
 #define LOGBUF_SIZE                256
 
 #if defined(_MSC_VER)

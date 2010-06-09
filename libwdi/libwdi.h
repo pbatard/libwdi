@@ -198,7 +198,7 @@ int LIBWDI_API wdi_set_log_level(int level);
 /*
  * Set the Windows callback message for log notification
  */
-int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message);
+int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize);
 
 /*
  * Unset the Windows callback message for log notification

@@ -39,11 +39,13 @@ unsigned log_messages_pending = 0;
 static int global_log_level = LOG_LEVEL_WARNING;
 
 extern char *windows_error_str(uint32_t retval);
-int create_logger(void);
 
 void pipe_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
+	// NB: we can't easily use growable buffer allocation, as the secure MS
+	// vprintf functions require an exception handler on buffer overflow
+	// To keep things simple, if a log entry is too long, it is truncated.
 	char buffer[LOGBUF_SIZE];
 	DWORD junk;
 	int size1, size2;
@@ -87,13 +89,21 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 			size2 = LOGBUF_SIZE-1-size1;
 		}
 	}
+
+	// http://msdn.microsoft.com/en-us/library/aa365150%28VS.85%29.aspx:
+	// "if your specified buffer size is too small, the system will grow the
+	//  buffer as needed, but the downside is that the operation will block
+	//  until the (existing) data is read from the pipe."
+	// Existing pipe data should have produced a notification, but if the pipe
+	// is left to fill without readout, we might run into blocking log calls.
+	// TODO: address this potential issue if it is reported
 	WriteFile(logger_wr_handle, buffer, (DWORD)(size1+size2+1), &junk, NULL);
 
 	// Notify the destination window of a new log message
 	// TODO: use wparam for error/debug/etc
 	log_messages_pending++;
-	// SendMessage ensures that log message does not occur after the function has returned
-	SendMessage(logger_dest, logger_msg, level, 0);
+
+	PostMessage(logger_dest, logger_msg, level, 0);
 }
 
 void console_wdi_log_v(enum wdi_log_level level,
@@ -154,8 +164,12 @@ void wdi_log(enum wdi_log_level level,
 }
 
 // Create a synchronous pipe for messaging
-int create_logger(void)
+int create_logger(DWORD buffsize)
 {
+	if (buffsize == 0) {
+		buffsize = LOGGER_PIPE_SIZE;
+	}
+
 	if (logger_wr_handle != INVALID_HANDLE_VALUE) {
 		// We (supposedly) don't have logging, so try to reach a stderr
 		fprintf(stderr, "trying to recreate logger pipe\n");
@@ -164,7 +178,7 @@ int create_logger(void)
 
 	// Read end of the pipe
 	logger_rd_handle = CreateNamedPipe(LOGGER_PIPE_NAME, PIPE_ACCESS_INBOUND,
-		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
+		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, buffsize, buffsize, 0, NULL);
 	if (logger_rd_handle == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, "could not create logger pipe for reading: %s\n", windows_error_str(0));
 		return WDI_ERROR_RESOURCE;
@@ -203,7 +217,7 @@ void destroy_logger(void)
  * This Window will be notified with a message event and should call
  * wdi_read_logger() to retreive the message data
  */
-int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message)
+int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 {
 	int r;
 
@@ -211,7 +225,7 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message)
 		return WDI_ERROR_EXISTS;
 	}
 
-	r = create_logger();
+	r = create_logger(buffsize);
 	if (r == WDI_SUCCESS) {
 		logger_dest = hWnd;
 		logger_msg = message;
@@ -247,7 +261,7 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 {
 	int size;
 
-	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger() != WDI_SUCCESS) ) {
+	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger(0) != WDI_SUCCESS) ) {
 		*message_size = 0;
 		return WDI_ERROR_NOT_FOUND;
 	}
@@ -265,7 +279,6 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 
 	// TODO: use a flag to prevent readout if no data
 	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
-		// TODO: add LF?
 		return WDI_SUCCESS;
 	}
 

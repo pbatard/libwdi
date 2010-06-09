@@ -516,7 +516,7 @@ void init_dialog(HWND hDlg)
 	}
 
 	// Setup logging
-	wdi_register_logger(hMain, UM_LOGGER_EVENT);
+	wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
 	wdi_set_log_level(LOG_LEVEL_DEBUG);
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
