@@ -49,7 +49,10 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 	char buffer[LOGBUF_SIZE];
 	DWORD junk;
 	int size1, size2;
-	const char *prefix;
+	bool truncated = false;
+	const char* prefix;
+	const char* truncation_notice = "TRUNCATION detected for above line - Please "
+		"send this log excerpt to the libwdi developers so that we can fix it.";
 
 	if (logger_wr_handle == INVALID_HANDLE_VALUE)
 		return;
@@ -82,11 +85,13 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 	if (size1 < 0) {
 		buffer[LOGBUF_SIZE-1] = 0;
 		size1 = LOGBUF_SIZE-1;
+		truncated = true;
 	} else {
 		size2 = safe_vsnprintf(buffer+size1, LOGBUF_SIZE-size1, format, args);
 		if (size2 < 0) {
 			buffer[LOGBUF_SIZE-1] = 0;
 			size2 = LOGBUF_SIZE-1-size1;
+			truncated = true;
 		}
 	}
 
@@ -102,8 +107,15 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 	// Notify the destination window of a new log message
 	// TODO: use wparam for error/debug/etc
 	log_messages_pending++;
-
 	PostMessage(logger_dest, logger_msg, level, 0);
+
+	if (truncated) {
+		WriteFile(logger_wr_handle, truncation_notice,
+			sizeof(truncation_notice), &junk, NULL);
+		log_messages_pending++;
+		PostMessage(logger_dest, logger_msg, level, 0);
+	}
+
 }
 
 void console_wdi_log_v(enum wdi_log_level level,
