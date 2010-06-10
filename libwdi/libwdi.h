@@ -109,7 +109,7 @@ enum wdi_error {
 	/** Entity not found */
 	WDI_ERROR_NOT_FOUND = -5,
 
-	/** Resource busy */
+	/** Resource busy, or API call already running */
 	WDI_ERROR_BUSY = -6,
 
 	/** Operation timed out */

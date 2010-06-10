@@ -267,7 +267,7 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_NOT_FOUND:
 		return "Requested resource not found";
 	case WDI_ERROR_BUSY:
-		return "Requested resource busy";
+		return "Requested resource busy or same function call already in process";
 	case WDI_ERROR_TIMEOUT:
 		return "Operation timed out";
 	case WDI_ERROR_OVERFLOW:
@@ -356,6 +356,8 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	const char usbhub_name[] = "usbhub";
 	const char usbccgp_name[] = "usbccgp";
 
+	MUTEX_START;
+
 	if (!dlls_available) {
 		init_dlls();
 	}
@@ -364,7 +366,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	dev_info = SetupDiGetClassDevs(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
 	if (dev_info == INVALID_HANDLE_VALUE) {
 		*list = NULL;
-		return WDI_ERROR_NO_DEVICE;
+		MUTEX_RETURN WDI_ERROR_NO_DEVICE;
 	}
 
 	// Find the ones that are driverless
@@ -383,7 +385,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 		if (device_info == NULL) {
 			wdi_destroy_list(start);
 			*list = NULL;
-			return WDI_ERROR_RESOURCE;
+			MUTEX_RETURN WDI_ERROR_RESOURCE;
 		}
 
 		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
@@ -519,18 +521,21 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 	SetupDiDestroyDeviceInfoList(dev_info);
 
 	*list = start;
-	return (*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS;
+	MUTEX_RETURN (*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS;
 }
 
 int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 {
 	struct wdi_device_info *tmp;
+
+	MUTEX_START;
+
 	while(list != NULL) {
 		tmp = list;
 		list = list->next;
 		free_di(tmp);
 	}
-	return WDI_SUCCESS;
+	MUTEX_RETURN WDI_SUCCESS;
 }
 
 // extract the embedded binary resources
@@ -578,31 +583,33 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	int r;
 	SYSTEMTIME system_time;
 
+	MUTEX_START;
+
 	// TODO? create a reusable temp dir if path is NULL?
 	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
-		return WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	if ( (driver_type != WDI_LIBUSB) && (driver_type != WDI_WINUSB) )  {
 		wdi_err("unknown type");
-		return WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	if (device_info->desc == NULL) {
 		wdi_err("no description was given for the device - aborting");
-		return WDI_ERROR_NOT_FOUND;
+		MUTEX_RETURN WDI_ERROR_NOT_FOUND;
 	}
 
 	// Try to create directory if it doesn't exist
 	r = check_dir(path, true);
 	if (r != WDI_SUCCESS) {
-		return r;
+		MUTEX_RETURN r;
 	}
 
 	r = extract_binaries(path);
 	if (r != WDI_SUCCESS) {
-		return r;
+		MUTEX_RETURN r;
 	}
 
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
@@ -612,7 +619,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	fd = fopen(filename, "w");
 	if (fd == NULL) {
 		wdi_err("failed to create file: %s", filename);
-		return WDI_ERROR_ACCESS;
+		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
 
 	fprintf(fd, "; %s\n", inf_name);
@@ -633,7 +640,7 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	fclose(fd);
 
 	wdi_dbg("succesfully created %s", filename);
-	return WDI_SUCCESS;
+	MUTEX_RETURN WDI_SUCCESS;
 }
 
 // Handle messages received from the elevated installer through the pipe
@@ -726,19 +733,21 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	BOOL is_x64 = false;
 	char buffer[STR_BUFFER_SIZE];
 
+	MUTEX_START;
+
 	current_device = device_info;
 
 	// TODO? create a reusable temp dir if path is NULL?
 	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
-		return WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
 		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
 			wdi_dbg("detected another pending installation - aborting");
-			return WDI_ERROR_PENDING_INSTALLATION;
+			MUTEX_RETURN WDI_ERROR_PENDING_INSTALLATION;
 		}
 	} else {
 		wdi_dbg("CMP_WaitNoPendingInstallEvents not available");
@@ -902,5 +911,5 @@ out:
 	safe_closehandle(handle[0]);
 	safe_closehandle(handle[1]);
 	safe_closehandle(pipe_handle);
-	return r;
+	MUTEX_RETURN r;
 }

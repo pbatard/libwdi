@@ -233,8 +233,10 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 {
 	int r;
 
+	MUTEX_START;
+
 	if (logger_dest != NULL) {
-		return WDI_ERROR_EXISTS;
+		MUTEX_RETURN WDI_ERROR_EXISTS;
 	}
 
 	r = create_logger(buffsize);
@@ -243,7 +245,7 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 		logger_msg = message;
 	}
 
-	return r;
+	MUTEX_RETURN r;
 }
 
 /*
@@ -251,19 +253,21 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
  */
 int LIBWDI_API wdi_unregister_logger(HWND hWnd)
 {
+	MUTEX_START;
+
 	if (logger_dest == NULL) {
-		return WDI_SUCCESS;
+		MUTEX_RETURN WDI_SUCCESS;
 	}
 
 	if (logger_dest != hWnd) {
-		return WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	destroy_logger();
 	logger_dest = NULL;
 	logger_msg = 0;
 
-	return WDI_SUCCESS;
+	MUTEX_RETURN WDI_SUCCESS;
 }
 
 /*
@@ -273,29 +277,31 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 {
 	int size;
 
+	MUTEX_START;
+
 	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger(0) != WDI_SUCCESS) ) {
 		*message_size = 0;
-		return WDI_ERROR_NOT_FOUND;
+		MUTEX_RETURN WDI_ERROR_NOT_FOUND;
 	}
 
 	if (log_messages_pending == 0) {
 		size = safe_snprintf(buffer, buffer_size, "ERROR: log buffer is empty");
 		if (size <0) {
 			buffer[buffer_size-1] = 0;
-			return buffer_size;
+			MUTEX_RETURN buffer_size;
 		}
 		*message_size = (DWORD)size;
-		return WDI_SUCCESS;
+		MUTEX_RETURN WDI_SUCCESS;
 	}
 	log_messages_pending--;
 
 	// TODO: use a flag to prevent readout if no data
 	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
-		return WDI_SUCCESS;
+		MUTEX_RETURN WDI_SUCCESS;
 	}
 
 	*message_size = 0;
-	return WDI_ERROR_IO;
+	MUTEX_RETURN WDI_ERROR_IO;
 }
 
 /*

@@ -23,6 +23,11 @@
 #define LOGGER_PIPE_SIZE           8192
 #define LOGBUF_SIZE                256
 
+// Prevent two exclusive libwdi calls from running at the same type
+#define MUTEX_START  HANDLE mutex = CreateMutex(NULL, TRUE, "Global/" __FUNCTION__); \
+	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) return WDI_ERROR_BUSY
+#define MUTEX_RETURN CloseHandle(mutex); return
+
 #if defined(_MSC_VER)
 #define safe_vsnprintf vsprintf_s
 #define safe_snprintf sprintf_s
