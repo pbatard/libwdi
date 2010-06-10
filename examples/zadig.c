@@ -899,6 +899,17 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
  */
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	HANDLE mutex = NULL;
+
+	// Prevent 2 applications from running at the same time
+	mutex = CreateMutex(NULL, TRUE, "Global/Zadig");
+	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS))
+	{
+		MessageBox(NULL, "Another Zadig application is running.\n"
+			"Please close the first application before running another one.",
+			"Other instance detected", MB_ICONSTOP);
+		return 0;
+	}
 
 	// Save instance of the application for further reference
 	main_instance = hInstance;
@@ -920,6 +931,8 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	// Exit libconfig
 	config_destroy(&cfg);
 
-	return (0);
+	CloseHandle(mutex);
+
+	return 0;
 }
 
