@@ -497,6 +497,8 @@ void toggle_driverless(bool refresh)
 
 void init_dialog(HWND hDlg)
 {
+	int err;
+
 	// Quite a burden to carry around as parameters
 	hMain = hDlg;
 	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
@@ -516,7 +518,10 @@ void init_dialog(HWND hDlg)
 	}
 
 	// Setup logging
-	wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
+	err = wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
+	if (err != WDI_SUCCESS) {
+		dprintf("Unable to access log output - logging will be disabled (%s)\n", wdi_strerror(err));
+	}
 	wdi_set_log_level(LOG_LEVEL_DEBUG);
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
