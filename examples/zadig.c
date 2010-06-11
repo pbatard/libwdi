@@ -61,7 +61,7 @@ HMENU hMenuDevice;
 HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "custom driver" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "custom driver (extract only)" };
 int driver_type = WDI_NB_DRIVERS-1;
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
@@ -254,7 +254,7 @@ void __cdecl install_thread(void* param)
 	if (wdi_create_inf(dev, extraction_path, INF_NAME, driver_type) == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files to %s\n", extraction_path);
 		// Perform the install if not extracting the files only
-		if (!extract_only) {
+		if ((driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
 			  && (MessageBox(hMain, "You are about to replace a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
@@ -322,6 +322,9 @@ bool select_next_driver(bool increment)
 			(increment?1:-1))%WDI_NB_DRIVERS;
 		if (!wdi_is_driver_supported(driver_type)) {
 			continue;
+		}
+		if (!extract_only) {
+			SetDlgItemText(hMain, IDC_INSTALL, (driver_type == WDI_USER)?"Extract Files":"Install Driver");
 		}
 		found = true;
 		break;
@@ -471,6 +474,9 @@ void toggle_create(bool refresh)
 // Toggle files extraction mode
 void toggle_extract(void)
 {
+	if (driver_type == WDI_USER) {
+		return;
+	}
 	extract_only = !(GetMenuState(hMenuOptions, IDM_EXTRACT, MF_CHECKED) & MF_CHECKED);
 	CheckMenuItem(hMenuOptions, IDM_EXTRACT, extract_only?MF_CHECKED:MF_UNCHECKED);
 	SetDlgItemText(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
