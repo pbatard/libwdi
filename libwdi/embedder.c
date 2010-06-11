@@ -139,7 +139,7 @@ void ScanDir(char *dirname, BOOL countfiles)
 	FindClose(hList);
 }
 
-void add_user_files() {
+void add_user_files(void) {
 	int i;
 
 	// Switch slashes to backslashes
