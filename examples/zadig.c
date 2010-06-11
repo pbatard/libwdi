@@ -61,7 +61,7 @@ HMENU hMenuDevice;
 HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "custom driver" };
 int driver_type = WDI_NB_DRIVERS-1;
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;

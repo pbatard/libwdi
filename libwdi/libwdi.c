@@ -201,7 +201,12 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
 #else
 		return false;
 #endif
-	// TODO: add custom driver
+	case WDI_USER:
+#if defined(USER_DIR)
+		return true;
+#else
+		return false;
+#endif
 	default:
 		wdi_err("unknown driver type");
 		return WDI_ERROR_INVALID_PARAM;

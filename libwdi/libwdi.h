@@ -71,6 +71,7 @@ struct wdi_device_info {
 enum wdi_driver_type {
 	WDI_WINUSB,
 	WDI_LIBUSB,
+	WDI_USER,
 	WDI_NB_DRIVERS	// Total number of drivers in the enum
 };
 
