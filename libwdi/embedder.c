@@ -35,6 +35,8 @@
 #include "embedder.h"
 #include "embedder_files.h"
 
+#define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
+
 #if defined(__CYGWIN__ )
 #include <libgen.h>	// for basename()
 #define _MAX_FNAME 256
@@ -47,11 +49,21 @@ void __inline _splitpath(char *path, char *drive, char *dir, char *fname, char *
 }
 #endif
 
-const int nb_embeddables = sizeof(embeddable)/sizeof(embeddable[0]);
+const int nb_embeddables_fixed = sizeof(embeddable_fixed)/sizeof(struct emb);
+int nb_embeddables;
+struct emb* embeddable = embeddable_fixed;
+#if defined(USER_DIR)
+char initial_dir[] = USER_DIR;
+#endif
 
 void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 {
 	size_t i;
+
+	// Make sure we output something even if the original file is empty
+	if (size == 0) {
+		fprintf(fd, "0x00");
+	}
 
 	for (i=0; i<size; i++) {
 		if (!(i%0x10))
@@ -61,13 +73,114 @@ void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 	fprintf(fd, "\n");
 }
 
+#if defined(USER_DIR)
+// Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
+void ScanDir(char *dirname, BOOL countfiles)
+{
+	BOOL            fFinished;
+	HANDLE          hList;
+	TCHAR           szDir[MAX_PATH+1];
+	TCHAR           szSubDir[MAX_PATH+1];
+	WIN32_FIND_DATA FileData;
+
+	// Get the proper directory path
+	sprintf(szDir, "%s\\%s\\*", initial_dir, dirname);
+
+	// Get the first file
+	hList = FindFirstFile(szDir, &FileData);
+	if (hList == INVALID_HANDLE_VALUE) {
+		return;
+	}
+
+	// Traverse through the directory structure
+	fFinished = FALSE;
+	while (!fFinished) {
+		// Check the object is a directory or not
+		if (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if ( (strcmp(FileData.cFileName, ".") != 0)
+			  && (strcmp(FileData.cFileName, "..") != 0)) {
+
+				// Get the full path for sub directory
+				sprintf(szSubDir, "%s\\%s", dirname, FileData.cFileName);
+
+				ScanDir(szSubDir, countfiles);
+			}
+		} else {
+			if (!countfiles) {
+				if ( (embeddable[nb_embeddables].file_name =
+					  malloc(strlen(initial_dir) + strlen(dirname) +
+					  strlen(FileData.cFileName) + 2) ) == NULL) {
+					return;
+				}
+				if ( (embeddable[nb_embeddables].extraction_subdir =
+					  malloc(strlen(dirname)) ) == NULL) {
+					return;
+				}
+				sprintf(embeddable[nb_embeddables].file_name,
+					"%s%s\\%s", initial_dir, dirname, FileData.cFileName );
+				if (dirname[0] == '\\') {
+					sprintf(embeddable[nb_embeddables].extraction_subdir,
+						"%s", dirname+1);
+				} else {
+					safe_free(embeddable[nb_embeddables].extraction_subdir);
+					embeddable[nb_embeddables].extraction_subdir = _strdup(".");
+				}
+			}
+			nb_embeddables++;
+		}
+
+		if (!FindNextFile(hList, &FileData)) {
+			if (GetLastError() == ERROR_NO_MORE_FILES) {
+				fFinished = TRUE;
+			}
+		}
+	}
+
+	FindClose(hList);
+}
+
+void add_user_files() {
+	int i;
+
+	// Switch slashes to backslashes
+	for (i=0; i<strlen(initial_dir); i++) {
+		if (initial_dir[i] == '/') {
+			initial_dir[i] = '\\';
+		}
+	}
+
+	// Dry run to count additional files
+	ScanDir("", TRUE);
+	if (nb_embeddables == nb_embeddables_fixed) {
+		fprintf(stderr, "No user embeddable files found.\n");
+		return;
+	}
+
+	// Extend the array to add the user files
+	embeddable = calloc(nb_embeddables, sizeof(struct emb));
+	if (embeddable == NULL) {
+		fprintf(stderr, "Could not include user embeddable files.\n");
+		return;
+	}
+	// Copy the fixed part of our table into our new array
+	for (i=0; i<nb_embeddables_fixed; i++) {
+		embeddable[i].file_name = embeddable_fixed[i].file_name;
+		embeddable[i].extraction_subdir = embeddable_fixed[i].extraction_subdir;
+	}
+	nb_embeddables = nb_embeddables_fixed;
+
+	// Fill in the array
+	ScanDir("", FALSE);
+}
+#endif
+
 int
 #ifdef _MSC_VER
 __cdecl
 #endif
 main (int argc, char *argv[])
 {
-	int  ret, i;
+	int  ret, i, j;
 	DWORD r;
 	size_t size;
 	size_t* file_size;
@@ -75,7 +188,7 @@ main (int argc, char *argv[])
 	HANDLE header_handle = INVALID_HANDLE_VALUE, file_handle = INVALID_HANDLE_VALUE;
 	FILETIME header_time, file_time;
 	BOOL rebuild = TRUE;
-	char internal_name[] = "file_##";
+	char internal_name[] = "file_###";
 	unsigned char* buffer;
 	char fullpath[MAX_PATH];
 	char fname[_MAX_FNAME];
@@ -89,6 +202,10 @@ main (int argc, char *argv[])
 		return 1;
 	}
 
+	nb_embeddables = nb_embeddables_fixed;
+#if defined(USER_DIR)
+	add_user_files();
+#endif
 	// Check if any of the embedded files have changed
 	header_handle = CreateFileA(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 	if (header_handle != INVALID_HANDLE_VALUE) {
@@ -171,11 +288,11 @@ main (int argc, char *argv[])
 		}
 		fclose(fd);
 
-		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
+		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
 		dump_buffer_hex(header_fd, buffer, size);
 		fprintf(header_fd, "};\n\n");
-		free(buffer);
+		safe_free(buffer);
 		fclose(fd);
 	}
 
@@ -190,19 +307,33 @@ main (int argc, char *argv[])
 	for (i=0; i<nb_embeddables; i++) {
 		_splitpath(embeddable[i].file_name, NULL, NULL, fname, ext);
 		strncat(fname, ext, sizeof(fname));
- 		_snprintf(internal_name, sizeof(internal_name), "file_%02X", (unsigned char)i);
-		fprintf(header_fd, "\t{ \"%s\", \"%s\", %d, %s },\n",
-			embeddable[i].extraction_subdir, fname,
-			(int)file_size[i], internal_name);
+ 		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
+		fprintf(header_fd, "\t{ \"");
+		// We need to handle backslash sequences
+		for (j=0; j<strlen(embeddable[i].extraction_subdir); j++) {
+			fputc(embeddable[i].extraction_subdir[j], header_fd);
+			if (embeddable[i].extraction_subdir[j] == '\\') {
+				fputc('\\', header_fd);
+			}
+		}
+		fprintf(header_fd, "\", \"%s\", %d, %s },\n",
+			fname, (int)file_size[i], internal_name);
 	}
 	fprintf(header_fd, "};\n");
 	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
 	fclose(header_fd);
-	free(file_size);
+	safe_free(file_size);
+#if defined(USER_DIR)
+	for (i=nb_embeddables_fixed; i<nb_embeddables; i++) {
+		safe_free(embeddable[i].extraction_subdir);
+		safe_free(embeddable[i].file_name);
+	}
+	safe_free(embeddable);
+#endif
 	return 0;
 
 out4:
-	free(buffer);
+	safe_free(buffer);
 out3:
 	fclose(fd);
 out2:
@@ -210,6 +341,6 @@ out2:
 	// Must delete a failed file so that Make can relaunch its build
 	DeleteFile(argv[1]);
 out1:
-	free(file_size);
+	safe_free(file_size);
 	return ret;
 }
