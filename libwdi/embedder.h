@@ -23,6 +23,10 @@
 #error both 32 and 64 bit support have been disabled - check your config.h
 #endif
 
+#if !defined(DDK_DIR) && !defined(LIBUSB0_DIR) && !defined(USER_DIR)
+#error at least one of DDK_DIR, LIBUSB0_DIR or USER_DIR must be defined - check your config.h
+#endif
+
 // Some adjustment is needed for MSVC
 #if defined(_MSC_VER)
 #define __STR2__(x) #x

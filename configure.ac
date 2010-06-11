@@ -11,7 +11,6 @@ AC_PROG_LIBTOOL
 AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
-AC_DEFINE([DDK_DIR], [], [DDK directory])
 WDF_VER="01009"
 AC_DEFINE_UNQUOTED([WDF_VER], ["${WDF_VER}"], [DDK WDF coinstaller version (string)])
 
@@ -37,6 +36,10 @@ AC_ARG_WITH(userdir,
  	USER_DIR="")
 if test "x$USER_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([USER_DIR], ["${USER_DIR}"], [embed user defined driver files from the following location])
+fi
+
+if test "x$USER_DIR" == "x" -a "x$DDK_DIR" == "x" -a "x$LIBUSB0_DIR" == "x"; then
+	AC_MSG_ERROR([One of --with-ddkdir, --with-libusb0 or --with-userdir options MUST be provided.])
 fi
 
 AC_MSG_CHECKING([development environment])
