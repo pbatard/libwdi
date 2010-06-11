@@ -596,6 +596,18 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
+	// Try to create directory if it doesn't exist
+	r = check_dir(path, true);
+	if (r != WDI_SUCCESS) {
+		MUTEX_RETURN r;
+	}
+
+	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
+	if (driver_type == WDI_USER) {
+		wdi_warn("Custom user driver - extracting binaries only");
+		MUTEX_RETURN extract_binaries(path);
+	}
+
 	if ( (driver_type != WDI_LIBUSB) && (driver_type != WDI_WINUSB) )  {
 		wdi_err("unknown type");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
@@ -604,12 +616,6 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	if (device_info->desc == NULL) {
 		wdi_err("no description was given for the device - aborting");
 		MUTEX_RETURN WDI_ERROR_NOT_FOUND;
-	}
-
-	// Try to create directory if it doesn't exist
-	r = check_dir(path, true);
-	if (r != WDI_SUCCESS) {
-		MUTEX_RETURN r;
 	}
 
 	r = extract_binaries(path);
