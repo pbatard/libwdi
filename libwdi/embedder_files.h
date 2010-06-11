@@ -64,7 +64,9 @@ struct emb embeddable_fixed[] = {
 
 // Common driver files
 // TODO: include libusb0.sys license?
+#if defined(DDK_DIR)
 	{ DDK_DIR "\\license.rtf", "." },	// WinUSB License file
+#endif
 };
 
 
