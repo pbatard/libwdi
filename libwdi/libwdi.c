@@ -193,8 +193,12 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
 {
 	switch (driver_type) {
 	case WDI_WINUSB:
+#if defined(DDK_DIR)
 		// For now, WinUSB is always included
 		return true;
+#else
+		return false;
+#endif
 	case WDI_LIBUSB:
 #if defined(LIBUSB0_DIR)
 		return true;
