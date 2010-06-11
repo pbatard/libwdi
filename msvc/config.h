@@ -10,6 +10,9 @@
 #define DDK_DIR "E:/WinDDK/7600.16385.0"
 #endif
 
+/* embed user defined driver files from the following location */
+// #define USER_DIR "C:/signed-driver"
+
 /* embed libusb0 driver files from the following location */
 #define LIBUSB0_DIR "D:/libusb-win32/bin"
 

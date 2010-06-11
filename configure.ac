@@ -12,12 +12,16 @@ AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 AC_DEFINE([DDK_DIR], [], [DDK directory])
-AC_DEFINE([WDF_VER], ["01009"], [DDK WDF coinstaller version (string)])
+WDF_VER="01009"
+AC_DEFINE_UNQUOTED([WDF_VER], ["${WDF_VER}"], [DDK WDF coinstaller version (string)])
 
 AC_ARG_WITH(ddkdir,
-	AS_HELP_STRING([--with-ddkdir], [location of the DDK]),
+	AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files by using the following DDK location]),
 	DDK_DIR=$withval,
-	DDK_DIR="C:/WinDDK/7600.16385.0")
+	DDK_DIR="")
+if test "x$DDK_DIR" != "x"; then
+	AC_DEFINE_UNQUOTED([DDK_DIR], ["${DDK_DIR}"], [embed WinUSB driver files from the following DDK location])
+fi
 
 AC_ARG_WITH(libusb0,
  	AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location]),
@@ -25,7 +29,15 @@ AC_ARG_WITH(libusb0,
  	LIBUSB0_DIR="")
 if test "x$LIBUSB0_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([LIBUSB0_DIR], ["${LIBUSB0_DIR}"], [embed libusb0 driver files from the following location])
-fi	
+fi
+
+AC_ARG_WITH(userdir,
+ 	AS_HELP_STRING([--with-userdir], [embed user defined driver files from the following location]),
+ 	USER_DIR=$withval,
+ 	USER_DIR="")
+if test "x$USER_DIR" != "x"; then
+	AC_DEFINE_UNQUOTED([USER_DIR], ["${USER_DIR}"], [embed user defined driver files from the following location])
+fi
 
 AC_MSG_CHECKING([development environment])
 case $host in
@@ -146,19 +158,36 @@ else
 	AC_MSG_WARN([will produce a 32 bit library that is INCOMPATIBLE with 64 bit platforms])
 fi
 
-# check that the required DDK files are available
-if test "x$enable_64bit" != "xno"; then
-# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller01009.dll	$DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
-	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
-configure: error: must be provided to compile this library (--with-ddkdir)])])
+if test "x$DDK_DIR" != "x"; then
+	# check that the required WinUSB DDK files are available
+	if test "x$enable_64bit" != "xno"; then
+	# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
+	AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
+		[AC_MSG_ERROR([the WinUSB driver files could not be detected (--with-ddkdir)])])
+	fi
+	if test "x$enable_32bit" != "xno"; then
+	AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
+		[AC_MSG_ERROR([the WinUSB driver files could not be detected (--with-ddkdir)])])
+	fi
 fi
-if test "x$enable_32bit" != "xno"; then
-AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller01009.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
-	[AC_MSG_ERROR([the WinUSB reditributables from the Microsoft DDK
-configure: error: must be provided to compile this library (--with-ddkdir)])])
+
+if test "x$LIBUSB0_DIR" != "x"; then
+	# check that the required libusb0 driver files are available
+	if test "x$enable_64bit" != "xno"; then
+	AC_CHECK_FILES([$LIBUSB0_DIR/amd64/libusb0.sys $LIBUSB0_DIR/amd64/libusb0.dll],,
+		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
+	fi
+	if test "x$enable_32bit" != "xno"; then
+	AC_CHECK_FILES([$LIBUSB0_DIR/x86/libusb0.sys $LIBUSB0_DIR/x86/libusb0.dll],,
+		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
+	fi
 fi
-AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
+
+if test "x$USER_DIR" != "x"; then
+	AC_CHECK_FILE([$USER_DIR],,[AC_MSG_ERROR([the custom driver directory could not be detected (--with-userdir)])])
+fi
+
+#AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
 
 # Message logging
 AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],
