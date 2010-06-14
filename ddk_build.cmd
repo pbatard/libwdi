@@ -86,7 +86,19 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.dll . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
-cd ..\examples\libconfig
+cd ..\examples\getopt
+
+del Makefile.hide >NUL 2>&1
+if EXIST Makefile ren Makefile Makefile.hide
+copy getopt_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\getopt.lib . >NUL 2>&1
+
+if EXIST Makefile.hide ren Makefile.hide Makefile
+cd ..\libconfig
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
