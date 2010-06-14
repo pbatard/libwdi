@@ -310,7 +310,7 @@ main (int argc, char *argv[])
  		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"");
 		// We need to handle backslash sequences
-		for (j=0; j<strlen(embeddable[i].extraction_subdir); j++) {
+		for (j=0; j<(int)strlen(embeddable[i].extraction_subdir); j++) {
 			fputc(embeddable[i].extraction_subdir[j], header_fd);
 			if (embeddable[i].extraction_subdir[j] == '\\') {
 				fputc('\\', header_fd);
