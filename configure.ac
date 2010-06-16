@@ -15,7 +15,7 @@ WDF_VER="01009"
 AC_DEFINE_UNQUOTED([WDF_VER], ["${WDF_VER}"], [DDK WDF coinstaller version (string)])
 
 AC_ARG_WITH(ddkdir,
-	AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files by using the following DDK location]),
+	AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files from the following DDK location]),
 	DDK_DIR=$withval,
 	DDK_DIR="")
 if test "x$DDK_DIR" != "x"; then
@@ -64,7 +64,7 @@ case $host in
 		AC_MSG_RESULT([yes])
 	else
 		AC_MSG_RESULT([no])
-		AC_MSG_ERROR([you must ensure that -mno-cygwin is available on cygwin])
+		AC_MSG_ERROR([you must ensure that -mno-cygwin is supported on cygwin])
 	fi
 	CFLAGS="${save_CFLAGS}"
 	# if you try to redefine CC to "gcc -mno-cygwin", all kind of bad things happen
@@ -114,9 +114,9 @@ fi
 
 # 32 and 64 bit selection
 AC_ARG_ENABLE(32bit,
-	AS_HELP_STRING([--disable-32bit], [don't try to build 32 bit compatible library]))
+	AS_HELP_STRING([--enable-32bit], [build 32 bit compatible library (default y)]))
 AC_ARG_ENABLE(64bit,
-	AS_HELP_STRING([--disable-64bit], [don't try to build 64 bit compatible library]))
+	AS_HELP_STRING([--enable-64bit], [build 64 bit compatible library (default y)]))
 
 if test "x$enable_64bit" == "xno" -a "x$enable_32bit" == "xno"; then
 	AC_MSG_ERROR([you cannot disable both 32 and 64 bit support])
@@ -190,10 +190,8 @@ if test "x$USER_DIR" != "x"; then
 	AC_CHECK_FILE([$USER_DIR],,[AC_MSG_ERROR([the custom driver directory could not be detected (--with-userdir)])])
 fi
 
-#AC_DEFINE_UNQUOTED([DDK_DIR], ["$DDK_DIR"], [DDK directory])
-
 # Message logging
-AC_ARG_ENABLE([log], [AS_HELP_STRING([--disable-log], [disable all logging])],
+AC_ARG_ENABLE([log], [AS_HELP_STRING([--enable-log], [enable logging (default y)])],
 	[log_enabled=$enableval],
 	[log_enabled='yes'])
 if test "x$log_enabled" != "xno"; then
@@ -201,12 +199,12 @@ if test "x$log_enabled" != "xno"; then
 fi
 
 AC_ARG_ENABLE([debug-log], [AS_HELP_STRING([--enable-debug-log],
-	[force all logging, including debug (default n)])],
+	[force debug logging always (default n)])],
 	[debug_log_enabled=$enableval],
 	[debug_log_enabled='no'])
 
 AC_ARG_ENABLE([toggable-debug], [AS_HELP_STRING([--enable-toggable-debug],
-	[enable software control of debug logging (default n)])],
+	[enable switchable debug logging (default n)])],
 	[toggable_debug=$enableval],
 	[toggable_debug='no'])
 
@@ -219,21 +217,13 @@ else
 fi
 
 # --enable-debug : check whether they want to have debug symbols:
-AC_ARG_ENABLE(debug, AS_HELP_STRING([--disable-debug], [disable debugging]),
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug], [include debug symbols for gdb (default y)]),
 	[debug_enabled=$enableval],
 	[debug_enabled='yes'])
 if test "x$debug_enabled" = "xyes" ; then
   CFLAGS="-g -O2"
 else
   CFLAGS="-O2"
-fi
-
-AC_ARG_ENABLE([debug-log], [AS_HELP_STRING([--enable-debug-log],
-	[enable debug logging (default n)])],
-	[debug_log_enabled=$enableval],
-	[debug_log_enabled='no'])
-if test "x$debug_log_enabled" != "xno"; then
-	AC_DEFINE([ENABLE_DEBUG_LOGGING], 1, [Debug message logging])
 fi
 
 # Examples build
