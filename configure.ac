@@ -46,14 +46,14 @@ AC_MSG_CHECKING([development environment])
 case $host in
 *-mingw*)
 	AC_MSG_RESULT([MinGW])
-	AM_CFLAGS="-Wshadow"
+	AM_CFLAGS="-Wshadow -DWINVER=0x501"
 	NO_CYGWIN=""
 	LIBCONFIG_LIBADD=""
 	LIBCONFIG_CFLAGS=""
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
-	AM_CFLAGS=""	
+	AM_CFLAGS="-DWINVER=0x501"
 	save_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} -mno-cygwin"
 	AC_MSG_CHECKING([if -mno-cygwin is supported])
