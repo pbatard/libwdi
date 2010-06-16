@@ -66,12 +66,34 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_CAPTION | WS_SYSMEN
 CAPTION "About Zadig"
 FONT 8, "Microsoft Sans Serif", 400, 0, 0x0
 BEGIN
-    ICON            IDI_ICON1,IDC_ABOUT_ICON,10,21,21,20
+    ICON            IDI_ICON1,IDC_ABOUT_ICON,10,21,20,20
     LTEXT           "Zadig, Version 1.0",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright (c) 2010 Pete Batard",IDC_STATIC,41,40,114,8
     DEFPUSHBUTTON   "OK",IDOK,167,72,50,14,WS_GROUP
     LTEXT           "Part of the libwdi project:",IDC_STATIC,41,27,77,8,SS_NOPREFIX
-    LTEXT           "http://libusb.org/wiki/libwdi",IDC_URL,120,27,87,8,SS_NOPREFIX | SS_NOTIFY
+    CONTROL         "<a href=""http://libusb.org/wiki/libwdi"">http://libusb.org/wiki/libwdi</a>",IDC_URL,
+                    "SysLink",WS_TABSTOP,121,27,90,14
+END
+
+IDD_PROGRESS DIALOGEX 0, 0, 187, 36
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_NOFAILCREATE | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_THICKFRAME
+CAPTION "Zadig"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_PROGRESS,"msctls_progress32",PBS_MARQUEE | WS_BORDER,7,20,173,8
+    LTEXT           "Installing driver...",IDC_STATIC,8,7,171,8
+END
+
+IDD_NOTIFICATION DIALOGEX 0, 0, 263, 63
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_NOFAILCREATE | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_THICKFRAME
+CAPTION "Zadig"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "",IDC_NOTIFICATION_LINE,0,0,263,39
+    CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,0,0,263,38
+    ICON            32516,IDC_NOTIFICATION_ICON,6,6,20,20
+    LTEXT           "",IDC_NOTIFICATION_TEXT,35,10,219,20
+    PUSHBUTTON      "Close",IDC_NOTIFICATION_CLOSE,211,44,43,14
 END
 
 
@@ -134,6 +156,14 @@ BEGIN
         RIGHTMARGIN, 217
         BOTTOMMARGIN, 62
     END
+
+    IDD_PROGRESS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 28
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -149,52 +179,6 @@ END
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_EIRE
 #pragma code_page(1252)
 #endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_PROGRESS DIALOGEX 0, 0, 187, 36
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_NOFAILCREATE | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_THICKFRAME
-CAPTION "Zadig"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    CONTROL         "",IDC_PROGRESS,"msctls_progress32",PBS_MARQUEE | WS_BORDER,7,20,173,8
-    LTEXT           "Installing driver...",IDC_STATIC,8,7,171,8
-END
-
-IDD_NOTIFICATION DIALOGEX 0, 0, 263, 63
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_NOFAILCREATE | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_THICKFRAME
-CAPTION "Zadig"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    LTEXT           "",IDC_NOTIFICATION_LINE,0,0,263,39
-    CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,0,0,263,38
-    ICON            32516,IDC_NOTIFICATION_ICON,6,6,20,20
-    LTEXT           "",IDC_NOTIFICATION_TEXT,35,10,219,20
-    PUSHBUTTON      "Close",IDC_NOTIFICATION_CLOSE,211,44,43,14
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_PROGRESS, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 180
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 28
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////

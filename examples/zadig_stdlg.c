@@ -532,48 +532,29 @@ void center_dialog(HWND dialog)
 }
 
 /*
- * Another callback is needed to change the cursor when hovering over the URL
- * Why don't we use syslink? Because it requires Unicode
- */
-INT_PTR CALLBACK About_URL(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	WNDPROC original_wndproc;
-
-	original_wndproc = (WNDPROC)GetProp(hDlg, "PROP_ORIGINAL_PROC");
-	switch (message)
-	{
-	case WM_SETCURSOR:
-		if ((HWND)wParam == GetDlgItem(hDlg, IDC_URL)) {
-			SetCursor(LoadCursor(NULL, IDC_HAND));
-			return (INT_PTR)TRUE;
-		}
-	}
-	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
-}
-
-/*
  * About dialog callback
  */
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HDC hdcStatic;
-	WNDPROC original_wndproc;
+	char* url = NULL;
 
 	switch (message) {
 	case WM_INITDIALOG:
 		center_dialog(hDlg);
-		// Subclass the callback so that we can change the cursor
-		original_wndproc = (WNDPROC)GetWindowLongPtr(hDlg, GWLP_WNDPROC);
-		SetPropA(hDlg, "PROP_ORIGINAL_PROC", (HANDLE)original_wndproc);
-		SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)About_URL);
-		return (INT_PTR)TRUE;
-	case WM_CTLCOLORSTATIC:
-		// Change the link colour to blue
-		hdcStatic = (HDC)wParam;
-		if ((HWND)lParam == GetDlgItem(hDlg, IDC_URL)) {
-			SetTextColor(hdcStatic, RGB(0,0,255));
-			SetBkMode(hdcStatic, TRANSPARENT);
-			return (INT_PTR)GetStockObject(NULL_BRUSH);
+		break;
+	case WM_NOTIFY:
+		switch (((LPNMHDR)lParam)->code) {
+		case NM_CLICK:
+		case NM_RETURN:
+			// We have only one URL on the About box
+			url = wchar_to_utf8(((PNMLINK)lParam)->item.szUrl);
+			if (url != NULL) {
+				ShellExecuteA(hDlg, "open", url, NULL, NULL, SW_SHOWNORMAL);
+				safe_free(url);
+			} else {
+				dprintf("Could not open URL\n");
+			}
+			break;
 		}
 		break;
 	case WM_COMMAND:
@@ -581,10 +562,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDOK:
 		case IDCANCEL:
 			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		case IDC_URL:	// NB: control must have Notify enabled
-			ShellExecute(hDlg, "open", "http://libusb.org/wiki/libwdi",
-				NULL, NULL, SW_SHOWNORMAL);
 			return (INT_PTR)TRUE;
 		}
 		break;
