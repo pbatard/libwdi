@@ -62,7 +62,8 @@ HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "Custom (extract only)" };
-int driver_type = WDI_NB_DRIVERS-1;
+struct wdi_options options = { WDI_NB_DRIVERS-1, true};
+//int driver_type = WDI_NB_DRIVERS-1;
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
@@ -73,7 +74,7 @@ bool advanced_mode = false;
 bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
-bool list_driverless_only = true;
+//bool list_driverless_only = true;
 // Libconfig
 config_t cfg;
 config_setting_t *setting;
@@ -251,10 +252,10 @@ void __cdecl install_thread(void* param)
 
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
-	if (wdi_create_inf(dev, extraction_path, INF_NAME, driver_type) == WDI_SUCCESS) {
+	if (wdi_prepare_driver(dev, extraction_path, INF_NAME, &options) == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files to %s\n", extraction_path);
 		// Perform the install if not extracting the files only
-		if ((driver_type != WDI_USER) && (!extract_only)) {
+		if ((options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
 			  && (MessageBox(hMain, "You are about to replace a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
@@ -263,7 +264,7 @@ void __cdecl install_thread(void* param)
 			}
 			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
-			r = wdi_install_driver(dev, extraction_path, INF_NAME);
+			r = wdi_install_driver(dev, extraction_path, INF_NAME, &options);
 			toggle_busy();
 			if (r == WDI_SUCCESS) {
 				dsprintf("Driver Installation: SUCCESS\n");
@@ -277,7 +278,7 @@ void __cdecl install_thread(void* param)
 			}
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
-			if (list_driverless_only) {
+			if (options.driverless_only) {
 				toggle_driverless(false);
 			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
@@ -318,19 +319,19 @@ bool select_next_driver(bool increment)
 	bool found = false;
 
 	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
-		driver_type = (WDI_NB_DRIVERS + driver_type +
+		options.driver_type = (WDI_NB_DRIVERS + options.driver_type +
 			(increment?1:-1))%WDI_NB_DRIVERS;
-		if (!wdi_is_driver_supported(driver_type)) {
+		if (!wdi_is_driver_supported(options.driver_type)) {
 			continue;
 		}
 		if (!extract_only) {
-			SetDlgItemText(hMain, IDC_INSTALL, (driver_type == WDI_USER)?"Extract Files":"Install Driver");
+			SetDlgItemText(hMain, IDC_INSTALL, (options.driver_type == WDI_USER)?"Extract Files":"Install Driver");
 		}
 		found = true;
 		break;
 	}
 	SetDlgItemText(hMain, IDC_TARGET,
-		found?driver_display_name[driver_type]:"(NONE)");
+		found?driver_display_name[options.driver_type]:"(NONE)");
 	return found;
 }
 
@@ -474,7 +475,7 @@ void toggle_create(bool refresh)
 // Toggle files extraction mode
 void toggle_extract(void)
 {
-	if (driver_type == WDI_USER) {
+	if (options.driver_type == WDI_USER) {
 		return;
 	}
 	extract_only = !(GetMenuState(hMenuOptions, IDM_EXTRACT, MF_CHECKED) & MF_CHECKED);
@@ -485,13 +486,13 @@ void toggle_extract(void)
 // Toggle driverless device listing
 void toggle_driverless(bool refresh)
 {
-	list_driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
+	options.driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
 
 	if (create_device) {
 		toggle_create(true);
 	}
 
-	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, list_driverless_only?MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, options.driverless_only?MF_CHECKED:MF_UNCHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
@@ -706,7 +707,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		if (list != NULL) wdi_destroy_list(list);
-		r = wdi_create_list(&list, list_driverless_only);
+		r = wdi_create_list(&list, &options);
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices();
 			// Send a dropdown selection message to update fields
@@ -804,7 +805,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					} else {
 						display_driver(false);
 					}
-					driver_type = WDI_NB_DRIVERS-1;
+					options.driver_type = WDI_NB_DRIVERS-1;
 					if (!select_next_driver(true)) {
 						dprintf("no driver is selectable in libwdi!");
 					}

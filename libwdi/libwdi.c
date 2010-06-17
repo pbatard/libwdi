@@ -348,7 +348,7 @@ static int init_dlls(void)
 }
 
 // List USB devices
-int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_only)
+int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options* options)
 {
 	unsigned i, j, tmp;
 	unsigned unknown_count = 1;
@@ -401,7 +401,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, bool driverless_on
 		// SPDRP_INSTALL_STATE
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_DRIVER,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			if (driverless_only) {
+			if ((options != NULL) && (options->driverless_only)) {
 				continue;
 			}
 		}
@@ -583,13 +583,13 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 // TODO: optional directory deletion
-int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
-							  char* inf_name, int driver_type)
+int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
+								  char* inf_name, struct wdi_options* options)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
-	int r;
+	int driver_type, r;
 	SYSTEMTIME system_time;
 
 	MUTEX_START;
@@ -604,6 +604,20 @@ int LIBWDI_API wdi_create_inf(struct wdi_device_info* device_info, char* path,
 	r = check_dir(path, true);
 	if (r != WDI_SUCCESS) {
 		MUTEX_RETURN r;
+	}
+
+	if (options == NULL) {
+		for (driver_type=0; driver_type<WDI_NB_DRIVERS; driver_type++) {
+			if (wdi_is_driver_supported(driver_type)) {
+				break;
+			}
+		}
+		if (driver_type == WDI_NB_DRIVERS) {
+			wdi_warn("Program assertion failed - no driver supported");
+			MUTEX_RETURN WDI_ERROR_NOT_FOUND;
+		}
+	} else {
+		driver_type = options->driver_type;
 	}
 
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
@@ -735,7 +749,8 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path, char* inf_name)
+int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
+								  char* inf_name, struct wdi_options* options)
 {
 	SHELLEXECUTEINFO shExecInfo;
     STARTUPINFO si;
