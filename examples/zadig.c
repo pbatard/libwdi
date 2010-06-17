@@ -552,7 +552,7 @@ void init_dialog(HWND hDlg)
  * Use libconfig to parse the default ini file
  */
 bool parse_ini(void) {
-	char* tmp = NULL;
+	const char* tmp = NULL;
 	int i;
 
 	// Check if the ini file exists
