@@ -214,7 +214,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
 #endif
 	default:
 		wdi_err("unknown driver type");
-		return WDI_ERROR_INVALID_PARAM;
+		return false;
 	}
 }
 
