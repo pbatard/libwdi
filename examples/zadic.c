@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 	int c;
 	struct wdi_device_info *device, *list;
 	char* path = DEFAULT_DIR;
-	static struct wdi_options options = {WDI_WINUSB, true};
+	static struct wdi_options options = {WDI_WINUSB, true, true};
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;

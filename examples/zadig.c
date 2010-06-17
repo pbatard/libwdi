@@ -62,7 +62,7 @@ HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "Custom (extract only)" };
-struct wdi_options options = { WDI_NB_DRIVERS-1, true};
+struct wdi_options options = { WDI_NB_DRIVERS-1, true, true};
 //int driver_type = WDI_NB_DRIVERS-1;
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;

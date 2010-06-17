@@ -27,6 +27,7 @@
 #include <objbase.h>
 #include <shellapi.h>
 #include <config.h>
+#include <ctype.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -358,7 +359,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 	HDEVINFO dev_info;
 	SP_DEVINFO_DATA dev_info_data;
 	char *prefix[3] = {"VID_", "PID_", "MI_"};
-	char *token;
+	char *token, *end;
 	char strbuf[STR_BUFFER_SIZE];
 	WCHAR desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
@@ -514,6 +515,16 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 			token = strtok (NULL, "\\#&");
 		}
 		device_info->desc = wchar_to_utf8(desc);
+
+		// Remove trailing whitespaces
+		if ((options != NULL) && (options->remove_trailing_whitespaces)) {
+			end = device_info->desc + strlen(device_info->desc);
+			while ((end != device_info->desc) && isspace(*(end-1))) {
+				--end;
+			}
+			*end = 0;
+		}
+
 		wdi_dbg("Device description: '%s'", device_info->desc);
 
 		// Only at this stage do we know we have a valid current element

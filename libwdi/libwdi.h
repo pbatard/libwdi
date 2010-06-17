@@ -168,6 +168,8 @@ struct wdi_options {
 	int driver_type;
 	/** create_list: only list driverless devices */
 	bool driverless_only;
+	/** create_list: delete trailing whitespaces from the description string */
+	bool remove_trailing_whitespaces;
 };
 
 /*
