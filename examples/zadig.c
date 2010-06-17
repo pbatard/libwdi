@@ -47,7 +47,9 @@
 #include "libconfig/libconfig.h"
 
 #define NOT_DURING_INSTALL if (install_thid != -1L) return FALSE
+
 void toggle_driverless(bool refresh);
+bool parse_ini(void);
 
 /*
  * Globals
@@ -61,20 +63,19 @@ HMENU hMenuDevice;
 HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys (Default)", "libusb0.sys", "Custom (extract only)" };
-struct wdi_options options = { WDI_NB_DRIVERS-1, true, true};
-//int driver_type = WDI_NB_DRIVERS-1;
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys", "libusb0.sys", "Custom (extract only)" };
+struct wdi_options options = {WDI_WINUSB, true, true};
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
+int default_driver_type = WDI_WINUSB;
 // Application states
 bool advanced_mode = false;
 bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
-//bool list_driverless_only = true;
 // Libconfig
 config_t cfg;
 config_setting_t *setting;
@@ -313,14 +314,13 @@ void combo_breaker(bool edit)
  * Select the next available target driver
  * increment: go through the list up or down
  */
-bool select_next_driver(bool increment)
+bool select_next_driver(int increment)
 {
 	int i;
 	bool found = false;
 
 	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
-		options.driver_type = (WDI_NB_DRIVERS + options.driver_type +
-			(increment?1:-1))%WDI_NB_DRIVERS;
+		options.driver_type = (WDI_NB_DRIVERS + options.driver_type + increment)%WDI_NB_DRIVERS;
 		if (!wdi_is_driver_supported(options.driver_type)) {
 			continue;
 		}
@@ -519,11 +519,6 @@ void init_dialog(HWND hDlg)
 	// The application always starts in advanced mode
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
 
-	// Switch to basic mode if needed
-	if (!advanced_mode) {
-		toggle_advanced();
-	}
-
 	// Setup logging
 	err = wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
 	if (err != WDI_SUCCESS) {
@@ -538,28 +533,98 @@ void init_dialog(HWND hDlg)
 	PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
 
-	// Set the default extraction dir
-	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+	// Parse the ini file and set the startup options accordingly
+	parse_ini();
 
-	// Set the default target driver
-	select_next_driver(true);
+	if (!advanced_mode) {
+		toggle_advanced();
+	}
+	if (options.driverless_only) {
+		toggle_driverless(false);
+	}
+	if (extract_only) {
+		toggle_extract();
+	}
+	select_next_driver(0);
+}
+
+/*
+ * Use libconfig to parse the default ini file
+ */
+bool parse_ini(void) {
+	char* tmp = NULL;
+	int i;
+
+	// Check if the ini file exists
+	if (GetFileAttributes(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
+		dprintf("could not open ini file '%s'\n", INI_NAME);
+		return false;
+	}
+
+	// Parse the file
+	if (!config_read_file(&cfg, INI_NAME)) {
+		dprintf("%s:%d - %s\n", config_error_file(&cfg),
+			config_error_line(&cfg), config_error_text(&cfg));
+		return false;
+	}
+
+	dprintf("reading ini file '%s'\n", INI_NAME);
+
+	// Set the various boolean options
+	config_lookup_bool(&cfg, "advanced_mode", &advanced_mode);
+	config_lookup_bool(&cfg, "list_driverless", &options.driverless_only);
+	config_lookup_bool(&cfg, "extract_only", &extract_only);
+	config_lookup_bool(&cfg, "trim_whitespaces", &options.remove_trailing_whitespaces);
+
+	// Set the default extraction dir
+	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
+		SetDlgItemText(hMain, IDC_FOLDER, tmp);
+	} else {
+		SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+	}
+
+	// Set the default driver
+	config_lookup_int(&cfg, "default_driver", &default_driver_type);
+	if ((default_driver_type < 0) || (default_driver_type >= WDI_NB_DRIVERS)) {
+		dprintf("invalid value '%d' for ini option 'default_driver'\n", default_driver_type);
+		default_driver_type = WDI_WINUSB;
+	}
+	if (!wdi_is_driver_supported(default_driver_type)) {
+		dprintf("'%s' driver is not available, ", driver_display_name[default_driver_type]);
+		for (i=(default_driver_type+1)%WDI_NB_DRIVERS; i!=default_driver_type; i++) {
+			if (wdi_is_driver_supported(i)) {
+				default_driver_type = i;
+				break;
+			}
+		}
+		if (i!=default_driver_type) {
+			notification(MSG_ERROR, "No driver is available for installation with this application.\n"
+				"The application will close", "No Driver Available");
+			EndDialog(hMain, 0);
+		}
+		dprintf("falling back to '%s' for default driver\n", driver_display_name[default_driver_type]);
+	} else {
+		dprintf("default driver set to '%s'\n", driver_display_name[default_driver_type]);
+	}
+
+	return true;
 }
 
 /*
  * Use libconfig to parse a preset device configuration file
  */
-bool parse_preset(char* buffer)
+bool parse_preset(char* filename)
 {
 	config_setting_t *dev;
 	int tmp;
 	char str_tmp[5];
-	const char* desc;
+	const char* desc = NULL;
 
-	if (buffer == NULL) {
+	if (filename == NULL) {
 		return false;
 	}
 
-	if (!config_read_file(&cfg, buffer)) {
+	if (!config_read_file(&cfg, filename)) {
 		dprintf("%s:%d - %s\n", config_error_file(&cfg),
 			config_error_line(&cfg), config_error_text(&cfg));
 		return false;
@@ -735,7 +800,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// TODO: ability to scroll existing driver text
 		NOT_DURING_INSTALL;
 		if (LOWORD(wParam) == 4) {
-			if (!select_next_driver(HIWORD(wParam) <= last_scroll)) {
+			if (!select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1)) {
 				dprintf("no driver is selectable in libwdi!");
 			}
 			last_scroll = HIWORD(wParam);
@@ -805,8 +870,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					} else {
 						display_driver(false);
 					}
-					options.driver_type = WDI_NB_DRIVERS-1;
-					if (!select_next_driver(true)) {
+					options.driver_type = default_driver_type;
+					if (!select_next_driver(0)) {
 						dprintf("no driver is selectable in libwdi!");
 					}
 					// Display the VID,PID,MI

@@ -49,6 +49,7 @@ enum message_type {
 #define MAX_LOG_SIZE                0xFFFF
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INF_NAME                    "libusb_device.inf"
+#define INI_NAME                    "zadig.ini"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define SEPARATOR_GREY              RGB(223,223,223)

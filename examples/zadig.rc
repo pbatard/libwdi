@@ -237,7 +237,7 @@ BEGIN
     END
     POPUP "Options"
     BEGIN
-        MENUITEM "List Only Driverless Devices", IDM_DRIVERLESSONLY, CHECKED
+        MENUITEM "List Only Driverless Devices", IDM_DRIVERLESSONLY
         MENUITEM "Extract files only",          IDM_EXTRACT
         MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
     END
