@@ -639,7 +639,6 @@ bool parse_preset(char* filename)
 
 		if (config_setting_lookup_string(dev, "Description", &desc)) {
 			SetDlgItemText(hMain, IDC_DEVICEEDIT, desc);
-			// TODO: do we need to free that string?
 		}
 
 		if (config_setting_lookup_int(dev, "VID", &tmp)) {
@@ -798,7 +797,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case WM_VSCROLL:
-		// TODO: ability to scroll existing driver text
 		NOT_DURING_INSTALL;
 		if (LOWORD(wParam) == 4) {
 			if (!select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1)) {

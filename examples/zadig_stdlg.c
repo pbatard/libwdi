@@ -325,7 +325,6 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size)
 	}
 
 	if (!r) {
-		// TODO: GetLastError
 		dprintf("I/O Error: %s\n", windows_error_str(0));
 		goto out;
 	}
@@ -596,16 +595,6 @@ INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		return (INT_PTR)FALSE;
-	// TODO: disable close
-	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
-		case IDOK:
-		case IDCANCEL:
-			EndDialog(hDlg, LOWORD(wParam));
-			hProgress = INVALID_HANDLE_VALUE;
-			return (INT_PTR)TRUE;
-		}
-		break;
 	}
 	return (INT_PTR)FALSE;
 }

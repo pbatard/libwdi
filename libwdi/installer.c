@@ -199,30 +199,6 @@ char* req_id(enum installer_code id_code)
 	return NULL;
 }
 
-// Force re-enumeration of a device (force installation)
-// TODO: allow root re-enum
-int update_driver(char* device_id)
-{
-	DEVINST dev_inst;
-	CONFIGRET status;
-
-	plog("re-enumerating driver node %s...", device_id);
-	status = CM_Locate_DevNode(&dev_inst, device_id, 0);
-	if (status != CR_SUCCESS) {
-		plog("failed to locate device_id %s: %x\n", device_id, status);
-		return -1;
-	}
-
-	status = CM_Reenumerate_DevNode(dev_inst, CM_REENUMERATE_RETRY_INSTALLATION);
-	if (status != CR_SUCCESS) {
-		plog("failed to re-enumerate device node: CR code %X", status);
-		return -1;
-	}
-
-	plog("re-enumeration succeeded...");
-	return 0;
-}
-
 /*
  * Flag phantom/removed devices for reinstallation. See:
  * http://msdn.microsoft.com/en-us/library/aa906206.aspx
@@ -451,7 +427,6 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("more recent driver was found (force option required)");
 		return WDI_ERROR_EXISTS;
 	case ERROR_NO_SUCH_DEVINST:
-		// TODO: break down the plog
 		plog("device not detected (copying driver files for next time device is plugged in)");
 		return WDI_SUCCESS;
 	case ERROR_INVALID_PARAMETER:
@@ -496,8 +471,8 @@ static __inline int process_error(DWORD r, char* path) {
 	}
 }
 
-// TODO: allow commandline options
-// TODO: remove existing infs for similar devices?
+// TODO: allow commandline options (v2?)
+// TODO: remove existing infs for similar devices (v2?)
 int
 #ifdef _MSC_VER
 __cdecl
@@ -569,8 +544,6 @@ main(int argc, char** argv)
 	if (b == true) {
 		// Success
 		plog("driver update completed");
-		// TODO: remove this?
-		update_driver(device_id);
 		ret = WDI_SUCCESS;
 		goto out;
 	}

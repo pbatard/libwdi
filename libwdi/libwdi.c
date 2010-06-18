@@ -805,7 +805,6 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
 		}
 	} else {
-		// TODO: warn at compile time about redist of 64 bit app
 		is_x64 = true;
 	}
 
@@ -851,7 +850,6 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
 		shExecInfo.lpFile = exename;
-		// TODO: if INF_NAME ever has a space, it will be seen as multiple parameters
 		shExecInfo.lpParameters = inf_name;
 		shExecInfo.lpDirectory = path;
 		shExecInfo.nShow = SW_HIDE;
