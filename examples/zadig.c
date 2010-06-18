@@ -548,6 +548,7 @@ void init_dialog(HWND hDlg)
 	if (extract_only) {
 		toggle_extract();
 	}
+	options.driver_type = default_driver_type;
 	select_next_driver(0);
 }
 
