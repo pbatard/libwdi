@@ -164,12 +164,12 @@ struct wdi_device_info {
  * Optional settings, used by libwdi functions
  */
 struct wdi_options {
-	/** prepare_driver: type of driver to use */
+	/** prepare_driver: type of driver to use. Should be either WDI_WINUSB, WDI_LIBUSB or WDI_USER */
 	int driver_type;
-	/** create_list: only list driverless devices */
-	bool driverless_only;
-	/** create_list: delete trailing whitespaces from the description string */
-	bool remove_trailing_whitespaces;
+	/** create_list: list all devices, instead of just the ones that are driverless */
+	bool list_all;
+	/** create_list: trim trailing whitespaces from the description string */
+	bool trim_whitespaces;
 };
 
 /*

@@ -402,7 +402,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 		// SPDRP_INSTALL_STATE
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_DRIVER,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			if ((options != NULL) && (options->driverless_only)) {
+			if ((options == NULL) || (!options->list_all)) {
 				continue;
 			}
 		}
@@ -517,7 +517,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 		device_info->desc = wchar_to_utf8(desc);
 
 		// Remove trailing whitespaces
-		if ((options != NULL) && (options->remove_trailing_whitespaces)) {
+		if ((options != NULL) && (options->trim_whitespaces)) {
 			end = device_info->desc + strlen(device_info->desc);
 			while ((end != device_info->desc) && isspace(*(end-1))) {
 				--end;

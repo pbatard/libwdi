@@ -64,7 +64,7 @@ HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys", "libusb0.sys", "Custom (extract only)" };
-struct wdi_options options = {WDI_WINUSB, true, true};
+struct wdi_options options = {WDI_WINUSB, false, true};
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
@@ -279,7 +279,7 @@ void __cdecl install_thread(void* param)
 			}
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
-			if (options.driverless_only) {
+			if (!options.list_all) {
 				toggle_driverless(false);
 			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
@@ -486,13 +486,13 @@ void toggle_extract(void)
 // Toggle driverless device listing
 void toggle_driverless(bool refresh)
 {
-	options.driverless_only = !(GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
+	options.list_all = (GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
 
 	if (create_device) {
 		toggle_create(true);
 	}
 
-	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, options.driverless_only?MF_CHECKED:MF_UNCHECKED);
+	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, options.list_all?MF_UNCHECKED:MF_CHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
@@ -533,13 +533,16 @@ void init_dialog(HWND hDlg)
 	PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
 
+	// Set the extraction directory
+	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
 
 	if (!advanced_mode) {
-		toggle_advanced();
+		toggle_advanced();	// We start in advanced mode
 	}
-	if (options.driverless_only) {
+	if (!options.list_all) {
 		toggle_driverless(false);
 	}
 	if (extract_only) {
@@ -572,15 +575,13 @@ bool parse_ini(void) {
 
 	// Set the various boolean options
 	config_lookup_bool(&cfg, "advanced_mode", &advanced_mode);
-	config_lookup_bool(&cfg, "list_driverless", &options.driverless_only);
+	config_lookup_bool(&cfg, "list_all", &options.list_all);
 	config_lookup_bool(&cfg, "extract_only", &extract_only);
-	config_lookup_bool(&cfg, "trim_whitespaces", &options.remove_trailing_whitespaces);
+	config_lookup_bool(&cfg, "trim_whitespaces", &options.trim_whitespaces);
 
 	// Set the default extraction dir
 	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
 		SetDlgItemText(hMain, IDC_FOLDER, tmp);
-	} else {
-		SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
 	}
 
 	// Set the default driver

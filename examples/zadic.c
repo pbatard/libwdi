@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 	int c;
 	struct wdi_device_info *device, *list;
 	char* path = DEFAULT_DIR;
-	static struct wdi_options options = {WDI_WINUSB, true, true};
+	static struct wdi_options options = {WDI_WINUSB, false, true};
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			// These options set a flag.
 			{"noprompt", no_argument, &prompt_flag, 0},
-			{"usealldevices", no_argument, &options.driverless_only, 0},
+			{"usealldevices", no_argument, &options.list_all, 1},
 			{"useinf", no_argument, &use_supplied_inf_flag, 1},
 			{"iface", required_argument, 0, 'a'},
 			{"vid", required_argument, 0, 'b'},
