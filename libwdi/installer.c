@@ -332,7 +332,7 @@ void __cdecl syslog_reader_thread(void* param)
 	}
 
 	// We assert that the log file is never gonna be bigger than 2 GB
-	// TODO: setupapi.dev.log's end is not the actual end!
+	// TODO: special case of setupapi.dev.log's last offset not being the end (v2)
 	last_offset = SetFilePointer(log_handle, 0, NULL, FILE_END);
 	if (last_offset == INVALID_SET_FILE_POINTER) {
 		plog("Could not set syslog offset");
@@ -471,8 +471,8 @@ static __inline int process_error(DWORD r, char* path) {
 	}
 }
 
-// TODO: allow commandline options (v2?)
-// TODO: remove existing infs for similar devices (v2?)
+// TODO: allow commandline options (v2)
+// TODO: remove existing infs for similar devices (v2)
 int
 #ifdef _MSC_VER
 __cdecl
@@ -553,7 +553,7 @@ main(int argc, char** argv)
 		goto out;
 	}
 
-	// TODO: try URL for OEMSourceMediaLocation
+	// TODO: try URL for OEMSourceMediaLocation (v2)
 	plog("Copying inf file (for next time device is plugged in) - please wait...");
 	send_status(IC_SET_TIMEOUT_INFINITE);
 	b = SetupCopyOEMInfA(path, NULL, SPOST_PATH, 0, destname, MAX_PATH_LENGTH, NULL, NULL);

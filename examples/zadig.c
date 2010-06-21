@@ -228,7 +228,6 @@ void __cdecl install_thread(void* param)
 		ComboBox_GetText(hDeviceList, str_buf, STR_BUFFER_SIZE);
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
-		// TODO: use custom scanf for hex
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert VID string - aborting\n");
 			return;
@@ -732,7 +731,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case UM_LOGGER_EVENT:
-		// TODO: use different colours according to the log level?
+		// TODO: use different colours according to the log level (v2?)
 //		dprintf("log level: %d\n", wParam);
 		r = wdi_read_logger(log_buf, STR_BUFFER_SIZE, &read_size);
 		if (r == WDI_SUCCESS) {

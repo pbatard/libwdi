@@ -593,7 +593,6 @@ int extract_binaries(char* path)
 }
 
 // Create an inf and extract coinstallers in the directory pointed by path
-// TODO: optional directory deletion
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options* options)
 {
@@ -605,8 +604,18 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	MUTEX_START;
 
-	// TODO? create a reusable temp dir if path is NULL?
-	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
+	// Try to use the user's temp dir if no path is provided
+	if ((path == NULL) || (path[0] == 0)) {
+		path = getenv("TEMP");
+		if (path == NULL) {
+			wdi_err("no path provided and unable to use TEMP");
+			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		} else {
+			wdi_dbg("no path provided - extracting to '%s'", path);
+		}
+	}
+
+	if ((device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
@@ -702,7 +711,6 @@ int process_message(char* buffer, DWORD size)
 	{
 	case IC_GET_DEVICE_ID:
 		wdi_dbg("got request for device_id");
-		// TODO use device instead of req_ duplication!
 		if (current_device->device_id != NULL) {
 			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
 		} else {
@@ -778,8 +786,18 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 
 	current_device = device_info;
 
-	// TODO? create a reusable temp dir if path is NULL?
-	if ((path == NULL) || (device_info == NULL) || (inf_name == NULL)) {
+	// Try to use the user's temp dir if no path is provided
+	if ((path == NULL) || (path[0] == 0)) {
+		path = getenv("TEMP");
+		if (path == NULL) {
+			wdi_err("no path provided and unable to use TEMP");
+			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		} else {
+			wdi_dbg("no path provided - installing from '%s'", path);
+		}
+	}
+
+	if ((device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}

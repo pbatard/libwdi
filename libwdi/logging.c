@@ -295,7 +295,6 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 	}
 	log_messages_pending--;
 
-	// TODO: use a flag to prevent readout if no data
 	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
 		MUTEX_RETURN WDI_SUCCESS;
 	}
