@@ -105,7 +105,6 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 	WriteFile(logger_wr_handle, buffer, (DWORD)(size1+size2+1), &junk, NULL);
 
 	// Notify the destination window of a new log message
-	// TODO: use wparam for error/debug/etc
 	log_messages_pending++;
 	PostMessage(logger_dest, logger_msg, level, 0);
 
@@ -113,7 +112,7 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 		WriteFile(logger_wr_handle, truncation_notice,
 			sizeof(truncation_notice), &junk, NULL);
 		log_messages_pending++;
-		PostMessage(logger_dest, logger_msg, level, 0);
+		PostMessage(logger_dest, logger_msg, (WPARAM)level, 0);
 	}
 
 }
