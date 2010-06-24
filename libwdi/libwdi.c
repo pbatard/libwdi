@@ -715,7 +715,7 @@ int process_message(char* buffer, DWORD size)
 			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
 		} else {
 			wdi_warn("no device_id - sending empty string");
-			WriteFile(pipe_handle, "", 1, &junk, NULL);
+			WriteFile(pipe_handle, "\0", 1, &junk, NULL);
 		}
 		break;
 	case IC_GET_HARDWARE_ID:
@@ -724,7 +724,7 @@ int process_message(char* buffer, DWORD size)
 			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
 		} else {
 			wdi_warn("no hardware_id - sending empty string");
-			WriteFile(pipe_handle, "", 1, &junk, NULL);
+			WriteFile(pipe_handle, "\0", 1, &junk, NULL);
 		}
 		break;
 	case IC_PRINT_MESSAGE:

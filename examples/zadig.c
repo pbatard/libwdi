@@ -213,8 +213,8 @@ void __cdecl install_thread(void* param)
 	bool need_dealloc = false;
 	int r, tmp;
 
-	if (IsDlgButtonChecked(hMain, IDC_CREATE) == BST_CHECKED) {
-		// If the device is created friom scratch, ignore the parameter
+	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
+		// If the device is created from scratch, ignore the parameter
 		dev = calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
 			dprintf("could not create new device_info struct for installation\n");
@@ -225,7 +225,10 @@ void __cdecl install_thread(void* param)
 
 		// Retrieve the various device parameters
 		// TODO: actually test creation!
-		ComboBox_GetText(hDeviceList, str_buf, STR_BUFFER_SIZE);
+		if (ComboBox_GetText(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
+			notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
+			goto out;
+		}
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
@@ -253,7 +256,7 @@ void __cdecl install_thread(void* param)
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 	if (wdi_prepare_driver(dev, extraction_path, INF_NAME, &options) == WDI_SUCCESS) {
-		dsprintf("Succesfully extracted driver files to %s\n", extraction_path);
+		dsprintf("Succesfully extracted driver files\n");
 		// Perform the install if not extracting the files only
 		if ((options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
@@ -715,7 +718,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// Don't handle these events when installation has started
 		NOT_DURING_INSTALL;
 		if (create_device) {
-			if (MessageBox(hMain, "An USB device has been plugged or unplugged.\n"
+			if (MessageBox(hMain, "The USB device list has been modified.\n"
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
 				"USB Event Notification", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
 				if (create_device) {
@@ -731,8 +734,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return TRUE;
 
 	case UM_LOGGER_EVENT:
-		// TODO: use different colours according to the log level (v2?)
-//		dprintf("log level: %d\n", wParam);
 		r = wdi_read_logger(log_buf, STR_BUFFER_SIZE, &read_size);
 		if (r == WDI_SUCCESS) {
 			dprintf("%s\n", log_buf);

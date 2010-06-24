@@ -409,7 +409,7 @@ out:
  */
 static __inline int process_error(DWORD r, char* path) {
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
-	// r = 87 ERROR_INVALID_PARAMETER on path == NULL
+	// r = 87 ERROR_INVALID_PARAMETER on path == NULL or hardware_id empty string
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
 	// r = 5 ERROR_ACCESS_DENIED if needs admin elevation
 	// r = 0xD ERROR_INVALID_DATA => inf is missing some data
@@ -430,7 +430,7 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("device not detected (copying driver files for next time device is plugged in)");
 		return WDI_SUCCESS;
 	case ERROR_INVALID_PARAMETER:
-		plog("invalid path");
+		plog("invalid path or hardware ID");
 		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
 		plog("failed to open %s", path);
@@ -482,9 +482,9 @@ main(int argc, char** argv)
 	DWORD r;
 	int ret;
 	BOOL b;
-	char* hardware_id;
-	char* device_id;
-	char* inf_name;
+	char* hardware_id = NULL;
+	char* device_id = NULL;
+	char* inf_name = NULL;
 	char path[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
 	uintptr_t syslog_reader_thid = -1L;
@@ -538,19 +538,21 @@ main(int argc, char** argv)
 
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
-	plog("Installing driver - please wait...");
-	b = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
-	send_status(IC_SET_TIMEOUT_DEFAULT);
-	if (b == true) {
-		// Success
-		plog("driver update completed");
-		ret = WDI_SUCCESS;
-		goto out;
-	}
+	if ((hardware_id != NULL) && (hardware_id[0] != 0)) {
+		plog("Installing driver for %s - please wait...", hardware_id);
+		b = UpdateDriverForPlugAndPlayDevicesA(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
+		send_status(IC_SET_TIMEOUT_DEFAULT);
+		if (b == true) {
+			// Success
+			plog("driver update completed");
+			ret = WDI_SUCCESS;
+			goto out;
+		}
 
-	ret = process_error(GetLastError(), path);
-	if (ret != WDI_SUCCESS) {
-		goto out;
+		ret = process_error(GetLastError(), path);
+		if (ret != WDI_SUCCESS) {
+			goto out;
+		}
 	}
 
 	// TODO: try URL for OEMSourceMediaLocation (v2)
