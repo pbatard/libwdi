@@ -52,6 +52,7 @@ enum message_type {
 #define INI_NAME                    "zadig.ini"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
+#define LIGHT_GREY                  RGB(248,248,248)
 #define SEPARATOR_GREY              RGB(223,223,223)
 #define WHITE                       RGB(255,255,255)
 #define GREEN                       RGB(232,255,232)

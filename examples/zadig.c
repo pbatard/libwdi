@@ -63,7 +63,7 @@ HMENU hMenuDevice;
 HMENU hMenuOptions;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB.sys", "libusb0.sys", "Custom (extract only)" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
 struct wdi_options options = {WDI_WINUSB, false, true};
 uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
@@ -224,7 +224,6 @@ void __cdecl install_thread(void* param)
 		need_dealloc = true;
 
 		// Retrieve the various device parameters
-		// TODO: actually test creation!
 		if (ComboBox_GetText(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
 			notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
 			goto out;
@@ -663,6 +662,25 @@ bool parse_preset(char* filename)
 	return false;
 }
 
+/*
+ * Work around the limitations of edit control, for UI aesthetics
+ */
+INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	WNDPROC original_wndproc;
+
+	original_wndproc = (WNDPROC)GetProp(hDlg, "PROP_ORIGINAL_PROC");
+	switch (message)
+	{
+	case WM_SETCURSOR:
+		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_DRIVER))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_TARGET)) ) {
+			SetCursor(LoadCursor(NULL, IDC_ARROW));
+			return (INT_PTR)TRUE;
+		}
+	}
+	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
+}
 
 /*
  * Main dialog callback
@@ -676,6 +694,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char *log_buffer, *filepath;
 	int nb_devices, junk, r;
 	DWORD delay, read_size, log_size;
+	WNDPROC original_wndproc;
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
@@ -684,6 +703,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH green_brush = (HBRUSH)FALSE;
 	static HBRUSH red_brush = (HBRUSH)FALSE;
+	static HBRUSH grey_brush = (HBRUSH)FALSE;
 	static HBRUSH driver_background[NB_DRIVER_TYPES];
 
 	switch (message) {
@@ -711,7 +731,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("Unable to create notification delay thread - notification events will be disabled\n");
 			}
 		}
-		return TRUE;
+		return (INT_PTR)TRUE;
 
 	case UM_DEVICE_EVENT:
 		notification_delay_thid = -1L;
@@ -731,7 +751,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		} else {
 			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 		}
-		return TRUE;
+		return (INT_PTR)TRUE;
 
 	case UM_LOGGER_EVENT:
 		r = wdi_read_logger(log_buf, STR_BUFFER_SIZE, &read_size);
@@ -740,14 +760,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		} else {
 			dprintf("wdi_read_logger: error %s\n", wdi_strerror(r));
 		}
-		return TRUE;
+		return (INT_PTR)TRUE;
 
 	case WM_INITDIALOG:
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
 		green_brush = CreateSolidBrush(GREEN);
 		red_brush = CreateSolidBrush(RED);
-		driver_background[DT_NONE] = white_brush;
+		grey_brush = CreateSolidBrush(LIGHT_GREY);
+		driver_background[DT_NONE] = grey_brush;
 		driver_background[DT_LIBUSB] = green_brush;
 		driver_background[DT_SYSTEM] = red_brush;
 		driver_background[DT_UNKNOWN] = (HBRUSH)FALSE;
@@ -760,6 +781,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
 		hTarget = GetDlgItem(hDlg, IDC_TARGET);
 		hFolder = GetDlgItem(hDlg, IDC_FOLDER);
+
+		// Subclass the callback so that we can change the cursor
+		original_wndproc = (WNDPROC)GetWindowLongPtr(hDlg, GWLP_WNDPROC);
+		SetPropA(hDlg, "PROP_ORIGINAL_PROC", (HANDLE)original_wndproc);
+		SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)subclass_callback);
 
 		// Main init
 		init_dialog(hDlg);
@@ -795,7 +821,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
 			from_install = false;
 		}
-		return TRUE;
+		return (INT_PTR)TRUE;
 
 	case WM_VSCROLL:
 		NOT_DURING_INSTALL;
@@ -804,9 +830,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("no driver is selectable in libwdi!");
 			}
 			last_scroll = HIWORD(wParam);
-			return TRUE;
+			return (INT_PTR)TRUE;
 		}
-		return FALSE;
+		return (INT_PTR)FALSE;
 
 	// Change the font colour of editable fields to dark blue
 	case WM_CTLCOLOREDIT:
@@ -824,11 +850,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CTLCOLORSTATIC:
 		if ( ((HWND)lParam == hVid)
 		  || ((HWND)lParam == hPid)
-		  || ((HWND)lParam == hMi)
-		  || ((HWND)lParam == hTarget) ) {
+		  || ((HWND)lParam == hMi) ) {
 			return (INT_PTR)white_brush;
 		} else if ((HWND)lParam == hDriver) {
 			return (INT_PTR)driver_background[get_driver_type(device)];
+		} else if ((HWND)lParam == hTarget) {
+			return (INT_PTR)grey_brush;
 		}
 		return (INT_PTR)FALSE;
 
@@ -844,7 +871,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				GetDlgItemText(hMain, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
-				return FALSE;
+				return (INT_PTR)FALSE;
 			}
 			break;
 		case IDC_DEVICELIST:		// dropdown: device description
@@ -890,7 +917,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				}
 				break;
 			default:
-				return FALSE;
+				return (INT_PTR)FALSE;
 			}
 			break;
 		case IDC_INSTALL:	// button: "Install"
@@ -925,6 +952,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("could not allocate buffer to save log\n");
 			}
 			break;
+		case IDC_TARGET:	// prevent focus
+		case IDC_DRIVER:
+			if (HIWORD(wParam) == EN_SETFOCUS) {
+				SetFocus(hMain);
+				return (INT_PTR)TRUE;
+			}
+			break;
 		case IDOK:			// close application
 		case IDCANCEL:
 			wdi_destroy_list(list);
@@ -955,15 +989,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_driverless(true);
 			break;
 		default:
-			return FALSE;
+			return (INT_PTR)FALSE;
 		}
-		return TRUE;
+		return (INT_PTR)TRUE;
 
 	default:
-		return FALSE;
+		return (INT_PTR)FALSE;
 
 	}
-	return FALSE;
+	return (INT_PTR)FALSE;
 }
 
 /*
