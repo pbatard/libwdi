@@ -433,7 +433,7 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("invalid path or hardware ID");
 		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
-		plog("failed to open %s", path);
+		plog("the system can not find the file specified");
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");
