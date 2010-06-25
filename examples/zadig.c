@@ -793,9 +793,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
-			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=1)?"s":"");
+			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=0)?"s":"");
 		} else {
-			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=1)?"s":"");
+			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=0)?"s":"");
 			from_install = false;
 		}
 		return (INT_PTR)TRUE;
