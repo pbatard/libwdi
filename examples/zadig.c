@@ -46,8 +46,6 @@
 #include "zadig.h"
 #include "libconfig/libconfig.h"
 
-#define NOT_DURING_INSTALL if (install_thid != -1L) return FALSE
-
 void toggle_driverless(bool refresh);
 bool parse_ini(void);
 
@@ -61,11 +59,11 @@ HWND hInfo;
 HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
+WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
 struct wdi_options options = {WDI_WINUSB, false, true};
-uintptr_t install_thid = -1L;
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -203,42 +201,40 @@ int get_driver_type(struct wdi_device_info* dev)
 }
 
 /*
- * Thread that performs the driver installation
- * param: a pointer to the currently selected wdi_device_info structure
+ * Perform the driver installation
  */
-void __cdecl install_thread(void* param)
+int install_driver(void)
 {
-	struct wdi_device_info* dev = (struct wdi_device_info*)(uintptr_t)param;
+	struct wdi_device_info* dev = device;
 	static char str_buf[STR_BUFFER_SIZE];
 	bool need_dealloc = false;
-	int r, tmp;
+	int tmp, r = WDI_ERROR_OTHER;
 
 	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
-		// If the device is created from scratch, ignore the parameter
+		// If the device is created from scratch, override the existing device
 		dev = calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
 			dprintf("could not create new device_info struct for installation\n");
-			install_thid = -1L;
-			_endthread();
+			r = WDI_ERROR_RESOURCE; goto out;
 		}
 		need_dealloc = true;
 
 		// Retrieve the various device parameters
 		if (ComboBox_GetText(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
 			notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
-			goto out;
+			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert VID string - aborting\n");
-			return;
+			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->vid = (unsigned short)tmp;
 		GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert PID string - aborting\n");
-			return;
+			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->pid = (unsigned short)tmp;
 		GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
@@ -254,7 +250,8 @@ void __cdecl install_thread(void* param)
 
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
-	if (wdi_prepare_driver(dev, extraction_path, INF_NAME, &options) == WDI_SUCCESS) {
+	r = wdi_prepare_driver(dev, extraction_path, INF_NAME, &options);
+	if (r == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files\n");
 		// Perform the install if not extracting the files only
 		if ((options.driver_type != WDI_USER) && (!extract_only)) {
@@ -262,39 +259,26 @@ void __cdecl install_thread(void* param)
 			  && (MessageBox(hMain, "You are about to replace a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
-				goto out;
+				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
-			toggle_busy();
 			dsprintf("Installing driver. Please wait...\n");
 			r = wdi_install_driver(dev, extraction_path, INF_NAME, &options);
-			toggle_busy();
-			if (r == WDI_SUCCESS) {
-				dsprintf("Driver Installation: SUCCESS\n");
-				notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
-			} else if (r == WDI_ERROR_USER_CANCEL) {
-				dsprintf("Driver Installation: Cancelled by User\n");
-				notification(MSG_WARNING, "The driver installation was cancelled by user.", "Driver Installation");
-			} else {
-				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
-				notification(MSG_ERROR, "The driver installation failed.", "Driver Installation");
-			}
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
-			if (!options.list_all) {
+			if ((r == WDI_SUCCESS) && (!options.list_all)) {
 				toggle_driverless(false);
 			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
 	} else {
-		dsprintf("Could not create/extract files in %s\n", str_buf);
+		dsprintf("Could not extract files\n");
 	}
 out:
 	if (need_dealloc) {
 		free(dev);
 	}
-	install_thid = -1L;
 	from_install = true;
-	_endthread();
+	return r;
 }
 
 /*
@@ -667,9 +651,6 @@ bool parse_preset(char* filename)
  */
 INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	WNDPROC original_wndproc;
-
-	original_wndproc = (WNDPROC)GetProp(hDlg, "PROP_ORIGINAL_PROC");
 	switch (message)
 	{
 	case WM_SETCURSOR:
@@ -678,6 +659,7 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			return (INT_PTR)TRUE;
 		}
+		break;
 	}
 	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
 }
@@ -692,9 +674,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
-	int nb_devices, junk, r;
+	int nb_devices, tmp, r;
 	DWORD delay, read_size, log_size;
-	WNDPROC original_wndproc;
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
@@ -735,8 +716,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case UM_DEVICE_EVENT:
 		notification_delay_thid = -1L;
-		// Don't handle these events when installation has started
-		NOT_DURING_INSTALL;
 		if (create_device) {
 			if (MessageBox(hMain, "The USB device list has been modified.\n"
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
@@ -784,7 +763,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Subclass the callback so that we can change the cursor
 		original_wndproc = (WNDPROC)GetWindowLongPtr(hDlg, GWLP_WNDPROC);
-		SetPropA(hDlg, "PROP_ORIGINAL_PROC", (HANDLE)original_wndproc);
 		SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)subclass_callback);
 
 		// Main init
@@ -792,7 +770,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Fall through
 	case UM_REFRESH_LIST:
-		NOT_DURING_INSTALL;
 		// Reset edit mode if selected
 		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 			combo_breaker(false);
@@ -807,7 +784,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				(LPARAM) hDeviceList);
 		} else {
 			nb_devices = -1;
-			junk = ComboBox_ResetContent(hDeviceList);
+			tmp = ComboBox_ResetContent(hDeviceList);
 			SetDlgItemText(hMain, IDC_VID, "");
 			SetDlgItemText(hMain, IDC_PID, "");
 			display_driver(false);
@@ -816,15 +793,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
-			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
+			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=1)?"s":"");
 		} else {
-			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices>0)?"s":"");
+			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=1)?"s":"");
 			from_install = false;
 		}
 		return (INT_PTR)TRUE;
 
 	case WM_VSCROLL:
-		NOT_DURING_INSTALL;
 		if (LOWORD(wParam) == 4) {
 			if (!select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1)) {
 				dprintf("no driver is selectable in libwdi!");
@@ -860,7 +836,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return (INT_PTR)FALSE;
 
 	case WM_COMMAND:
-		NOT_DURING_INSTALL;
 		switch(LOWORD(wParam)) {
 		case IDC_EDITNAME:			// checkbox: "Edit Desc."
 			toggle_edit();
@@ -921,14 +896,18 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDC_INSTALL:	// button: "Install"
-			if (install_thid != -1L) {
-				dprintf("program assertion failed - another install thread is running\n");
-			} else {
-				// Using a thread prevents application freezout
-				install_thid = _beginthread(install_thread, 0, (void*)(uintptr_t)device);
-				if (install_thid == -1L) {
-					dprintf("unable to create install_thread\n");
+			r = run_with_progress_bar(install_driver);
+			if (r == WDI_SUCCESS) {
+				if (!extract_only) {
+					dsprintf("Driver Installation: SUCCESS\n");
+					notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
 				}
+			} else if (r == WDI_ERROR_USER_CANCEL) {
+				dsprintf("Driver Installation: Cancelled by User\n");
+				notification(MSG_WARNING, "Driver installation cancelled by user.", "Driver Installation");
+			} else {
+				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
+				notification(MSG_ERROR, "The driver installation failed.", "Driver Installation");
 			}
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
@@ -973,7 +952,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
-			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, About);
+			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
 			ShellExecute(hDlg, "open", "http://libusb.org/wiki/libwdi_zadig",
@@ -986,6 +965,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_advanced();
 			break;
 		case IDM_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
+			current_device_index = 0;
 			toggle_driverless(true);
 			break;
 		default:

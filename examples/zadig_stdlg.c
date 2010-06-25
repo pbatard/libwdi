@@ -34,6 +34,9 @@
 #include "resource.h"
 #include "zadig.h"
 
+#define UM_PROGRESS_START          (WM_APP)
+#define UM_PROGRESS_STOP           (WM_APP+1)
+
 #if (_WIN32_WINNT >= 0x0600)
 // Available on Vista and later
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
@@ -62,6 +65,7 @@ static HWND hProgress = INVALID_HANDLE_VALUE;
 static HICON hMessageIcon = INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
+int (*progress_function)(void);
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -533,7 +537,7 @@ void center_dialog(HWND dialog)
 /*
  * About dialog callback
  */
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	char* url = NULL;
 
@@ -569,9 +573,23 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 /*
- * Progress popup callback
+ * Thread executed by the run_with_progress_bar() function
  */
-INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+void __cdecl progress_thread(void* param)
+{
+	int r;
+
+	// Call the user provided function
+	r = (*progress_function)();
+	progress_thid = -1L;
+	PostMessage(hProgress, UM_PROGRESS_STOP, (WPARAM)r, 0);
+	_endthread();
+}
+
+/*
+ * Callback for the run_with_progress_bar() function
+ */
+INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT loc;
 	int i;
@@ -585,6 +603,7 @@ INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		center_dialog(hDlg);
 		// Toggle the progressbar Marquee animation
 		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), PBM_SETMARQUEE, TRUE, 0);
+		PostMessage(hDlg, UM_PROGRESS_START, 0, 0);
 		return (INT_PTR)TRUE;
 	case WM_NCHITTEST:
 		// Check coordinates to prevent resize actions
@@ -595,77 +614,42 @@ INT_PTR CALLBACK Progress(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		return (INT_PTR)FALSE;
+	case UM_PROGRESS_START:
+		if (progress_thid != -1L) {
+			dprintf("program assertion failed - another operation is in progress\n");
+		} else {
+			// Using a thread prevents application freezout on security warning
+			progress_thid = _beginthread(progress_thread, 0, NULL);
+			if (progress_thid != -1L) {
+				return (INT_PTR)TRUE;
+			}
+			dprintf("unable to create progress_thread\n");
+		}
+		// Fall through and return -1 as an error
+		wParam = (WPARAM)-1;
+	case UM_PROGRESS_STOP:
+		hProgress = INVALID_HANDLE_VALUE;
+		EndDialog(hDlg, (int)wParam);
+		return (INT_PTR)TRUE;
 	}
 	return (INT_PTR)FALSE;
 }
 
 /*
- * Thread that displays the progress dialog
+ * Call a blocking function (returning an int) as a modal thread with a progress bar
  */
-void __cdecl progress_thread(void* param)
-{
-	DialogBox(main_instance, MAKEINTRESOURCE(IDD_PROGRESS), NULL, Progress);
-	progress_thid = -1L;
-	_endthread();
-}
-
-
-bool create_progress_bar(void)
-{
-	progress_thid = _beginthread(progress_thread, 0, 0);
-	if (progress_thid == -1L) {
-		return false;
+int run_with_progress_bar(int(*function)(void)) {
+	if (function == NULL) {
+		return -1;
 	}
-	return true;
-}
-
-bool destroy_progress_bar(void)
-{
-	if ( (progress_thid == -1L) || (hProgress == INVALID_HANDLE_VALUE) ) {
-		return false;
-	}
-	EndDialog(hProgress, 0);
-	return true;
-}
-
-/*
- * Toggle the application cursor to busy and back
- */
-void toggle_busy(void)
-{
-	static bool is_busy = false;
-	static ULONG_PTR saved_cursor[5];
-	HCURSOR cursor;
-
-	if (!is_busy) {
-		saved_cursor[0] = GetClassLongPtr(hMain, GCLP_HCURSOR);
-		saved_cursor[1] = GetClassLongPtr(hDeviceList, GCLP_HCURSOR);
-		saved_cursor[2] = GetClassLongPtr(hInfo, GCLP_HCURSOR);
-		saved_cursor[3] = GetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR);
-		saved_cursor[4] = GetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR);
-		cursor = LoadCursorA(NULL, IDC_WAIT);
-		SetClassLongPtr(hMain, GCLP_HCURSOR, (ULONG_PTR)cursor);
-		SetClassLongPtr(hDeviceList, GCLP_HCURSOR, (ULONG_PTR)cursor);
-		SetClassLongPtr(hInfo, GCLP_HCURSOR, (ULONG_PTR)cursor);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, (ULONG_PTR)cursor);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, (ULONG_PTR)cursor);
-		create_progress_bar();
-	} else {
-		SetClassLongPtr(hMain, GCLP_HCURSOR, saved_cursor[0]);
-		SetClassLongPtr(hDeviceList, GCLP_HCURSOR, saved_cursor[1]);
-		SetClassLongPtr(hInfo, GCLP_HCURSOR, saved_cursor[2]);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_INSTALL), GCLP_HCURSOR, saved_cursor[3]);
-		SetClassLongPtr(GetDlgItem(hMain, IDC_TARGETSPIN), GCLP_HCURSOR, saved_cursor[4]);
-		destroy_progress_bar();
-	}
-	is_busy = !is_busy;
-	PostMessage(hMain, WM_SETCURSOR, 0, 0);		// Needed to restore the cursor
+	progress_function = function;
+	return (int)DialogBox(main_instance, MAKEINTRESOURCE(IDD_PROGRESS), hMain, progress_callback);
 }
 
 /*
  * We use our own MessageBox for notifications to have greater control (center, no close button, etc)
  */
-INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK notification_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT loc;
 	int i;
@@ -713,7 +697,6 @@ INT_PTR CALLBACK Notification(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		case IDCANCEL:
 		case IDC_NOTIFICATION_CLOSE:
 			EndDialog(hDlg, LOWORD(wParam));
-			hProgress = INVALID_HANDLE_VALUE;
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -740,6 +723,6 @@ void notification(int type, char* text, char* title)
 		hMessageIcon = LoadIcon(NULL, IDI_INFORMATION);
 		break;
 	}
-	DialogBox(main_instance, MAKEINTRESOURCE(IDD_NOTIFICATION), hMain, Notification);
+	DialogBox(main_instance, MAKEINTRESOURCE(IDD_NOTIFICATION), hMain, notification_callback);
 	message_text = NULL;
 }
