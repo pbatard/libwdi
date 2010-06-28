@@ -344,13 +344,20 @@ void display_mi(bool show)
 void toggle_advanced(void)
 {
 	// How much in y should we move/reduce our controls around
-	const int install_shift = 62;
-	const int dialog_shift = 385;
+	int install_shift = 62;
+	int dialog_shift = 385;
 	RECT rect;
 	POINT point;
 	int toggle;
+	HDC hdc;
 
 	advanced_mode = !(GetMenuState(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED) & MF_CHECKED);
+
+	// Adjust the shifts according to the DPI
+	hdc = GetDC(hMain);
+	install_shift = install_shift * GetDeviceCaps(hdc, LOGPIXELSX) / 96;
+	dialog_shift = dialog_shift * GetDeviceCaps(hdc, LOGPIXELSX) / 96;
+	ReleaseDC(hMain, hdc);
 
 	// Increase or decrease the Window size
 	GetWindowRect(hMain, &rect);
