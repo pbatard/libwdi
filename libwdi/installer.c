@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <setupapi.h>
 #include <process.h>
+#include <sddl.h>
 #if defined(_MSC_VER)
 #include <newdev.h>
 #else
@@ -60,6 +61,7 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, 
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 HANDLE syslog_ready_event = INVALID_HANDLE_VALUE;
 HANDLE syslog_terminate_event = INVALID_HANDLE_VALUE;
+PSID user_psid = NULL;
 
 // Setup the Cfgmgr32 DLLs
 static int init_dlls(void)
@@ -172,8 +174,10 @@ int request_data(char req, void *buffer, int size)
 char* req_id(enum installer_code id_code)
 {
 	int size;
+	char* id_text[3] = {"device_id", "hardware_id", "user_sid"};
 	static char device_id[MAX_PATH_LENGTH];
 	static char hardware_id[MAX_PATH_LENGTH];
+	static char user_sid[MAX_PATH_LENGTH];
 	char* id = NULL;
 
 	switch(id_code) {
@@ -183,6 +187,9 @@ char* req_id(enum installer_code id_code)
 	case IC_GET_HARDWARE_ID:
 		id = hardware_id;
 		break;
+	case IC_GET_USER_SID:
+		id = user_sid;
+		break;
 	default:
 		plog("req_id: unknown ID requested");
 		return NULL;
@@ -191,11 +198,11 @@ char* req_id(enum installer_code id_code)
 	memset(id, 0, MAX_PATH_LENGTH);
 	size = request_data(id_code, (void*)id, MAX_PATH_LENGTH);
 	if (size > 0) {
-		plog("got %s_id: %s", (id_code==IC_GET_DEVICE_ID)?"device":"hardware", id);
+		plog("got %s: %s", id_text[id_code-IC_GET_DEVICE_ID], id);
 		return id;
 	}
 
-	plog("failed to read %s_id", (id_code==IC_GET_DEVICE_ID)?"device":"hardware");
+	plog("failed to read %s", id_text[id_code-IC_GET_DEVICE_ID]);
 	return NULL;
 }
 
@@ -353,7 +360,6 @@ void __cdecl syslog_reader_thread(void* param)
 		size -= last_offset;
 
 		if (size != 0) {
-//			plog("size = %d", size);
 
 			// Read from file and add a zero terminator
 			buffer = malloc(size+2);
@@ -367,12 +373,10 @@ void __cdecl syslog_reader_thread(void* param)
 				goto out;
 			}
 			buffer[read_size+1] = 0;
-//			plog("read_size = %d", read_size);
 
 			// Send all the complete lines through the pipe
 			processed_size = process_syslog(buffer, read_size);
 			safe_free(buffer);
-//			plog("processed_size = %d", processed_size);
 			last_offset += processed_size;
 
 			// Reposition at start of last line if needed
@@ -484,6 +488,7 @@ main(int argc, char** argv)
 	BOOL b;
 	char* hardware_id = NULL;
 	char* device_id = NULL;
+	char* user_sid = NULL;
 	char* inf_name = NULL;
 	char path[MAX_PATH_LENGTH];
 	char destname[MAX_PATH_LENGTH];
@@ -523,6 +528,9 @@ main(int argc, char** argv)
 
 	device_id = req_id(IC_GET_DEVICE_ID);
 	hardware_id = req_id(IC_GET_HARDWARE_ID);
+	// Will be used if we ever need to create a file, as the original user, from this app
+	user_sid = req_id(IC_GET_USER_SID);
+	ConvertStringSidToSidA(user_sid, &user_psid);
 
 	// Setup the syslog reader thread
 	syslog_ready_event = CreateEvent(NULL, TRUE, FALSE, NULL);

@@ -189,6 +189,41 @@ static char err_string[ERR_BUFFER_SIZE];
 }
 
 /*
+ * Retrieve the SID of the user who launched our process
+ */
+PSID get_sid(void) {
+	TOKEN_USER* tu = NULL;
+	DWORD len;
+	HANDLE token;
+	PSID ret = NULL;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+		dprintf("Could not obtain process token for SID: %s\n", windows_error_str(0));
+		return ret;
+	}
+
+	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+			dprintf("Could not get TokenUser size for SID: %s\n", windows_error_str(0));
+			return ret;
+		}
+		tu = (TOKEN_USER*)calloc(1, len);
+		if (tu == NULL) {
+			dprintf("Could not allocate TokenUser for SID\n");
+			return ret;
+		}
+	}
+
+	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
+		ret = tu->User.Sid;
+	} else {
+		dprintf("Could not get SID: %s\n", windows_error_str(0));
+	}
+	free(tu);
+	return ret;
+}
+
+/*
  * We need a callback to set the initial directory
  */
 INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
@@ -327,15 +362,24 @@ fallback:
  */
 bool file_io(bool save, char* path, char** buffer, DWORD* size)
 {
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
 	HANDLE handle;
 	BOOL r;
 	bool ret = false;
+
+	// Change the owner from admin to regular user
+	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	s_attr.bInheritHandle = FALSE;
+	s_attr.lpSecurityDescriptor = &s_desc;
 
 	if (!save) {
 		*buffer = NULL;
 	}
 	handle = CreateFileA(path, save?GENERIC_WRITE:GENERIC_READ, FILE_SHARE_READ,
-		NULL, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
+		&s_attr, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
 
 	if (handle == INVALID_HANDLE_VALUE) {
 		dprintf("Could not %s file '%s'\n", save?"create":"open", path);

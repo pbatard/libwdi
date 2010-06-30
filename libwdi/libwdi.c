@@ -28,6 +28,7 @@
 #include <shellapi.h>
 #include <config.h>
 #include <ctype.h>
+#include <sddl.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -188,6 +189,36 @@ static char err_string[STR_BUFFER_SIZE];
 }
 
 /*
+ * Retrieve the SID of the current user user
+ */
+static PSID get_sid(void) {
+	TOKEN_USER* tu = NULL;
+	DWORD len;
+	HANDLE token;
+	PSID ret = NULL;
+
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+		return ret;
+	}
+
+	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+			return ret;
+		}
+		tu = (TOKEN_USER*)calloc(1, len);
+		if (tu == NULL) {
+			return ret;
+		}
+	}
+
+	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
+		ret = tu->User.Sid;
+	}
+	free(tu);
+	return ret;
+}
+
+/*
  * Find out if the driver selected is actually embedded in this version of the library
  */
 bool LIBWDI_API wdi_is_driver_supported(int driver_type)
@@ -224,6 +255,8 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
  */
 static int check_dir(char* path, bool create)
 {
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
 	struct _stat st;
 
 	if (_access(path, 02) == 0) {
@@ -243,7 +276,14 @@ static int check_dir(char* path, bool create)
 		return WDI_ERROR_ACCESS;
 	}
 
-	if (CreateDirectoryA(path, 0) == 0) {
+	// Change the owner from admin to regular user
+	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	s_attr.bInheritHandle = FALSE;
+	s_attr.lpSecurityDescriptor = &s_desc;
+
+	if (CreateDirectoryA(path, &s_attr) == 0) {
 		wdi_err("could not create directory %s", path);
 		return WDI_ERROR_ACCESS;
 	}
@@ -561,9 +601,12 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 // extract the embedded binary resources
 int extract_binaries(char* path)
 {
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
+	HANDLE handle;
 	char filename[MAX_PATH_LENGTH];
-	FILE* fd;
 	int i, r;
+	DWORD tmp;
 
 	for (i=0; i<nb_resources; i++) {
 		safe_strcpy(filename, MAX_PATH_LENGTH, path);
@@ -577,15 +620,23 @@ int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
 
+		// Change the owner from admin to regular user
+		InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+		SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		s_attr.bInheritHandle = FALSE;
+		s_attr.lpSecurityDescriptor = &s_desc;
 
-		fd = fopen(filename, "wb");
-		if (fd == NULL) {
+		handle = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_READ,
+			&s_attr, CREATE_ALWAYS, 0, NULL);
+
+		if (handle == INVALID_HANDLE_VALUE) {
 			wdi_err("failed to create file: %s", filename);
 			return WDI_ERROR_RESOURCE;
 		}
 
-		fwrite(resource[i].data, resource[i].size, 1, fd);
-		fclose(fd);
+		WriteFile(handle, resource[i].data, resource[i].size, &tmp, NULL);
+		CloseHandle(handle);
 	}
 
 	wdi_dbg("successfully extracted files to %s", path);
@@ -695,7 +746,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 // Handle messages received from the elevated installer through the pipe
 int process_message(char* buffer, DWORD size)
 {
-	DWORD junk;
+	DWORD tmp;
+	char* sid_str;
 
 	if (size <= 0)
 		return WDI_ERROR_INVALID_PARAM;
@@ -712,19 +764,19 @@ int process_message(char* buffer, DWORD size)
 	case IC_GET_DEVICE_ID:
 		wdi_dbg("got request for device_id");
 		if (current_device->device_id != NULL) {
-			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &junk, NULL);
+			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &tmp, NULL);
 		} else {
 			wdi_warn("no device_id - sending empty string");
-			WriteFile(pipe_handle, "\0", 1, &junk, NULL);
+			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
 		}
 		break;
 	case IC_GET_HARDWARE_ID:
 		wdi_dbg("got request for hardware_id");
 		if (current_device->hardware_id != NULL) {
-			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &junk, NULL);
+			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &tmp, NULL);
 		} else {
 			wdi_warn("no hardware_id - sending empty string");
-			WriteFile(pipe_handle, "\0", 1, &junk, NULL);
+			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
 		}
 		break;
 	case IC_PRINT_MESSAGE:
@@ -759,6 +811,15 @@ int process_message(char* buffer, DWORD size)
 	case IC_INSTALLER_COMPLETED:
 		wdi_dbg("installer process completed");
 		installer_completed = true;
+		break;
+	case IC_GET_USER_SID:
+		if (ConvertSidToStringSidA(get_sid(), &sid_str)) {
+			WriteFile(pipe_handle, sid_str, strlen(sid_str), &tmp, NULL);
+			LocalFree(sid_str);
+		} else {
+			wdi_warn("no user_sid - sending empty string");
+			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
+		}
 		break;
 	default:
 		wdi_err("unrecognized installer message");

@@ -936,7 +936,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			log_buffer = malloc(log_size);
 			if (log_buffer != NULL) {
 				log_size = GetDlgItemTextA(hMain, IDC_INFO, log_buffer, log_size);
-				filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log"); //, log_buffer, log_size);
+				filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log");
 				if (filepath != NULL) {
 					file_io(true, filepath, &log_buffer, &log_size);
 				}
