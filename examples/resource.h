@@ -35,6 +35,8 @@
 #define IDC_NOTIFICATION_TEXT           1057
 #define IDC_NOTIFICATION_CLOSE          1059
 #define IDC_NOTIFICATION_LINE           1060
+#define IDC_PROGRESS_TEXT               1061
+#define IDC_NEXT                        1062
 #define IDC_FOLDER                      1148
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
@@ -52,7 +54,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1061
+#define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
