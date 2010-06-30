@@ -606,6 +606,7 @@ BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
 {
 	char str_buf[STR_BUFFER_SIZE];
 	bool *found = (bool*)lParam;
+	const char* security_string = "Windows Security";
 
 	// Style is used to decide which bitmap to display in the tree
 	UINT uStyle = GetWindowLong(hWnd, GWL_STYLE);
@@ -614,7 +615,7 @@ BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
 		str_buf[0] = 0;
 		GetWindowTextA(hWnd, str_buf, STR_BUFFER_SIZE);
 		str_buf[STR_BUFFER_SIZE-1] = 0;
-		if (safe_strcmp(str_buf, "Windows Security") == 0) {
+		if (safe_strcmp(str_buf, security_string) == 0) {
 			*found = true;
 		}
 	}
