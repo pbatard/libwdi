@@ -46,6 +46,8 @@
 #include "zadig.h"
 #include "libconfig/libconfig.h"
 
+#define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
+
 void toggle_driverless(bool refresh);
 bool parse_ini(void);
 
@@ -74,6 +76,7 @@ bool advanced_mode = false;
 bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
+bool installation_running = false;
 // Libconfig
 config_t cfg;
 config_setting_t *setting;
@@ -210,6 +213,7 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
+	installation_running = true;
 	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
 		// If the device is created from scratch, override the existing device
 		dev = calloc(1, sizeof(struct wdi_device_info));
@@ -278,6 +282,7 @@ out:
 		free(dev);
 	}
 	from_install = true;
+	installation_running = false;
 	return r;
 }
 
@@ -697,6 +702,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	switch (message) {
 
 	case WM_DEVICECHANGE:
+		NOT_DURING_INSTALL;
 		/*
 		 * Why the convoluted process on device notification?
 		 * 1. When not using RegisterDeviceNotification(), Windows sends an undefined number
@@ -722,6 +728,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return (INT_PTR)TRUE;
 
 	case UM_DEVICE_EVENT:
+		NOT_DURING_INSTALL;
 		notification_delay_thid = -1L;
 		if (create_device) {
 			if (MessageBox(hMain, "The USB device list has been modified.\n"
@@ -777,6 +784,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Fall through
 	case UM_REFRESH_LIST:
+		NOT_DURING_INSTALL;
 		// Reset edit mode if selected
 		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 			combo_breaker(false);
