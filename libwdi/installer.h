@@ -50,7 +50,7 @@
 #define safe_strdup _strdup
 
 #if defined(_MSC_VER)
-#define safe_vsnprintf(buf, size, format, arg) vsnprintf_s(buf, size, _TRUNCATE, format, arg)
+#define safe_vsnprintf(buf, size, format, arg) _vsnprintf_s(buf, size, _TRUNCATE, format, arg)
 #else
 #define safe_vsnprintf vsnprintf
 #endif
