@@ -31,8 +31,8 @@
 #define MUTEX_RETURN CloseHandle(mutex); return
 
 #if defined(_MSC_VER)
-#define safe_vsnprintf vsprintf_s
-#define safe_snprintf sprintf_s
+#define safe_vsnprintf(buf, size, format, arg) vsnprintf_s(buf, size, _TRUNCATE, format, arg)
+#define safe_snprintf(buf, size, ...) _snprintf_s(buf, size, _TRUNCATE, __VA_ARGS__)
 #else
 #define safe_vsnprintf vsnprintf
 #define safe_snprintf snprintf

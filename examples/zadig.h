@@ -37,7 +37,7 @@ enum driver_type {
 	NB_DRIVER_TYPES,
 };
 
-// For our custom Notifications
+// For our custom notifications
 enum message_type {
 	MSG_INFO,
 	MSG_WARNING,
@@ -59,9 +59,11 @@ enum message_type {
 #define RED                         RGB(255,207,207)
 
 // WM_APP is not sent on focus, unlike WM_USER
-#define UM_REFRESH_LIST             WM_APP
-#define UM_DEVICE_EVENT            (WM_APP+1)
-#define UM_LOGGER_EVENT            (WM_APP+2)
+enum user_message_type {
+	UM_REFRESH_LIST = WM_APP,
+	UM_DEVICE_EVENT,
+	UM_LOGGER_EVENT
+};
 
 #define safe_free(p) do {if ((void*)p != NULL) {free((void*)p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
@@ -75,7 +77,7 @@ enum message_type {
 #define safe_strdup _strdup
 
 #if defined(_MSC_VER)
-#define safe_vsnprintf vsprintf_s
+#define safe_vsnprintf(buf, size, format, arg) vsnprintf_s(buf, size, _TRUNCATE, format, arg)
 #else
 #define safe_vsnprintf vsnprintf
 #endif
