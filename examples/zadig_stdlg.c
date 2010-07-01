@@ -702,6 +702,7 @@ void __cdecl security_check_delay_thread(void* param)
 INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT loc;
+	HANDLE handle;
 	static int installation_time = 0;	// active installation time, in secs
 	const int msg_max = sizeof(progress_message) / sizeof(progress_message[0]);
 	static int msg_index = 0;
@@ -760,6 +761,15 @@ INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 				// Change the progress blurb
 				SetWindowTextA(GetDlgItem(hProgress, IDC_PROGRESS_TEXT), progress_message[msg_index]);
 				msg_index++;
+			} else if ( (installation_time > 300) && (progress_thid != -1L) ) {
+				// Wait 300 (loose) seconds and kill the thread
+				// 300 secs is the timeout for driver installation on Vista
+				dprintf("progress timeout expired - KILLING THREAD!\n");
+				handle = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)progress_thid);
+				TerminateThread(handle, -1);
+				CloseHandle(handle);
+				EndDialog(hDlg, -1);
+				return (INT_PTR)TRUE;
 			}
 		}
 		// Launch a new 1 second delay thread
