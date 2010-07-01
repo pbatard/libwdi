@@ -255,9 +255,22 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
  */
 static int check_dir(char* path, bool create)
 {
-	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
-	SECURITY_DESCRIPTOR s_desc;
 	struct _stat st;
+	SECURITY_ATTRIBUTES *ps = NULL;
+
+	// Change the owner from admin to regular user
+	// Keep admin user for debug mode
+#ifndef _DEBUG
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
+
+	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	s_attr.bInheritHandle = FALSE;
+	s_attr.lpSecurityDescriptor = &s_desc;
+	ps = &s_attr;
+#endif
 
 	if (_access(path, 02) == 0) {
 		memset(&st, 0, sizeof(st));
@@ -276,16 +289,6 @@ static int check_dir(char* path, bool create)
 		return WDI_ERROR_ACCESS;
 	}
 
-	// Change the owner from admin to regular user
-	// Use admin user for debug mode
-#ifndef _DEBUG
-	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	s_attr.bInheritHandle = FALSE;
-	s_attr.lpSecurityDescriptor = &s_desc;
-	ps = &s_attr;
-#endif
 
 	if (CreateDirectoryA(path, ps) == 0) {
 		wdi_err("could not create directory %s", path);
@@ -606,12 +609,25 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 // extract the embedded binary resources
 int extract_binaries(char* path)
 {
-	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
-	SECURITY_DESCRIPTOR s_desc;
 	HANDLE handle;
 	char filename[MAX_PATH_LENGTH];
 	int i, r;
 	DWORD tmp;
+	SECURITY_ATTRIBUTES *ps = NULL;
+
+	// Change the owner from admin to regular user
+	// Keep admin user for debug mode
+#ifndef _DEBUG
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
+
+	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	s_attr.bInheritHandle = FALSE;
+	s_attr.lpSecurityDescriptor = &s_desc;
+	ps = &s_attr;
+#endif
 
 	for (i=0; i<nb_resources; i++) {
 		safe_strcpy(filename, MAX_PATH_LENGTH, path);
@@ -624,17 +640,6 @@ int extract_binaries(char* path)
 		}
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
-
-		// Change the owner from admin to regular user
-		// Use admin user for debug mode
-#ifndef _DEBUG
-		InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-		SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-		s_attr.bInheritHandle = FALSE;
-		s_attr.lpSecurityDescriptor = &s_desc;
-		ps = &s_attr;
-#endif
 
 		handle = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_READ,
 			ps, CREATE_ALWAYS, 0, NULL);
