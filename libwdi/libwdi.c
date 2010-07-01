@@ -255,7 +255,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
  */
 static int check_dir(char* path, bool create)
 {
-	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
 	struct _stat st;
 
@@ -277,13 +277,17 @@ static int check_dir(char* path, bool create)
 	}
 
 	// Change the owner from admin to regular user
+	// Use admin user for debug mode
+#ifndef _DEBUG
 	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
 	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
 	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	s_attr.bInheritHandle = FALSE;
 	s_attr.lpSecurityDescriptor = &s_desc;
+	ps = &s_attr;
+#endif
 
-	if (CreateDirectoryA(path, &s_attr) == 0) {
+	if (CreateDirectoryA(path, ps) == 0) {
 		wdi_err("could not create directory %s", path);
 		return WDI_ERROR_ACCESS;
 	}
@@ -370,6 +374,7 @@ void free_di(struct wdi_device_info *di)
 		return;
 	}
 	safe_free(di->device_id);
+	safe_free(di->hardware_id);
 	safe_free(di->desc);
 	safe_free(di->driver);
 	free(di);
@@ -601,7 +606,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 // extract the embedded binary resources
 int extract_binaries(char* path)
 {
-	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
 	HANDLE handle;
 	char filename[MAX_PATH_LENGTH];
@@ -621,14 +626,18 @@ int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
 
 		// Change the owner from admin to regular user
+		// Use admin user for debug mode
+#ifndef _DEBUG
 		InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
 		SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
 		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
 		s_attr.bInheritHandle = FALSE;
 		s_attr.lpSecurityDescriptor = &s_desc;
+		ps = &s_attr;
+#endif
 
 		handle = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_READ,
-			&s_attr, CREATE_ALWAYS, 0, NULL);
+			ps, CREATE_ALWAYS, 0, NULL);
 
 		if (handle == INVALID_HANDLE_VALUE) {
 			wdi_err("failed to create file: %s", filename);

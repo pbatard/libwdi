@@ -25,6 +25,7 @@
 #include <io.h>
 #include <fcntl.h>
 #include <stdint.h>
+
 #include "libwdi.h"
 #include "logging.h"
 
