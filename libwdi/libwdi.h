@@ -168,6 +168,8 @@ struct wdi_options {
 	int driver_type;
 	/** create_list: list all devices, instead of just the ones that are driverless */
 	bool list_all;
+	/** create_list: also list generic hubs and composite parent devices */
+	bool list_hubs;
 	/** create_list: trim trailing whitespaces from the description string */
 	bool trim_whitespaces;
 };

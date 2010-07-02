@@ -413,6 +413,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	const char usbhub_name[] = "usbhub";
 	const char usbccgp_name[] = "usbccgp";
+	bool is_hub, is_composite_parent, has_vid;
 
 	MUTEX_START;
 
@@ -463,13 +464,21 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 		} else {
 			device_info->driver = safe_strdup(strbuf);
 		}
+		is_hub = false;
 		if (safe_strcmp(strbuf, usbhub_name) == 0) {
-			continue;
+			if (!options->list_hubs) {
+				continue;
+			}
+			is_hub = true;
 		}
 		// Also eliminate composite devices parent drivers, as replacing these drivers
 		// is a bad idea
+		is_composite_parent = false;
 		if (safe_strcmp(strbuf, usbccgp_name) == 0) {
-			continue;
+			if (!options->list_hubs) {
+				continue;
+			}
+			is_composite_parent = true;
 		}
 
 		// Retrieve the hardware ID
@@ -524,6 +533,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 		device_info->is_composite = false;	// non composite by default
 		device_info->mi = 0;
 		token = strtok (strbuf, "\\#&");
+		has_vid = false;
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
 				if (safe_strncmp(token, prefix[j], strlen(prefix[j])) == 0) {
@@ -534,6 +544,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 						} else {
 							device_info->vid = (unsigned short)tmp;
 						}
+						has_vid = true;
 						break;
 					case 1:
 						if (sscanf(token, "PID_%04X", &tmp) != 1) {
@@ -562,6 +573,19 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options
 			}
 			token = strtok (NULL, "\\#&");
 		}
+
+		// Eliminate root hubs (no VID/PID => 0 from calloc)
+		if ( (is_hub) && (!has_vid) ) {
+			continue;
+		}
+
+		// Add a suffix for composite parents
+		if ( (is_composite_parent)
+		  && ((wcslen(desc) + sizeof(" (Composite Parent)")) < MAX_DESC_LENGTH) ) {
+			_snwprintf(&desc[wcslen(desc)], sizeof(" (Composite Parent)"),
+				L" (Composite Parent)");
+		}
+
 		device_info->desc = wchar_to_utf8(desc);
 
 		// Remove trailing whitespaces
