@@ -11,7 +11,6 @@
 #define IDC_PID                         1003
 #define IDC_INFO                        1004
 #define IDC_MI                          1005
-#define IDC_DRIVERLESSONLY              1006
 #define IDC_EDITNAME                    1007
 #define IDC_DRIVER                      1008
 #define IDC_INSTALL                     1009
@@ -41,19 +40,20 @@
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
 #define IDM_ADVANCEDMODE                40003
-#define IDM_DRIVERLESSONLY              40004
+#define IDM_LISTALL                     40004
 #define IDM_CREATE                      40005
 #define IDM_ONLINEHELP                  40006
 #define IDM_OPEN                        40007
 #define IDM_EXTRACT                     40008
+#define IDM_IGNOREHUBS                  40009
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        105
-#define _APS_NEXT_COMMAND_VALUE         40009
+#define _APS_NEXT_COMMAND_VALUE         40010
 #define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

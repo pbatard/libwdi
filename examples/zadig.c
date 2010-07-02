@@ -65,7 +65,7 @@ WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
-struct wdi_options options = {WDI_WINUSB, false, true};
+struct wdi_options options = {WDI_WINUSB, false, false, true};
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -184,21 +184,22 @@ void __cdecl notification_delay_thread(void* param)
 // Retrieve the driver type according to its service string
 int get_driver_type(struct wdi_device_info* dev)
 {
-	const char* winusb_name = "WinUSB";
-	const char* libusb_name = "libusb0";
-	const char* usbstor_name = "USBSTOR";
-	const char* hidusb_name = "HidUsb";
+	int i;
+	const char* libusb_name[] = { "WinUSB", "libusb0" };
+	const char* system_name[] = { "usbhub", "usbccgp", "USBSTOR", "HidUsb"};
 
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
 	}
-	if ( (safe_strcmp(dev->driver, winusb_name) == 0)
-	  || (safe_strcmp(dev->driver, libusb_name) == 0) ) {
-		return DT_LIBUSB;
+	for (i=0; i<sizeof(libusb_name)/sizeof(libusb_name[0]); i++) {
+		if (safe_strcmp(dev->driver, libusb_name[i]) == 0) {
+			return DT_LIBUSB;
+		}
 	}
-	if ( (safe_strcmp(dev->driver, usbstor_name) == 0)
-	  || (safe_strcmp(dev->driver, hidusb_name) == 0) ) {
-		return DT_SYSTEM;
+	for (i=0; i<sizeof(system_name)/sizeof(system_name[0]); i++) {
+		if (safe_strcmp(dev->driver, system_name[i]) == 0) {
+			return DT_SYSTEM;
+		}
 	}
 	return DT_UNKNOWN;
 }
@@ -397,9 +398,6 @@ void toggle_advanced(void)
 
 	// Hide or show the various advanced options
 	toggle = advanced_mode?SW_SHOW:SW_HIDE;
-	ShowWindow(GetDlgItem(hMain, IDC_EXTRACTONLY), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_CREATE), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_FOLDER), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_FOLDER), toggle);
@@ -451,7 +449,6 @@ void toggle_create(bool refresh)
 		}
 		combo_breaker(true);
 		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-		EnableWindow(GetDlgItem(hMain, IDC_DRIVERLESSONLY), false);
 		SetDlgItemText(hMain, IDC_VID, "");
 		SetDlgItemText(hMain, IDC_PID, "");
 		SetDlgItemText(hMain, IDC_MI, "");
@@ -485,16 +482,36 @@ void toggle_extract(void)
 	SetDlgItemText(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
 }
 
-// Toggle driverless device listing
-void toggle_driverless(bool refresh)
+// Toggle ignore hubs & composite
+void toggle_hubs(bool refresh)
 {
-	options.list_all = (GetMenuState(hMenuOptions, IDM_DRIVERLESSONLY, MF_CHECKED) & MF_CHECKED);
+	options.list_hubs = GetMenuState(hMenuOptions, IDM_IGNOREHUBS, MF_CHECKED) & MF_CHECKED;
 
 	if (create_device) {
 		toggle_create(true);
 	}
 
-	CheckMenuItem(hMenuOptions, IDM_DRIVERLESSONLY, options.list_all?MF_UNCHECKED:MF_CHECKED);
+	CheckMenuItem(hMenuOptions, IDM_IGNOREHUBS, options.list_hubs?MF_UNCHECKED:MF_CHECKED);
+	// Reset Edit button
+	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+	// Reset Combo
+	combo_breaker(false);
+	if (refresh) {
+		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+	}
+}
+
+// Toggle driverless device listing
+void toggle_driverless(bool refresh)
+{
+	options.list_all = !(GetMenuState(hMenuOptions, IDM_LISTALL, MF_CHECKED) & MF_CHECKED);
+	EnableMenuItem(hMenuOptions, IDM_IGNOREHUBS, options.list_all?MF_ENABLED:MF_GRAYED);
+
+	if (create_device) {
+		toggle_create(true);
+	}
+
+	CheckMenuItem(hMenuOptions, IDM_LISTALL, options.list_all?MF_CHECKED:MF_UNCHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
@@ -544,8 +561,11 @@ void init_dialog(HWND hDlg)
 	if (!advanced_mode) {
 		toggle_advanced();	// We start in advanced mode
 	}
-	if (!options.list_all) {
+	if (options.list_all) {
 		toggle_driverless(false);
+	}
+	if (options.list_hubs) {
+		toggle_hubs(false);
 	}
 	if (extract_only) {
 		toggle_extract();
@@ -579,6 +599,7 @@ bool parse_ini(void) {
 	// Set the various boolean options
 	config_lookup_bool(&cfg, "advanced_mode", &advanced_mode);
 	config_lookup_bool(&cfg, "list_all", &options.list_all);
+	config_lookup_bool(&cfg, "include_hubs", &options.list_hubs);
 	config_lookup_bool(&cfg, "extract_only", &extract_only);
 	config_lookup_bool(&cfg, "trim_whitespaces", &options.trim_whitespaces);
 
@@ -796,6 +817,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		if (list != NULL) wdi_destroy_list(list);
+		if (!from_install) {
+			current_device_index = 0;
+		}
 		r = wdi_create_list(&list, &options);
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices();
@@ -984,9 +1008,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
 			break;
-		case IDM_DRIVERLESSONLY:	// checkbox: "List Only Driverless Devices"
-			current_device_index = 0;
+		case IDM_LISTALL:
 			toggle_driverless(true);
+			break;
+		case IDM_IGNOREHUBS:
+			toggle_hubs(true);
 			break;
 		default:
 			return (INT_PTR)FALSE;
