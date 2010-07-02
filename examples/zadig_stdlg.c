@@ -142,6 +142,51 @@ WCHAR* utf8_to_wchar(char* str)
 	return wstr;
 }
 
+/*
+ * Converts a name + ext UTF-8 tuple to a valid MS filename
+ * Returned string is allocated and needs to be freed manually
+ */
+char* to_valid_filename(char* name, char* ext)
+{
+	size_t i, j, k;
+	bool found;
+	char* ret;
+	char authorized[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_+-()";
+	char underscore[] = " ";
+
+	if ((name == NULL) || (ext == NULL)) {
+		return NULL;
+	}
+	ret = calloc(strlen(name) + strlen(ext) + 1, 1);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	for (i=0, k=0; i<strlen(name); i++) {
+		found = false;
+		for (j=0; j<sizeof(authorized)-1; j++) {
+			if (name[i] == authorized[j]) {
+				ret[k++] = name[i];
+				found = true; break;
+			}
+			if (found) continue;
+		}
+		found = false;
+		for (j=0; j<sizeof(underscore)-1; j++) {
+			if (name[i] == underscore[j]) {
+				ret[k++] = '_';
+				found = true; break;
+			}
+			if (found) continue;
+		}
+	}
+	for (i=0; i<strlen(ext); i++) {
+		ret[k++] = ext[i];
+	}
+	ret[k] = 0;
+	return ret;
+}
+
 
 /*
  * returns true if the path is a directory with write access

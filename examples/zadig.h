@@ -32,7 +32,6 @@
 #define NOTIFICATION_DELAY          1000
 #define MAX_LOG_SIZE                0xFFFF
 #define DEFAULT_DIR                 "C:\\usb_driver"
-#define INF_NAME                    "libusb_device.inf"
 #define INI_NAME                    "zadig.ini"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
@@ -96,6 +95,7 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 void create_status_bar(void);
 void notification(int type, char* text, char* title);
 int run_with_progress_bar(int(*function)(void));
+char* to_valid_filename(char* name, char* ext);
 
 /*
  * Globals

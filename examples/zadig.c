@@ -209,7 +209,8 @@ int get_driver_type(struct wdi_device_info* dev)
 int install_driver(void)
 {
 	struct wdi_device_info* dev = device;
-	static char str_buf[STR_BUFFER_SIZE];
+	char str_buf[STR_BUFFER_SIZE];
+	char* inf_name = NULL;
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
@@ -252,11 +253,14 @@ int install_driver(void)
 		}
 	}
 
+	inf_name = to_valid_filename(dev->desc, ".inf");
+	dprintf("Using inf name: %s\n", inf_name);
+
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
-	r = wdi_prepare_driver(dev, extraction_path, INF_NAME, &options);
+	r = wdi_prepare_driver(dev, extraction_path, inf_name, &options);
 	if (r == WDI_SUCCESS) {
-		dsprintf("Succesfully extracted driver files\n");
+		dsprintf("Succesfully extracted driver files.\n");
 		// Perform the install if not extracting the files only
 		if ((options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
@@ -266,7 +270,7 @@ int install_driver(void)
 				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
 			dsprintf("Installing driver. Please wait...\n");
-			r = wdi_install_driver(dev, extraction_path, INF_NAME, &options);
+			r = wdi_install_driver(dev, extraction_path, inf_name, &options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
 			if ((r == WDI_SUCCESS) && (!options.list_all)) {
@@ -281,6 +285,7 @@ out:
 	if (need_dealloc) {
 		free(dev);
 	}
+	safe_free(inf_name);
 	from_install = true;
 	installation_running = false;
 	return r;
@@ -1036,4 +1041,3 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	return 0;
 }
-
