@@ -43,6 +43,7 @@
 
 #include "../libwdi/libwdi.h"
 #include "resource.h"
+#include "usb_vendors.h"
 #include "zadig.h"
 #include "libconfig/libconfig.h"
 
@@ -719,6 +720,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HWND hDeviceEdit;
 	static HWND hVid, hPid, hMi;
 	static HWND hFolder, hDriver, hTarget;
+	static HWND hToolTip = NULL;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH green_brush = (HBRUSH)FALSE;
 	static HBRUSH red_brush = (HBRUSH)FALSE;
@@ -923,6 +925,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					// Display the VID,PID,MI
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
+					// Display the vendor string as a tooltip
+					DestroyWindow(hToolTip);
+					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID),
+						(char*)find_usb_vendor(device->vid));
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemText(hMain, IDC_PID, str_tmp);
 					if (device->is_composite) {

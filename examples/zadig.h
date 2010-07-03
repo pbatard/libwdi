@@ -96,6 +96,7 @@ void create_status_bar(void);
 void notification(int type, char* text, char* title);
 int run_with_progress_bar(int(*function)(void));
 char* to_valid_filename(char* name, char* ext);
+HWND create_tooltip(HWND hWnd, char* message);
 
 /*
  * Globals

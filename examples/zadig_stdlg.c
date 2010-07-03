@@ -932,3 +932,35 @@ void notification(int type, char* text, char* title)
 	DialogBox(main_instance, MAKEINTRESOURCE(IDD_NOTIFICATION), hMain, notification_callback);
 	message_text = NULL;
 }
+
+/*
+ * Create a tooltip for the control passed as first parameter
+ */
+HWND create_tooltip(HWND hControl, char* message)
+{
+	HWND hTip;
+	TOOLINFO toolInfo = {0};
+
+	if ( (hControl == NULL) || (message == NULL) ) {
+		return (HWND)NULL;
+	}
+
+	// Create the tooltip window
+	hTip = CreateWindowExA(0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,	hMain, NULL,
+		main_instance, NULL);
+
+	if (hTip == NULL) {
+		return (HWND)NULL;
+	}
+
+	// Associate the tooltip to the control
+	toolInfo.cbSize = sizeof(toolInfo);
+	toolInfo.hwnd = hMain;
+	toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+	toolInfo.uId = (UINT_PTR)hControl;
+	toolInfo.lpszText = message;
+	SendMessage(hTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+
+	return hTip;
+}

@@ -29,4 +29,5 @@ SXS_APPLICATION_MANIFEST=zadig.manifest
 
 SOURCES=zadig.c \
         zadig_stdlg.c \
+        usb_vendors.c \
         zadig.rc
