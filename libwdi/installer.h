@@ -105,7 +105,7 @@ enum windows_version {
 	name = (__dll_##name##_t)GetProcAddress(h, #name "W");    \
 	if (name) break;                                          \
 	if(ret_on_failure)                                        \
-		return -1;                                            \
+		return WDI_ERROR_NOT_SUPPORTED;                       \
 	} while(0)
 
 

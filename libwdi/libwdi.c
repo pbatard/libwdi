@@ -101,6 +101,7 @@ DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 DLL_DECLARE(WINAPI, BOOL, IsUserAnAdmin, (void));
+DLL_DECLARE(WINAPI, int, SHCreateDirectoryExA, (HWND, LPCSTR, const SECURITY_ATTRIBUTES*));
 
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
@@ -289,8 +290,8 @@ static int check_dir(char* path, bool create)
 		return WDI_ERROR_ACCESS;
 	}
 
-
-	if (CreateDirectoryA(path, ps) == 0) {
+	// SHCreateDirectoryExA creates subdirectories as required
+	if (SHCreateDirectoryExA(NULL, path, ps) != ERROR_SUCCESS) {
 		wdi_err("could not create directory %s", path);
 		return WDI_ERROR_ACCESS;
 	}
@@ -393,6 +394,7 @@ static int init_dlls(void)
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
 	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
 	DLL_LOAD(Shell32.dll, IsUserAnAdmin, FALSE);
+	DLL_LOAD(Shell32.dll, SHCreateDirectoryExA, TRUE);
 	return WDI_SUCCESS;
 }
 
@@ -693,6 +695,10 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	MUTEX_START;
 
+	if (!dlls_available) {
+		init_dlls();
+	}
+
 	// Try to use the user's temp dir if no path is provided
 	if ((path == NULL) || (path[0] == 0)) {
 		path = getenv("TEMP");
@@ -871,8 +877,8 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 								  char* inf_name, struct wdi_options* options)
 {
 	SHELLEXECUTEINFO shExecInfo;
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
 	char exename[STR_BUFFER_SIZE];
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
@@ -882,6 +888,10 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	char buffer[STR_BUFFER_SIZE];
 
 	MUTEX_START;
+
+	if (!dlls_available) {
+		init_dlls();
+	}
 
 	current_device = device_info;
 
