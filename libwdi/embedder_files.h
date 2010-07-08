@@ -42,10 +42,6 @@ struct emb embeddable_fixed[] = {
 	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86" },
 #endif
-#if defined(LIBUSB0_DIR)
-	{ LIBUSB0_DIR "\\x86\\libusb0.dll", "x86" },
-	{ LIBUSB0_DIR "\\x86\\libusb0.sys", "x86" },
-#endif
 	{ INSTALLER_PATH_32 "\\installer_x86.exe", "." },
 #endif
 
@@ -56,16 +52,21 @@ struct emb embeddable_fixed[] = {
 	{ DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64" },
 #endif
 #if defined(LIBUSB0_DIR)
-	{ LIBUSB0_DIR "\\amd64\\libusb0.dll", "amd64" },
-	{ LIBUSB0_DIR "\\amd64\\libusb0.sys", "amd64" },
+	{ LIBUSB0_DIR "\\bin\\amd64\\libusb0.dll", "amd64" },
+	{ LIBUSB0_DIR "\\bin\\amd64\\libusb0.sys", "amd64" },
 #endif
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
 
 // Common driver files
-// TODO: include libusb0.sys license?
+// On 64 bit, for WOW64, we must include the 32 bit libusb0 files as well
+#if defined(LIBUSB0_DIR)
+	{ LIBUSB0_DIR "\\bin\\x86\\libusb0.dll", "x86" },
+	{ LIBUSB0_DIR "\\bin\\x86\\libusb0.sys", "x86" },
+	{ LIBUSB0_DIR "\\installer_license.txt", "license\\libusb-win32" },
+#endif
 #if defined(DDK_DIR)
-	{ DDK_DIR "\\license.rtf", "." },	// WinUSB License file
+	{ DDK_DIR "\\license.rtf", "license\\WinUSB" },	// WinUSB License file
 #endif
 };
 

@@ -14,7 +14,7 @@
 // #define USER_DIR "C:/signed-driver"
 
 /* embed libusb0 driver files from the following location */
-#define LIBUSB0_DIR "D:/libusb-win32/bin"
+#define LIBUSB0_DIR "D:/libusb-win32"
 
 /* DDK WDF coinstaller version (string) */
 #define WDF_VER "01009"

@@ -10,7 +10,7 @@ if OPT_M32
 noinst_PROGRAMS += installer_x86
 noinst_EXES += installer_x86.exe
 installer_x86_SOURCES = installer.h installer.c
-installer_x86_CFLAGS = -m32 $(NO_CYGWIN) $(AM_CFLAGS) $(M32)
+installer_x86_CFLAGS = -m32 $(NO_CYGWIN) $(AM_CFLAGS)
 installer_x86_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x86_LDADD = -lsetupapi -lnewdev
 endif

@@ -176,12 +176,10 @@ fi
 
 if test "x$LIBUSB0_DIR" != "x"; then
 	# check that the required libusb0 driver files are available
-	if test "x$enable_64bit" != "xno"; then
-	AC_CHECK_FILES([$LIBUSB0_DIR/amd64/libusb0.sys $LIBUSB0_DIR/amd64/libusb0.dll],,
+	AC_CHECK_FILES([$LIBUSB0_DIR/bin/x86/libusb0.sys $LIBUSB0_DIR/bin/x86/libusb0.dll],,
 		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
-	fi
-	if test "x$enable_32bit" != "xno"; then
-	AC_CHECK_FILES([$LIBUSB0_DIR/x86/libusb0.sys $LIBUSB0_DIR/x86/libusb0.dll],,
+	if test "x$enable_64bit" != "xno"; then
+	AC_CHECK_FILES([$LIBUSB0_DIR/bin/amd64/libusb0.sys $LIBUSB0_DIR/bin/amd64/libusb0.dll],,
 		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
 	fi
 fi
