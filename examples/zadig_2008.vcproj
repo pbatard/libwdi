@@ -338,10 +338,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\usb_vendors.c"
-				>
-			</File>
-			<File
 				RelativePath=".\zadig.c"
 				>
 			</File>
@@ -361,10 +357,6 @@
 			</File>
 			<File
 				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
-				RelativePath=".\usb_vendors.h"
 				>
 			</File>
 			<File

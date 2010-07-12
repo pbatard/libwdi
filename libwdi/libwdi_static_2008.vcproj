@@ -284,6 +284,10 @@
 				RelativePath=".\logging.c"
 				>
 			</File>
+			<File
+				RelativePath=".\vid_data.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

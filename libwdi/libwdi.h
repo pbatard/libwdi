@@ -185,6 +185,11 @@ const char* LIBWDI_API wdi_strerror(int errcode);
 bool LIBWDI_API wdi_is_driver_supported(int driver_type);
 
 /*
+ * Convert a Vendor ID (VID) to a human readable Manufacturer string
+ */
+const char* LIBWDI_API wdi_vid_to_string(unsigned short vid);
+
+/*
  * Return a wdi_device_info list of USB devices
  * parameter: driverless_only - boolean
  */
@@ -207,7 +212,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options* options);
 /*
- * Set the log verobosity
+ * Set the log verbosity
  */
 int LIBWDI_API wdi_set_log_level(int level);
 

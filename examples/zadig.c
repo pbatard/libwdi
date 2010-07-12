@@ -43,7 +43,6 @@
 
 #include "../libwdi/libwdi.h"
 #include "resource.h"
-#include "usb_vendors.h"
 #include "zadig.h"
 #include "libconfig/libconfig.h"
 
@@ -713,6 +712,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char str_tmp[5];
 	char log_buf[STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
+	const char* vid_string;
 	int nb_devices, tmp, r;
 	DWORD delay, read_size, log_size;
 
@@ -927,8 +927,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
 					DestroyWindow(hToolTip);
-					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID),
-						(char*)find_usb_vendor(device->vid));
+					vid_string = wdi_vid_to_string(device->vid);
+					if (vid_string == NULL) {
+						vid_string = "Unknown Vendor";
+					}
+					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemText(hMain, IDC_PID, str_tmp);
 					if (device->is_composite) {

@@ -13,7 +13,7 @@ zadic_LDADD = -L../libwdi/.libs -lwdi
 zadig_rc.o: zadig.rc resource.h
 	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(RCFLAGS) -i $< -o $@
 
-zadig_SOURCES = zadig.c zadig_stdlg.c usb_vendors.c
+zadig_SOURCES = zadig.c zadig_stdlg.c
 zadig_CFLAGS = $(NO_CYGWIN) $(AM_CFLAGS)
 # static ensures that the exe can be shared as a standalone, and still allow driver installation
 zadig_LDFLAGS = -mwindows $(NO_CYGWIN) $(AM_LDFLAGS) -static

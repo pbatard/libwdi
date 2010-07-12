@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "usb_vendors.h"
+#include <stdlib.h>
 
 struct vendor_name {
 	unsigned short vid;
@@ -1893,7 +1893,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0xc251, "Keil Software, Inc." },
 };
 
-const char* find_usb_vendor(unsigned short vid)
+const char* wdi_vid_to_string(unsigned short vid)
 {
 	int i;
 
@@ -1902,5 +1902,5 @@ const char* find_usb_vendor(unsigned short vid)
 			return usb_vendor[i].name;
 		}
 	}
-	return "Unknown Vendor";
+	return NULL;
 }
