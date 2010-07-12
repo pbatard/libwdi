@@ -61,7 +61,7 @@ struct emb embeddable_fixed[] = {
 // Common driver files
 // On 64 bit, for WOW64, we must include the 32 bit libusb0 files as well
 #if defined(LIBUSB0_DIR)
-	{ LIBUSB0_DIR "\\bin\\x86\\libusb0.dll", "x86" },
+	{ LIBUSB0_DIR "\\bin\\x86\\libusb0_x86.dll", "x86" },
 	{ LIBUSB0_DIR "\\bin\\x86\\libusb0.sys", "x86" },
 	{ LIBUSB0_DIR "\\installer_license.txt", "license\\libusb-win32" },
 #endif

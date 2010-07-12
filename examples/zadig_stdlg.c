@@ -151,7 +151,7 @@ char* to_valid_filename(char* name, char* ext)
 	size_t i, j, k;
 	bool found;
 	char* ret;
-	char authorized[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_+-()";
+	char authorized[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_+-()[]'@&#";
 	char underscore[] = " ";
 
 	if ((name == NULL) || (ext == NULL)) {

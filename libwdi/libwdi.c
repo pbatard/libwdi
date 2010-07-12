@@ -692,11 +692,19 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	GUID guid;
 	int driver_type, r;
 	SYSTEMTIME system_time;
+	char* cat_name;
+	const char* inf_ext = ".inf";
 
 	MUTEX_START;
 
 	if (!dlls_available) {
 		init_dlls();
+	}
+
+	// Check the inf file provided and create the cat file name
+	if (strcmp(inf_name+strlen(inf_name)-4, inf_ext) != 0) {
+		wdi_err("inf name provided must have a '.inf' extension");
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	// Try to use the user's temp dir if no path is provided
@@ -737,7 +745,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
 	if (driver_type == WDI_USER) {
-		wdi_warn("Custom user driver - extracting binaries only");
+		wdi_warn("Custom driver - extracting binaries only (no inf/cat creation)");
 		MUTEX_RETURN extract_binaries(path);
 	}
 
@@ -780,7 +788,28 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
 	GetLocalTime(&system_time);
 	fprintf(fd, "Date = \"%02d/%02d/%04d\"\n", system_time.wMonth, system_time.wDay, system_time.wYear);
+
+	// Write the cat name
+	cat_name = safe_strdup(inf_name);
+	if (cat_name == NULL) {
+		MUTEX_RETURN WDI_ERROR_RESOURCE;
+	}
+	cat_name[strlen(inf_name)-3] = 'c';
+	cat_name[strlen(inf_name)-2] = 'a';
+	cat_name[strlen(inf_name)-1] = 't';
+	fprintf(fd, "CatName = \"%s\"\n", cat_name);
+	free(cat_name);
+
 	fwrite(inf[driver_type], strlen(inf[driver_type]), 1, fd);
+	fclose(fd);
+
+	// Create a blank cat file
+	filename[strlen(filename)-3] = 'c';
+	filename[strlen(filename)-2] = 'a';
+	filename[strlen(filename)-1] = 't';
+	fd = fopen(filename, "w");
+	fprintf(fd, "This file will contain the digital signature of the files to be installed\n"
+		"on the system.\nThis file will be provided by Microsoft upon certification of your drivers.");
 	fclose(fd);
 
 	wdi_dbg("succesfully created %s", filename);
