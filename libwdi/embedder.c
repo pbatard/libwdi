@@ -143,7 +143,7 @@ void add_user_files(void) {
 	int i;
 
 	// Switch slashes to backslashes
-	for (i=0; i<strlen(initial_dir); i++) {
+	for (i=0; i<(int)strlen(initial_dir); i++) {
 		if (initial_dir[i] == '/') {
 			initial_dir[i] = '\\';
 		}
