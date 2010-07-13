@@ -29,6 +29,7 @@
 #include <config.h>
 #include <ctype.h>
 #include <sddl.h>
+#include <fcntl.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -217,6 +218,63 @@ static PSID get_sid(void) {
 	}
 	free(tu);
 	return ret;
+}
+
+/*
+ * fopen equivalent, that uses CreateFile with security attributes
+ * to create file as the user of the application
+ */
+FILE *fcreate(const char *filename, const char *mode)
+{
+	HANDLE handle;
+	size_t i;
+	DWORD access_mode = 0;
+	SECURITY_ATTRIBUTES *ps = NULL;
+	int lowlevel_fd;
+
+#ifndef _DEBUG
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
+#endif
+
+	if ((filename == NULL) || (mode == NULL)) {
+		return NULL;
+	}
+
+	// Simple mode handling.
+	for (i=0; i<strlen(mode); i++) {
+		if (mode[i] == 'r') {
+			access_mode |= GENERIC_READ;
+		} else if (mode[i] == 'w') {
+			access_mode |= GENERIC_WRITE;
+		}
+	}
+	if (!(access_mode & GENERIC_WRITE)) {
+		// If the file is not used for writing, might as well use fopen
+		return NULL;
+	}
+
+	// Change the owner from admin to regular user
+	// Keep admin user for debug mode
+#ifndef _DEBUG
+	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
+	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
+	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+	s_attr.bInheritHandle = FALSE;
+	s_attr.lpSecurityDescriptor = &s_desc;
+	ps = &s_attr;
+#endif
+
+	handle = CreateFileA(filename, access_mode, FILE_SHARE_READ,
+		ps, CREATE_ALWAYS, 0, NULL);
+
+	if (handle == INVALID_HANDLE_VALUE) {
+		return NULL;
+	}
+
+	lowlevel_fd = _open_osfhandle((intptr_t)handle,
+		(access_mode&GENERIC_READ)?_O_RDWR:_O_WRONLY);
+	return _fdopen(lowlevel_fd, mode);
 }
 
 /*
@@ -635,25 +693,9 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 // extract the embedded binary resources
 int extract_binaries(char* path)
 {
-	HANDLE handle;
+	FILE *fd;
 	char filename[MAX_PATH_LENGTH];
 	int i, r;
-	DWORD tmp;
-	SECURITY_ATTRIBUTES *ps = NULL;
-
-	// Change the owner from admin to regular user
-	// Keep admin user for debug mode
-#ifndef _DEBUG
-	SECURITY_ATTRIBUTES s_attr;
-	SECURITY_DESCRIPTOR s_desc;
-
-	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	s_attr.bInheritHandle = FALSE;
-	s_attr.lpSecurityDescriptor = &s_desc;
-	ps = &s_attr;
-#endif
 
 	for (i=0; i<nb_resources; i++) {
 		safe_strcpy(filename, MAX_PATH_LENGTH, path);
@@ -667,16 +709,14 @@ int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
 
-		handle = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_READ,
-			ps, CREATE_ALWAYS, 0, NULL);
-
-		if (handle == INVALID_HANDLE_VALUE) {
+		fd = fcreate(filename, "w");
+		if (fd == NULL) {
 			wdi_err("failed to create file: %s", filename);
 			return WDI_ERROR_RESOURCE;
 		}
 
-		WriteFile(handle, resource[i].data, resource[i].size, &tmp, NULL);
-		CloseHandle(handle);
+		fwrite(resource[i].data, 1, resource[i].size, fd);
+		fclose(fd);
 	}
 
 	wdi_dbg("successfully extracted files to %s", path);
@@ -768,7 +808,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
 
-	fd = fopen(filename, "w");
+	fd = fcreate(filename, "w");
 	if (fd == NULL) {
 		wdi_err("failed to create file: %s", filename);
 		MUTEX_RETURN WDI_ERROR_ACCESS;
@@ -807,7 +847,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	filename[strlen(filename)-3] = 'c';
 	filename[strlen(filename)-2] = 'a';
 	filename[strlen(filename)-1] = 't';
-	fd = fopen(filename, "w");
+	fd = fcreate(filename, "w");
 	fprintf(fd, "This file will contain the digital signature of the files to be installed\n"
 		"on the system.\nThis file will be provided by Microsoft upon certification of your drivers.");
 	fclose(fd);
