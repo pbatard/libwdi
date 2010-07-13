@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include "libwdi.h"
 
 struct vendor_name {
 	unsigned short vid;
@@ -1893,7 +1894,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0xc251, "Keil Software, Inc." },
 };
 
-const char* wdi_vid_to_string(unsigned short vid)
+const char* LIBWDI_API wdi_vid_to_string(unsigned short vid)
 {
 	int i;
 
