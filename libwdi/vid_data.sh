@@ -1,7 +1,5 @@
 #! /bin/sh
-#
 
-# 
 echo This file recreates vid_data.c according http://www.linux-usb.org/usb.ids
 echo
 
@@ -73,8 +71,11 @@ const char* LIBWDI_API wdi_vid_to_string(unsigned short vid)\
 # Main Data
 /^[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]  /!d
 s/^\([0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]\)  \(.*\)/\	{ 0x\1, "\2" \},/
+s/???/?/
+s/??/?/
 _EOF
 
 # Run sed to generate the source.
 sed -f cmd.sed usb.ids > vid_data.c
+#rm cmd.sed
 echo Done.
