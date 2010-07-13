@@ -232,7 +232,7 @@ main (int argc, char *argv[])
 			}
 		}
 		CloseHandle(header_handle);
-    }
+	}
 
 	if (!rebuild) {
 		printf("  resources haven't changed - skipping step\n");
@@ -307,7 +307,7 @@ main (int argc, char *argv[])
 	for (i=0; i<nb_embeddables; i++) {
 		_splitpath(embeddable[i].file_name, NULL, NULL, fname, ext);
 		strncat(fname, ext, sizeof(fname));
- 		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
+		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"");
 		// We need to handle backslash sequences
 		for (j=0; j<(int)strlen(embeddable[i].extraction_subdir); j++) {
@@ -328,7 +328,9 @@ main (int argc, char *argv[])
 		safe_free(embeddable[i].extraction_subdir);
 		safe_free(embeddable[i].file_name);
 	}
-	safe_free(embeddable);
+	if (embeddable != embeddable_fixed) {
+		safe_free(embeddable);
+	}
 #endif
 	return 0;
 
