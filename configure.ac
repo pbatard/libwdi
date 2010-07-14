@@ -113,11 +113,18 @@ if test "x$compiler_has_m64" != "xyes" -a "x$compiler_has_m32" != "xyes"; then
 fi
 
 # 32 and 64 bit selection
-AC_ARG_ENABLE(32bit,
-	AS_HELP_STRING([--enable-32bit], [build 32 bit compatible library (default y)]))
-AC_ARG_ENABLE(64bit,
-	AS_HELP_STRING([--enable-64bit], [build 64 bit compatible library (default y)]))
-
+AC_ARG_ENABLE([32bit], [AS_HELP_STRING([--enable-32bit],
+	[build 32 bit compatible library (default y)])],
+	[enable_32bit=$enableval],
+	[enable_32bit='yes'])	
+AC_ARG_ENABLE([64bit], [AS_HELP_STRING([--enable-64bit], 
+	[build 64 bit compatible library (default y)])],
+	[enable_64bit='$enableval'],
+	[enable_64bit='yes'])
+AC_ARG_ENABLE([ia64], [AS_HELP_STRING([--enable-ia64], 
+	[embed IA64/Itanium driver files (default n)])],
+	[enable_ia64='$enableval'],
+	[enable_ia64='no'])
 if test "x$enable_64bit" == "xno" -a "x$enable_32bit" == "xno"; then
 	AC_MSG_ERROR([you cannot disable both 32 and 64 bit support])
 fi
@@ -140,16 +147,20 @@ if test "x$enable_32bit" != "xno" -a "x$compiler_has_m32" == "xno"; then
 fi
 
 # define the automake and config.h variables
-if test "x$enable_64bit" != "xno"; then
-	AC_DEFINE([OPT_M64], [], [64 bit support])
-	AC_SUBST(OPT_M64)	
-fi
-AM_CONDITIONAL([OPT_M64], [test "x$enable_64bit" != "xno"])
 if test "x$enable_32bit" != "xno"; then
 	AC_DEFINE([OPT_M32], [], [32 bit support])
 	AC_SUBST(OPT_M32)
 fi
 AM_CONDITIONAL([OPT_M32], [test "x$enable_32bit" != "xno"])
+if test "x$enable_64bit" != "xno"; then
+	AC_DEFINE([OPT_M64], [], [64 bit support])
+	AC_SUBST(OPT_M64)	
+fi
+AM_CONDITIONAL([OPT_M64], [test "x$enable_64bit" != "xno"])
+if test "x$enable_ia64" != "xno"; then
+	AC_DEFINE([OPT_IA64], [], [embed IA64 driver files])
+	AC_SUBST(OPT_IA64)	
+fi
 
 if test "x$enable_64bit" != "xno"; then
 	if test "x$enable_32bit" != "xno"; then
@@ -166,21 +177,29 @@ if test "x$DDK_DIR" != "x"; then
 	if test "x$enable_64bit" != "xno"; then
 	# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
 	AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
-		[AC_MSG_ERROR([the WinUSB driver files could not be detected (--with-ddkdir)])])
+		[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
 	fi
 	if test "x$enable_32bit" != "xno"; then
 	AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
-		[AC_MSG_ERROR([the WinUSB driver files could not be detected (--with-ddkdir)])])
+		[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-ddkdir)])])
+	fi
+	if test "x$enable_ia64" != "xno"; then
+	AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/ia64/winusbcoinstaller2.dll],,
+		[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
 	fi
 fi
 
 if test "x$LIBUSB0_DIR" != "x"; then
 	# check that the required libusb0 driver files are available
 	AC_CHECK_FILES([$LIBUSB0_DIR/bin/x86/libusb0.sys $LIBUSB0_DIR/bin/x86/libusb0_x86.dll],,
-		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
+		[AC_MSG_ERROR([the libusb0 x86 driver files could not be detected (--with-libusb0)])])
 	if test "x$enable_64bit" != "xno"; then
 	AC_CHECK_FILES([$LIBUSB0_DIR/bin/amd64/libusb0.sys $LIBUSB0_DIR/bin/amd64/libusb0.dll],,
-		[AC_MSG_ERROR([the libusb0 driver files could not be detected (--with-libusb0)])])
+		[AC_MSG_ERROR([the libusb0 amd64 driver files could not be detected (--with-libusb0)])])
+	fi
+	if test "x$enable_ia64" != "xno"; then
+	AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
+		[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
 	fi
 fi
 

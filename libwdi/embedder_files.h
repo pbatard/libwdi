@@ -58,6 +58,18 @@ struct emb embeddable_fixed[] = {
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
 
+// IA64 (Itanium) driver files
+#if defined(OPT_IA64)
+#if defined(DDK_DIR)
+	{ DDK_DIR "\\redist\\wdf\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
+	{ DDK_DIR "\\redist\\winusb\\ia64\\winusbcoinstaller2.dll", "ia64" },
+#endif
+#if defined(LIBUSB0_DIR)
+	{ LIBUSB0_DIR "\\bin\\ia64\\libusb0.dll", "ia64" },
+	{ LIBUSB0_DIR "\\bin\\ia64\\libusb0.sys", "ia64" },
+#endif
+#endif
+
 // Common driver files
 // On 64 bit, for WOW64, we must include the 32 bit libusb0 files as well
 #if defined(LIBUSB0_DIR)

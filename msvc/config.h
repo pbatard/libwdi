@@ -25,6 +25,9 @@
 /* 64 bit support */
 #define OPT_M64
 
+/* embed IA64 driver files */
+//#define OPT_IA64
+
 /* Debug message logging */
 //#define ENABLE_DEBUG_LOGGING
 
