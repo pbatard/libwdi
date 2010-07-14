@@ -654,8 +654,6 @@ void center_dialog(HWND dialog)
  */
 INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	char* url = NULL;
-
 	switch (message) {
 	case WM_INITDIALOG:
 		center_dialog(hDlg);
@@ -664,14 +662,7 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		switch (((LPNMHDR)lParam)->code) {
 		case NM_CLICK:
 		case NM_RETURN:
-			// We have only one URL on the About box
-			url = wchar_to_utf8(((PNMLINK)lParam)->item.szUrl);
-			if (url != NULL) {
-				ShellExecuteA(hDlg, "open", url, NULL, NULL, SW_SHOWNORMAL);
-				safe_free(url);
-			} else {
-				dprintf("Could not open URL\n");
-			}
+			ShellExecuteA(hDlg, "open", LIBWDI_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
 		}
 		break;
