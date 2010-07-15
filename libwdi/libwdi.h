@@ -163,15 +163,26 @@ struct wdi_device_info {
 /*
  * Optional settings, used by libwdi functions
  */
-struct wdi_options {
-	/** prepare_driver: type of driver to use. Should be either WDI_WINUSB, WDI_LIBUSB or WDI_USER */
-	int driver_type;
-	/** create_list: list all devices, instead of just the ones that are driverless */
+
+// wdi_create_list options
+struct wdi_options_create_list {
+	/** list all devices, instead of just the ones that are driverless */
 	bool list_all;
-	/** create_list: also list generic hubs and composite parent devices */
+	/** also list generic hubs and composite parent devices */
 	bool list_hubs;
-	/** create_list: trim trailing whitespaces from the description string */
+	/** trim trailing whitespaces from the description string */
 	bool trim_whitespaces;
+};
+
+// wdi_prepare_driver options:
+struct wdi_options_prepare_driver {
+	/** type of driver to use. Should be either WDI_WINUSB, WDI_LIBUSB or WDI_USER */
+	int driver_type;
+};
+
+// wdi_install_driver options:
+struct wdi_options_install_driver {
+	bool undefined;
 };
 
 /*
@@ -193,7 +204,8 @@ const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid);
  * Return a wdi_device_info list of USB devices
  * parameter: driverless_only - boolean
  */
-int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options* options);
+int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
+							   struct wdi_options_create_list* options);
 
 /*
  * Release a wdi_device_info list allocated by the previous call
@@ -204,13 +216,13 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
  * Create an inf file for a specific device
  */
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options* options);
+								  char* inf_name, struct wdi_options_prepare_driver* options);
 
 /*
  * Install a driver for a specific device
  */
 int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options* options);
+								  char* inf_name, struct wdi_options_install_driver* options);
 /*
  * Set the log verbosity
  */

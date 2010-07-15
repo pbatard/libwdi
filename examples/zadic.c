@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 	int c;
 	struct wdi_device_info *device, *list;
 	char* path = DEFAULT_DIR;
-	static struct wdi_options options = {WDI_WINUSB, false, true};
+	static struct wdi_options_create_list cl_options = {false, false, true};
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			// These options set a flag.
 			{"noprompt", no_argument, &prompt_flag, 0},
-			{"usealldevices", no_argument, &options.list_all, 1},
+			{"usealldevices", no_argument, &cl_options.list_all, 1},
 			{"useinf", no_argument, &use_supplied_inf_flag, 1},
 			{"iface", required_argument, 0, 'a'},
 			{"vid", required_argument, 0, 'b'},
@@ -126,7 +126,7 @@ main(int argc, char *argv[])
 			abort ();
 		}
 	}
-	r = wdi_create_list(&list, &options);
+	r = wdi_create_list(&list, &cl_options);
 	switch (r) {
 	case WDI_SUCCESS:
 		break;
@@ -163,11 +163,11 @@ main(int argc, char *argv[])
 		if (use_supplied_inf_flag == 0) {
 			if (wdi_prepare_driver(device, path,INF_NAME, NULL) == WDI_SUCCESS) {
 				printf("installing wdi driver with <%s> at <%s>\n",INF_NAME, path);
-				wdi_install_driver(device, path, INF_NAME, &options);
+				wdi_install_driver(device, path, INF_NAME, NULL);
 			}
 		} else {
 			printf("installing wdi driver with <%s> at <%s>\n",INF_NAME, path);
-			wdi_install_driver(device, path, INF_NAME, &options);
+			wdi_install_driver(device, path, INF_NAME, NULL);
 		}
 	}
 	wdi_destroy_list(list);

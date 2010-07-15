@@ -457,7 +457,8 @@ static int init_dlls(void)
 }
 
 // List USB devices
-int LIBWDI_API wdi_create_list(struct wdi_device_info** list, struct wdi_options* options)
+int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
+							   struct wdi_options_create_list* options)
 {
 	unsigned i, j, tmp;
 	unsigned unknown_count = 1;
@@ -725,7 +726,7 @@ int extract_binaries(char* path)
 
 // Create an inf and extract coinstallers in the directory pointed by path
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options* options)
+								  char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
@@ -952,7 +953,7 @@ int process_message(char* buffer, DWORD size)
 
 // Run the elevated installer
 int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options* options)
+								  char* inf_name, struct wdi_options_install_driver* options)
 {
 	SHELLEXECUTEINFO shExecInfo;
 	STARTUPINFO si;
