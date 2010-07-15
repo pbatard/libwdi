@@ -111,7 +111,7 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 
 	if (truncated) {
 		WriteFile(logger_wr_handle, truncation_notice,
-			sizeof(truncation_notice), &junk, NULL);
+			strlen(truncation_notice)+1, &junk, NULL);
 		log_messages_pending++;
 		PostMessage(logger_dest, logger_msg, (WPARAM)level, 0);
 	}
