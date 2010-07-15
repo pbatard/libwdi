@@ -30,9 +30,9 @@ embedder_SOURCES = embedder.h embedder_files.h embedder.c
 EXTRA_DIST = $(LIB_SRC)
 
 libwdi_rc.lo: libwdi.rc
-	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(RCFLAGS) -i $< -o $@
+	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
 
-libwdi_la_CFLAGS = $(NO_CYGWIN) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
+libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(NO_CYGWIN) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
 libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)

@@ -163,14 +163,26 @@ if test "x$enable_ia64" != "xno"; then
 fi
 
 if test "x$enable_64bit" != "xno"; then
+	# the default is to produce 32 bit, when both 64 and 32 bit support are available
 	if test "x$enable_32bit" != "xno"; then
-		AC_MSG_NOTICE([will produce a 32 bit library, compatible with 64 bit platforms])
+		AC_MSG_NOTICE([will produce 32 bit library and samples, compatible with 64 bit platforms])
+		AC_MSG_NOTICE([if you want to produce 64 bit only library and samples, use --disable-32bit])
+		ARCH_CFLAGS="-m32"
+		ARCH_RCFLAGS="--target=pe-i386"
+		
 	else
 		AC_MSG_WARN([will produce a 64 bit library that is INCOMPATIBLE with 32 bit platforms])
+		ARCH_CFLAGS="-m64 -D_WIN64"
+		ARCH_RCFLAGS=""
 	fi
 else
 	AC_MSG_WARN([will produce a 32 bit library that is INCOMPATIBLE with 64 bit platforms])
+	ARCH_CFLAGS=""
+	ARCH_RCFLAGS=""
+	
 fi
+AC_SUBST([ARCH_CFLAGS])
+AC_SUBST([ARCH_RCFLAGS])
 
 if test "x$DDK_DIR" != "x"; then
 	# check that the required WinUSB DDK files are available

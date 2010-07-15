@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libconfig.la
 
-libconfig_la_CFLAGS = $(LIBCONFIG_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -UHAVE_CONFIG_H -Wno-strict-prototypes
+libconfig_la_CFLAGS = $(ARCH_CFLAGS) $(LIBCONFIG_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -UHAVE_CONFIG_H -Wno-strict-prototypes
 libconfig_la_LDLAGS = $(AM_LDFLAGS)
 libconfig_la_LIBADD = $(LIBCONFIG_LIBADD)
 libconfig_la_SOURCES = libconfig.c scanner.c grammar.c parsectx.h wincompat.h \
