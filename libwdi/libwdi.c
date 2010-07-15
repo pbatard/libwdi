@@ -290,7 +290,11 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
 	switch (driver_type) {
 	case WDI_WINUSB:
 #if defined(DDK_DIR)
-		// For now, WinUSB is always included
+		// WinUSB is not supported on Win2k
+		GET_WINDOWS_VERSION;
+		if (windows_version == WINDOWS_2K) {
+			return false;
+		}
 		return true;
 #else
 		return false;

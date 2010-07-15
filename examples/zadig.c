@@ -925,7 +925,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						display_driver(false);
 					}
 					pd_options.driver_type = default_driver_type;
-					if (!select_next_driver(0)) {
+					if ((!select_next_driver(0)) && (!select_next_driver(1))) {
 						dprintf("no driver is selectable in libwdi!");
 					}
 					// Display the VID,PID,MI
