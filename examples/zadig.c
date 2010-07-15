@@ -87,13 +87,18 @@ config_setting_t *setting;
  */
 void w_printf_v(bool update_status, const char *format, va_list args)
 {
-	char str[STR_BUFFER_SIZE];
+	char str[STR_BUFFER_SIZE+2];
 	int size;
+	size_t slen;
 
 	size = safe_vsnprintf(str, STR_BUFFER_SIZE, format, args);
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
 	}
+	slen = strlen(str);
+	str[slen] = '\r';
+	str[slen+1] = '\n';
+	str[slen+2] = 0;
 	// Set cursor to the end of the buffer
 	Edit_SetSel(hInfo, MAX_LOG_SIZE , MAX_LOG_SIZE);
 	Edit_ReplaceSel(hInfo, str);
@@ -134,7 +139,7 @@ int display_devices(void)
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
 			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev);
 		} else {
-			dprintf("could not populate dropdown list past device #%d\n", index);
+			dprintf("could not populate dropdown list past device #%d", index);
 		}
 
 		// Select by Hardware ID if one's available
@@ -221,7 +226,7 @@ int install_driver(void)
 		// If the device is created from scratch, override the existing device
 		dev = calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
-			dprintf("could not create new device_info struct for installation\n");
+			dprintf("could not create new device_info struct for installation");
 			r = WDI_ERROR_RESOURCE; goto out;
 		}
 		need_dealloc = true;
@@ -234,13 +239,13 @@ int install_driver(void)
 		dev->desc = safe_strdup(str_buf);
 		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
-			dprintf("could not convert VID string - aborting\n");
+			dprintf("could not convert VID string - aborting");
 			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->vid = (unsigned short)tmp;
 		GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
-			dprintf("could not convert PID string - aborting\n");
+			dprintf("could not convert PID string - aborting");
 			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->pid = (unsigned short)tmp;
@@ -256,13 +261,13 @@ int install_driver(void)
 	}
 
 	inf_name = to_valid_filename(dev->desc, ".inf");
-	dprintf("Using inf name: %s\n", inf_name);
+	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
 	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
-		dsprintf("Succesfully extracted driver files.\n");
+		dsprintf("Succesfully extracted driver files.");
 		// Perform the install if not extracting the files only
 		if ((pd_options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
@@ -271,7 +276,7 @@ int install_driver(void)
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
 				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
-			dsprintf("Installing driver. Please wait...\n");
+			dsprintf("Installing driver. Please wait...");
 			r = wdi_install_driver(dev, extraction_path, inf_name, NULL);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
@@ -281,7 +286,7 @@ int install_driver(void)
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
 	} else {
-		dsprintf("Could not extract files\n");
+		dsprintf("Could not extract files");
 	}
 out:
 	if (need_dealloc) {
@@ -416,12 +421,12 @@ void toggle_edit(void)
 	if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 		combo_breaker(true);
 		if (editable_desc != NULL) {
-			dprintf("program assertion failed - editable_desc != NULL\n");
+			dprintf("program assertion failed - editable_desc != NULL");
 			return;
 		}
 		editable_desc = malloc(STR_BUFFER_SIZE);
 		if (editable_desc == NULL) {
-			dprintf("could not allocate buffer to edit description\n");
+			dprintf("could not allocate buffer to edit description");
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 			combo_breaker(false);
 			return;
@@ -542,7 +547,7 @@ void init_dialog(HWND hDlg)
 	// Setup logging
 	err = wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
 	if (err != WDI_SUCCESS) {
-		dprintf("Unable to access log output - logging will be disabled (%s)\n", wdi_strerror(err));
+		dprintf("Unable to access log output - logging will be disabled (%s)", wdi_strerror(err));
 	}
 	wdi_set_log_level(LOG_LEVEL_DEBUG);
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
@@ -584,18 +589,18 @@ bool parse_ini(void) {
 
 	// Check if the ini file exists
 	if (GetFileAttributes(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
-		dprintf("could not open ini file '%s'\n", INI_NAME);
+		dprintf("could not open ini file '%s'", INI_NAME);
 		return false;
 	}
 
 	// Parse the file
 	if (!config_read_file(&cfg, INI_NAME)) {
-		dprintf("%s:%d - %s\n", config_error_file(&cfg),
+		dprintf("%s:%d - %s", config_error_file(&cfg),
 			config_error_line(&cfg), config_error_text(&cfg));
 		return false;
 	}
 
-	dprintf("reading ini file '%s'\n", INI_NAME);
+	dprintf("reading ini file '%s'", INI_NAME);
 
 	// Set the various boolean options
 	config_lookup_bool(&cfg, "advanced_mode", &advanced_mode);
@@ -612,11 +617,11 @@ bool parse_ini(void) {
 	// Set the default driver
 	config_lookup_int(&cfg, "default_driver", &default_driver_type);
 	if ((default_driver_type < 0) || (default_driver_type >= WDI_NB_DRIVERS)) {
-		dprintf("invalid value '%d' for ini option 'default_driver'\n", default_driver_type);
+		dprintf("invalid value '%d' for ini option 'default_driver'", default_driver_type);
 		default_driver_type = WDI_WINUSB;
 	}
 	if (!wdi_is_driver_supported(default_driver_type)) {
-		dprintf("'%s' driver is not available, ", driver_display_name[default_driver_type]);
+		dprintf("'%s' driver is not available", driver_display_name[default_driver_type]);
 		for (i=(default_driver_type+1)%WDI_NB_DRIVERS; i!=default_driver_type; i++) {
 			if (wdi_is_driver_supported(i)) {
 				default_driver_type = i;
@@ -628,9 +633,9 @@ bool parse_ini(void) {
 				"The application will close", "No Driver Available");
 			EndDialog(hMain, 0);
 		}
-		dprintf("falling back to '%s' for default driver\n", driver_display_name[default_driver_type]);
+		dprintf("falling back to '%s' for default driver", driver_display_name[default_driver_type]);
 	} else {
-		dprintf("default driver set to '%s'\n", driver_display_name[default_driver_type]);
+		dprintf("default driver set to '%s'", driver_display_name[default_driver_type]);
 	}
 
 	return true;
@@ -651,7 +656,7 @@ bool parse_preset(char* filename)
 	}
 
 	if (!config_read_file(&cfg, filename)) {
-		dprintf("%s:%d - %s\n", config_error_file(&cfg),
+		dprintf("%s:%d - %s", config_error_file(&cfg),
 			config_error_line(&cfg), config_error_text(&cfg));
 		return false;
 	}
@@ -751,7 +756,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			delay = NOTIFICATION_DELAY;
 			notification_delay_thid = _beginthread(notification_delay_thread, 0, (void*)(uintptr_t)delay);
 			if (notification_delay_thid == -1L) {
-				dprintf("Unable to create notification delay thread - notification events will be disabled\n");
+				dprintf("Unable to create notification delay thread - notification events will be disabled");
 			}
 		}
 		return (INT_PTR)TRUE;
@@ -776,11 +781,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return (INT_PTR)TRUE;
 
 	case UM_LOGGER_EVENT:
-		r = wdi_read_logger(log_buf, STR_BUFFER_SIZE, &read_size);
+		r = wdi_read_logger(log_buf, sizeof(log_buf), &read_size);
 		if (r == WDI_SUCCESS) {
-			dprintf("%s\n", log_buf);
+			dprintf("%s", log_buf);
 		} else {
-			dprintf("wdi_read_logger: error %s\n", wdi_strerror(r));
+			dprintf("wdi_read_logger: error %s", wdi_strerror(r));
 		}
 		return (INT_PTR)TRUE;
 
@@ -840,9 +845,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
-			dsprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=0)?"s":"");
+			dsprintf("%d device%s found.", nb_devices+1, (nb_devices!=0)?"s":"");
 		} else {
-			dprintf("%d device%s found.\n", nb_devices+1, (nb_devices!=0)?"s":"");
+			dprintf("%d device%s found.", nb_devices+1, (nb_devices!=0)?"s":"");
 			from_install = false;
 		}
 		return (INT_PTR)TRUE;
@@ -905,7 +910,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					if (device->desc == NULL) {
 						editable_desc = malloc(STR_BUFFER_SIZE);
 						if (editable_desc == NULL) {
-							dprintf("could not use modified device description\n");
+							dprintf("could not use modified device description");
 							editable_desc = device->desc;
 						} else {
 							safe_sprintf(editable_desc, STR_BUFFER_SIZE, "(Unknown Device)");
@@ -953,14 +958,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			r = run_with_progress_bar(install_driver);
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
-					dsprintf("Driver Installation: SUCCESS\n");
+					dsprintf("Driver Installation: SUCCESS");
 					notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
 				}
 			} else if (r == WDI_ERROR_USER_CANCEL) {
-				dsprintf("Driver Installation: Cancelled by User\n");
+				dsprintf("Driver Installation: Cancelled by User");
 				notification(MSG_WARNING, "Driver installation cancelled by user.", "Driver Installation");
 			} else {
-				dsprintf("Driver Installation: FAILED (%s)\n", wdi_strerror(r));
+				dsprintf("Driver Installation: FAILED (%s)", wdi_strerror(r));
 				notification(MSG_ERROR, "The driver installation failed.", "Driver Installation");
 			}
 			break;
@@ -982,7 +987,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				safe_free(filepath);
 				safe_free(log_buffer);
 			} else {
-				dprintf("could not allocate buffer to save log\n");
+				dprintf("could not allocate buffer to save log");
 			}
 			break;
 		case IDC_TARGET:	// prevent focus

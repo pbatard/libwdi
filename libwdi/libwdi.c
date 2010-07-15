@@ -169,23 +169,28 @@ char *windows_error_str(uint32_t retval)
 static char err_string[STR_BUFFER_SIZE];
 
 	DWORD size;
+	size_t i;
 	uint32_t errcode, format_errcode;
 
 	errcode = retval?retval:GetLastError();
 
 	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", errcode);
 
-	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
-		STR_BUFFER_SIZE, NULL);
-	if (size == 0)
-	{
+		STR_BUFFER_SIZE - strlen(err_string), NULL);
+	if (size == 0) {
 		format_errcode = GetLastError();
 		if (format_errcode)
 			safe_sprintf(err_string, STR_BUFFER_SIZE,
 				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
 		else
 			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", errcode);
+	} else {
+		// Remove CR/LF terminators
+		for (i=strlen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
+			err_string[i] = 0;
+		}
 	}
 	return err_string;
 }
@@ -570,7 +575,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
 				wdi_warn("could not read device description for %d: %s",
-					i, windows_error_str(0));
+					i, "yorgl"); // windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 			}
 		} else {

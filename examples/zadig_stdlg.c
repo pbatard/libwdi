@@ -243,18 +243,18 @@ PSID get_sid(void) {
 	PSID ret = NULL;
 
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
-		dprintf("Could not obtain process token for SID: %s\n", windows_error_str(0));
+		dprintf("Could not obtain process token for SID: %s", windows_error_str(0));
 		return ret;
 	}
 
 	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			dprintf("Could not get TokenUser size for SID: %s\n", windows_error_str(0));
+			dprintf("Could not get TokenUser size for SID: %s", windows_error_str(0));
 			return ret;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
 		if (tu == NULL) {
-			dprintf("Could not allocate TokenUser for SID\n");
+			dprintf("Could not allocate TokenUser for SID");
 			return ret;
 		}
 	}
@@ -321,13 +321,13 @@ void browse_for_folder(void) {
 		hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
 			&IID_IFileOpenDialog, (LPVOID)&pfod);
 		if (FAILED(hr)) {
-			dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
+			dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
 			pfod = NULL;	// Just in case
 			goto fallback;
 		}
 		hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
 		if (FAILED(hr)) {
-			dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
+			dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
 			goto fallback;
 		}
 		// Set the initial folder (if the path is invalid, will simply use last)
@@ -363,17 +363,17 @@ void browse_for_folder(void) {
 				tmp_path = wchar_to_utf8(wpath);
 				CoTaskMemFree(wpath);
 				if (tmp_path == NULL) {
-					dprintf("Could not convert path\n");
+					dprintf("Could not convert path");
 				} else {
 					SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
 					safe_free(tmp_path);
 				}
 			} else {
-				dprintf("Failed to set folder option for FileOpenDialog: error %X\n", hr);
+				dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
 			}
 		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
 			// If it's not a user cancel, assume the dialog didn't show and fallback
-			dprintf("could not show FileOpenDialog: error %X\n", hr);
+			dprintf("could not show FileOpenDialog: error %X", hr);
 			goto fallback;
 		}
 		pfod->lpVtbl->Release(pfod);
@@ -427,7 +427,7 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size)
 		&s_attr, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
 
 	if (handle == INVALID_HANDLE_VALUE) {
-		dprintf("Could not %s file '%s'\n", save?"create":"open", path);
+		dprintf("Could not %s file '%s'", save?"create":"open", path);
 		goto out;
 	}
 
@@ -437,18 +437,18 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size)
 		*size = GetFileSize(handle, NULL);
 		*buffer = malloc(*size);
 		if (*buffer == NULL) {
-			dprintf("Could not allocate buffer for reading file\n");
+			dprintf("Could not allocate buffer for reading file");
 			goto out;
 		}
 		r = ReadFile(handle, *buffer, *size, size, NULL);
 	}
 
 	if (!r) {
-		dprintf("I/O Error: %s\n", windows_error_str(0));
+		dprintf("I/O Error: %s", windows_error_str(0));
 		goto out;
 	}
 
-	dsprintf("%s '%s'\n", save?"Saved file as":"Opened file", path);
+	dsprintf("%s '%s'", save?"Saved file as":"Opened file", path);
 	ret = true;
 
 out:
@@ -503,7 +503,7 @@ char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_de
 			&IID_IFileDialog, (LPVOID)&pfd);
 
 		if (FAILED(hr)) {
-			dprintf("CoCreateInstance for FileOpenDialog failed: error %X\n", hr);
+			dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
 			pfd = NULL;	// Just in case
 			goto fallback;
 		}
@@ -546,7 +546,7 @@ char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_de
 			}
 		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
 			// If it's not a user cancel, assume the dialog didn't show and fallback
-			dprintf("could not show FileOpenDialog: error %X\n", hr);
+			dprintf("could not show FileOpenDialog: error %X", hr);
 			goto fallback;
 		}
 		pfd->lpVtbl->Release(pfd);
@@ -591,7 +591,7 @@ fallback:
 	} else {
 		tmp = CommDlgExtendedError();
 		if (tmp != 0) {
-			dprintf("Could not selected file for %s. Error %X\n", save?"save":"open", tmp);
+			dprintf("Could not selected file for %s. Error %X", save?"save":"open", tmp);
 		}
 	}
 	safe_free(ext_string);
@@ -773,14 +773,14 @@ INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		return (INT_PTR)FALSE;
 	case UM_PROGRESS_START:
 		if (progress_thid != -1L) {
-			dprintf("program assertion failed - another operation is in progress\n");
+			dprintf("program assertion failed - another operation is in progress");
 		} else {
 			// Using a thread prevents application freezout on security warning
 			progress_thid = _beginthread(progress_thread, 0, NULL);
 			if (progress_thid != -1L) {
 				return (INT_PTR)TRUE;
 			}
-			dprintf("unable to create progress_thread\n");
+			dprintf("unable to create progress_thread");
 		}
 		// Fall through and return -1 as an error
 		wParam = (WPARAM)-1;
@@ -800,7 +800,7 @@ INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 			} else if ( (installation_time > 300) && (progress_thid != -1L) ) {
 				// Wait 300 (loose) seconds and kill the thread
 				// 300 secs is the timeout for driver installation on Vista
-				dprintf("progress timeout expired - KILLING THREAD!\n");
+				dprintf("progress timeout expired - KILLING THREAD!");
 				handle = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)progress_thid);
 				TerminateThread(handle, -1);
 				CloseHandle(handle);
