@@ -44,16 +44,13 @@ extern char *windows_error_str(uint32_t retval);
 void pipe_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
-	// NB: we can't easily use growable buffer allocation, as the secure MS
-	// vprintf functions require an exception handler on buffer overflow
-	// To keep things simple, if a log entry is too long, it is truncated.
 	char buffer[LOGBUF_SIZE];
 	DWORD junk;
 	int size1, size2;
 	bool truncated = false;
 	const char* prefix;
 	const char* truncation_notice = "TRUNCATION detected for above line - Please "
-		"send this log excerpt to the libwdi developers so that we can fix it.";
+		"send this log excerpt to the libwdi developers so we can fix it.";
 
 	if (logger_wr_handle == INVALID_HANDLE_VALUE)
 		return;

@@ -320,6 +320,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type)
 static int check_dir(char* path, bool create)
 {
 	struct _stat st;
+	int r;
 	SECURITY_ATTRIBUTES *ps = NULL;
 
 	// Change the owner from admin to regular user
@@ -354,8 +355,18 @@ static int check_dir(char* path, bool create)
 	}
 
 	// SHCreateDirectoryExA creates subdirectories as required
-	if (SHCreateDirectoryExA(NULL, path, ps) != ERROR_SUCCESS) {
-		wdi_err("could not create directory %s", path);
+	r = SHCreateDirectoryExA(NULL, path, ps);
+	switch(r) {
+	case ERROR_SUCCESS:
+		return WDI_SUCCESS;
+	case ERROR_BAD_PATHNAME:
+		wdi_err("directory path is invalid %s", path);
+		return WDI_ERROR_INVALID_PARAM;
+	case ERROR_FILENAME_EXCED_RANGE:
+		wdi_err("directory name is too long %s", path);
+		return WDI_ERROR_INVALID_PARAM;
+	default:
+		wdi_err("unable to create directory %s", path);
 		return WDI_ERROR_ACCESS;
 	}
 
@@ -971,9 +982,9 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
-	DWORD err, rd_count;
+	DWORD err, rd_count, to_read, offset, bufsize = STR_BUFFER_SIZE;
 	BOOL is_x64 = false;
-	char buffer[STR_BUFFER_SIZE];
+	char *buffer = NULL, *new_buffer;
 
 	MUTEX_START;
 
@@ -1101,8 +1112,17 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	r = WDI_SUCCESS;
+	offset = 0;
+	buffer = malloc(bufsize);
+	if (buffer == NULL) {
+		wdi_err("unable to alloc buffer: aborting");
+		r =WDI_ERROR_RESOURCE; goto out;
+	}
+
 	while (r == WDI_SUCCESS) {
-		if (ReadFile(pipe_handle, buffer, STR_BUFFER_SIZE, &rd_count, &overlapped)) {
+		to_read = bufsize-offset;	// rd_count is useless on sync (reset to 0)
+		if (ReadFile(pipe_handle, &buffer[offset], to_read, &rd_count, &overlapped)) {
+			offset = 0;
 			// Message was read synchronously
 			r = process_message(buffer, rd_count);
 		} else {
@@ -1123,6 +1143,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 					if (GetOverlappedResult(pipe_handle, &overlapped, &rd_count, FALSE)) {
 						// Message was read asynchronously
 						r = process_message(buffer, rd_count);
+						offset = 0;
 					} else {
 						switch(GetLastError()) {
 						case ERROR_BROKEN_PIPE:
@@ -1132,8 +1153,16 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 							}
 							r = CHECK_COMPLETION; goto out;
 						case ERROR_MORE_DATA:
-							wdi_warn("program assertion failed: message overflow");
-							r = process_message(buffer, rd_count);
+							bufsize *= 2;
+							wdi_dbg("message overflow (async) - increasing buffer size to %d bytes", bufsize);
+							new_buffer = realloc(buffer, bufsize);
+							if (new_buffer == NULL) {
+								wdi_err("unable to realloc buffer: aborting");
+								r = WDI_ERROR_RESOURCE;
+							} else {
+								buffer = new_buffer;
+								offset += to_read;
+							}
 							break;
 						default:
 							wdi_err("could not read from pipe (async): %s", windows_error_str(0));
@@ -1154,6 +1183,18 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 					break;
 				}
 				break;
+			case ERROR_MORE_DATA:
+				bufsize *= 2;
+				wdi_dbg("message overflow (sync) - increasing buffer size to %d bytes", bufsize);
+				new_buffer = realloc(buffer, bufsize);
+				if (new_buffer == NULL) {
+					wdi_err("unable to realloc buffer: aborting");
+					r = WDI_ERROR_RESOURCE;
+				} else {
+					buffer = new_buffer;
+					offset += to_read;
+				}
+				break;
 			default:
 				wdi_err("could not read from pipe (sync): %s", windows_error_str(0));
 				break;
@@ -1162,6 +1203,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	}
 out:
 	current_device = NULL;
+	safe_free(buffer);
 	safe_closehandle(handle[0]);
 	safe_closehandle(handle[1]);
 	safe_closehandle(pipe_handle);
