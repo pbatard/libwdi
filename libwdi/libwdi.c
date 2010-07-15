@@ -734,6 +734,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	SYSTEMTIME system_time;
 	char* cat_name;
 	const char* inf_ext = ".inf";
+	const char* vendor_name = NULL;
 
 	MUTEX_START;
 
@@ -840,6 +841,14 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	fprintf(fd, "CatName = \"%s\"\n", cat_name);
 	free(cat_name);
 
+	// Resolve the Manufacturer (Vendor Name)
+	vendor_name = wdi_vid_to_string(device_info->vid);
+	if (vendor_name == NULL) {
+		vendor_name = "(Unknown Vendor)";
+	}
+	fprintf(fd, "VendorName = \"%s\"\n", vendor_name);
+
+	// Write the inf static payload
 	fwrite(inf[driver_type], strlen(inf[driver_type]), 1, fd);
 	fclose(fd);
 
