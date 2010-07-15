@@ -178,6 +178,8 @@ struct wdi_options_create_list {
 struct wdi_options_prepare_driver {
 	/** type of driver to use. Should be either WDI_WINUSB, WDI_LIBUSB or WDI_USER */
 	int driver_type;
+	/** Vendor name that should be used for the Manufacturer in the inf */
+	char* vendor_name;
 };
 
 // wdi_install_driver options:

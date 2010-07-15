@@ -66,7 +66,7 @@ char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = {false, false, true};
-struct wdi_options_prepare_driver pd_options = {WDI_WINUSB};
+struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL};
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
