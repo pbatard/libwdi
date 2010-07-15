@@ -842,7 +842,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	free(cat_name);
 
 	// Resolve the Manufacturer (Vendor Name)
-	vendor_name = wdi_vid_to_string(device_info->vid);
+	vendor_name = wdi_get_vendor_name(device_info->vid);
 	if (vendor_name == NULL) {
 		vendor_name = "(Unknown Vendor)";
 	}

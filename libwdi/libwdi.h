@@ -185,9 +185,9 @@ const char* LIBWDI_API wdi_strerror(int errcode);
 bool LIBWDI_API wdi_is_driver_supported(int driver_type);
 
 /*
- * Convert a Vendor ID (VID) to a human readable Manufacturer string
+ * Retrieve the full Vendor name from a Vendor ID (VID)
  */
-const char* LIBWDI_API wdi_vid_to_string(unsigned short vid);
+const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid);
 
 /*
  * Return a wdi_device_info list of USB devices

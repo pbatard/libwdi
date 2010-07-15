@@ -56,7 +56,7 @@ struct vendor_name usb_vendor[] = \{|p
 $a\
 \};\
 \
-const char* LIBWDI_API wdi_vid_to_string(unsigned short vid)\
+const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid)\
 \{\
 	int i;\
 \
@@ -77,5 +77,5 @@ _EOF
 
 # Run sed to generate the source.
 sed -f cmd.sed usb.ids > vid_data.c
-#rm cmd.sed
+rm cmd.sed
 echo Done.

@@ -2689,7 +2689,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0xf003, "Hewlett Packard" },
 };
 
-const char* LIBWDI_API wdi_vid_to_string(unsigned short vid)
+const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid)
 {
 	int i;
 

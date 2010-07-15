@@ -927,7 +927,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					SetDlgItemText(hMain, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
 					DestroyWindow(hToolTip);
-					vid_string = wdi_vid_to_string(device->vid);
+					vid_string = wdi_get_vendor_name(device->vid);
 					if (vid_string == NULL) {
 						vid_string = "Unknown Vendor";
 					}
