@@ -926,8 +926,9 @@ void notification(int type, char* text, char* title)
 
 /*
  * Create a tooltip for the control passed as first parameter
+ * duration sets the duration in ms. Use -1 for default
  */
-HWND create_tooltip(HWND hControl, char* message)
+HWND create_tooltip(HWND hControl, char* message, int duration)
 {
 	HWND hTip;
 	TOOLINFO toolInfo = {0};
@@ -938,8 +939,11 @@ HWND create_tooltip(HWND hControl, char* message)
 
 	// Create the tooltip window
 	hTip = CreateWindowExA(0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,	hMain, NULL,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hMain, NULL,
 		main_instance, NULL);
+
+	// Set tooltip duration (ms)
+	PostMessage(hTip, TTM_SETDELAYTIME, (WPARAM)TTDT_AUTOPOP, (LPARAM)duration);
 
 	if (hTip == NULL) {
 		return (HWND)NULL;

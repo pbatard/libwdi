@@ -937,7 +937,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					if (vid_string == NULL) {
 						vid_string = "Unknown Vendor";
 					}
-					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string);
+					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, -1);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemText(hMain, IDC_PID, str_tmp);
 					if (device->is_composite) {
