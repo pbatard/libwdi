@@ -56,3 +56,5 @@
 #define INSTALLER_PATH_32 "."
 #define INSTALLER_PATH_64 "."
 #endif
+
+#define drv_sprintf(s, ...)	_snprintf(s, sizeof(s), __VA_ARGS__)

@@ -849,8 +849,6 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 	CoCreateGuid(&guid);
 	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
-	GetLocalTime(&system_time);
-	fprintf(fd, "Date = \"%02d/%02d/%04d\"\n", system_time.wMonth, system_time.wDay, system_time.wYear);
 
 	// Write the cat name
 	cat_name = safe_strdup(inf_name);
@@ -872,6 +870,20 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 			vendor_name = "(Unknown Vendor)";
 		}
 		fprintf(fd, "VendorName = \"%s\"\n", vendor_name);
+	}
+
+	// Write the date and version data
+	fprintf(fd, "Version = \"");
+	if (((driver_type == WDI_WINUSB)?winusb_date[0]:libusb0_date[0]) != 0) {
+		fprintf(fd, "%s, ", (driver_type == WDI_WINUSB)?winusb_date:libusb0_date);
+	} else {
+		GetLocalTime(&system_time);
+		fprintf(fd, "%02d/%02d/%04d", system_time.wMonth, system_time.wDay, system_time.wYear);
+	}
+	if (((driver_type == WDI_WINUSB)?winusb_version[0]:libusb0_version[0]) != 0) {
+		fprintf(fd, "%s\"\n", (driver_type == WDI_WINUSB)?winusb_version:libusb0_version);
+	} else {
+		fprintf(fd, "\"\n");
 	}
 
 	// Write the inf static payload

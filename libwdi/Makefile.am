@@ -26,6 +26,7 @@ installer_x64_LDADD = -lsetupapi -lnewdev
 endif
 
 embedder_SOURCES = embedder.h embedder_files.h embedder.c
+embedder_LDADD = -lversion
 
 EXTRA_DIST = $(LIB_SRC)
 

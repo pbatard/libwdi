@@ -14,6 +14,7 @@ INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD /DDDK_DIR=\"$(DDK_DIR)\"
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
-           $(SDK_LIB_PATH)\user32.lib
+           $(SDK_LIB_PATH)\user32.lib \
+           $(SDK_LIB_PATH)\version.lib
 
 SOURCES=embedder.c

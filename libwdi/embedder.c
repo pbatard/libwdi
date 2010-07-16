@@ -180,8 +180,13 @@ __cdecl
 #endif
 main (int argc, char *argv[])
 {
-	int  ret, i, j;
-	DWORD r;
+	int ret, i, j, drv_index;
+	DWORD r, version_size;
+	void* version_buf;
+	UINT junk;
+	VS_FIXEDFILEINFO* file_info;
+	WIN32_FIND_DATA file_data;
+	SYSTEMTIME file_date;
 	size_t size;
 	size_t* file_size;
 	FILE *fd, *header_fd;
@@ -189,6 +194,8 @@ main (int argc, char *argv[])
 	FILETIME header_time, file_time;
 	BOOL rebuild = TRUE;
 	char internal_name[] = "file_###";
+	char drv_date[2][11] = {"", ""};
+	char drv_version[2][24] = {"", ""};
 	unsigned char* buffer;
 	char fullpath[MAX_PATH];
 	char fname[_MAX_FNAME];
@@ -261,13 +268,54 @@ main (int argc, char *argv[])
 			ret = 1;
 			goto out2;
 		}
-		printf("Embedding '%s'\n", fullpath);
+		printf("Embedding '%s' ", fullpath);
 		fd = fopen(embeddable[i].file_name, "rb");
 		if (fd == NULL) {
 			fprintf(stderr, "Couldn't open file '%s'\n", fullpath);
 			ret = 1;
 			goto out2;
 		}
+
+		// Identify the WinUSB and libusb0 files we'll pick the date & version of
+		for (j=(int)strlen(embeddable[i].file_name); j>=0; j--) {
+			if (embeddable[i].file_name[j] == '\\') break;
+		}
+		drv_index = -1;
+		if (strcmp(&embeddable[i].file_name[j+1], "winusbcoinstaller2.dll") == 0) {
+			drv_index = 0;
+		} else if (strcmp(&embeddable[i].file_name[j+1], "libusb0.sys") == 0) {
+			drv_index = 1;
+		}
+
+		// Read the creation date (once more)
+		if ( (FindFirstFileA(fullpath, &file_data) != INVALID_HANDLE_VALUE)
+		  && (FileTimeToSystemTime(&file_data.ftCreationTime, &file_date)) ) {
+			printf("(%04d.%02d.%02d", file_date.wYear, file_date.wMonth, file_date.wDay);
+			if ( (drv_index != -1) && (drv_date[drv_index][0] == 0) ) {
+				drv_sprintf(drv_date[drv_index], "%02d/%02d/%04d",
+					file_date.wMonth, file_date.wDay, file_date.wYear);
+			}
+		}
+
+		// Read the version
+		version_size = GetFileVersionInfoSizeA(fullpath, NULL);
+		version_buf = malloc(version_size);
+		if (version_buf != NULL) {
+			if ( (GetFileVersionInfoA(fullpath, 0, version_size, version_buf))
+			  && (VerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+				printf(", v%d.%d.%d.%d)", (int)file_info->dwFileVersionMS>>16, (int)file_info->dwFileVersionMS&0xFFFF,
+					(int)file_info->dwFileVersionLS>>16, (int)file_info->dwFileVersionLS&0xFFFF);
+				if ( (drv_index != -1)  && (drv_version[drv_index][0] == 0) ) {
+					drv_sprintf(drv_version[drv_index], "%d.%d.%d.%d",
+						(int)file_info->dwFileVersionMS>>16, (int)file_info->dwFileVersionMS&0xFFFF,
+						(int)file_info->dwFileVersionLS>>16, (int)file_info->dwFileVersionLS&0xFFFF);
+				}
+			} else {
+				printf(")");
+			}
+			free(version_buf);
+		}
+		printf("\n");
 
 		fseek(fd, 0, SEEK_END);
 		size = (size_t)ftell(fd);
@@ -320,7 +368,14 @@ main (int argc, char *argv[])
 			fname, (int)file_size[i], internal_name);
 	}
 	fprintf(header_fd, "};\n");
-	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
+	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n\n");
+
+	// These will be used to populate the inf data
+	fprintf(header_fd, "const char* winusb_date = \"%s\";\n", &drv_date[0][0]);
+	fprintf(header_fd, "const char* winusb_version = \"%s\";\n", drv_version[0]);
+	fprintf(header_fd, "const char* libusb0_date = \"%s\";\n", &drv_date[1][0]);
+	fprintf(header_fd, "const char* libusb0_version = \"%s\";\n", drv_version[1]);
+
 	fclose(header_fd);
 	safe_free(file_size);
 #if defined(USER_DIR)
