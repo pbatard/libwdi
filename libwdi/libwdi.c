@@ -34,7 +34,7 @@
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
-#include "infs.h"
+#include "tokenizer.h"
 #include "resource.h"	// auto-generated during compilation
 
 // Initial timeout delay to wait for the installer to run
@@ -42,7 +42,7 @@
 // Check if we unexpectedly lose communication with the installer process
 #define CHECK_COMPLETION (installer_completed?WDI_SUCCESS:WDI_ERROR_TIMEOUT)
 
-// These warnings are taken care off in configure for other platforms
+// These warnings are taken care of in configure for other platforms
 #if defined(_MSC_VER)
 
 #define __STR2__(x) #x
@@ -64,6 +64,34 @@
 #endif
 
 #endif /* _MSC_VER */
+
+/*
+ * Tokenizer data
+ */
+enum INF_TAGS
+{
+	INF_FILENAME,
+	CAT_FILENAME,
+	DEVICE_DESCRIPTION,
+	DEVICE_HARDWARE_ID,
+	DEVICE_INTERFACE_GUID,
+	DEVICE_MANUFACTURER,
+	DRIVER_DATE,
+	DRIVER_VERSION,
+};
+
+token_entity_t inf_entities[]=
+{
+	{"INF_FILENAME",""},
+	{"CAT_FILENAME",""},
+	{"DEVICE_DESCRIPTION",""},
+	{"DEVICE_HARDWARE_ID",""},
+	{"DEVICE_INTERFACE_GUID",""},
+	{"DEVICE_MANUFACTURER",""},
+	{"DRIVER_DATE",""},
+	{"DRIVER_VERSION",""},
+	{NULL} // DO NOT REMOVE!
+};
 
 /*
  * Global variables
@@ -720,6 +748,10 @@ int extract_binaries(char* path)
 	int i, r;
 
 	for (i=0; i<nb_resources; i++) {
+		// Ignore tokenizer files
+		if (resource[i].subdir[0] == 0) {
+			continue;
+		}
 		safe_strcpy(filename, MAX_PATH_LENGTH, path);
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].subdir);
@@ -745,6 +777,25 @@ int extract_binaries(char* path)
 	return WDI_SUCCESS;
 }
 
+// tokenizes a resource stored in resource.h
+long tokenize_internal(char* resource_name, char** dst, const token_entity_t* token_entities,
+					   const char* tok_prefix, const char* tok_suffix, int recursive)
+{
+	int i;
+
+	for (i=0; i<nb_resources; i++) {
+		// Ignore driver files
+		if (resource[i].subdir[0] != 0) {
+			continue;
+		}
+		if (strcmp(resource[i].name, resource_name) == 0) {
+			return tokenize_string(resource[i].data, resource[i].size,
+				dst, token_entities, tok_prefix, tok_suffix, recursive);
+		}
+	}
+	return -ERROR_RESOURCE_DATA_NOT_FOUND;
+}
+
 // Create an inf and extract coinstallers in the directory pointed by path
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_prepare_driver* options)
@@ -757,6 +808,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	char* cat_name;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
+	char *dst = NULL;
+	long inf_file_size;
 
 	MUTEX_START;
 
@@ -837,20 +890,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
 
-	fprintf(fd, "; %s\n", inf_name);
-	fprintf(fd, "; Copyright (c) 2010 libusb (GNU LGPL)\n");
-	fprintf(fd, "[Strings]\n");
-	fprintf(fd, "DeviceName = \"%s\"\n", device_info->desc);
-	fprintf(fd, "DeviceID = \"VID_%04X&PID_%04X", device_info->vid, device_info->pid);
-	if (device_info->is_composite) {
-		fprintf(fd, "&MI_%02X\"\n", device_info->mi);
-	} else {
-		fprintf(fd, "\"\n");
-	}
-	CoCreateGuid(&guid);
-	fprintf(fd, "DeviceGUID = \"%s\"\n", guid_to_string(guid));
-
-	// Write the cat name
+	// Populate the inf and cat names
+	static_strcpy(inf_entities[INF_FILENAME].replace, inf_name);
 	cat_name = safe_strdup(inf_name);
 	if (cat_name == NULL) {
 		MUTEX_RETURN WDI_ERROR_RESOURCE;
@@ -858,37 +899,55 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	cat_name[strlen(inf_name)-3] = 'c';
 	cat_name[strlen(inf_name)-2] = 'a';
 	cat_name[strlen(inf_name)-1] = 't';
-	fprintf(fd, "CatName = \"%s\"\n", cat_name);
+	static_strcpy(inf_entities[CAT_FILENAME].replace, cat_name);
 	free(cat_name);
+
+	// Populate the Device Description and Hardware ID
+	static_strcpy(inf_entities[DEVICE_DESCRIPTION].replace, device_info->desc);
+	static_sprintf(inf_entities[DEVICE_HARDWARE_ID].replace, "VID_%04X&PID_%04X", device_info->vid, device_info->pid);
+	if (device_info->is_composite) {
+		static_sprintf(&inf_entities[DEVICE_HARDWARE_ID].replace[strlen(inf_entities[DEVICE_HARDWARE_ID].replace)],
+			"&MI_%02X", device_info->mi);
+	}
+
+	// Populate the Device Interface GUID
+	CoCreateGuid(&guid);
+	static_sprintf(inf_entities[DEVICE_INTERFACE_GUID].replace, "%s", guid_to_string(guid));
 
 	// Resolve the Manufacturer (Vendor Name)
 	if ((options != NULL) && (options->vendor_name != NULL)) {
-		fprintf(fd, "VendorName = \"%s\"\n", options->vendor_name);
+		static_strcpy(inf_entities[DEVICE_MANUFACTURER].replace, options->vendor_name);
 	} else {
 		vendor_name = wdi_get_vendor_name(device_info->vid);
 		if (vendor_name == NULL) {
 			vendor_name = "(Unknown Vendor)";
 		}
-		fprintf(fd, "VendorName = \"%s\"\n", vendor_name);
+		static_strcpy(inf_entities[DEVICE_MANUFACTURER].replace, vendor_name);
 	}
 
 	// Write the date and version data
-	fprintf(fd, "Version = \"");
 	if (((driver_type == WDI_WINUSB)?winusb_date[0]:libusb0_date[0]) != 0) {
-		fprintf(fd, "%s, ", (driver_type == WDI_WINUSB)?winusb_date:libusb0_date);
+		static_strcpy(inf_entities[DRIVER_DATE].replace, (driver_type == WDI_WINUSB)?winusb_date:libusb0_date);
 	} else {
 		GetLocalTime(&system_time);
-		fprintf(fd, "%02d/%02d/%04d", system_time.wMonth, system_time.wDay, system_time.wYear);
+		static_sprintf(inf_entities[DRIVER_DATE].replace,
+			"%02d/%02d/%04d", system_time.wMonth, system_time.wDay, system_time.wYear);
 	}
 	if (((driver_type == WDI_WINUSB)?winusb_version[0]:libusb0_version[0]) != 0) {
-		fprintf(fd, "%s\"\n", (driver_type == WDI_WINUSB)?winusb_version:libusb0_version);
-	} else {
-		fprintf(fd, "\"\n");
+		static_strcpy(inf_entities[DRIVER_VERSION].replace,
+			(driver_type == WDI_WINUSB)?winusb_version:libusb0_version);
 	}
 
-	// Write the inf static payload
-	fwrite(inf[driver_type], strlen(inf[driver_type]), 1, fd);
-	fclose(fd);
+	// Tokenize the file
+	if ((inf_file_size = tokenize_internal((driver_type == WDI_WINUSB)?"winusb.inf.in":"libusb-win32.inf.in",
+		&dst, inf_entities, "#", "#" ,0)) > 0) {
+		fwrite(dst, 1, inf_file_size, fd);
+		fclose(fd);
+		free(dst);
+	} else {
+		wdi_err("could not tokenize inf file (%d)", inf_file_size);
+		fclose(fd);
+	}
 
 	// Create a blank cat file
 	filename[strlen(filename)-3] = 'c';

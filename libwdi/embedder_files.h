@@ -80,6 +80,10 @@ struct emb embeddable_fixed[] = {
 #if defined(DDK_DIR)
 	{ DDK_DIR "\\license.rtf", "license\\WinUSB" },	// WinUSB License file
 #endif
+
+// inf templates for the tokenizer ("" directory means no extraction)
+	{ "winusb.inf.in", "" },
+	{ "libusb-win32.inf.in", "" },
 };
 
 

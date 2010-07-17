@@ -313,6 +313,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\tokenizer.c"
+				>
+			</File>
+			<File
 				RelativePath=".\vid_data.c"
 				>
 			</File>
@@ -327,10 +331,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\infs.h"
-				>
-			</File>
-			<File
 				RelativePath=".\installer.h"
 				>
 			</File>
@@ -342,12 +342,24 @@
 				RelativePath=".\logging.h"
 				>
 			</File>
+			<File
+				RelativePath=".\tokenizer.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			>
 			<File
+				RelativePath=".\libusb-win32.inf.in"
+				>
+			</File>
+			<File
 				RelativePath=".\libwdi.rc"
+				>
+			</File>
+			<File
+				RelativePath=".\winusb.inf.in"
 				>
 			</File>
 		</Filter>

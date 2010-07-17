@@ -4,7 +4,7 @@ BUILT_SOURCES = resource.h
 noinst_PROGRAMS = embedder
 noinst_EXES = embedder.exe
 lib_LTLIBRARIES = libwdi.la
-LIB_SRC = resource.h logging.h usbi.h installer.h libwdi.h logging.c vid_data.c libwdi.c
+LIB_SRC = resource.h logging.h tokenizer.h installer.h libwdi.h logging.c tokenizer.c vid_data.c libwdi.c
 
 if OPT_M32
 noinst_PROGRAMS += installer_x86

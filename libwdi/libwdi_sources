@@ -22,5 +22,6 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
 
 SOURCES=logging.c \
 	libwdi.c \
+	tokenizer.c \
 	vid_data.c \
 	libwdi.rc

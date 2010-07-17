@@ -40,12 +40,15 @@
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
+#define static_strcpy(dst, src) safe_strcpy(dst, sizeof(dst), src)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, min(count, dst_max - strlen(dst) - 1))
 #define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, strlen(src)+1)
+#define static_strcat(dst, src) safe_strcat(dst, sizeof(dst), src)
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
+#define static_sprintf(dest, format, ...) safe_sprintf(dest, sizeof(dest), format, __VA_ARGS__)
 #define safe_swprintf _snwprintf
 #define safe_strdup _strdup
 

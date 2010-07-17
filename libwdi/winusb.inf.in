@@ -1,0 +1,91 @@
+; #INF_FILENAME#
+; Copyright (c) 2010 libusb (GNU LGPL)
+[Strings]
+DeviceName = "#DEVICE_DESCRIPTION#"
+VendorName = "#DEVICE_MANUFACTURER#"
+SourceName = "#DEVICE_DESCRIPTION# Install Disk"
+DeviceID   = "#DEVICE_HARDWARE_ID#"
+DeviceGUID = "#DEVICE_INTERFACE_GUID#"
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = "libusb (WinUSB) devices"
+ClassGuid   = {78a1c341-4539-11d3-b88d-00c04fad5171}
+Provider    = "libusb.org"
+CatalogFile = #CAT_FILENAME#
+DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
+
+[ClassInstall32]
+Addreg = WinUSBDeviceClassReg
+
+[WinUSBDeviceClassReg]
+HKR,,,0,"libusb (WinUSB) devices"
+HKR,,Icon,,-20
+
+[Manufacturer]
+%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTia64
+
+[libusbDevice_WinUSB.NTx86]
+%DeviceName% = USB_Install, USB\%DeviceID%
+
+[libusbDevice_WinUSB.NTamd64]
+%DeviceName% = USB_Install, USB\%DeviceID%
+
+[libusbDevice_WinUSB.NTia64]
+%DeviceName% = USB_Install, USB\%DeviceID%
+
+[USB_Install]
+Include = winusb.inf
+Needs   = WINUSB.NT
+
+[USB_Install.Services]
+Include    = winusb.inf
+AddService = WinUSB,0x00000002,WinUSB_ServiceInstall
+
+[WinUSB_ServiceInstall]
+DisplayName   = "WinUSB - Kernel Driver #DRIVER_DATE# #DRIVER_VERSION#"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\WinUSB.sys
+
+[USB_Install.Wdf]
+KmdfService = WINUSB, WinUsb_Install
+
+[WinUSB_Install]
+KmdfLibraryVersion = 1.9
+
+[USB_Install.HW]
+AddReg = Dev_AddReg
+
+[Dev_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,%DeviceGUID%
+
+[USB_Install.CoInstallers]
+AddReg    = CoInstallers_AddReg
+CopyFiles = CoInstallers_CopyFiles
+
+[CoInstallers_AddReg]
+HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01009.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
+
+[CoInstallers_CopyFiles]
+WinUSBCoInstaller2.dll
+WdfCoInstaller01009.dll
+
+[DestinationDirs]
+CoInstallers_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %SourceName%
+
+[SourceDisksFiles.x86]
+WinUSBCoInstaller2.dll  = 1,x86
+WdfCoInstaller01009.dll = 1,x86
+
+[SourceDisksFiles.amd64]
+WinUSBCoInstaller2.dll  = 1,amd64
+WdfCoInstaller01009.dll = 1,amd64
+
+[SourceDisksFiles.ia64]
+WinUSBCoInstaller2.dll  = 1,ia64
+WdfCoInstaller01009.dll = 1,ia64
