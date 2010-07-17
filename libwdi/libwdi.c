@@ -900,10 +900,12 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	// Populate the Device Description and Hardware ID
 	static_strcpy(inf_entities[DEVICE_DESCRIPTION].replace, device_info->desc);
-	static_sprintf(inf_entities[DEVICE_HARDWARE_ID].replace, "VID_%04X&PID_%04X", device_info->vid, device_info->pid);
 	if (device_info->is_composite) {
-		static_sprintf(&inf_entities[DEVICE_HARDWARE_ID].replace[strlen(inf_entities[DEVICE_HARDWARE_ID].replace)],
-			"&MI_%02X", device_info->mi);
+		static_sprintf(inf_entities[DEVICE_HARDWARE_ID].replace, "VID_%04X&PID_%04X&MI_%02X",
+			device_info->vid, device_info->pid, device_info->mi);
+	} else {
+		static_sprintf(inf_entities[DEVICE_HARDWARE_ID].replace, "VID_%04X&PID_%04X",
+			device_info->vid, device_info->pid);
 	}
 
 	// Populate the Device Interface GUID
