@@ -1,7 +1,7 @@
 #TARGETTYPE is not defined, to allow selection between static lib or DLL with ddk_build
 TARGETNAME=libwdi
-
-DLLDEF=libwdi.def
+#Must be set, else DLL build will look for libwdi.def
+DLLDEF=
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3
