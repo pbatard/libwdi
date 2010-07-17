@@ -21,8 +21,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\examples"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\examples\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			BuildLogFile="$(IntDir)\$(ProjectName).htm"
