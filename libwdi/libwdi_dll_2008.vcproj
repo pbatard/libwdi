@@ -28,7 +28,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\resource.h"
+				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -99,7 +99,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\resource.h"
+				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -167,7 +167,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\resource.h"
+				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -238,7 +238,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\resource.h"
+				CommandLine="$(TargetDir)\..\helper\embedder $(InputDir)\embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

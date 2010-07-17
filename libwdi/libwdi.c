@@ -35,7 +35,7 @@
 #include "libwdi.h"
 #include "logging.h"
 #include "tokenizer.h"
-#include "resource.h"	// auto-generated during compilation
+#include "embedded.h"	// auto-generated during compilation
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000

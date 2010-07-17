@@ -70,7 +70,7 @@ set PATH=%ORG_PATH%
 
 echo.
 echo Embedding binary resources
-embedder.exe resource.h
+embedder.exe embedded.h
 
 rem DLL or static lib selection (must use concatenation)
 set TARGET=LIBRARY

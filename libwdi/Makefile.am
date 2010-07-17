@@ -1,6 +1,6 @@
 INCLUDES = -I$(top_srcdir)
 
-BUILT_SOURCES = resource.h
+BUILT_SOURCES = embedded.h
 noinst_PROGRAMS = embedder
 noinst_EXES = embedder.exe
 lib_LTLIBRARIES = libwdi.la
@@ -38,8 +38,8 @@ libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
 libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
 
-resource.h: $(noinst_EXES)
-	./embedder.exe resource.h
+embedded.h: $(noinst_EXES)
+	./embedder.exe embedded.h
 
 clean-local:
-	-rm -rf resource.h
+	-rm -rf embedded.h
