@@ -805,6 +805,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	GUID guid;
 	int driver_type, r;
 	SYSTEMTIME system_time;
+	FILETIME file_time;
 	char* cat_name;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
@@ -880,15 +881,10 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN r;
 	}
 
+	// Set the inf filename
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
-
-	fd = fcreate(filename, "w");
-	if (fd == NULL) {
-		wdi_err("failed to create file: %s", filename);
-		MUTEX_RETURN WDI_ERROR_ACCESS;
-	}
 
 	// Populate the inf and cat names
 	static_strcpy(inf_entities[INF_FILENAME].replace, inf_name);
@@ -925,28 +921,39 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		static_strcpy(inf_entities[DEVICE_MANUFACTURER].replace, vendor_name);
 	}
 
+	// Extra check, in case somebody modifies our code
+	if ((driver_type < 0) && (driver_type > sizeof(driver_version)/sizeof(driver_version[0]))) {
+		wdi_err("program assertion failed - driver_version[] index out of range");
+		MUTEX_RETURN WDI_ERROR_OTHER;
+	}
+
 	// Write the date and version data
-	if (((driver_type == WDI_WINUSB)?winusb_date[0]:libusb0_date[0]) != 0) {
-		static_strcpy(inf_entities[DRIVER_DATE].replace, (driver_type == WDI_WINUSB)?winusb_date:libusb0_date);
-	} else {
+	file_time.dwHighDateTime = driver_version[driver_type].dwFileDateMS;
+	file_time.dwLowDateTime = driver_version[driver_type].dwFileDateLS;
+	if ( ((file_time.dwHighDateTime == 0) && (file_time.dwLowDateTime == 0))
+	  || (!FileTimeToSystemTime(&file_time, &system_time)) ) {
 		GetLocalTime(&system_time);
-		static_sprintf(inf_entities[DRIVER_DATE].replace,
-			"%02d/%02d/%04d", system_time.wMonth, system_time.wDay, system_time.wYear);
 	}
-	if (((driver_type == WDI_WINUSB)?winusb_version[0]:libusb0_version[0]) != 0) {
-		static_strcpy(inf_entities[DRIVER_VERSION].replace,
-			(driver_type == WDI_WINUSB)?winusb_version:libusb0_version);
-	}
+	static_sprintf(inf_entities[DRIVER_DATE].replace,
+		"%02d/%02d/%04d", system_time.wMonth, system_time.wDay, system_time.wYear);
+	static_sprintf(inf_entities[DRIVER_VERSION].replace, "%d.%d.%d.%d",
+		(int)driver_version[driver_type].dwFileVersionMS>>16, (int)driver_version[driver_type].dwFileVersionMS&0xFFFF,
+		(int)driver_version[driver_type].dwFileVersionLS>>16, (int)driver_version[driver_type].dwFileVersionLS&0xFFFF);
 
 	// Tokenize the file
 	if ((inf_file_size = tokenize_internal((driver_type == WDI_WINUSB)?"winusb.inf.in":"libusb-win32.inf.in",
 		&dst, inf_entities, "#", "#" ,0)) > 0) {
+		fd = fcreate(filename, "w");
+		if (fd == NULL) {
+			wdi_err("failed to create file: %s", filename);
+			MUTEX_RETURN WDI_ERROR_ACCESS;
+		}
 		fwrite(dst, 1, inf_file_size, fd);
 		fclose(fd);
 		free(dst);
 	} else {
 		wdi_err("could not tokenize inf file (%d)", inf_file_size);
-		fclose(fd);
+		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
 
 	// Create a blank cat file
@@ -954,6 +961,10 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	filename[strlen(filename)-2] = 'a';
 	filename[strlen(filename)-1] = 't';
 	fd = fcreate(filename, "w");
+	if (fd == NULL) {
+		wdi_err("failed to create file: %s", filename);
+		MUTEX_RETURN WDI_ERROR_ACCESS;
+	}
 	fprintf(fd, "This file will contain the digital signature of the files to be installed\n"
 		"on the system.\nThis file will be provided by Microsoft upon certification of your drivers.");
 	fclose(fd);

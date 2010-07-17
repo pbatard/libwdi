@@ -184,7 +184,7 @@ main (int argc, char *argv[])
 	DWORD r, version_size;
 	void* version_buf;
 	UINT junk;
-	VS_FIXEDFILEINFO* file_info;
+	VS_FIXEDFILEINFO *file_info, drv_info[2] = { {0}, {0} };
 	WIN32_FIND_DATA file_data;
 	SYSTEMTIME file_date;
 	size_t size;
@@ -194,8 +194,6 @@ main (int argc, char *argv[])
 	FILETIME header_time, file_time;
 	BOOL rebuild = TRUE;
 	char internal_name[] = "file_###";
-	char drv_date[2][11] = {"", ""};
-	char drv_version[2][24] = {"", ""};
 	unsigned char* buffer;
 	char fullpath[MAX_PATH];
 	char fname[_MAX_FNAME];
@@ -288,13 +286,11 @@ main (int argc, char *argv[])
 		}
 
 		// Read the creation date (once more)
+		file_data.ftCreationTime.dwHighDateTime = 0;
+		file_data.ftCreationTime.dwLowDateTime = 0;
 		if ( (FindFirstFileA(fullpath, &file_data) != INVALID_HANDLE_VALUE)
 		  && (FileTimeToSystemTime(&file_data.ftCreationTime, &file_date)) ) {
 			printf("(%04d.%02d.%02d", file_date.wYear, file_date.wMonth, file_date.wDay);
-			if ( (drv_index != -1) && (drv_date[drv_index][0] == 0) ) {
-				drv_sprintf(drv_date[drv_index], "%02d/%02d/%04d",
-					file_date.wMonth, file_date.wDay, file_date.wYear);
-			}
 		}
 
 		// Read the version
@@ -305,10 +301,11 @@ main (int argc, char *argv[])
 			  && (VerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
 				printf(", v%d.%d.%d.%d)", (int)file_info->dwFileVersionMS>>16, (int)file_info->dwFileVersionMS&0xFFFF,
 					(int)file_info->dwFileVersionLS>>16, (int)file_info->dwFileVersionLS&0xFFFF);
-				if ( (drv_index != -1)  && (drv_version[drv_index][0] == 0) ) {
-					drv_sprintf(drv_version[drv_index], "%d.%d.%d.%d",
-						(int)file_info->dwFileVersionMS>>16, (int)file_info->dwFileVersionMS&0xFFFF,
-						(int)file_info->dwFileVersionLS>>16, (int)file_info->dwFileVersionLS&0xFFFF);
+				if ( (drv_index != -1) && (drv_info[drv_index].dwSignature == 0) ) {
+					printf(" [using this file for %s version info]", drv_index==0?"WinUSB":"libusb0");
+					memcpy(&drv_info[drv_index], file_info, sizeof(VS_FIXEDFILEINFO));
+					drv_info[drv_index].dwFileDateLS = file_data.ftCreationTime.dwLowDateTime;
+					drv_info[drv_index].dwFileDateMS = file_data.ftCreationTime.dwHighDateTime;
 				}
 			} else {
 				printf(")");
@@ -371,10 +368,18 @@ main (int argc, char *argv[])
 	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n\n");
 
 	// These will be used to populate the inf data
-	fprintf(header_fd, "const char* winusb_date = \"%s\";\n", &drv_date[0][0]);
-	fprintf(header_fd, "const char* winusb_version = \"%s\";\n", drv_version[0]);
-	fprintf(header_fd, "const char* libusb0_date = \"%s\";\n", &drv_date[1][0]);
-	fprintf(header_fd, "const char* libusb0_version = \"%s\";\n", drv_version[1]);
+	fprintf(header_fd, "// WinUSB = 0, libusb0 = 1\n");
+	fprintf(header_fd, "const VS_FIXEDFILEINFO driver_version[2] = {\n");
+	for (i=0; i<2; i++) {
+		fprintf(header_fd, "	{ 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X,\n",
+			drv_info[i].dwSignature, drv_info[i].dwStrucVersion, drv_info[i].dwFileVersionMS,
+			drv_info[i].dwFileVersionLS, drv_info[i].dwProductVersionMS,
+			drv_info[i].dwProductVersionLS, drv_info[i].dwFileFlagsMask);
+		fprintf(header_fd, "	  0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X},\n",
+			drv_info[i].dwFileFlags, drv_info[i].dwFileOS, drv_info[i].dwFileType,
+			drv_info[i].dwFileSubtype, drv_info[i].dwFileDateMS, drv_info[i].dwFileDateLS);
+	}
+	fprintf(header_fd, "};\n");
 
 	fclose(header_fd);
 	safe_free(file_size);
