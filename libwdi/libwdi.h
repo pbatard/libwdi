@@ -195,7 +195,7 @@ const char* LIBWDI_API wdi_strerror(int errcode);
 /*
  * Check if a specific driver is supported (embedded) in the current version of libwdi
  */
-bool LIBWDI_API wdi_is_driver_supported(int driver_type);
+bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driver_info);
 
 /*
  * Retrieve the full Vendor name from a Vendor ID (VID)

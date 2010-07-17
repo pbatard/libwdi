@@ -302,7 +302,7 @@ main (int argc, char *argv[])
 				printf(", v%d.%d.%d.%d)", (int)file_info->dwFileVersionMS>>16, (int)file_info->dwFileVersionMS&0xFFFF,
 					(int)file_info->dwFileVersionLS>>16, (int)file_info->dwFileVersionLS&0xFFFF);
 				if ( (drv_index != -1) && (drv_info[drv_index].dwSignature == 0) ) {
-					printf(" [using this file for %s version info]", drv_index==0?"WinUSB":"libusb0");
+					printf("*");
 					memcpy(&drv_info[drv_index], file_info, sizeof(VS_FIXEDFILEINFO));
 					drv_info[drv_index].dwFileDateLS = file_data.ftCreationTime.dwLowDateTime;
 					drv_info[drv_index].dwFileDateMS = file_data.ftCreationTime.dwHighDateTime;

@@ -323,7 +323,7 @@ bool select_next_driver(int increment)
 
 	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
 		pd_options.driver_type = (WDI_NB_DRIVERS + pd_options.driver_type + increment)%WDI_NB_DRIVERS;
-		if (!wdi_is_driver_supported(pd_options.driver_type)) {
+		if (!wdi_is_driver_supported(pd_options.driver_type, NULL)) {
 			continue;
 		}
 		if (!extract_only) {
@@ -620,10 +620,10 @@ bool parse_ini(void) {
 		dprintf("invalid value '%d' for ini option 'default_driver'", default_driver_type);
 		default_driver_type = WDI_WINUSB;
 	}
-	if (!wdi_is_driver_supported(default_driver_type)) {
+	if (!wdi_is_driver_supported(default_driver_type, NULL)) {
 		dprintf("'%s' driver is not available", driver_display_name[default_driver_type]);
 		for (i=(default_driver_type+1)%WDI_NB_DRIVERS; i!=default_driver_type; i++) {
-			if (wdi_is_driver_supported(i)) {
+			if (wdi_is_driver_supported(i, NULL)) {
 				default_driver_type = i;
 				break;
 			}
