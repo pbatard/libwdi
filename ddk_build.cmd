@@ -1,7 +1,24 @@
-@rem default builds static library. Pass argument 'DLL' to build a DLL
+@rem default builds static library. 
+@rem you can pass the following arguments (case insensitive):
+@rem - "DLL" to build a DLL instead of a static library
+@rem - "no_samples" to build the library only
 @echo off
 
 if Test%BUILD_ALT_DIR%==Test goto usage
+
+rem process commandline parameters
+set TARGET=LIBRARY
+set BUILD_SAMPLES=YES
+
+:more_args
+if "%1" == "" goto no_more_args
+rem /I for case insensitive
+if /I Test%1==TestDLL set TARGET=DYNLINK
+if /I Test%1==Testno_samples set BUILD_SAMPLES=NO
+rem - shift the arguments and examine %1 again
+shift
+goto more_args
+:no_more_args
 
 set DDK_DIR=%BASEDIR:\=\\%
 set ORG_BUILD_ALT_DIR=%BUILD_ALT_DIR%
@@ -73,8 +90,6 @@ echo Embedding binary resources
 embedder.exe embedded.h
 
 rem DLL or static lib selection (must use concatenation)
-set TARGET=LIBRARY
-if Test%1==TestDLL set TARGET=DYNLINK
 echo TARGETTYPE=%TARGET% > target
 copy target+libwdi_sources sources >NUL 2>&1
 del target
@@ -86,7 +101,9 @@ copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.lib . >NUL 2>&1
 copy obj%BUILD_ALT_DIR%\%cpudir%\libwdi.dll . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
-cd ..\examples\getopt
+cd ..
+if Test%BUILD_SAMPLES%==TestNO goto done
+cd examples\getopt
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide

@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\msvc"
-				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -116,7 +116,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\msvc"
-				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="3"
 			/>
 			<Tool
@@ -186,7 +186,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\msvc"
-				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -255,7 +255,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\msvc"
-				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="2"
 			/>
 			<Tool

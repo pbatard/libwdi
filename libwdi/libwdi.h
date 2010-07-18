@@ -30,6 +30,12 @@
 #define false FALSE
 #endif
 
+#if defined(DLL_EXPORT)
+#define LIBWDI_EXP __declspec(dllexport)
+#else
+#define LIBWDI_EXP
+#endif
+
 /*
  * Set the default calling convention to WINAPI (__stdcall)
  */
@@ -190,60 +196,60 @@ struct wdi_options_install_driver {
 /*
  * Convert a libwdi error to a human readable error message
  */
-const char* LIBWDI_API wdi_strerror(int errcode);
+LIBWDI_EXP const char* LIBWDI_API wdi_strerror(int errcode);
 
 /*
  * Check if a specific driver is supported (embedded) in the current version of libwdi
  */
-bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driver_info);
+LIBWDI_EXP bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driver_info);
 
 /*
  * Retrieve the full Vendor name from a Vendor ID (VID)
  */
-const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid);
+LIBWDI_EXP const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid);
 
 /*
  * Return a wdi_device_info list of USB devices
  * parameter: driverless_only - boolean
  */
-int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
+LIBWDI_EXP int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 							   struct wdi_options_create_list* options);
 
 /*
  * Release a wdi_device_info list allocated by the previous call
  */
-int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
+LIBWDI_EXP int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
 
 /*
  * Create an inf file for a specific device
  */
-int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
+LIBWDI_EXP int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_prepare_driver* options);
 
 /*
  * Install a driver for a specific device
  */
-int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
+LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_install_driver* options);
 /*
  * Set the log verbosity
  */
-int LIBWDI_API wdi_set_log_level(int level);
+LIBWDI_EXP int LIBWDI_API wdi_set_log_level(int level);
 
 /*
  * Set the Windows callback message for log notification
  */
-int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize);
+LIBWDI_EXP int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize);
 
 /*
  * Unset the Windows callback message for log notification
  */
-int LIBWDI_API wdi_unregister_logger(HWND hWnd);
+LIBWDI_EXP int LIBWDI_API wdi_unregister_logger(HWND hWnd);
 
 /*
  * Read a log message after a log notification
  */
-int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size);
+LIBWDI_EXP int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size);
 
 #ifdef __cplusplus
 }
