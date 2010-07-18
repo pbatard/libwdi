@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <config.h>
+#include <stdint.h>
 #include "embedder.h"
 #include "embedder_files.h"
 
@@ -371,13 +372,13 @@ main (int argc, char *argv[])
 	fprintf(header_fd, "// WinUSB = 0, libusb0 = 1\n");
 	fprintf(header_fd, "const VS_FIXEDFILEINFO driver_version[2] = {\n");
 	for (i=0; i<2; i++) {
-		fprintf(header_fd, "	{ 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X,\n",
-			drv_info[i].dwSignature, drv_info[i].dwStrucVersion, drv_info[i].dwFileVersionMS,
-			drv_info[i].dwFileVersionLS, drv_info[i].dwProductVersionMS,
-			drv_info[i].dwProductVersionLS, drv_info[i].dwFileFlagsMask);
-		fprintf(header_fd, "	  0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X, 0x%08I32X},\n",
-			drv_info[i].dwFileFlags, drv_info[i].dwFileOS, drv_info[i].dwFileType,
-			drv_info[i].dwFileSubtype, drv_info[i].dwFileDateMS, drv_info[i].dwFileDateLS);
+		fprintf(header_fd, "	{ 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X,\n",
+			(uint32_t)drv_info[i].dwSignature, (uint32_t)drv_info[i].dwStrucVersion, (uint32_t)drv_info[i].dwFileVersionMS,
+			(uint32_t)drv_info[i].dwFileVersionLS, (uint32_t)drv_info[i].dwProductVersionMS,
+			(uint32_t)drv_info[i].dwProductVersionLS, (uint32_t)drv_info[i].dwFileFlagsMask);
+		fprintf(header_fd, "	  0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X},\n",
+			(uint32_t)drv_info[i].dwFileFlags, (uint32_t)drv_info[i].dwFileOS, (uint32_t)drv_info[i].dwFileType,
+			(uint32_t)drv_info[i].dwFileSubtype, (uint32_t)drv_info[i].dwFileDateMS, (uint32_t)drv_info[i].dwFileDateLS);
 	}
 	fprintf(header_fd, "};\n");
 
