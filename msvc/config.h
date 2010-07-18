@@ -5,10 +5,8 @@
 #error "Please make sure the msvc/ directory is removed from your build path."
 #endif
 
-/* DDK directory - automatically supplied when building from DDK */
-#ifndef DDKBUILD
+/* embed WinUSB driver files from the following DDK location */
 #define DDK_DIR "E:/WinDDK/7600.16385.0"
-#endif
 
 /* embed user defined driver files from the following location */
 // #define USER_DIR "C:/signed-driver"
