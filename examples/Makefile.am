@@ -11,7 +11,7 @@ zadic_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
 zadic_LDADD = -L../libwdi/.libs -lwdi
 
 zadig_rc.o: zadig.rc resource.h
-	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
+	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -static -i $< -o $@
 
 zadig_SOURCES = zadig.c zadig_stdlg.c
 zadig_CFLAGS = $(ARCH_CFLAGS) $(NO_CYGWIN) $(AM_CFLAGS)
