@@ -24,6 +24,76 @@ LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 #pragma code_page(1252)
 #endif //_WIN32
 
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "#ifndef PBS_MARQUEE\r\n"
+    "#define PBS_MARQUEE 0x08\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "// Must reference a manifest for visual styles and elevation\r\n"
+    "// Oh, and it must happen at the end, or MinGW will ignore it!\r\n"
+    "#if defined(__MINGW32__) || defined(__CYGWIN__)\r\n"
+    "CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST ""zadig.manifest""\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "icon1.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU 
+BEGIN
+    POPUP "Device"
+    BEGIN
+        MENUITEM "Create New",                  IDM_CREATE
+        MENUITEM "Open Preselected",            IDM_OPEN
+    END
+    POPUP "Options"
+    BEGIN
+        MENUITEM "List All Devices",            IDM_LISTALL
+        MENUITEM "Ignore Hubs or Composite Parents", IDM_IGNOREHUBS, CHECKED, INACTIVE
+        MENUITEM "Extract Files Only (Don't Install)", IDM_EXTRACT
+        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
+    END
+    POPUP "Help"
+    BEGIN
+        MENUITEM "Online Help",                 IDM_ONLINEHELP
+        MENUITEM "About",                       IDM_ABOUT
+    END
+END
+
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
@@ -119,6 +189,7 @@ BEGIN
     BEGIN
         BLOCK "000904b0"
         BEGIN
+            VALUE "Comments", "http://libusb.org/wiki/libwdi"
             VALUE "CompanyName", "libusb.org"
             VALUE "FileDescription", "Zadig Application"
             VALUE "FileVersion", "1, 0, 0, 1"
@@ -168,88 +239,6 @@ END
 #endif    // APSTUDIO_INVOKED
 
 #endif    // English (Neutral) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// English (Ireland) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENI)
-#ifdef _WIN32
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_EIRE
-#pragma code_page(1252)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE 
-BEGIN
-    "#include ""afxres.h""\r\n"
-    "#ifndef PBS_MARQUEE\r\n"
-    "#define PBS_MARQUEE 0x08\r\n"
-    "#endif\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE 
-BEGIN
-    "\r\n"
-    "// Must reference a manifest for visual styles and elevation\r\n"
-    "// Oh, and it must happen at the end, or MinGW will ignore it!\r\n"
-    "#if defined(__MINGW32__) || defined(__CYGWIN__)\r\n"
-    "CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST ""zadig.manifest""\r\n"
-    "#endif\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_ICON1               ICON                    "icon1.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-IDR_MENU1 MENU 
-BEGIN
-    POPUP "Device"
-    BEGIN
-        MENUITEM "Create New",                  IDM_CREATE
-        MENUITEM "Open Preselected",            IDM_OPEN
-    END
-    POPUP "Options"
-    BEGIN
-        MENUITEM "List All Devices",            IDM_LISTALL
-        MENUITEM "Ignore Hubs or Composite Parents", IDM_IGNOREHUBS, CHECKED, INACTIVE
-        MENUITEM "Extract Files Only (Don't Install)", IDM_EXTRACT
-        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
-    END
-    POPUP "Help"
-    BEGIN
-        MENUITEM "Online Help",                 IDM_ONLINEHELP
-        MENUITEM "About",                       IDM_ABOUT
-    END
-END
-
-#endif    // English (Ireland) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
