@@ -160,6 +160,7 @@ static void center_dialog(HWND dialog)
  */
 static void init_children(HWND hDlg) {
 
+	HFONT hFont;
 	// TODO: DPI Scaling?
 	// Progress Bar
 	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASS,
@@ -170,10 +171,12 @@ static void init_children(HWND hDlg) {
 		NULL,
 		app_instance,
 		NULL);
-	PostMessage(hProgressBar, PBM_SETMARQUEE, TRUE, 0);
 	if (hProgressBar == NULL) {
 		wdi_err("Unable to create progress bar: %s", windows_error_str(0));
 	}
+
+	// Start progress animation
+	PostMessage(hProgressBar, PBM_SETMARQUEE, TRUE, 0);
 
 	// Progress Text
 	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY, WC_STATIC,
@@ -187,6 +190,11 @@ static void init_children(HWND hDlg) {
 	if (hProgressBar == NULL) {
 		wdi_err("Unable to create progress text: %s", windows_error_str(0));
 	}
+
+	// Set the font to MS Dialog default
+	hFont = CreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+		DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
+	SendMessage(hProgressText, WM_SETFONT, (WPARAM)hFont, (LPARAM)TRUE);
 }
 
 /*
