@@ -38,25 +38,26 @@ enum stdlg_user_message_type {
 };
 
 // Messages that appear in our progress bar as time passes
-#define FILETIME_SECOND 10000000
-#define MESSAGE_TIME (15 * FILETIME_SECOND)
 const char* progress_message[] = {
 	"Installation can take some time...",
 	"The installation process can take up to 5 minutes...",
-	"The reason it can take so long...",
+	"The reason it can be so long...",
 	"...is because a System Restore point is created.",		// 1 min
 	"If it's the first time a restore point is created...",
 	"...an extended delay is to expected.",
 	"Microsoft offers no means of checking progress...",
-	"...so we can't tell you how long it'll take...",		// 2 mins
+	"...so we can't say how long it'll take...",			// 2 mins
 	"Please continue to be patient...",
 	"There's a 5 minutes timeout enventually...",
 	"...so if there's a problem, the process will abort.",
 	"I've really seen an installation take 5 minutes...",	// 3 mins
-	"..on Vista 64 machine with a large disk.",
+	"...on a Vista 64 machine with a very large disk.",
 	"So how was your day...",
 	"...before it got ruined by this endless installation?",
 	"Seriously, what is taking this process so long?!",		// 4 mins
+	"Aborting in 45 seconds...",
+	"Aborting in 30 seconds...",
+	"Aborting in 15 seconds...",
 };
 
 #ifndef PBM_SETMARQUEE
@@ -71,8 +72,9 @@ static HWND hProgress = INVALID_HANDLE_VALUE;
 static HWND hProgressBar = INVALID_HANDLE_VALUE;
 static HWND hProgressText = INVALID_HANDLE_VALUE;
 static HINSTANCE app_instance = NULL;
-int (*progress_function)(void*);
-void* progress_arglist;
+static int (*progress_function)(void*);
+static void* progress_arglist;
+static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
 extern char *windows_error_str(uint32_t retval);
 
@@ -114,7 +116,7 @@ void __cdecl progress_thread(void* param)
 	int r;
 
 	// Call the user provided function
-	r = (*progress_function)(param);
+	r = (*progress_function)(progress_arglist);
 	progress_thid = -1L;
 	PostMessage(hProgress, UM_PROGRESS_STOP, (WPARAM)r, 0);
 	_endthread();
@@ -166,7 +168,7 @@ static void init_children(HWND hDlg) {
 	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASS,
 		NULL,
 		WS_CHILDWINDOW | WS_VISIBLE | PBS_MARQUEE,
-		10,34,250,12,
+		10,35,250,12,
 		hDlg,
 		NULL,
 		app_instance,
@@ -182,7 +184,7 @@ static void init_children(HWND hDlg) {
 	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY, WC_STATIC,
 		"Installing Driver...",
 		WS_CHILDWINDOW | WS_VISIBLE | WS_GROUP,
-		10,10,250,16,
+		12,12,250,16,
 		hDlg,
 		NULL,
 		app_instance,
@@ -215,16 +217,13 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 	switch (message) {
 
 	case WM_CREATE:
-		hProgress = hDlg;
-		init_children(hProgress);
-		center_dialog(hProgress);
-
-		// Toggle the progressbar Marquee animation
-		PostMessage(hProgressBar, PBM_SETMARQUEE, TRUE, 0);
-
 		// Reset static variables
 		installation_time = 0;
 		msg_index = 0;
+
+		hProgress = hDlg;
+		init_children(hProgress);
+		center_dialog(hProgress);
 
 		// Send a WM_TIMER message every second
 		SetTimer(hProgress, 1, 1000, NULL);
@@ -248,7 +247,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 			wdi_err("program assertion failed - another operation is in progress");
 		} else {
 			// Using a thread prevents application freezout on security warning
-			progress_thid = _beginthread(progress_thread, 0, progress_arglist);
+			progress_thid = _beginthread(progress_thread, 0, NULL);
 			if (progress_thid != -1L) {
 				return (INT_PTR)TRUE;
 			}
@@ -258,7 +257,6 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		wParam = (WPARAM)WDI_ERROR_RESOURCE;
 
 	case UM_PROGRESS_STOP:
-		wdi_dbg("UM_PROGRESS_STOP");
 		PostQuitMessage((int)wParam);
 		DestroyWindow(hProgress);
 		return (INT_PTR)TRUE;
@@ -310,12 +308,19 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 
 	app_instance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
-	// TODO: use a mutex
+	// protect access to the thread varaiables and prevent 2 progress
+	// dialogs from exeuting at the same time
+	progress_mutex = CreateMutex(NULL, TRUE, NULL);
+	if ((progress_mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) {
+		wdi_err("could not obtain progress dialog mutex - is another dialog active?");
+		progress_mutex = INVALID_HANDLE_VALUE;
+		return WDI_ERROR_BUSY;
+	}
 	progress_function = function;
 	progress_arglist = arglist;
 
-	// As we can't use CreateDialog because we can't use resources in a static lib
-	// we need to create the whole dialog manually.
+	// Since our lib can be static, we can't use resources
+	// => create the whole dialog manually.
 
 	// First we create  Window class if it doesn't already exist
 	if (!GetClassInfoExA(app_instance, "wdi_progress_class", &wc)) {
@@ -325,13 +330,14 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		wc.cbClsExtra    = wc.cbWndExtra = 0;
 		wc.hInstance     = GetModuleHandle(NULL);
 		wc.hIcon         = wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor       = LoadCursor(NULL, IDC_WAIT);
+		wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
 		wc.lpszClassName = "wdi_progress_class";
 		wc.lpszMenuName  = NULL;
 		wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
 		if (!RegisterClassExA(&wc)) {
 			wdi_err("can't register class %s", windows_error_str(0));
+			safe_closehandle(progress_mutex);
 			return WDI_ERROR_RESOURCE;
 		}
 	}
@@ -343,15 +349,16 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		100, 100, 287, 102, hWnd, NULL, app_instance, NULL);
 	if (hDlg == NULL) {
 		wdi_err("Unable to create progress dialog: %s", windows_error_str(0));
+		safe_closehandle(progress_mutex);
 		return WDI_ERROR_RESOURCE;
 	}
 
-	// Display the dialog
+	// Finally we Display the dialog...
 	ShowWindow(hDlg, SW_SHOWNORMAL);
 	EnableWindow(hWnd, FALSE);	// Start modal (disable main Window)
 	UpdateWindow(hDlg);
 
-	// Start the message processing loop
+	// ...and handle the message processing loop
 	while( (bRet = GetMessage(&msg, NULL, 0, 0)) != 0) {
 		if (bRet == -1) {
 			wdi_err("GetMessage error");
@@ -362,6 +369,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	}
 
 	EnableWindow(hWnd, TRUE);	// End modal (restore main Window)
+	safe_closehandle(progress_mutex);
 
 	return (int)msg.wParam;
 }
