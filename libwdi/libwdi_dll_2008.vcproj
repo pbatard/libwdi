@@ -309,6 +309,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\libwdi_dlg.c"
+				>
+			</File>
+			<File
 				RelativePath=".\logging.c"
 				>
 			</File>
@@ -340,6 +344,10 @@
 			</File>
 			<File
 				RelativePath=".\logging.h"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
 				>
 			</File>
 			<File

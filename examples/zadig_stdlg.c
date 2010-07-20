@@ -34,42 +34,10 @@
 #include "resource.h"
 #include "zadig.h"
 
-// WM_APP is not sent on focus, unlike WM_USER
-enum stdlg_user_message_type {
-	UM_PROGRESS_START = WM_APP,
-	UM_PROGRESS_STOP,
-	UM_SECURITY_CHECK
-};
-
-// Messages that appear in our progress bar as time passes
-#define FILETIME_SECOND 10000000
-#define MESSAGE_TIME (15 * FILETIME_SECOND)
-const char* progress_message[] = {
-	"Installation can take some time...",
-	"The installation process can take up to 5 minutes...",
-	"The reason it can take so long...",
-	"...is because a System Restore point is created.",		// 1 min
-	"If it's the first time a restore point is created...",
-	"...an extended delay is to expected.",
-	"Microsoft offers no means of checking progress...",
-	"...so we can't tell you how long it'll take...",		// 2 mins
-	"Please continue to be patient...",
-	"There's a 5 minutes timeout enventually...",
-	"...so if there's a problem, the process will abort.",
-	"I've really seen an installation take 5 minutes...",	// 3 mins
-	"..on Vista 64 machine with a large disk.",
-	"So how was your day...",
-	"...before it got ruined by this endless installation?",
-	"Seriously, what is taking this process so long?!",		// 4 mins
-};
 
 #if (_WIN32_WINNT >= 0x0600)
 // Available on Vista and later
 static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
-#endif
-
-#ifndef PBM_SETMARQUEE
-#define PBM_SETMARQUEE (WM_USER+10)
 #endif
 
 // TODO: make sure this is never called in release
@@ -86,12 +54,9 @@ void NOT_IMPLEMENTED(void) {
 /*
  * Globals
  */
-static uintptr_t progress_thid = -1L;
-static HWND hProgress = INVALID_HANDLE_VALUE;
 static HICON hMessageIcon = INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
-int (*progress_function)(void);
 
 /*
  * Converts a WCHAR string to UTF8 (allocate returned string)
@@ -186,7 +151,6 @@ char* to_valid_filename(char* name, char* ext)
 	ret[k] = 0;
 	return ret;
 }
-
 
 /*
  * returns true if the path is a directory with write access
@@ -679,171 +643,6 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 }
 
 /*
- * Detect if a Windows Security prompt is active, by enumerating the
- * whole Windows tree and looking for a security popup
- */
-BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
-{
-	char str_buf[STR_BUFFER_SIZE];
-	bool *found = (bool*)lParam;
-	const char* security_string = "Windows Security";
-
-	// Style is used to decide which bitmap to display in the tree
-	UINT uStyle = GetWindowLong(hWnd, GWL_STYLE);
-
-	if (uStyle & WS_POPUPWINDOW) {
-		str_buf[0] = 0;
-		GetWindowTextA(hWnd, str_buf, STR_BUFFER_SIZE);
-		str_buf[STR_BUFFER_SIZE-1] = 0;
-		if (safe_strcmp(str_buf, security_string) == 0) {
-			*found = true;
-		}
-	}
-	return TRUE;
-}
-
-bool is_security_prompt_displayed(void) {
-	bool found = false;
-	EnumChildWindows(GetDesktopWindow(), security_prompt_callback, (LPARAM)&found);
-	return found;
-}
-
-/*
- * Thread executed by the run_with_progress_bar() function
- */
-void __cdecl progress_thread(void* param)
-{
-	int r;
-
-	// Call the user provided function
-	r = (*progress_function)();
-	progress_thid = -1L;
-	PostMessage(hProgress, UM_PROGRESS_STOP, (WPARAM)r, 0);
-	_endthread();
-}
-
-/*
- * Delay thread
- */
-void __cdecl security_check_delay_thread(void* param)
-{
-	Sleep(1000);
-	PostMessage(hProgress, UM_SECURITY_CHECK, 0, 0);
-	_endthread();
-}
-
-/*
- * Callback for the run_with_progress_bar() function
- */
-INT_PTR CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	LRESULT loc;
-	HANDLE handle;
-	static int installation_time = 0;	// active installation time, in secs
-	const int msg_max = sizeof(progress_message) / sizeof(progress_message[0]);
-	static int msg_index = 0;
-	int i;
-	// coordinates that we want to disable (=> no resize)
-	static LRESULT disabled[9] = { HTLEFT, HTRIGHT, HTTOP, HTBOTTOM, HTSIZE,
-		HTTOPLEFT, HTTOPRIGHT, HTBOTTOMLEFT, HTBOTTOMRIGHT };
-
-	switch (message) {
-	case WM_INITDIALOG:
-		hProgress = hDlg;
-		center_dialog(hProgress);
-		// Toggle the progressbar Marquee animation
-		SendMessage(GetDlgItem(hProgress, IDC_PROGRESS), PBM_SETMARQUEE, TRUE, 0);
-
-		// Reset static variables
-		installation_time = 0;
-		msg_index = 0;
-
-		PostMessage(hProgress, UM_PROGRESS_START, 0, 0);
-		PostMessage(hProgress, UM_SECURITY_CHECK, 0, 0);
-
-		return (INT_PTR)TRUE;
-	case WM_NCHITTEST:
-		// Check coordinates to prevent resize actions
-		loc = DefWindowProc(hDlg, message, wParam, lParam);
-		for(i = 0; i < 9; i++) {
-			if (loc == disabled[i]) {
-				return (INT_PTR)TRUE;
-			}
-		}
-		return (INT_PTR)FALSE;
-	case UM_PROGRESS_START:
-		if (progress_thid != -1L) {
-			dprintf("program assertion failed - another operation is in progress");
-		} else {
-			// Using a thread prevents application freezout on security warning
-			progress_thid = _beginthread(progress_thread, 0, NULL);
-			if (progress_thid != -1L) {
-				return (INT_PTR)TRUE;
-			}
-			dprintf("unable to create progress_thread");
-		}
-		// Fall through and return -1 as an error
-		wParam = (WPARAM)-1;
-	case UM_PROGRESS_STOP:
-		hProgress = INVALID_HANDLE_VALUE;
-		EndDialog(hDlg, (int)wParam);
-		return (INT_PTR)TRUE;
-	case UM_SECURITY_CHECK:
-		// Why don't we use a timer for these 1 second notifications?
-		// Because a recurrent timer callback requires a suspended thread
-		if (!is_security_prompt_displayed()) {
-			installation_time++;	// Only increment outside of security prompts
-			if ( (msg_index < msg_max) && (installation_time > 15*(msg_index+1)) ) {
-				// Change the progress blurb
-				SetWindowTextA(GetDlgItem(hProgress, IDC_PROGRESS_TEXT), progress_message[msg_index]);
-				msg_index++;
-			} else if ( (installation_time > 300) && (progress_thid != -1L) ) {
-				// Wait 300 (loose) seconds and kill the thread
-				// 300 secs is the timeout for driver installation on Vista
-				dprintf("progress timeout expired - KILLING THREAD!");
-				handle = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)progress_thid);
-				TerminateThread(handle, -1);
-				CloseHandle(handle);
-				EndDialog(hDlg, -1);
-				return (INT_PTR)TRUE;
-			}
-		}
-		// Launch a new 1 second delay thread
-		_beginthread(security_check_delay_thread, 0, NULL);
-		return (INT_PTR)TRUE;
-#ifdef ZADIG_TEST
-	case WM_COMMAND:
-		switch(LOWORD(wParam)) {
-		case IDC_NEXT:
-			if (msg_index < msg_max) {
-				SetWindowTextA(GetDlgItem(hProgress, IDC_PROGRESS_TEXT), progress_message[msg_index]);
-				msg_index++;
-			}
-			return (INT_PTR)TRUE;
-		case IDOK:			// close application
-		case IDCANCEL:
-			EndDialog(hDlg, 0);
-			break;
-			return (INT_PTR)TRUE;
-		}
-		return (INT_PTR)FALSE;
-#endif
-	}
-	return (INT_PTR)FALSE;
-}
-
-/*
- * Call a blocking function (returning an int) as a modal thread with a progress bar
- */
-int run_with_progress_bar(int(*function)(void)) {
-	if (function == NULL) {
-		return -1;
-	}
-	progress_function = function;
-	return (int)DialogBox(main_instance, MAKEINTRESOURCE(IDD_PROGRESS), hMain, progress_callback);
-}
-
-/*
  * We use our own MessageBox for notifications to have greater control (center, no close button, etc)
  */
 INT_PTR CALLBACK notification_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -902,7 +701,7 @@ INT_PTR CALLBACK notification_callback(HWND hDlg, UINT message, WPARAM wParam, L
 }
 
 /*
- * Thread that displays the progress dialog
+ * Display a custom notification
  */
 void notification(int type, char* text, char* title)
 {

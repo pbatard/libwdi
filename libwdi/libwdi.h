@@ -190,7 +190,8 @@ struct wdi_options_prepare_driver {
 
 // wdi_install_driver options:
 struct wdi_options_install_driver {
-	bool undefined;
+	/** Handle to a Window application */
+	HWND hWnd;
 };
 
 /*

@@ -216,6 +216,7 @@ int get_driver_type(struct wdi_device_info* dev)
 int install_driver(void)
 {
 	struct wdi_device_info* dev = device;
+	struct wdi_options_install_driver options;
 	char str_buf[STR_BUFFER_SIZE];
 	char* inf_name = NULL;
 	bool need_dealloc = false;
@@ -277,7 +278,8 @@ int install_driver(void)
 				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
 			dsprintf("Installing driver. Please wait...");
-			r = wdi_install_driver(dev, extraction_path, inf_name, NULL);
+			options.hWnd = hMain;
+			r = wdi_install_driver(dev, extraction_path, inf_name, &options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
 			if ((r == WDI_SUCCESS) && (!cl_options.list_all)) {
@@ -955,7 +957,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDC_INSTALL:	// button: "Install"
-			r = run_with_progress_bar(install_driver);
+			r = install_driver();
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");

@@ -65,6 +65,18 @@
 
 #endif /* _MSC_VER */
 
+extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist);
+
+/*
+ * Structure used for the threaded call to install_driver_internal()
+ */
+struct install_driver_params {
+	struct wdi_device_info* device_info;
+	char* path;
+	char* inf_name;
+	struct wdi_options_install_driver* options;
+};
+
 /*
  * Tokenizer data
  */
@@ -257,7 +269,7 @@ static PSID get_sid(void) {
  * fopen equivalent, that uses CreateFile with security attributes
  * to create file as the user of the application
  */
-FILE *fcreate(const char *filename, const char *mode)
+static FILE *fcreate(const char *filename, const char *mode)
 {
 	HANDLE handle;
 	size_t i;
@@ -476,7 +488,7 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 }
 
 // convert a GUID to an hex GUID string
-char* guid_to_string(const GUID guid)
+static char* guid_to_string(const GUID guid)
 {
 	static char guid_string[MAX_GUID_STRING_LENGTH];
 
@@ -488,7 +500,7 @@ char* guid_to_string(const GUID guid)
 }
 
 // free a device info struct
-void free_di(struct wdi_device_info *di)
+static void free_di(struct wdi_device_info *di)
 {
 	if (di == NULL) {
 		return;
@@ -750,7 +762,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 }
 
 // extract the embedded binary resources
-int extract_binaries(char* path)
+static int extract_binaries(char* path)
 {
 	FILE *fd;
 	char filename[MAX_PATH_LENGTH];
@@ -787,7 +799,7 @@ int extract_binaries(char* path)
 }
 
 // tokenizes a resource stored in resource.h
-long tokenize_internal(char* resource_name, char** dst, const token_entity_t* token_entities,
+static long tokenize_internal(char* resource_name, char** dst, const token_entity_t* token_entities,
 					   const char* tok_prefix, const char* tok_suffix, int recursive)
 {
 	int i;
@@ -985,7 +997,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 }
 
 // Handle messages received from the elevated installer through the pipe
-int process_message(char* buffer, DWORD size)
+static int process_message(char* buffer, DWORD size)
 {
 	DWORD tmp;
 	char* sid_str;
@@ -1070,9 +1082,13 @@ int process_message(char* buffer, DWORD size)
 }
 
 // Run the elevated installer
-int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options_install_driver* options)
+static int install_driver_internal(void* arglist)
 {
+	struct install_driver_params* params = (struct install_driver_params*)arglist;
+	struct wdi_device_info* device_info = params->device_info;
+	char* path = params->path;
+	char* inf_name = params->inf_name;
+
 	SHELLEXECUTEINFO shExecInfo;
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -1306,4 +1322,21 @@ out:
 	safe_closehandle(handle[1]);
 	safe_closehandle(pipe_handle);
 	MUTEX_RETURN r;
+}
+
+int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
+								  char* inf_name, struct wdi_options_install_driver* options)
+{
+	struct install_driver_params params;
+	params.device_info = device_info;
+	params.inf_name = inf_name;
+	params.options = options;
+	params.path = path;
+
+	if ((options == NULL) || (options->hWnd == NULL)) {
+		wdi_dbg("using standard mode");
+		return install_driver_internal((void*)&params);
+	}
+	wdi_dbg("using progress bar mode");
+	return run_with_progress_bar(options->hWnd, install_driver_internal, (void*)&params);
 }
