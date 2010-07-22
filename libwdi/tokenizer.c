@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  */
 #include "tokenizer.h"
 #include <stdlib.h>
@@ -81,7 +81,7 @@ long tokenize_string(const char* src, // text to bo tokenized
 
 	// if the src buffer count <= 0 assume it is null terminated
 	if (src_count < 0) src_count = (long)strlen(src);
-	
+
 	// nothing to do
 	if (src_count == 0) return 0;
 
@@ -89,7 +89,7 @@ long tokenize_string(const char* src, // text to bo tokenized
 	// the destination buffer will grow as needed.
 	dst_alloc_size=src_count*2;
 	*dst = pDst = malloc(dst_alloc_size);
-	if (!pDst) 
+	if (!pDst)
 		return -ERROR_NOT_ENOUGH_MEMORY;
 	dst_pos=0;
 
@@ -146,14 +146,14 @@ long tokenize_string(const char* src, // text to bo tokenized
 
 		if (!match_found)
 		{
-			// No matches were found; leave it as-is. 
+			// No matches were found; leave it as-is.
 			StrCpyWithGrow(pDst, *dst, dst_pos, dst_alloc_size,
 				tok_prefix, tok_prefix_size);
 		}
 	}
 
 	match_length=src_count;
-	if (src_count)
+	if (match_length > 0)
 		StrCpyWithGrow(pDst, *dst, dst_pos, dst_alloc_size, src, match_length);
 
 	// StrCpyWithGrow is aware an extra char is always needed for null.
@@ -174,7 +174,7 @@ long tokenize_string(const char* src, // text to bo tokenized
 }
 
 // tokenizes a resource stored in the current module.
-long tokenize_resource(LPCSTR resource_name, 
+long tokenize_resource(LPCSTR resource_name,
 					 LPCSTR resource_type,
 					 char** dst,
 					 const token_entity_t* token_entities,
@@ -194,7 +194,7 @@ long tokenize_resource(LPCSTR resource_name,
 	src_count = SizeofResource(NULL, hSrc);
 
 	res_data = LoadResource(NULL,hSrc);
-	
+
 	if (!res_data)
 		return -ERROR_RESOURCE_DATA_NOT_FOUND;
 
@@ -203,7 +203,7 @@ long tokenize_resource(LPCSTR resource_name,
 	if (!src)
 		return -ERROR_RESOURCE_DATA_NOT_FOUND;
 
-	return tokenize_string(src, src_count, dst, 
+	return tokenize_string(src, src_count, dst,
 		token_entities, tok_prefix, tok_suffix, recursive);
 
 }
