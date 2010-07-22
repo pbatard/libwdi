@@ -24,6 +24,7 @@
 #include <shlobj.h>
 #include <process.h>
 #include <stdint.h>
+#include <wingdi.h>
 #include <config.h>
 
 #include "installer.h"
@@ -60,6 +61,9 @@ const char* progress_message[] = {
 	"Aborting in 15 seconds...",
 };
 
+#ifndef PBS_MARQUEE
+#define PBS_MARQUEE 0x08
+#endif
 #ifndef PBM_SETMARQUEE
 #define PBM_SETMARQUEE (WM_USER+10)
 #endif
@@ -76,7 +80,16 @@ static int (*progress_function)(void*);
 static void* progress_arglist;
 static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
+// Work around for CreateFont on DDK (would require end user apps linking with Gdi32 othwerwise)
+static HFONT (WINAPI *pCreateFontA)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR) = NULL;
+#define INIT_CREATEFONT if (pCreateFontA== NULL) {	\
+	pCreateFontA = (HFONT (WINAPI *)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR))	\
+		GetProcAddress(GetModuleHandle("Gdi32"), "CreateFontA"); \
+	}
+#define IS_CREATEFONT_AVAILABLE (pCreateFontA != NULL)
+
 extern char *windows_error_str(uint32_t retval);
+
 
 /*
  * Detect if a Windows Security prompt is active, by enumerating the
@@ -194,9 +207,12 @@ static void init_children(HWND hDlg) {
 	}
 
 	// Set the font to MS Dialog default
-	hFont = CreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-		DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
-	SendMessage(hProgressText, WM_SETFONT, (WPARAM)hFont, (LPARAM)TRUE);
+	INIT_CREATEFONT;
+	if (IS_CREATEFONT_AVAILABLE) {
+		hFont = pCreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+			DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
+		SendMessage(hProgressText, WM_SETFONT, (WPARAM)hFont, (LPARAM)TRUE);
+	}
 }
 
 /*
