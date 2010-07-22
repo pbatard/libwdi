@@ -347,6 +347,14 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			>
+			<File
+				RelativePath=".\zadic.manifest"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

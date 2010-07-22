@@ -374,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\zadig.manifest"
+				>
+			</File>
+			<File
 				RelativePath=".\zadig.rc"
 				>
 			</File>
