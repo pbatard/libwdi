@@ -37,7 +37,7 @@
 
 #if (_WIN32_WINNT >= 0x0600)
 // Available on Vista and later
-static HRESULT (__stdcall *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
+static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
 #endif
 
 // TODO: make sure this is never called in release
@@ -46,7 +46,7 @@ void NOT_IMPLEMENTED(void) {
 }
 
 #define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {								\
-	pSHCreateItemFromParsingName = (HRESULT (__stdcall *)(PCWSTR, IBindCtx*, REFIID, void **))	\
+	pSHCreateItemFromParsingName = (HRESULT (WINAPI *)(PCWSTR, IBindCtx*, REFIID, void **))	\
 			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");			\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
