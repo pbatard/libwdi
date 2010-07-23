@@ -102,7 +102,7 @@ token_entity_t inf_entities[]=
 	{"DEVICE_MANUFACTURER",""},
 	{"DRIVER_DATE",""},
 	{"DRIVER_VERSION",""},
-	{NULL} // DO NOT REMOVE!
+	{NULL, ""} // DO NOT REMOVE!
 };
 
 /*

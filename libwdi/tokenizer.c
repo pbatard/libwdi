@@ -25,23 +25,24 @@
 // If the dst buffer is to small it grows to what is needed+GROW_SIZE
 #define GetDestSize(RequiredSize) RequiredSize+8192
 
-// copies text into the destination buffer; growing the buffer as needed.
-#define StrCpyWithGrow(DstPtr, DstPtrOrig, DstPos, DstAllocSize,  \
-	                    ReplaceString, ReplaceLength)             \
-{                                                                 \
-	if (DstPos+(ReplaceLength) >= DstAllocSize+1)                 \
-	{                                                             \
-		DstAllocSize = GetDestSize(DstPos + ReplaceLength);       \
-		DstPtr = realloc(DstPtr,DstAllocSize);                    \
-	}                                                             \
-	if (!DstPtr)                                                  \
-	{                                                             \
-		free(DstPtrOrig);                                         \
-		return -ERROR_NOT_ENOUGH_MEMORY;                          \
-	}                                                             \
-	DstPtrOrig = DstPtr;                                          \
-	safe_strncpy(&DstPtr[DstPos],DstAllocSize-DstPos, ReplaceString,ReplaceLength);    \
-	DstPos += ReplaceLength;                                      \
+BOOL StrCpyWithGrow(char** DstPtr, char** DstPtrOrig, long* DstPos, long* DstAllocSize,
+					const char* ReplaceString, long ReplaceLength)
+{
+	if ((*DstPos)+(ReplaceLength) >= (*DstAllocSize))
+	{
+		*DstAllocSize = GetDestSize((*DstPos) + ReplaceLength);
+		*DstPtr = realloc((*DstPtr),(*DstAllocSize));
+	}
+	if (!(*DstPtr))
+	{
+		free((*DstPtrOrig));
+		return FALSE;
+	}
+	*DstPtrOrig = (*DstPtr);
+	safe_strncpy(((*DstPtr)+(*DstPos)),(*DstAllocSize)-(*DstPos), ReplaceString, ReplaceLength);
+	*DstPos += ReplaceLength;
+
+	return TRUE;
 }
 
 // replaces tokens in text.
@@ -103,59 +104,75 @@ long tokenize_string(const char* src, // text to bo tokenized
 		match_found=0;
 		match_length = (long)(match_start-src);
 
-		StrCpyWithGrow(pDst,*dst, dst_pos,dst_alloc_size,src,match_length);
+		// copy all the text up to the tok_prefix start from src to dst.
+		if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
+		{
+			return -ERROR_NOT_ENOUGH_MEMORY;
+		}
 
 		src+=match_length+tok_prefix_size;
 		src_count-=(match_length+tok_prefix_size);
-		if (src_count <= 0)
-			break;
+		//ASSERT(src_count >=0);
 
-		// iterate through the match/replace tokens
-		while ((next_match=&token_entities[match_replace_pos++]))
+		// If src_count equals 0 this is a token prefix and the end of src.
+		if (src_count > 0)
 		{
-			// the match and replace fields must both be set
-			if (!next_match->match || !next_match->replace)
+			// iterate through the match/replace tokens
+			while ((next_match=&token_entities[match_replace_pos++]))
 			{
-				free(pDst);
-				return -ERROR_BAD_ARGUMENTS;
-			}
-			match_length=(long)strlen(next_match->match);
+				// the match and replace fields must both be set
+				if (!next_match->match || !next_match->replace)
+				{
+					break;
+				}
+				match_length=(long)strlen(next_match->match);
 
-			// if this token will be longer than what's left in src buffer, skip it.
-			if (src_count < (match_length+tok_suffix_size))
-				continue; // not found
+				// if this token will be longer than what's left in src buffer, skip it.
+				if (src_count < (match_length+tok_suffix_size))
+					continue; // not found
 
-			// check for a match suffix
-			if (strncmp(src+match_length,tok_suffix,tok_suffix_size)!=0)
-				continue; // not found
+				// check for a match suffix
+				if (strncmp(src+match_length,tok_suffix,tok_suffix_size)!=0)
+					continue; // not found
 
-			if (strncmp(src,next_match->match,match_length)==0)
-			{
-				// found a valid token match
-				replace_length=(long)strlen(next_match->replace);
-				StrCpyWithGrow(pDst, *dst, dst_pos, dst_alloc_size,
-					next_match->replace,replace_length);
+				if (strncmp(src,next_match->match,match_length)==0)
+				{
+					// found a valid token match
+					replace_length=(long)strlen(next_match->replace);
 
-				src+=match_length+tok_suffix_size;
-				src_count-=(match_length+tok_suffix_size);
-				match_found=1;
-				match_count++;
-				break;
+					if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size,
+						next_match->replace, replace_length))
+					{
+						return ERROR_NOT_ENOUGH_MEMORY;
+					}
+
+					src+=match_length+tok_suffix_size;
+					src_count-=(match_length+tok_suffix_size);
+					match_found=1;
+					match_count++;
+					break;
+				}
 			}
 		}
-
 		if (!match_found)
 		{
 			// No matches were found; leave it as-is.
-			StrCpyWithGrow(pDst, *dst, dst_pos, dst_alloc_size,
-				tok_prefix, tok_prefix_size);
+			if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size,
+				tok_prefix, tok_prefix_size))
+			{
+				return ERROR_NOT_ENOUGH_MEMORY;
+			}
 		}
 	}
 
 	match_length=src_count;
 	if (match_length > 0)
-		StrCpyWithGrow(pDst, *dst, dst_pos, dst_alloc_size, src, match_length);
-
+	{
+		if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
+		{
+			return ERROR_NOT_ENOUGH_MEMORY;
+		}
+	}
 	// StrCpyWithGrow is aware an extra char is always needed for null.
 	pDst[dst_pos]='\0';
 
