@@ -61,6 +61,7 @@ HWND hInfo;
 HWND hStatus;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
+HMENU hMenuLogLevel;
 WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
@@ -72,6 +73,7 @@ int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
 int default_driver_type = WDI_WINUSB;
+int log_level = WDI_LOG_LEVEL_INFO;
 // Application states
 bool advanced_mode = false;
 bool create_device = false;
@@ -539,6 +541,7 @@ void init_dialog(HWND hDlg)
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
+	hMenuLogLevel = GetSubMenu(hMenuOptions, 3);
 
 	// Create the status line
 	create_status_bar();
@@ -551,7 +554,7 @@ void init_dialog(HWND hDlg)
 	if (err != WDI_SUCCESS) {
 		dprintf("Unable to access log output - logging will be disabled (%s)", wdi_strerror(err));
 	}
-	wdi_set_log_level(LOG_LEVEL_DEBUG);
+	wdi_set_log_level(log_level);
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
@@ -583,6 +586,17 @@ void init_dialog(HWND hDlg)
 }
 
 /*
+ * Change the log level
+ */
+void set_loglevel(DWORD menu_cmd)
+{
+	CheckMenuItem(hMenuLogLevel, log_level+IDM_LOGLEVEL_DEBUG, MF_UNCHECKED);
+	CheckMenuItem(hMenuLogLevel, menu_cmd, MF_CHECKED);
+	log_level = menu_cmd - IDM_LOGLEVEL_DEBUG;
+	wdi_set_log_level(log_level);
+}
+
+/*
  * Use libconfig to parse the default ini file
  */
 bool parse_ini(void) {
@@ -591,7 +605,7 @@ bool parse_ini(void) {
 
 	// Check if the ini file exists
 	if (GetFileAttributes(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
-		dprintf("could not open ini file '%s'", INI_NAME);
+		dprintf("ini file '%s' not found - default parameters will be used", INI_NAME);
 		return false;
 	}
 
@@ -610,6 +624,12 @@ bool parse_ini(void) {
 	config_lookup_bool(&cfg, "include_hubs", &cl_options.list_hubs);
 	config_lookup_bool(&cfg, "extract_only", &extract_only);
 	config_lookup_bool(&cfg, "trim_whitespaces", &cl_options.trim_whitespaces);
+
+	// Set the log level
+	config_lookup_int(&cfg, "log_level", &log_level);
+	if ((log_level >= 0) && (log_level <= 3)) {
+		set_loglevel(log_level+IDM_LOGLEVEL_DEBUG);
+	}
 
 	// Set the default extraction dir
 	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
@@ -1030,6 +1050,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDM_IGNOREHUBS:
 			toggle_hubs(true);
+			break;
+		case IDM_LOGLEVEL_ERROR:
+		case IDM_LOGLEVEL_WARNING:
+		case IDM_LOGLEVEL_INFO:
+		case IDM_LOGLEVEL_DEBUG:
+			set_loglevel(LOWORD(wParam));
 			break;
 		default:
 			return (INT_PTR)FALSE;

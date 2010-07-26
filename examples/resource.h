@@ -43,6 +43,11 @@
 #define IDM_OPEN                        40007
 #define IDM_EXTRACT                     40008
 #define IDM_IGNOREHUBS                  40009
+#define IDM_OPTIONS_LOGLEVEL            40010
+#define IDM_LOGLEVEL_DEBUG              40011
+#define IDM_LOGLEVEL_INFO               40012
+#define IDM_LOGLEVEL_WARNING            40013
+#define IDM_LOGLEVEL_ERROR              40014
 
 // Next default values for new objects
 // 
@@ -50,7 +55,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        105
-#define _APS_NEXT_COMMAND_VALUE         40010
+#define _APS_NEXT_COMMAND_VALUE         40015
 #define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

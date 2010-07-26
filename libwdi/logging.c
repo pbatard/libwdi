@@ -37,7 +37,7 @@ UINT logger_msg = 0;
 // Detect spurious log readouts
 unsigned log_messages_pending = 0;
 // Global debug level
-static int global_log_level = LOG_LEVEL_WARNING;
+static int global_log_level = WDI_LOG_LEVEL_INFO;
 
 extern char *windows_error_str(uint32_t retval);
 
@@ -61,16 +61,16 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 #endif
 
 	switch (level) {
-	case LOG_LEVEL_INFO:
+	case WDI_LOG_LEVEL_INFO:
 		prefix = "info";
 		break;
-	case LOG_LEVEL_WARNING:
+	case WDI_LOG_LEVEL_WARNING:
 		prefix = "warning";
 		break;
-	case LOG_LEVEL_ERROR:
+	case WDI_LOG_LEVEL_ERROR:
 		prefix = "error";
 		break;
-	case LOG_LEVEL_DEBUG:
+	case WDI_LOG_LEVEL_DEBUG:
 		prefix = "debug";
 		break;
 	default:
@@ -129,18 +129,18 @@ void console_wdi_log_v(enum wdi_log_level level,
 #endif
 
 	switch (level) {
-	case LOG_LEVEL_INFO:
+	case WDI_LOG_LEVEL_INFO:
 		prefix = "info";
 		break;
-	case LOG_LEVEL_WARNING:
+	case WDI_LOG_LEVEL_WARNING:
 		stream = stderr;
 		prefix = "warning";
 		break;
-	case LOG_LEVEL_ERROR:
+	case WDI_LOG_LEVEL_ERROR:
 		stream = stderr;
 		prefix = "error";
 		break;
-	case LOG_LEVEL_DEBUG:
+	case WDI_LOG_LEVEL_DEBUG:
 		stream = stderr;
 		prefix = "debug";
 		break;
@@ -308,7 +308,7 @@ int LIBWDI_API wdi_set_log_level(int level)
 #if defined(ENABLE_DEBUG_LOGGING)
 	return WDI_ERROR_NOT_SUPPORTED;
 #endif
-	if ( (level < LOG_LEVEL_DEBUG) || (level > LOG_LEVEL_ERROR) ) {
+	if ( (level < WDI_LOG_LEVEL_DEBUG) || (level > WDI_LOG_LEVEL_ERROR) ) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
 	global_log_level = level;

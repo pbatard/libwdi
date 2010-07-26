@@ -61,10 +61,10 @@ enum wdi_driver_type {
  * Log level
  */
 enum wdi_log_level {
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_ERROR
+	WDI_LOG_LEVEL_DEBUG,
+	WDI_LOG_LEVEL_INFO,
+	WDI_LOG_LEVEL_WARNING,
+	WDI_LOG_LEVEL_ERROR
 };
 
 /*

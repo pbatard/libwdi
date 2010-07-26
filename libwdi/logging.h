@@ -48,14 +48,14 @@
 #endif
 
 #if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
-#define wdi_dbg(...) _wdi_log(LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define wdi_dbg(...) _wdi_log(WDI_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define wdi_dbg(...)
 #endif
 
-#define wdi_info(...) _wdi_log(LOG_LEVEL_INFO, __VA_ARGS__)
-#define wdi_warn(...) _wdi_log(LOG_LEVEL_WARNING, __VA_ARGS__)
-#define wdi_err(...) _wdi_log(LOG_LEVEL_ERROR, __VA_ARGS__)
+#define wdi_info(...) _wdi_log(WDI_LOG_LEVEL_INFO, __VA_ARGS__)
+#define wdi_warn(...) _wdi_log(WDI_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define wdi_err(...) _wdi_log(WDI_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 #else /* !defined(_MSC_VER) || _MSC_VER > 1200 */
 

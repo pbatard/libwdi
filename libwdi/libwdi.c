@@ -1028,7 +1028,11 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		"on the system.\nThis file will be provided by Microsoft upon certification of your drivers.");
 	fclose(fd);
 
-	wdi_dbg("succesfully created %s", filename);
+	// Restore extension for debug output
+	filename[strlen(filename)-3] = 'i';
+	filename[strlen(filename)-2] = 'n';
+	filename[strlen(filename)-1] = 'f';
+	wdi_info("succesfully created %s", filename);
 	MUTEX_RETURN WDI_SUCCESS;
 }
 
@@ -1073,14 +1077,14 @@ static int process_message(char* buffer, DWORD size)
 			wdi_err("print_message: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
-		wdi_log(LOG_LEVEL_DEBUG, "installer process", "%s", buffer+1);
+		wdi_log(WDI_LOG_LEVEL_DEBUG, "installer process", "%s", buffer+1);
 		break;
 	case IC_SYSLOG_MESSAGE:
 		if (size < 2) {
 			wdi_err("syslog_message: no data");
 			return WDI_ERROR_NOT_FOUND;
 		}
-		wdi_log(LOG_LEVEL_DEBUG, "syslog", "%s", buffer+1);
+		wdi_log(WDI_LOG_LEVEL_DEBUG, "syslog", "%s", buffer+1);
 		break;
 	case IC_SET_STATUS:
 		if (size < 2) {
