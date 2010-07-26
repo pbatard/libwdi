@@ -153,20 +153,6 @@ char* to_valid_filename(char* name, char* ext)
 }
 
 /*
- * returns true if the path is a directory with write access
- */
-static __inline bool check_dir(char* cpath)
-{
-	struct _stat st;
-	if ( (_access(cpath, 02) == 0)
-	  && (_stat(cpath, &st) == 0)
-	  && (st.st_mode & _S_IFDIR) ) {
-		return true;
-	}
-	return false;
-}
-
-/*
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
  */

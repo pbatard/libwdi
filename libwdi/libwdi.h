@@ -190,7 +190,7 @@ struct wdi_options_prepare_driver {
 
 // wdi_install_driver options:
 struct wdi_options_install_driver {
-	/** Handle to a Window application */
+	/** Handle to a Window application that should receive a modal progress dialog */
 	HWND hWnd;
 };
 
