@@ -155,20 +155,20 @@ static void detect_version(void)
 	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
 		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
 			windows_version = WINDOWS_2K;
-			wdi_dbg("Windows 2000");
+			wdi_info("Windows 2000");
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
 			windows_version = WINDOWS_XP;
-			wdi_dbg("Windows XP");
+			wdi_info("Windows XP");
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
 			windows_version = WINDOWS_2003_XP64;
-			wdi_dbg("Windows 2003 or Windows XP 64 bit");
+			wdi_info("Windows 2003 or Windows XP 64 bit");
 		} else if (os_version.dwMajorVersion >= 6) {
 			if (os_version.dwBuildNumber < 7000) {
 				windows_version = WINDOWS_VISTA;
-				wdi_dbg("Windows Vista");
+				wdi_info("Windows Vista");
 			} else {
 				windows_version = WINDOWS_7;
-				wdi_dbg("Windows 7");
+				wdi_info("Windows 7");
 			}
 		}
 	}
@@ -355,7 +355,6 @@ static int check_dir(char* path, bool create)
 		return WDI_ERROR_ACCESS;
 	}
 
-	wdi_dbg("created '%s'", path);
 	return WDI_SUCCESS;
 }
 
@@ -690,7 +689,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 				// fallback to SPDRP_DEVICEDESC (USB husb still use it)
 				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-					wdi_warn("could not read device description for %d: %s",
+					wdi_dbg("could not read device description for %d: %s",
 						i, windows_error_str(0));
 					safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 				}
@@ -830,7 +829,7 @@ static int extract_binaries(char* path)
 		fclose(fd);
 	}
 
-	wdi_dbg("successfully extracted files to %s", path);
+	wdi_info("successfully extracted driver files to %s", path);
 	return WDI_SUCCESS;
 }
 
@@ -893,7 +892,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 			wdi_err("no path provided and unable to use TEMP");
 			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 		} else {
-			wdi_dbg("no path provided - extracting to '%s'", path);
+			wdi_info("no path provided - extracting to '%s'", path);
 		}
 	}
 
@@ -1155,7 +1154,7 @@ static int install_driver_internal(void* arglist)
 			wdi_err("no path provided and unable to use TEMP");
 			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 		} else {
-			wdi_dbg("no path provided - installing from '%s'", path);
+			wdi_info("no path provided - installing from '%s'", path);
 		}
 	}
 
@@ -1167,7 +1166,7 @@ static int install_driver_internal(void* arglist)
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
 		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
-			wdi_dbg("detected another pending installation - aborting");
+			wdi_warn("detected another pending installation - aborting");
 			MUTEX_RETURN WDI_ERROR_PENDING_INSTALLATION;
 		}
 	} else {
@@ -1241,7 +1240,7 @@ static int install_driver_internal(void* arglist)
 		}
 
 		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
-			wdi_dbg("operation cancelled by the user");
+			wdi_info("operation cancelled by the user");
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 		else if (err) {
