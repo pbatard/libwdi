@@ -15,7 +15,14 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- */
+*/
+
+/*
+07/23/2010 Revisions:
+  o Fixed positive return value if memory allocation fails
+  o Changed grow size from 8192 to 1024
+*/
+
 #include "tokenizer.h"
 #include <stdlib.h>
 
@@ -23,9 +30,9 @@
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
 
 // If the dst buffer is to small it grows to what is needed+GROW_SIZE
-#define GetDestSize(RequiredSize) RequiredSize+8192
+#define GetDestSize(RequiredSize) RequiredSize+1024
 
-BOOL StrCpyWithGrow(char** DstPtr, char** DstPtrOrig, long* DstPos, long* DstAllocSize,
+BOOL grow_strcpy(char** DstPtr, char** DstPtrOrig, long* DstPos, long* DstAllocSize,
 					const char* ReplaceString, long ReplaceLength)
 {
 	if ((*DstPos)+(ReplaceLength) >= (*DstAllocSize))
@@ -86,9 +93,8 @@ long tokenize_string(const char* src, // text to bo tokenized
 	// nothing to do
 	if (src_count == 0) return 0;
 
-	// allocate twice the size of the src buffer to start things off
-	// the destination buffer will grow as needed.
-	dst_alloc_size=src_count*2;
+	// Set the initial buffer size.
+	dst_alloc_size = GetDestSize(src_count);
 	*dst = pDst = malloc(dst_alloc_size);
 	if (!pDst)
 		return -ERROR_NOT_ENOUGH_MEMORY;
@@ -105,7 +111,7 @@ long tokenize_string(const char* src, // text to bo tokenized
 		match_length = (long)(match_start-src);
 
 		// copy all the text up to the tok_prefix start from src to dst.
-		if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
+		if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
 		{
 			return -ERROR_NOT_ENOUGH_MEMORY;
 		}
@@ -140,10 +146,10 @@ long tokenize_string(const char* src, // text to bo tokenized
 					// found a valid token match
 					replace_length=(long)strlen(next_match->replace);
 
-					if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size,
+					if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size,
 						next_match->replace, replace_length))
 					{
-						return ERROR_NOT_ENOUGH_MEMORY;
+						return -ERROR_NOT_ENOUGH_MEMORY;
 					}
 
 					src+=match_length+tok_suffix_size;
@@ -157,10 +163,10 @@ long tokenize_string(const char* src, // text to bo tokenized
 		if (!match_found)
 		{
 			// No matches were found; leave it as-is.
-			if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size,
+			if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size,
 				tok_prefix, tok_prefix_size))
 			{
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return -ERROR_NOT_ENOUGH_MEMORY;
 			}
 		}
 	}
@@ -168,12 +174,12 @@ long tokenize_string(const char* src, // text to bo tokenized
 	match_length=src_count;
 	if (match_length > 0)
 	{
-		if (!StrCpyWithGrow(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
+		if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size, src, match_length))
 		{
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return -ERROR_NOT_ENOUGH_MEMORY;
 		}
 	}
-	// StrCpyWithGrow is aware an extra char is always needed for null.
+	// grow_strcpy is aware an extra char is always needed for null.
 	pDst[dst_pos]='\0';
 
 	if (recursive && match_count)
