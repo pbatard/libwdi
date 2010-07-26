@@ -64,6 +64,8 @@
 
 #endif /* _MSC_VER */
 
+// These functions are defined in libwdi_dlg
+extern HWND find_security_prompt(void);
 extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist);
 
 /*
@@ -1355,6 +1357,8 @@ static int install_driver_internal(void* arglist)
 		}
 	}
 out:
+	// If the security prompt is still active, attempt to destroy it
+	DestroyWindow(find_security_prompt());
 	current_device = NULL;
 	safe_free(buffer);
 	safe_closehandle(handle[0]);

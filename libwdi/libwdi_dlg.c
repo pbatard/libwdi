@@ -98,27 +98,25 @@ extern char *windows_error_str(uint32_t retval);
 BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
 {
 	char str_buf[STR_BUFFER_SIZE];
-	bool *found = (bool*)lParam;
+	HWND *hFound = (HWND*)lParam;
 	const char* security_string = "Windows Security";
 
-	// Style is used to decide which bitmap to display in the tree
-	UINT uStyle = GetWindowLong(hWnd, GWL_STYLE);
-
-	if (uStyle & WS_POPUPWINDOW) {
+	// The security prompt has the popup window style
+	if (GetWindowLong(hWnd, GWL_STYLE) & WS_POPUPWINDOW) {
 		str_buf[0] = 0;
 		GetWindowTextA(hWnd, str_buf, STR_BUFFER_SIZE);
 		str_buf[STR_BUFFER_SIZE-1] = 0;
 		if (safe_strcmp(str_buf, security_string) == 0) {
-			*found = true;
+			*hFound = hWnd;
 		}
 	}
 	return TRUE;
 }
 
-static bool is_security_prompt_displayed(void) {
-	bool found = false;
-	EnumChildWindows(GetDesktopWindow(), security_prompt_callback, (LPARAM)&found);
-	return found;
+HWND find_security_prompt(void) {
+	HWND hSecurityPrompt = NULL;
+	EnumChildWindows(GetDesktopWindow(), security_prompt_callback, (LPARAM)&hSecurityPrompt);
+	return hSecurityPrompt;
 }
 
 /*
@@ -278,7 +276,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		return (INT_PTR)TRUE;
 
 	case WM_TIMER:
-		if (!is_security_prompt_displayed()) {
+		if (find_security_prompt() == NULL) {
 			installation_time++;	// Only increment outside of security prompts
 			if ( (msg_index < msg_max) && (installation_time > 15*(msg_index+1)) ) {
 				// Change the progress blurb
