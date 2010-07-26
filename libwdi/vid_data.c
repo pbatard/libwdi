@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.07.04
+ * Version: 2010.07.20
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -39,6 +39,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0079, "DragonRise Inc." },
 	{ 0x0105, "Trust International B.V." },
 	{ 0x0145, "Unknown" },
+	{ 0x0154, "LW154 Wireless 150N Adapter" },
 	{ 0x0204, "Chipsbank Microelectronics Co., Ltd" },
 	{ 0x0218, "Hangzhou Worlde" },
 	{ 0x02ad, "HUMAX Co., Ltd." },
@@ -1281,7 +1282,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0b00, "INGENICO" },
 	{ 0x0b05, "ASUSTek Computer, Inc." },
 	{ 0x0b0b, "Datamax-O'Neil" },
-	{ 0x0b0c, "Todos Data System AB" },
+	{ 0x0b0c, "Todos AB" },
 	{ 0x0b0d, "ProjectLab" },
 	{ 0x0b0e, "GN Netcom" },
 	{ 0x0b0f, "AVID Technology" },
@@ -1713,6 +1714,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0e66, "Hawking Technologies" },
 	{ 0x0e67, "Fossil, Inc." },
 	{ 0x0e6a, "Megawin Technology Co., Ltd" },
+	{ 0x0e6f, "Logic3" },
 	{ 0x0e70, "Tokyo Electronic Industry Co., Ltd" },
 	{ 0x0e72, "Hsi-Chin Electronics Co., Ltd" },
 	{ 0x0e75, "TVS Electronics, Ltd" },
@@ -2234,6 +2236,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1582, "Fiberline" },
 	{ 0x1587, "SMA Technologie AG" },
 	{ 0x158d, "Oakley Inc." },
+	{ 0x158e, "JDS Uniphase Corporation (JDSU)" },
 	{ 0x1598, "Kunshan Guoji Electronics Co., Ltd." },
 	{ 0x15a2, "Freescale Semiconductor, Inc." },
 	{ 0x15a4, "Afatech Technologies, Inc." },
@@ -2294,6 +2297,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x16a6, "Unigraf" },
 	{ 0x16ab, "Global Sun Technology" },
 	{ 0x16ac, "Dongguan ChingLung Wire & Cable Co., Ltd." },
+	{ 0x16b4, "iStation" },
 	{ 0x16b5, "Persentec, Inc." },
 	{ 0x16c0, "VOTI" },
 	{ 0x16ca, "Wireless Cables, Inc." },
@@ -2352,6 +2356,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1831, "Gwo Jinn Industries Co., Ltd." },
 	{ 0x1832, "Huizhou Shenghua Industrial Co., Ltd." },
 	{ 0x183d, "VIVOphone" },
+	{ 0x1843, "Vaisala" },
 	{ 0x1854, "Memory Devices Ltd." },
 	{ 0x185b, "Compro" },
 	{ 0x1861, "Tech Technology Industrial Company" },
@@ -2514,6 +2519,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1c26, "Shanghai Haiying Electronics Co., Ltd." },
 	{ 0x1c27, "HuiYang D & S Cable Co., Ltd." },
 	{ 0x1c31, "LS Cable Ltd." },
+	{ 0x1c34, "SpringCard" },
 	{ 0x1c37, "Authorizer Technologies, Inc." },
 	{ 0x1c3d, "NONIN MEDICAL INC." },
 	{ 0x1c3e, "Wep Peripherals" },
@@ -2668,6 +2674,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x7392, "Edimax Technology Co., Ltd" },
 	{ 0x8086, "Intel Corp." },
 	{ 0x8087, "Intel Corp." },
+	{ 0x8282, "Keio" },
 	{ 0x8341, "EGO Systems, Inc." },
 	{ 0x9016, "Sitecom" },
 	{ 0x9022, "TeVii Technology Ltd." },
