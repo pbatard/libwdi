@@ -21,7 +21,6 @@
 #include <setupapi.h>
 #include <io.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <objbase.h>
@@ -236,33 +235,128 @@ static char err_string[STR_BUFFER_SIZE];
 }
 
 /*
- * Retrieve the SID of the current user user
+ * Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
  */
 static PSID get_sid(void) {
 	TOKEN_USER* tu = NULL;
 	DWORD len;
 	HANDLE token;
 	PSID ret = NULL;
+	char* psid_string = NULL;
 
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
-		return ret;
+		wdi_err("OpenProcessToken failed: %s", windows_error_str(0));
+		return NULL;
 	}
 
 	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			return ret;
+			wdi_err("GetTokenInformation (pre) failed: %s", windows_error_str(0));
+			return NULL;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
 		if (tu == NULL) {
-			return ret;
+			return NULL;
 		}
 	}
 
 	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
-		ret = tu->User.Sid;
+		/*
+		 * now of course, the interesting thing is that if you return tu->User.Sid
+		 * but free tu, the PSID pointer becomes invalid after a while.
+		 * The workaround? Convert to string then back to PSID
+		 */
+		if (!ConvertSidToStringSidA(tu->User.Sid, &psid_string)) {
+			wdi_err("unable to convert SID to string: %s", windows_error_str(0));
+			ret = NULL;
+		} else {
+			if (!ConvertStringSidToSidA(psid_string, &ret)) {
+				wdi_err("unable to convert string back to SID: %s", windows_error_str(0));
+				ret = NULL;
+			}
+			// MUST use LocalFree()
+			LocalFree(psid_string);
+		}
+	} else {
+		ret = NULL;
+		wdi_err("GetTokenInformation (real) failed: %s", windows_error_str(0));
 	}
 	free(tu);
 	return ret;
+}
+
+/*
+ * Check whether the path is a directory with write access
+ * if create is true, create directory if it doesn't exist
+ */
+static int check_dir(char* path, bool create)
+{
+	int r;
+	SECURITY_ATTRIBUTES *ps = NULL;
+	DWORD file_attributes;
+	PSID sid = NULL;
+	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_DESCRIPTOR s_desc;
+
+	file_attributes = GetFileAttributesA(path);
+	if (file_attributes == INVALID_FILE_ATTRIBUTES) {
+		switch (GetLastError()) {
+		case ERROR_FILE_NOT_FOUND:
+		case ERROR_PATH_NOT_FOUND:
+			break;
+		default:
+			wdi_err("unable to read file attributes %s", windows_error_str(0));
+			return WDI_ERROR_ACCESS;
+		}
+	} else {
+		if (file_attributes & FILE_ATTRIBUTE_DIRECTORY) {
+			// Directory exists
+			return WDI_SUCCESS;
+		} else {
+			// File with the same name as the dir we want to create
+			wdi_err("%s is a file, not a directory", path);
+			return WDI_ERROR_ACCESS;
+		}
+	}
+
+	if (!create) {
+		wdi_err("%s doesn't exist", path);
+		return WDI_ERROR_ACCESS;
+	}
+
+	// Change the owner from admin to regular user
+	sid = get_sid();
+	if ( (sid != NULL)
+	  && InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION)
+	  && SetSecurityDescriptorOwner(&s_desc, sid, FALSE) ) {
+		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		s_attr.bInheritHandle = FALSE;
+		s_attr.lpSecurityDescriptor = &s_desc;
+		ps = &s_attr;
+	} else {
+		wdi_err("could not set security descriptor: %s", windows_error_str(0));
+	}
+
+	// SHCreateDirectoryExA creates subdirectories as required
+	r = SHCreateDirectoryExA(NULL, path, ps);
+	if (sid != NULL) LocalFree(sid);
+
+	switch(r) {
+	case ERROR_SUCCESS:
+		return WDI_SUCCESS;
+	case ERROR_BAD_PATHNAME:
+		wdi_err("directory path is invalid %s", path);
+		return WDI_ERROR_INVALID_PARAM;
+	case ERROR_FILENAME_EXCED_RANGE:
+		wdi_err("directory name is too long %s", path);
+		return WDI_ERROR_INVALID_PARAM;
+	default:
+		wdi_err("unable to create directory %s (%s)", path, windows_error_str(0));
+		return WDI_ERROR_ACCESS;
+	}
+
+	wdi_dbg("created '%s'", path);
+	return WDI_SUCCESS;
 }
 
 /*
@@ -276,11 +370,9 @@ static FILE *fcreate(const char *filename, const char *mode)
 	DWORD access_mode = 0;
 	SECURITY_ATTRIBUTES *ps = NULL;
 	int lowlevel_fd;
-
-#ifndef _DEBUG
+	PSID sid = NULL;
 	SECURITY_ATTRIBUTES s_attr;
 	SECURITY_DESCRIPTOR s_desc;
-#endif
 
 	if ((filename == NULL) || (mode == NULL)) {
 		return NULL;
@@ -300,18 +392,21 @@ static FILE *fcreate(const char *filename, const char *mode)
 	}
 
 	// Change the owner from admin to regular user
-	// Keep admin user for debug mode
-#ifndef _DEBUG
-	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	s_attr.bInheritHandle = FALSE;
-	s_attr.lpSecurityDescriptor = &s_desc;
-	ps = &s_attr;
-#endif
+	sid = get_sid();
+	if ( (sid != NULL)
+	  && InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION)
+	  && SetSecurityDescriptorOwner(&s_desc, sid, FALSE) ) {
+		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		s_attr.bInheritHandle = FALSE;
+		s_attr.lpSecurityDescriptor = &s_desc;
+		ps = &s_attr;
+	} else {
+		wdi_err("could not set security descriptor: %s", windows_error_str(0));
+	}
 
 	handle = CreateFileA(filename, access_mode, FILE_SHARE_READ,
 		ps, CREATE_ALWAYS, 0, NULL);
+	if (sid != NULL) LocalFree(sid);
 
 	if (handle == INVALID_HANDLE_VALUE) {
 		return NULL;
@@ -367,65 +462,6 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driv
 	}
 }
 
-/*
- * Check whether the path is a directory with write access
- * if create is true, create directory if it doesn't exist
- */
-static int check_dir(char* path, bool create)
-{
-	struct _stat st;
-	int r;
-	SECURITY_ATTRIBUTES *ps = NULL;
-
-	// Change the owner from admin to regular user
-	// Keep admin user for debug mode
-#ifndef _DEBUG
-	SECURITY_ATTRIBUTES s_attr;
-	SECURITY_DESCRIPTOR s_desc;
-
-	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	s_attr.bInheritHandle = FALSE;
-	s_attr.lpSecurityDescriptor = &s_desc;
-	ps = &s_attr;
-#endif
-
-	if (_access(path, 02) == 0) {
-		memset(&st, 0, sizeof(st));
-		if (_stat(path, &st) == 0) {
-			if (!(st.st_mode & _S_IFDIR)) {
-				wdi_err("%s is a file, not a directory");
-				return WDI_ERROR_ACCESS;
-			}
-			return WDI_SUCCESS;
-		}
-		return WDI_ERROR_ACCESS;
-	}
-
-	if (!create) {
-		wdi_err("%s doesn't exist");
-		return WDI_ERROR_ACCESS;
-	}
-
-	// SHCreateDirectoryExA creates subdirectories as required
-	r = SHCreateDirectoryExA(NULL, path, ps);
-	switch(r) {
-	case ERROR_SUCCESS:
-		return WDI_SUCCESS;
-	case ERROR_BAD_PATHNAME:
-		wdi_err("directory path is invalid %s", path);
-		return WDI_ERROR_INVALID_PARAM;
-	case ERROR_FILENAME_EXCED_RANGE:
-		wdi_err("directory name is too long %s", path);
-		return WDI_ERROR_INVALID_PARAM;
-	default:
-		wdi_err("unable to create directory %s", path);
-		return WDI_ERROR_ACCESS;
-	}
-
-	return WDI_SUCCESS;
-}
 
 /*
  * Returns a constant string with an English short description of the given
@@ -835,6 +871,11 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	MUTEX_START;
 
+	if ((device_info == NULL) || (inf_name == NULL)) {
+		wdi_err("one of the required parameter is NULL");
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+	}
+
 	if (!dlls_available) {
 		init_dlls();
 	}
@@ -854,11 +895,6 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		} else {
 			wdi_dbg("no path provided - extracting to '%s'", path);
 		}
-	}
-
-	if ((device_info == NULL) || (inf_name == NULL)) {
-		wdi_err("one of the required parameter is NULL");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	// Try to create directory if it doesn't exist
@@ -1174,7 +1210,7 @@ static int install_driver_internal(void* arglist)
 	}
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
-	if (_access(exename, 00) != 0) {
+	if (GetFileAttributesA(exename) == INVALID_FILE_ATTRIBUTES) {
 		wdi_err("this application does not contain the required %s bit installer", is_x64?"64":"32");
 		wdi_err("please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
 		r = WDI_ERROR_NOT_FOUND; goto out;
