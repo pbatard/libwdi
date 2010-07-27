@@ -30,10 +30,11 @@
 #include <shellapi.h>
 #include <process.h>
 #include <commdlg.h>
+#include <sddl.h>
 
 #include "resource.h"
 #include "zadig.h"
-
+#include "../libwdi/msapi_utf8.h"
 
 #if (_WIN32_WINNT >= 0x0600)
 // Available on Vista and later
@@ -45,9 +46,9 @@ void NOT_IMPLEMENTED(void) {
 	MessageBox(NULL, "Feature not implemented yet", "Not implemented", MB_ICONSTOP);
 }
 
-#define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {								\
+#define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {						\
 	pSHCreateItemFromParsingName = (HRESULT (WINAPI *)(PCWSTR, IBindCtx*, REFIID, void **))	\
-			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");			\
+			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");		\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
 
@@ -59,56 +60,7 @@ static char* message_text = NULL;
 static char* message_title = NULL;
 
 /*
- * Converts a WCHAR string to UTF8 (allocate returned string)
- * Returns NULL on error
- */
-char* wchar_to_utf8(WCHAR* wstr)
-{
-	int size;
-	char* str;
-
-	// Find out the size we need to allocate for our converted string
-	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	if (size <= 1)	// An empty string would be size 1
-		return NULL;
-
-	if ((str = malloc(size)) == NULL)
-		return NULL;
-
-	if (WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, size, NULL, NULL) != size) {
-		free(str);
-		return NULL;
-	}
-
-	return str;
-}
-
-/*
- * Converts an UTF8 string to WCHAR (allocate returned string)
- * Returns NULL on error
- */
-WCHAR* utf8_to_wchar(char* str)
-{
-	int size;
-	WCHAR* wstr;
-
-	// Find out the size we need to allocate for our converted string
-	size = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-	if (size <= 1)	// An empty string would be size 1
-		return NULL;
-
-	if ((wstr = (WCHAR*) malloc(2*size)) == NULL)
-		return NULL;
-
-	if (MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, size) != size) {
-		free(wstr);
-		return NULL;
-	}
-	return wstr;
-}
-
-/*
- * Converts a name + ext UTF-8 tuple to a valid MS filename
+ * Converts a name + ext UTF-8 pair to a valid MS filename.
  * Returned string is allocated and needs to be freed manually
  */
 char* to_valid_filename(char* name, char* ext)
@@ -116,39 +68,54 @@ char* to_valid_filename(char* name, char* ext)
 	size_t i, j, k;
 	bool found;
 	char* ret;
-	char authorized[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_+-()[]'@&#";
-	char underscore[] = " ";
+	wchar_t unauthorized[] = L"\x0001\x0002\x0003\x0004\x0005\x0006\x0007\x0008\x000a"
+		L"\x000b\x000c\x000d\x000e\x000f\x0010\x0011\x0012\x0013\x0014\x0015\x0016\x0017"
+		L"\x0018\x0019\x001a\x001b\x001c\x001d\x001e\x001f\x007f\"<>|:*";
+	wchar_t to_underscore[] = L" \t";
+	wchar_t *wname, *wext, *wret;
 
 	if ((name == NULL) || (ext == NULL)) {
 		return NULL;
 	}
-	ret = calloc(strlen(name) + strlen(ext) + 1, 1);
-	if (ret == NULL) {
-		return NULL;
+
+	// Convert to UTF-16
+	wname = utf8_to_wchar(name);
+	wext = utf8_to_wchar(ext);
+	if ((wname == NULL) || (wext == NULL)) {
+		safe_free(wname); safe_free(wext); return NULL;
 	}
 
-	for (i=0, k=0; i<strlen(name); i++) {
+	// The returned UTF-8 string will never be larger than the sum of its parts
+	wret = calloc(2*(wcslen(wname) + wcslen(wext) + 2), 1);
+	if (wret == NULL) {
+		safe_free(wname); safe_free(wext); return NULL;
+	}
+	wcscpy(wret, wname);
+	safe_free(wname);
+	wcscat(wret, wext);
+	safe_free(wext);
+
+	for (i=0, k=0; i<wcslen(wret); i++) {
 		found = false;
-		for (j=0; j<sizeof(authorized)-1; j++) {
-			if (name[i] == authorized[j]) {
-				ret[k++] = name[i];
+		for (j=0; j<wcslen(unauthorized); j++) {
+			if (wret[i] == unauthorized[j]) {
 				found = true; break;
 			}
-			if (found) continue;
 		}
+		if (found) continue;
 		found = false;
-		for (j=0; j<sizeof(underscore)-1; j++) {
-			if (name[i] == underscore[j]) {
-				ret[k++] = '_';
+		for (j=0; j<wcslen(to_underscore); j++) {
+			if (wret[i] == to_underscore[j]) {
+				wret[k++] = '_';
 				found = true; break;
 			}
-			if (found) continue;
 		}
+		if (found) continue;
+		wret[k++] = wret[i];
 	}
-	for (i=0; i<strlen(ext); i++) {
-		ret[k++] = ext[i];
-	}
-	ret[k] = 0;
+	wret[k] = 0;
+	ret = wchar_to_utf8(wret);
+	safe_free(wret);
 	return ret;
 }
 
@@ -168,11 +135,10 @@ static char err_string[ERR_BUFFER_SIZE];
 
 	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", errcode);
 
-	size = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
-		ERR_BUFFER_SIZE, NULL);
-	if (size == 0)
-	{
+	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&err_string[strlen(err_string)],
+		ERR_BUFFER_SIZE-(DWORD)strlen(err_string), NULL);
+	if (size == 0) {
 		format_errcode = GetLastError();
 		if (format_errcode)
 			safe_sprintf(err_string, ERR_BUFFER_SIZE,
@@ -184,35 +150,51 @@ static char err_string[ERR_BUFFER_SIZE];
 }
 
 /*
- * Retrieve the SID of the user who launched our process
+ * Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
  */
-PSID get_sid(void) {
+static PSID get_sid(void) {
 	TOKEN_USER* tu = NULL;
 	DWORD len;
 	HANDLE token;
 	PSID ret = NULL;
+	char* psid_string = NULL;
 
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
-		dprintf("Could not obtain process token for SID: %s", windows_error_str(0));
-		return ret;
+		dprintf("OpenProcessToken failed: %s", windows_error_str(0));
+		return NULL;
 	}
 
 	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			dprintf("Could not get TokenUser size for SID: %s", windows_error_str(0));
-			return ret;
+			dprintf("GetTokenInformation (pre) failed: %s", windows_error_str(0));
+			return NULL;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
 		if (tu == NULL) {
-			dprintf("Could not allocate TokenUser for SID");
-			return ret;
+			return NULL;
 		}
 	}
 
 	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
-		ret = tu->User.Sid;
+		/*
+		 * now of course, the interesting thing is that if you return tu->User.Sid
+		 * but free tu, the PSID pointer becomes invalid after a while.
+		 * The workaround? Convert to string then back to PSID
+		 */
+		if (!ConvertSidToStringSidA(tu->User.Sid, &psid_string)) {
+			dprintf("unable to convert SID to string: %s", windows_error_str(0));
+			ret = NULL;
+		} else {
+			if (!ConvertStringSidToSidA(psid_string, &ret)) {
+				dprintf("unable to convert string back to SID: %s", windows_error_str(0));
+				ret = NULL;
+			}
+			// MUST use LocalFree()
+			LocalFree(psid_string);
+		}
 	} else {
-		dprintf("Could not get SID: %s\n", windows_error_str(0));
+		ret = NULL;
+		dprintf("GetTokenInformation (real) failed: %s", windows_error_str(0));
 	}
 	free(tu);
 	return ret;
@@ -223,18 +205,17 @@ PSID get_sid(void) {
  */
 INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 {
-	char szDir[MAX_PATH];
+	char dir[MAX_PATH];
 
-	switch(uMsg)
-	{
+	switch(uMsg) {
 	case BFFM_INITIALIZED:
 		// Invalid path will just be ignored
-		SendMessageA(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)extraction_path);
+		SendMessageLU(hwnd, BFFM_SETSELECTION, TRUE, extraction_path);
 		break;
 	case BFFM_SELCHANGED:
 	  // Update the status
-	  if (SHGetPathFromIDListA((LPITEMIDLIST) lp ,szDir)) {
-		 SendMessageA(hwnd,BFFM_SETSTATUSTEXT,0,(LPARAM)szDir);
+	  if (SHGetPathFromIDListU((LPITEMIDLIST)lp, dir)) {
+		SendMessageLU(hwnd, BFFM_SETSTATUSTEXT, 0, dir);
 	  }
 	  break;
 	}
@@ -247,7 +228,7 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
  */
 void browse_for_folder(void) {
 
-	BROWSEINFO bi;
+	BROWSEINFOW bi;
 	LPITEMIDLIST pidl;
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
@@ -261,7 +242,7 @@ void browse_for_folder(void) {
 #endif
 
 	// Retrieve the path to use as the starting folder
-	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
+	GetDlgItemTextU(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	// Even if we have Vista support with the compiler,
@@ -294,6 +275,7 @@ void browse_for_folder(void) {
 			}
 		}
 
+		// TODO: UTF8-ize?
 		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
 		if (SUCCEEDED(hr)) {
 			if (wpath != NULL) {
@@ -315,7 +297,7 @@ void browse_for_folder(void) {
 				if (tmp_path == NULL) {
 					dprintf("Could not convert path");
 				} else {
-					SetDlgItemTextA(hMain, IDC_FOLDER, tmp_path);
+					SetDlgItemTextU(hMain, IDC_FOLDER, tmp_path);
 					safe_free(tmp_path);
 				}
 			} else {
@@ -334,18 +316,18 @@ fallback:
 		pfod->lpVtbl->Release(pfod);
 	}
 #endif
-	memset(&bi, 0, sizeof(BROWSEINFO));
+	memset(&bi, 0, sizeof(BROWSEINFOW));
 	bi.hwndOwner = hMain;
-	bi.lpszTitle = "Please select directory";
+	bi.lpszTitle = L"Please select directory";
 	bi.pidlRoot = NULL;
 	bi.lpfn = BrowseCallbackProc;
 	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
 		BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
-	pidl = SHBrowseForFolder(&bi);
+	pidl = SHBrowseForFolderW(&bi);
 	if (pidl != NULL) {
 		// get the name of the folder
-		if (SHGetPathFromIDListA(pidl, extraction_path)) {
-			SetDlgItemTextA(hMain, IDC_FOLDER, extraction_path);
+		if (SHGetPathFromIDListU(pidl, extraction_path)) {
+			SetDlgItemTextU(hMain, IDC_FOLDER, extraction_path);
 		}
 		CoTaskMemFree(pidl);
 	}
@@ -353,28 +335,35 @@ fallback:
 
 /*
  * read or write I/O to a file
- * buffer is allocated by the procedure
+ * buffer is allocated by the procedure. path is UTF-8
  */
 bool file_io(bool save, char* path, char** buffer, DWORD* size)
 {
-	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
+	PSID sid = NULL;
 	HANDLE handle;
 	BOOL r;
 	bool ret = false;
 
 	// Change the owner from admin to regular user
-	InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION);
-	SetSecurityDescriptorOwner(&s_desc, get_sid(), FALSE);
-	s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-	s_attr.bInheritHandle = FALSE;
-	s_attr.lpSecurityDescriptor = &s_desc;
+	sid = get_sid();
+	if ( (sid != NULL)
+	  && InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION)
+	  && SetSecurityDescriptorOwner(&s_desc, sid, FALSE) ) {
+		s_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		s_attr.bInheritHandle = FALSE;
+		s_attr.lpSecurityDescriptor = &s_desc;
+		ps = &s_attr;
+	} else {
+		dprintf("could not set security descriptor: %s", windows_error_str(0));
+	}
 
 	if (!save) {
 		*buffer = NULL;
 	}
-	handle = CreateFileA(path, save?GENERIC_WRITE:GENERIC_READ, FILE_SHARE_READ,
-		&s_attr, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
+	handle = CreateFileU(path, save?GENERIC_WRITE:GENERIC_READ, FILE_SHARE_READ,
+		ps, save?CREATE_ALWAYS:OPEN_EXISTING, 0, NULL);
 
 	if (handle == INVALID_HANDLE_VALUE) {
 		dprintf("Could not %s file '%s'", save?"create":"open", path);
@@ -416,11 +405,12 @@ out:
 /*
  * Return the UTF8 path of a file selected through a load or save dialog
  * Will use the newer IFileOpenDialog if running on Vista and later
+ * All string parameters are UTF-8
  */
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc)
 {
 	DWORD tmp;
-	OPENFILENAME ofn;
+	OPENFILENAMEA ofn;
 	char selected_name[STR_BUFFER_SIZE];
 	char* ext_string = NULL;
 	size_t i, ext_strlen;
@@ -433,7 +423,7 @@ char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_de
 	IShellItem *psiResult;
 	COMDLG_FILTERSPEC filter_spec[2];
 	char* ext_filter;
-	WCHAR *wpath = NULL, *wfilename = NULL;
+	wchar_t *wpath = NULL, *wfilename = NULL;
 	IShellItem *si_path = NULL;	// Automatically freed
 
 	INIT_VISTA_SHELL32;
@@ -509,8 +499,8 @@ fallback:
 	}
 #endif
 
-	memset(&ofn, 0, sizeof(OPENFILENAME));
-	ofn.lStructSize = sizeof(OPENFILENAME);
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hMain;
 	// File name
 	safe_strcpy(selected_name, STR_BUFFER_SIZE, filename);
@@ -532,9 +522,9 @@ fallback:
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 	// Show Dialog
 	if (save) {
-		r = GetSaveFileNameA(&ofn);
+		r = GetSaveFileNameU(&ofn);
 	} else {
-		r = GetOpenFileNameA(&ofn);
+		r = GetOpenFileNameU(&ofn);
 	}
 	if (r) {
 		filepath = safe_strdup(selected_name);
@@ -712,18 +702,19 @@ void notification(int type, char* text, char* title)
 /*
  * Create a tooltip for the control passed as first parameter
  * duration sets the duration in ms. Use -1 for default
+ * message is an UTF-8 string
  */
 HWND create_tooltip(HWND hControl, char* message, int duration)
 {
 	HWND hTip;
-	TOOLINFO toolInfo = {0};
+	TOOLINFOW toolInfo = {0};
 
 	if ( (hControl == NULL) || (message == NULL) ) {
 		return (HWND)NULL;
 	}
 
 	// Create the tooltip window
-	hTip = CreateWindowExA(0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+	hTip = CreateWindowExW(0, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hMain, NULL,
 		main_instance, NULL);
 
@@ -739,8 +730,9 @@ HWND create_tooltip(HWND hControl, char* message, int duration)
 	toolInfo.hwnd = hMain;
 	toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
 	toolInfo.uId = (UINT_PTR)hControl;
-	toolInfo.lpszText = message;
-	SendMessage(hTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+	toolInfo.lpszText = utf8_to_wchar(message);
+	SendMessageW(hTip, TTM_ADDTOOLW, 0, (LPARAM)&toolInfo);
+	safe_free(toolInfo.lpszText);
 
 	return hTip;
 }

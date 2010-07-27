@@ -42,6 +42,7 @@
 #include <commctrl.h>
 
 #include "../libwdi/libwdi.h"
+#include "../libwdi/msapi_utf8.h"
 #include "resource.h"
 #include "zadig.h"
 #include "libconfig/libconfig.h"
@@ -102,10 +103,10 @@ void w_printf_v(bool update_status, const char *format, va_list args)
 	str[slen+1] = '\n';
 	str[slen+2] = 0;
 	// Set cursor to the end of the buffer
-	Edit_SetSel(hInfo, MAX_LOG_SIZE , MAX_LOG_SIZE);
-	Edit_ReplaceSel(hInfo, str);
+	Edit_SetSel(hInfo, MAX_LOG_SIZE, MAX_LOG_SIZE);
+	Edit_ReplaceSelU(hInfo, str);
 	if (update_status) {
-		SetDlgItemText(hMain, IDC_STATUS, str);
+		SetDlgItemTextU(hMain, IDC_STATUS, str);
 	}
 }
 
@@ -134,10 +135,10 @@ int display_devices(void)
 
 	for (dev = list; dev != NULL; dev = dev->next) {
 		// Compute the width needed to accomodate our text
-		GetTextExtentPoint(hdc, dev->desc, (int)strlen(dev->desc)+1, &size);
+		GetTextExtentPointU(hdc, dev->desc, &size);
 		max_width = max(max_width, size.cx);
 
-		index = ComboBox_AddString(hDeviceList, dev->desc);
+		index = ComboBox_AddStringU(hDeviceList, dev->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
 			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev);
 		} else {
@@ -235,24 +236,24 @@ int install_driver(void)
 		need_dealloc = true;
 
 		// Retrieve the various device parameters
-		if (ComboBox_GetText(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
+		if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
 			notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
 			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->desc = safe_strdup(str_buf);
-		GetDlgItemText(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
+		GetDlgItemTextA(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert VID string - aborting");
 			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->vid = (unsigned short)tmp;
-		GetDlgItemText(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
+		GetDlgItemTextA(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
 		if (sscanf(str_buf, "%4x", &tmp) != 1) {
 			dprintf("could not convert PID string - aborting");
 			r = WDI_ERROR_INVALID_PARAM; goto out;
 		}
 		dev->pid = (unsigned short)tmp;
-		GetDlgItemText(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
+		GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
 		if ( (strlen(str_buf) != 0)
 		  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
 			dev->is_composite = true;
@@ -267,14 +268,14 @@ int install_driver(void)
 	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
-	GetDlgItemText(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
+	GetDlgItemTextU(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files.");
 		// Perform the install if not extracting the files only
 		if ((pd_options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
-			  && (MessageBox(hMain, "You are about to replace a system driver.\n"
+			  && (MessageBoxA(hMain, "You are about to replace a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
 				r = WDI_ERROR_USER_CANCEL; goto out;
@@ -331,12 +332,12 @@ bool select_next_driver(int increment)
 			continue;
 		}
 		if (!extract_only) {
-			SetDlgItemText(hMain, IDC_INSTALL, (pd_options.driver_type == WDI_USER)?"Extract Files":"Install Driver");
+			SetDlgItemTextA(hMain, IDC_INSTALL, (pd_options.driver_type == WDI_USER)?"Extract Files":"Install Driver");
 		}
 		found = true;
 		break;
 	}
-	SetDlgItemText(hMain, IDC_TARGET,
+	SetDlgItemTextA(hMain, IDC_TARGET,
 		found?driver_display_name[pd_options.driver_type]:"(NONE)");
 	return found;
 }
@@ -438,7 +439,7 @@ void toggle_edit(void)
 		safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
 		free(device->desc);	// No longer needed
 		device->desc = editable_desc;
-		SetDlgItemText(hMain, IDC_DEVICEEDIT, editable_desc);
+		SetDlgItemTextU(hMain, IDC_DEVICEEDIT, editable_desc);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
 		combo_breaker(false);
@@ -459,10 +460,10 @@ void toggle_create(bool refresh)
 		}
 		combo_breaker(true);
 		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
-		SetDlgItemText(hMain, IDC_VID, "");
-		SetDlgItemText(hMain, IDC_PID, "");
-		SetDlgItemText(hMain, IDC_MI, "");
-		SetDlgItemText(hMain, IDC_DEVICEEDIT, "");
+		SetDlgItemTextA(hMain, IDC_VID, "");
+		SetDlgItemTextA(hMain, IDC_PID, "");
+		SetDlgItemTextA(hMain, IDC_MI, "");
+		SetDlgItemTextA(hMain, IDC_DEVICEEDIT, "");
 		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
@@ -489,7 +490,7 @@ void toggle_extract(void)
 	}
 	extract_only = !(GetMenuState(hMenuOptions, IDM_EXTRACT, MF_CHECKED) & MF_CHECKED);
 	CheckMenuItem(hMenuOptions, IDM_EXTRACT, extract_only?MF_CHECKED:MF_UNCHECKED);
-	SetDlgItemText(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
+	SetDlgItemTextA(hMain, IDC_INSTALL, extract_only?"Extract Files":"Install Driver");
 }
 
 // Toggle ignore hubs & composite
@@ -564,7 +565,7 @@ void init_dialog(HWND hDlg)
 	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
 
 	// Set the extraction directory
-	SetDlgItemText(hMain, IDC_FOLDER, DEFAULT_DIR);
+	SetDlgItemTextU(hMain, IDC_FOLDER, DEFAULT_DIR);
 
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
@@ -604,7 +605,7 @@ bool parse_ini(void) {
 	int i;
 
 	// Check if the ini file exists
-	if (GetFileAttributes(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
+	if (GetFileAttributesU(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
 		dprintf("ini file '%s' not found - default parameters will be used", INI_NAME);
 		return false;
 	}
@@ -690,22 +691,22 @@ bool parse_preset(char* filename)
 		}
 
 		if (config_setting_lookup_string(dev, "Description", &desc)) {
-			SetDlgItemText(hMain, IDC_DEVICEEDIT, desc);
+			SetDlgItemTextU(hMain, IDC_DEVICEEDIT, (char*)desc);
 		}
 
 		if (config_setting_lookup_int(dev, "VID", &tmp)) {
 			safe_sprintf(str_tmp, 5, "%04X", tmp);
-			SetDlgItemText(hMain, IDC_VID, str_tmp);
+			SetDlgItemTextA(hMain, IDC_VID, str_tmp);
 		}
 
 		if (config_setting_lookup_int(dev, "PID", &tmp)) {
 			safe_sprintf(str_tmp, 5, "%04X", tmp);
-			SetDlgItemText(hMain, IDC_PID, str_tmp);
+			SetDlgItemTextA(hMain, IDC_PID, str_tmp);
 		}
 
 		if (config_setting_lookup_int(dev, "MI", &tmp)) {
 			safe_sprintf(str_tmp, 5, "%02X", tmp);
-			SetDlgItemText(hMain, IDC_MI, str_tmp);
+			SetDlgItemTextA(hMain, IDC_MI, str_tmp);
 		}
 		return true;
 	}
@@ -787,7 +788,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		NOT_DURING_INSTALL;
 		notification_delay_thid = -1L;
 		if (create_device) {
-			if (MessageBox(hMain, "The USB device list has been modified.\n"
+			if (MessageBoxA(hMain, "The USB device list has been modified.\n"
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
 				"USB Event Notification", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
 				if (create_device) {
@@ -855,12 +856,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			nb_devices = display_devices();
 			// Send a dropdown selection message to update fields
 			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
-				(LPARAM) hDeviceList);
+				(LPARAM)hDeviceList);
 		} else {
 			nb_devices = -1;
 			tmp = ComboBox_ResetContent(hDeviceList);
-			SetDlgItemText(hMain, IDC_VID, "");
-			SetDlgItemText(hMain, IDC_PID, "");
+			SetDlgItemTextA(hMain, IDC_VID, "");
+			SetDlgItemTextA(hMain, IDC_PID, "");
 			display_driver(false);
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
@@ -917,7 +918,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDC_DEVICEEDIT:		// edit: device description
 			switch (HIWORD(wParam)) {
 			case EN_CHANGE:
-				GetDlgItemText(hMain, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
+				GetDlgItemTextU(hMain, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
 				return (INT_PTR)FALSE;
@@ -941,7 +942,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					// Display the current driver info
 					if (device->driver != NULL) {
-						SetDlgItemText(hMain, IDC_DRIVER, device->driver);
+						SetDlgItemTextU(hMain, IDC_DRIVER, device->driver);
 						display_driver(true);
 					} else {
 						display_driver(false);
@@ -952,7 +953,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					// Display the VID,PID,MI
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
-					SetDlgItemText(hMain, IDC_VID, str_tmp);
+					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
 					DestroyWindow(hToolTip);
 					vid_string = wdi_get_vendor_name(device->vid);
@@ -961,10 +962,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, -1);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
-					SetDlgItemText(hMain, IDC_PID, str_tmp);
+					SetDlgItemTextA(hMain, IDC_PID, str_tmp);
 					if (device->is_composite) {
 						safe_sprintf(str_tmp, 5, "%02X", device->mi);
-						SetDlgItemText(hMain, IDC_MI, str_tmp);
+						SetDlgItemTextA(hMain, IDC_MI, str_tmp);
 						display_mi(true);
 					} else {
 						display_mi(false);
@@ -998,15 +999,20 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			Edit_SetText(hInfo, "");
 			break;
 		case IDC_SAVE:		// button: "Save Log"
-			log_size = GetWindowTextLength(hInfo);
+			log_size = GetWindowTextLengthU(hInfo);
 			log_buffer = malloc(log_size);
 			if (log_buffer != NULL) {
-				log_size = GetDlgItemTextA(hMain, IDC_INFO, log_buffer, log_size);
-				filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log");
-				if (filepath != NULL) {
-					file_io(true, filepath, &log_buffer, &log_size);
+				log_size = GetDlgItemTextU(hMain, IDC_INFO, log_buffer, log_size);
+				if (log_size == 0) {
+					dprintf("unable to read log text");
+				} else {
+					log_size--;	// remove NULL terminator
+					filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log");
+					if (filepath != NULL) {
+						file_io(true, filepath, &log_buffer, &log_size);
+					}
+					safe_free(filepath);
 				}
-				safe_free(filepath);
 				safe_free(log_buffer);
 			} else {
 				dprintf("could not allocate buffer to save log");
@@ -1033,10 +1039,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
-			DialogBox(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, about_callback);
+			DialogBoxA(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
-			ShellExecute(hDlg, "open", "http://libusb.org/wiki/libwdi_zadig",
+			ShellExecuteA(hDlg, "open", "http://libusb.org/wiki/libwdi_zadig",
 				NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_EXTRACT:
@@ -1096,10 +1102,10 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	config_init(&cfg);
 
 	// Retrieve the current application directory
-	GetCurrentDirectory(MAX_PATH, app_dir);
+	GetCurrentDirectoryU(MAX_PATH, app_dir);
 
 	// Create the main Window
-	if (DialogBox(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
+	if (DialogBoxA(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
 		MessageBox(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
 	}
 

@@ -38,6 +38,8 @@ mv examples/zadic_.rc examples/zadic.rc
 sed -f cmd.sed examples/zadig.rc > examples/zadig_.rc
 mv examples/zadig_.rc examples/zadig.rc
 
+rm cmd.sed
+
 # Update VID data while we're at it
 cd libwdi
 . vid_data.sh
