@@ -87,7 +87,6 @@ enum user_message_type {
  */
 #define dprintf(...) w_printf(false, __VA_ARGS__)
 #define dsprintf(...) w_printf(true, __VA_ARGS__)
-void NOT_IMPLEMENTED(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc);
