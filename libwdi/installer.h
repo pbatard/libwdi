@@ -37,7 +37,7 @@
 
 #define INSTALLER_PIPE_NAME         "\\\\.\\pipe\\libwdi-installer"
 
-#define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
+#define safe_free(p) do {if (p != NULL) {free((void*)(p)); p = NULL;}} while(0)
 #define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
 #define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
 #define static_strcpy(dst, src) safe_strcpy(dst, sizeof(dst), src)

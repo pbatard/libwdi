@@ -192,6 +192,10 @@
 				RelativePath="installer.h"
 				>
 			</File>
+			<File
+				RelativePath=".\msapi_utf8.h"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
