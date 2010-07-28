@@ -35,6 +35,7 @@
 #include "logging.h"
 #include "tokenizer.h"
 #include "embedded.h"	// auto-generated during compilation
+#include "msapi_utf8.h"
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
@@ -131,6 +132,15 @@ typedef struct {
 const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
 
+// The following is only available on Vista and later
+static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
+#define INIT_VISTA_SHELL32 if (pIsUserAnAdmin == NULL) {				\
+	pIsUserAnAdmin = (BOOL (WINAPI *)(void))							\
+		GetProcAddress(GetModuleHandle("SHELL32"), "IsUserAnAdmin");	\
+	}
+#define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
+
+
 /*
  * Cfgmgr32.dll, SetupAPI.dll interface
  */
@@ -142,8 +152,6 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG)
 DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
-DLL_DECLARE(WINAPI, BOOL, IsUserAnAdmin, (void));
-DLL_DECLARE(WINAPI, int, SHCreateDirectoryExA, (HWND, LPCSTR, const SECURITY_ATTRIBUTES*));
 
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
@@ -177,31 +185,6 @@ static void detect_version(void)
 }
 
 /*
- * Converts a WCHAR string to UTF8 (allocate returned string)
- * Returns NULL on error
- */
-static char* wchar_to_utf8(WCHAR* wstr)
-{
-	int size;
-	char* str;
-
-	// Find out the size we need to allocate for our converted string
-	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	if (size <= 1)	// An empty string would be size 1
-		return NULL;
-
-	if ((str = malloc(size)) == NULL)
-		return NULL;
-
-	if (WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, size, NULL, NULL) != size) {
-		free(str);
-		return NULL;
-	}
-
-	return str;
-}
-
-/*
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
  */
@@ -219,7 +202,7 @@ static char err_string[STR_BUFFER_SIZE];
 
 	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
-		STR_BUFFER_SIZE - strlen(err_string), NULL);
+		STR_BUFFER_SIZE - (DWORD)strlen(err_string), NULL);
 	if (size == 0) {
 		format_errcode = GetLastError();
 		if (format_errcode)
@@ -294,13 +277,12 @@ static PSID get_sid(void) {
 static int check_dir(char* path, bool create)
 {
 	int r;
-	SECURITY_ATTRIBUTES *ps = NULL;
 	DWORD file_attributes;
 	PSID sid = NULL;
-	SECURITY_ATTRIBUTES s_attr;
+	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
 
-	file_attributes = GetFileAttributesA(path);
+	file_attributes = GetFileAttributesU(path);
 	if (file_attributes == INVALID_FILE_ATTRIBUTES) {
 		switch (GetLastError()) {
 		case ERROR_FILE_NOT_FOUND:
@@ -339,8 +321,8 @@ static int check_dir(char* path, bool create)
 		wdi_err("could not set security descriptor: %s", windows_error_str(0));
 	}
 
-	// SHCreateDirectoryExA creates subdirectories as required
-	r = SHCreateDirectoryExA(NULL, path, ps);
+	// SHCreateDirectoryEx creates subdirectories as required
+	r = SHCreateDirectoryExU(NULL, path, ps);
 	if (sid != NULL) LocalFree(sid);
 
 	switch(r) {
@@ -405,7 +387,7 @@ static FILE *fcreate(const char *filename, const char *mode)
 		wdi_err("could not set security descriptor: %s", windows_error_str(0));
 	}
 
-	handle = CreateFileA(filename, access_mode, FILE_SHARE_READ,
+	handle = CreateFileU(filename, access_mode, FILE_SHARE_READ,
 		ps, CREATE_ALWAYS, 0, NULL);
 	if (sid != NULL) LocalFree(sid);
 
@@ -558,8 +540,6 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
 	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
-	DLL_LOAD(Shell32.dll, IsUserAnAdmin, FALSE);
-	DLL_LOAD(Shell32.dll, SHCreateDirectoryExA, TRUE);
 	return WDI_SUCCESS;
 }
 
@@ -577,7 +557,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	char *prefix[3] = {"VID_", "PID_", "MI_"};
 	char *token, *end;
 	char strbuf[STR_BUFFER_SIZE];
-	WCHAR desc[MAX_DESC_LENGTH];
+	wchar_t desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	const char usbhub_name[] = "usbhub";
 	const char usbccgp_name[] = "usbccgp";
@@ -847,7 +827,7 @@ static long tokenize_internal(char* resource_name, char** dst, const token_entit
 			continue;
 		}
 		if (strcmp(resource[i].name, resource_name) == 0) {
-			return tokenize_string(resource[i].data, resource[i].size,
+			return tokenize_string(resource[i].data, (long)resource[i].size,
 				dst, token_entities, tok_prefix, tok_suffix, recursive);
 		}
 	}
@@ -864,10 +844,11 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	int driver_type, r;
 	SYSTEMTIME system_time;
 	FILETIME file_time;
-	char* cat_name;
+	char* cat_name = NULL;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
 	char *dst = NULL;
+	wchar_t *wdst = NULL;
 	long inf_file_size;
 
 	MUTEX_START;
@@ -954,7 +935,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	cat_name[strlen(inf_name)-2] = 'a';
 	cat_name[strlen(inf_name)-1] = 't';
 	static_strcpy(inf_entities[CAT_FILENAME].replace, cat_name);
-	free(cat_name);
+	safe_free(cat_name);
 
 	// Populate the Device Description and Hardware ID
 	static_strcpy(inf_entities[DEVICE_DESCRIPTION].replace, device_info->desc);
@@ -1008,9 +989,13 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 			wdi_err("failed to create file: %s", filename);
 			MUTEX_RETURN WDI_ERROR_ACCESS;
 		}
-		fwrite(dst, 1, inf_file_size, fd);
+		// Converting to UTF-16 is the only way to get devices using a
+		// non-english locale to display properly in device manager. UTF-8 will not do.
+		wdst = utf8_to_wchar(dst);
+		fwrite(wdst, 2, wcslen(wdst), fd);
 		fclose(fd);
-		free(dst);
+		safe_free(wdst);
+		safe_free(dst);
 	} else {
 		wdi_err("could not tokenize inf file (%d)", inf_file_size);
 		MUTEX_RETURN WDI_ERROR_ACCESS;
@@ -1058,7 +1043,7 @@ static int process_message(char* buffer, DWORD size)
 	case IC_GET_DEVICE_ID:
 		wdi_dbg("got request for device_id");
 		if (current_device->device_id != NULL) {
-			WriteFile(pipe_handle, current_device->device_id, strlen(current_device->device_id), &tmp, NULL);
+			WriteFile(pipe_handle, current_device->device_id, (DWORD)strlen(current_device->device_id), &tmp, NULL);
 		} else {
 			wdi_warn("no device_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
@@ -1067,7 +1052,7 @@ static int process_message(char* buffer, DWORD size)
 	case IC_GET_HARDWARE_ID:
 		wdi_dbg("got request for hardware_id");
 		if (current_device->hardware_id != NULL) {
-			WriteFile(pipe_handle, current_device->hardware_id, strlen(current_device->hardware_id), &tmp, NULL);
+			WriteFile(pipe_handle, current_device->hardware_id, (DWORD)strlen(current_device->hardware_id), &tmp, NULL);
 		} else {
 			wdi_warn("no hardware_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
@@ -1108,7 +1093,7 @@ static int process_message(char* buffer, DWORD size)
 		break;
 	case IC_GET_USER_SID:
 		if (ConvertSidToStringSidA(get_sid(), &sid_str)) {
-			WriteFile(pipe_handle, sid_str, strlen(sid_str), &tmp, NULL);
+			WriteFile(pipe_handle, sid_str, (DWORD)strlen(sid_str), &tmp, NULL);
 			LocalFree(sid_str);
 		} else {
 			wdi_warn("no user_sid - sending empty string");
@@ -1130,8 +1115,8 @@ static int install_driver_internal(void* arglist)
 	char* path = params->path;
 	char* inf_name = params->inf_name;
 
-	SHELLEXECUTEINFO shExecInfo;
-	STARTUPINFO si;
+	SHELLEXECUTEINFOA shExecInfo;
+	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
 	char exename[STR_BUFFER_SIZE];
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
@@ -1215,7 +1200,7 @@ static int install_driver_internal(void* arglist)
 	}
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
-	if (GetFileAttributesA(exename) == INVALID_FILE_ATTRIBUTES) {
+	if (GetFileAttributesU(exename) == INVALID_FILE_ATTRIBUTES) {
 		wdi_err("this application does not contain the required %s bit installer", is_x64?"64":"32");
 		wdi_err("please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
 		r = WDI_ERROR_NOT_FOUND; goto out;
@@ -1223,10 +1208,10 @@ static int install_driver_internal(void* arglist)
 
 	installer_completed = false;
 	GET_WINDOWS_VERSION;
-	if ( (windows_version >= WINDOWS_VISTA) && (IsUserAnAdmin != NULL) && (!IsUserAnAdmin()) )  {
+	INIT_VISTA_SHELL32;
+	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (!pIsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
-		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-
+		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
@@ -1237,7 +1222,7 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.hInstApp = NULL;
 
 		err = 0;
-		if (!ShellExecuteEx(&shExecInfo)) {
+		if (!ShellExecuteExU(&shExecInfo)) {
 			err = GetLastError();
 		}
 
@@ -1259,7 +1244,7 @@ static int install_driver_internal(void* arglist)
 
 		safe_strcat(exename, STR_BUFFER_SIZE, " ");
 		safe_strcat(exename, STR_BUFFER_SIZE, inf_name);
-		if (!CreateProcessA(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW,	NULL, path, &si, &pi)) {
+		if (!CreateProcessU(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, path, &si, &pi)) {
 			wdi_err("CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}

@@ -84,7 +84,7 @@ static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 static HFONT (WINAPI *pCreateFontA)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR) = NULL;
 #define INIT_CREATEFONT if (pCreateFontA== NULL) {	\
 	pCreateFontA = (HFONT (WINAPI *)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR))	\
-		GetProcAddress(GetModuleHandle("Gdi32"), "CreateFontA"); \
+		GetProcAddress(GetModuleHandleA("Gdi32"), "CreateFontA"); \
 	}
 #define IS_CREATEFONT_AVAILABLE (pCreateFontA != NULL)
 
@@ -304,7 +304,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		return (INT_PTR)FALSE;
 
 	}
-	return DefWindowProc (hDlg, message, wParam, lParam);
+	return DefWindowProc(hDlg, message, wParam, lParam);
 }
 
 /*

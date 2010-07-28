@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <shlobj.h>
 #include <commdlg.h>
+#include <shellapi.h>
 #include <setupapi.h>
 #if defined(_MSC_VER)
 #include <newdev.h>
@@ -295,6 +296,78 @@ static __inline DWORD GetFileAttributesU(const char* lpFileName)
 	err = GetLastError();
 	wfree(lpFileName);
 	SetLastError(err);
+	return ret;
+}
+
+static __inline int SHCreateDirectoryExU(HWND hwnd, const char* pszPath, SECURITY_ATTRIBUTES *psa)
+{
+	int ret = ERROR_INVALID_DATA;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(pszPath);
+	ret = SHCreateDirectoryExW(hwnd, wpszPath, psa);
+	err = GetLastError();
+	wfree(pszPath);
+	SetLastError(err);
+	return ret;
+}
+
+static __inline BOOL ShellExecuteExU(SHELLEXECUTEINFOA* lpExecInfo)
+{
+	BOOL ret = FALSE;
+	DWORD err = ERROR_INVALID_DATA;
+	SHELLEXECUTEINFOW wExecInfo;
+
+	// Because we're lazy, we'll assume that the A and W structs inherently have the same size
+	if (lpExecInfo->cbSize != sizeof(SHELLEXECUTEINFOW)) {
+		SetLastError(ERROR_BAD_LENGTH); return FALSE;
+	}
+	memcpy(&wExecInfo, lpExecInfo, lpExecInfo->cbSize);
+	wExecInfo.lpVerb = utf8_to_wchar(lpExecInfo->lpVerb);
+	wExecInfo.lpFile = utf8_to_wchar(lpExecInfo->lpFile);
+	wExecInfo.lpParameters = utf8_to_wchar(lpExecInfo->lpParameters);
+	wExecInfo.lpDirectory = utf8_to_wchar(lpExecInfo->lpDirectory);
+	wExecInfo.lpClass = utf8_to_wchar(lpExecInfo->lpClass);
+	ret = ShellExecuteExW(&wExecInfo);
+	err = GetLastError();
+	sfree(wExecInfo.lpVerb);
+	sfree(wExecInfo.lpFile);
+	sfree(wExecInfo.lpParameters);
+	sfree(wExecInfo.lpDirectory);
+	sfree(wExecInfo.lpClass);
+	SetLastError(err);
+	return ret;
+}
+
+// Doesn't support LPSTARTUPINFOEX struct
+static __inline BOOL CreateProcessU(const char* lpApplicationName, const char* lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
+									LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags,
+									LPVOID lpEnvironment, const char* lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo,
+									LPPROCESS_INFORMATION lpProcessInformation)
+{
+	BOOL ret = FALSE;
+	DWORD err = ERROR_INVALID_DATA;
+	STARTUPINFOW wStartupInfo;
+	wconvert(lpApplicationName);
+	wconvert(lpCommandLine);
+	wconvert(lpCurrentDirectory);
+
+	// Because we're lazy, we'll assume that the A and W structs inherently have the same size
+	// Also prevents the use of STARTUPINFOEX
+	if (lpStartupInfo->cb != sizeof(STARTUPINFOW)) {
+		err = ERROR_BAD_LENGTH; goto out;
+	}
+	memcpy(&wStartupInfo, lpStartupInfo, lpStartupInfo->cb);
+	wStartupInfo.lpDesktop = utf8_to_wchar(lpStartupInfo->lpDesktop);
+	wStartupInfo.lpTitle = utf8_to_wchar(lpStartupInfo->lpTitle);
+	ret = CreateProcessW(wlpApplicationName, wlpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles,
+		dwCreationFlags, lpEnvironment, wlpCurrentDirectory, &wStartupInfo, lpProcessInformation);
+	err = GetLastError();
+	sfree(wStartupInfo.lpDesktop);
+	sfree(wStartupInfo.lpTitle);
+out:
+	wfree(lpApplicationName);
+	wfree(lpCommandLine);
+	wfree(lpCurrentDirectory);
 	return ret;
 }
 

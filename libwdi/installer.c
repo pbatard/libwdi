@@ -55,6 +55,7 @@ typedef DEVINSTID_A DEVINSTID;
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNode, (PDEVINST, DEVINSTID, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
+DLL_DECLARE(WINAPI, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
 
 /*
  * Globals
@@ -70,6 +71,7 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_DevNode_Status, TRUE);
+	DLL_LOAD(Msvcrt.dll, __wgetmainargs, FALSE);
 	return 0;
 }
 
@@ -486,11 +488,13 @@ int
 #ifdef _MSC_VER
 __cdecl
 #endif
-main(int argc, char** argv)
+main(int argc_ansi, char** argv_ansi)
 {
 	DWORD r;
-	int ret;
 	BOOL b;
+	int i, ret, argc = argc_ansi, si=0;
+	char** argv = argv_ansi;
+	wchar_t **wenv, **wargv;
 	char* hardware_id = NULL;
 	char* device_id = NULL;
 	char* user_sid = NULL;
@@ -511,6 +515,17 @@ main(int argc, char** argv)
 		plog("could not init DLLs");
 		ret = WDI_ERROR_RESOURCE;
 		goto out;
+	}
+
+	// libwdi provides the arguments as UTF-16 => read them and convert to UTF-8
+	if (__wgetmainargs != NULL) {
+		__wgetmainargs(&argc, &wargv, &wenv, 1, &si);
+		argv = calloc(argc, sizeof(char*));
+		for (i=0; i<argc; i++) {
+			argv[i] = wchar_to_utf8(wargv[i]);
+		}
+	} else {
+		plog("unable to access UTF-16 args - trying ANSI");
 	}
 
 	if (argc < 2) {
@@ -593,6 +608,12 @@ out:
 	// TODO: have libwi send an ACK?
 	Sleep(1000);
 	SetEvent(syslog_terminate_event);
+	if (argv != argv_ansi) {
+		for (i=0; i<argc; i++) {
+			safe_free(argv[i]);
+		}
+		safe_free(argv);
+	}
 	CloseHandle(syslog_ready_event);
 	CloseHandle(syslog_terminate_event);
 	CloseHandle((HANDLE)syslog_reader_thid);
