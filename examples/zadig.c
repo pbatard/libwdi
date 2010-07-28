@@ -532,6 +532,17 @@ void toggle_driverless(bool refresh)
 	}
 }
 
+/*
+ * Change the log level
+ */
+void set_loglevel(DWORD menu_cmd)
+{
+	CheckMenuItem(hMenuLogLevel, log_level+IDM_LOGLEVEL_DEBUG, MF_UNCHECKED);
+	CheckMenuItem(hMenuLogLevel, menu_cmd, MF_CHECKED);
+	log_level = menu_cmd - IDM_LOGLEVEL_DEBUG;
+	wdi_set_log_level(log_level);
+}
+
 void init_dialog(HWND hDlg)
 {
 	int err;
@@ -542,7 +553,7 @@ void init_dialog(HWND hDlg)
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
-	hMenuLogLevel = GetSubMenu(hMenuOptions, 3);
+	hMenuLogLevel = GetSubMenu(hMenuOptions, 4);
 
 	// Create the status line
 	create_status_bar();
@@ -555,7 +566,6 @@ void init_dialog(HWND hDlg)
 	if (err != WDI_SUCCESS) {
 		dprintf("Unable to access log output - logging will be disabled (%s)", wdi_strerror(err));
 	}
-	wdi_set_log_level(log_level);
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
@@ -569,6 +579,7 @@ void init_dialog(HWND hDlg)
 
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
+	set_loglevel(log_level+IDM_LOGLEVEL_DEBUG);
 
 	if (!advanced_mode) {
 		toggle_advanced();	// We start in advanced mode
@@ -584,17 +595,6 @@ void init_dialog(HWND hDlg)
 	}
 	pd_options.driver_type = default_driver_type;
 	select_next_driver(0);
-}
-
-/*
- * Change the log level
- */
-void set_loglevel(DWORD menu_cmd)
-{
-	CheckMenuItem(hMenuLogLevel, log_level+IDM_LOGLEVEL_DEBUG, MF_UNCHECKED);
-	CheckMenuItem(hMenuLogLevel, menu_cmd, MF_CHECKED);
-	log_level = menu_cmd - IDM_LOGLEVEL_DEBUG;
-	wdi_set_log_level(log_level);
 }
 
 /*
@@ -628,8 +628,8 @@ bool parse_ini(void) {
 
 	// Set the log level
 	config_lookup_int(&cfg, "log_level", &log_level);
-	if ((log_level >= 0) && (log_level <= 3)) {
-		set_loglevel(log_level+IDM_LOGLEVEL_DEBUG);
+	if ((log_level < 0) && (log_level > 3)) {
+		log_level = WDI_LOG_LEVEL_INFO;
 	}
 
 	// Set the default extraction dir

@@ -84,14 +84,14 @@ BEGIN
         MENUITEM "List All Devices",            IDM_LISTALL
         MENUITEM "Ignore Hubs or Composite Parents", IDM_IGNOREHUBS, CHECKED, INACTIVE
         MENUITEM "Extract Files Only (Don't Install)", IDM_EXTRACT
+        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
         POPUP "Log Level"
         BEGIN
             MENUITEM "Error",                       IDM_LOGLEVEL_ERROR
             MENUITEM "Warning",                     IDM_LOGLEVEL_WARNING
-            MENUITEM "Info",                        IDM_LOGLEVEL_INFO, CHECKED
+            MENUITEM "Info",                        IDM_LOGLEVEL_INFO
             MENUITEM "Debug",                       IDM_LOGLEVEL_DEBUG
         END
-        MENUITEM "Advanced Mode",               IDM_ADVANCEDMODE
     END
     POPUP "Help"
     BEGIN
