@@ -53,11 +53,7 @@ void usage(void)
 }
 
 // The following is necessary when compiled from a WDK/DDK environment
-int
-#ifdef _MSC_VER
-__cdecl
-#endif
-main(int argc, char *argv[])
+int __cdecl main(int argc, char *argv[])
 {
 	int c;
 	struct wdi_device_info *device, *list;

@@ -484,11 +484,7 @@ static __inline int process_error(DWORD r, char* path) {
 
 // TODO: allow commandline options (v2)
 // TODO: remove existing infs for similar devices (v2)
-int
-#ifdef _MSC_VER
-__cdecl
-#endif
-main(int argc_ansi, char** argv_ansi)
+int __cdecl main(int argc_ansi, char** argv_ansi)
 {
 	DWORD r;
 	BOOL b;

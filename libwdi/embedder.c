@@ -175,11 +175,7 @@ void add_user_files(void) {
 }
 #endif
 
-int
-#ifdef _MSC_VER
-__cdecl
-#endif
-main (int argc, char *argv[])
+int __cdecl main (int argc, char *argv[])
 {
 	int ret, i, j, drv_index;
 	DWORD r, version_size;
