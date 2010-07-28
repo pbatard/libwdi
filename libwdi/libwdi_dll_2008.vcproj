@@ -44,14 +44,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="1"
 				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				WarningLevel="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -115,9 +113,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="1"
 				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="3"
+				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -183,14 +184,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
+				Optimization="1"
 				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
-				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -254,9 +252,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="1"
 				AdditionalIncludeDirectories="..\msvc"
 				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="2"
+				WarningLevel="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
