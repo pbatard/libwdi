@@ -326,9 +326,16 @@ static __inline BOOL ShellExecuteExU(SHELLEXECUTEINFOA* lpExecInfo)
 	wExecInfo.lpFile = utf8_to_wchar(lpExecInfo->lpFile);
 	wExecInfo.lpParameters = utf8_to_wchar(lpExecInfo->lpParameters);
 	wExecInfo.lpDirectory = utf8_to_wchar(lpExecInfo->lpDirectory);
-	wExecInfo.lpClass = utf8_to_wchar(lpExecInfo->lpClass);
+	if (wExecInfo.fMask & SEE_MASK_CLASSNAME) {
+		wExecInfo.lpClass = utf8_to_wchar(lpExecInfo->lpClass);
+	} else {
+		wExecInfo.lpClass = NULL;
+	}
 	ret = ShellExecuteExW(&wExecInfo);
 	err = GetLastError();
+	// Copy the returned values back
+	lpExecInfo->hInstApp = wExecInfo.hInstApp;
+	lpExecInfo->hProcess = wExecInfo.hProcess;
 	sfree(wExecInfo.lpVerb);
 	sfree(wExecInfo.lpFile);
 	sfree(wExecInfo.lpParameters);
