@@ -1,2 +1,1 @@
-libusb-win32.inf.in eol=crlf
-winusb.inf.in       eol=crlf
+*.inf.in -crlf
