@@ -1,1 +1,2 @@
+*.sh     -crlf
 *.inf.in -crlf

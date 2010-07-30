@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 echo This file recreates vid_data.c according http://www.linux-usb.org/usb.ids
 echo
