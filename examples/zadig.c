@@ -98,7 +98,7 @@ void w_printf_v(bool update_status, const char *format, va_list args)
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
 	}
-	slen = strlen(str);
+	slen = safe_strlen(str);
 	str[slen] = '\r';
 	str[slen+1] = '\n';
 	str[slen+2] = 0;
@@ -254,7 +254,7 @@ int install_driver(void)
 		}
 		dev->pid = (unsigned short)tmp;
 		GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
-		if ( (strlen(str_buf) != 0)
+		if ( (safe_strlen(str_buf) != 0)
 		  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
 			dev->is_composite = true;
 			dev->mi = (unsigned char)tmp;

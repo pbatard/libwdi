@@ -201,8 +201,8 @@ static char err_string[STR_BUFFER_SIZE];
 	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", errcode);
 
 	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[strlen(err_string)],
-		STR_BUFFER_SIZE - (DWORD)strlen(err_string), NULL);
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[safe_strlen(err_string)],
+		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
 	if (size == 0) {
 		format_errcode = GetLastError();
 		if (format_errcode)
@@ -212,7 +212,7 @@ static char err_string[STR_BUFFER_SIZE];
 			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", errcode);
 	} else {
 		// Remove CR/LF terminators
-		for (i=strlen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
+		for (i=safe_strlen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
 			err_string[i] = 0;
 		}
 	}
@@ -362,7 +362,7 @@ static FILE *fcreate(const char *filename, const char *mode)
 	}
 
 	// Simple mode handling.
-	for (i=0; i<strlen(mode); i++) {
+	for (i=0; i<safe_strlen(mode); i++) {
 		if (mode[i] == 'r') {
 			access_mode |= GENERIC_READ;
 		} else if (mode[i] == 'w') {
@@ -684,7 +684,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		has_vid = false;
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
-				if (safe_strncmp(token, prefix[j], strlen(prefix[j])) == 0) {
+				if (safe_strncmp(token, prefix[j], safe_strlen(prefix[j])) == 0) {
 					switch(j) {
 					case 0:
 						if (sscanf(token, "VID_%04X", &tmp) != 1) {
@@ -738,7 +738,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 		// Remove trailing whitespaces
 		if ((options != NULL) && (options->trim_whitespaces)) {
-			end = device_info->desc + strlen(device_info->desc);
+			end = device_info->desc + safe_strlen(device_info->desc);
 			while ((end != device_info->desc) && isspace(*(end-1))) {
 				--end;
 			}
@@ -863,7 +863,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Check the inf file provided and create the cat file name
-	if (strcmp(inf_name+strlen(inf_name)-4, inf_ext) != 0) {
+	if (strcmp(inf_name+safe_strlen(inf_name)-4, inf_ext) != 0) {
 		wdi_err("inf name provided must have a '.inf' extension");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
@@ -931,9 +931,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	if (cat_name == NULL) {
 		MUTEX_RETURN WDI_ERROR_RESOURCE;
 	}
-	cat_name[strlen(inf_name)-3] = 'c';
-	cat_name[strlen(inf_name)-2] = 'a';
-	cat_name[strlen(inf_name)-1] = 't';
+	cat_name[safe_strlen(inf_name)-3] = 'c';
+	cat_name[safe_strlen(inf_name)-2] = 'a';
+	cat_name[safe_strlen(inf_name)-1] = 't';
 	static_strcpy(inf_entities[CAT_FILENAME].replace, cat_name);
 	safe_free(cat_name);
 
@@ -1002,9 +1002,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Create a blank cat file
-	filename[strlen(filename)-3] = 'c';
-	filename[strlen(filename)-2] = 'a';
-	filename[strlen(filename)-1] = 't';
+	filename[safe_strlen(filename)-3] = 'c';
+	filename[safe_strlen(filename)-2] = 'a';
+	filename[safe_strlen(filename)-1] = 't';
 	fd = fcreate(filename, "w");
 	if (fd == NULL) {
 		wdi_err("failed to create file: %s", filename);
@@ -1015,9 +1015,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	fclose(fd);
 
 	// Restore extension for debug output
-	filename[strlen(filename)-3] = 'i';
-	filename[strlen(filename)-2] = 'n';
-	filename[strlen(filename)-1] = 'f';
+	filename[safe_strlen(filename)-3] = 'i';
+	filename[safe_strlen(filename)-2] = 'n';
+	filename[safe_strlen(filename)-1] = 'f';
 	wdi_info("succesfully created %s", filename);
 	MUTEX_RETURN WDI_SUCCESS;
 }
@@ -1043,7 +1043,7 @@ static int process_message(char* buffer, DWORD size)
 	case IC_GET_DEVICE_ID:
 		wdi_dbg("got request for device_id");
 		if (current_device->device_id != NULL) {
-			WriteFile(pipe_handle, current_device->device_id, (DWORD)strlen(current_device->device_id), &tmp, NULL);
+			WriteFile(pipe_handle, current_device->device_id, (DWORD)safe_strlen(current_device->device_id), &tmp, NULL);
 		} else {
 			wdi_warn("no device_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
@@ -1052,7 +1052,7 @@ static int process_message(char* buffer, DWORD size)
 	case IC_GET_HARDWARE_ID:
 		wdi_dbg("got request for hardware_id");
 		if (current_device->hardware_id != NULL) {
-			WriteFile(pipe_handle, current_device->hardware_id, (DWORD)strlen(current_device->hardware_id), &tmp, NULL);
+			WriteFile(pipe_handle, current_device->hardware_id, (DWORD)safe_strlen(current_device->hardware_id), &tmp, NULL);
 		} else {
 			wdi_warn("no hardware_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
@@ -1093,7 +1093,7 @@ static int process_message(char* buffer, DWORD size)
 		break;
 	case IC_GET_USER_SID:
 		if (ConvertSidToStringSidA(get_sid(), &sid_str)) {
-			WriteFile(pipe_handle, sid_str, (DWORD)strlen(sid_str), &tmp, NULL);
+			WriteFile(pipe_handle, sid_str, (DWORD)safe_strlen(sid_str), &tmp, NULL);
 			LocalFree(sid_str);
 		} else {
 			wdi_warn("no user_sid - sending empty string");
