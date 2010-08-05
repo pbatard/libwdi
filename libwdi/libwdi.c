@@ -838,6 +838,7 @@ static long tokenize_internal(char* resource_name, char** dst, const token_entit
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_prepare_driver* options)
 {
+	const wchar_t bom = 0xFEFF;
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
@@ -992,6 +993,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		// Converting to UTF-16 is the only way to get devices using a
 		// non-english locale to display properly in device manager. UTF-8 will not do.
 		wdst = utf8_to_wchar(dst);
+		fwrite(&bom, 2, 1, fd);	// Write the BOM
 		fwrite(wdst, 2, wcslen(wdst), fd);
 		fclose(fd);
 		safe_free(wdst);
