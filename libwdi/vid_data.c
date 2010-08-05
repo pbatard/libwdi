@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.07.20
+ * Version: 2010.08.03
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -1673,6 +1673,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0ded, "Novasonics" },
 	{ 0x0dee, "Lifetime Memory Products" },
 	{ 0x0def, "Full Rise Electronic Co., Ltd" },
+	{ 0x0df4, "NET&SYS" },
 	{ 0x0df6, "Sitecom Europe B.V." },
 	{ 0x0df7, "Mobile Action Technology, Inc." },
 	{ 0x0dfa, "Toyo Communication Equipment Co., Ltd" },
@@ -1996,6 +1997,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x10e2, "Nada Electronics, Ltd" },
 	{ 0x10ec, "Vast Technologies, Inc." },
 	{ 0x10f0, "Nexio Co., Ltd" },
+	{ 0x10f1, "Importek" },
 	{ 0x10f5, "Turtle Beach" },
 	{ 0x10fb, "Pictos Technologies, Inc." },
 	{ 0x10fd, "Anubis Electronics, Ltd" },
@@ -2248,6 +2250,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x15c2, "SoundGraph Inc." },
 	{ 0x15c5, "Advance Multimedia Internet Technology Inc. (AMIT)" },
 	{ 0x15c6, "Laboratoires MXM" },
+	{ 0x15c8, "KTF Technologies" },
 	{ 0x15c9, "D-Box Technologies" },
 	{ 0x15ca, "Textech International Ltd." },
 	{ 0x15d5, "Coulomb Electronics Ltd." },
@@ -2445,6 +2448,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1a6f, "Sagem Orga GmbH" },
 	{ 0x1a79, "Bayer Health Care LLC" },
 	{ 0x1a7b, "Lumberg Connect  GmbH & Co. KG" },
+	{ 0x1a7c, "Kingsis Peripherals" },
 	{ 0x1a86, "QinHeng Electronics" },
 	{ 0x1a89, "Dynalith Systems Co., Ltd." },
 	{ 0x1a8b, "SGS Taiwan Ltd." },
