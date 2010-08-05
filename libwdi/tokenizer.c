@@ -18,6 +18,8 @@
 */
 
 /*
+08/05/2010 Revisions:
+  o minor string macro improvements
 07/23/2010 Revisions:
   o Fixed positive return value if memory allocation fails
   o Changed grow size from 8192 to 1024
@@ -26,8 +28,8 @@
 #include "tokenizer.h"
 #include <stdlib.h>
 
-#define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
-#define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
+#define safe_min(a, b) min((size_t)(a), (size_t)(b))
+#define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, safe_min(count, dst_max - 1))
 
 // If the dst buffer is to small it grows to what is needed+GROW_SIZE
 #define GetDestSize(RequiredSize) RequiredSize+1024
