@@ -44,7 +44,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc"
+				AdditionalIncludeDirectories="..\msvc;..\libwdi"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;ISOLATION_AWARE_ENABLED"
 				RuntimeLibrary="1"
 				WarningLevel="3"
@@ -116,7 +116,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc"
+				AdditionalIncludeDirectories="..\msvc;..\libwdi"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;ISOLATION_AWARE_ENABLED"
 				RuntimeLibrary="1"
 				WarningLevel="3"
@@ -188,7 +188,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc"
+				AdditionalIncludeDirectories="..\msvc;..\libwdi"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;ISOLATION_AWARE_ENABLED"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -263,7 +263,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\msvc"
+				AdditionalIncludeDirectories="..\msvc;..\libwdi"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;ISOLATION_AWARE_ENABLED"
 				RuntimeLibrary="0"
 				WarningLevel="3"

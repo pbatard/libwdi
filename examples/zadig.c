@@ -41,8 +41,8 @@
 #include <shellapi.h>
 #include <commctrl.h>
 
-#include "../libwdi/libwdi.h"
-#include "../libwdi/msapi_utf8.h"
+#include "libwdi.h"
+#include "msapi_utf8.h"
 #include "resource.h"
 #include "zadig.h"
 #include "libconfig/libconfig.h"

@@ -34,7 +34,7 @@
 #else
 #include <getopt.h>
 #endif
-#include "../libwdi/libwdi.h"
+#include "libwdi.h"
 
 #define FLUSHER	while(getchar() != 0x0A)
 #define INF_NAME "libusb_device.inf"
