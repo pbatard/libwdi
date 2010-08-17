@@ -33,6 +33,11 @@
 #include "libwdi.h"
 #include "msapi_utf8.h"
 
+// DDK complains about checking a const string against NULL
+#if defined(DDKBUILD)
+#pragma warning(disable:4130)
+#endif
+
 #define REQUEST_TIMEOUT 5000
 
 /*

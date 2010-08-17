@@ -37,6 +37,11 @@
 #include "embedded.h"	// auto-generated during compilation
 #include "msapi_utf8.h"
 
+// DDK complains about checking a const string against NULL
+#if defined(DDKBUILD)
+#pragma warning(disable:4130)
+#endif
+
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
 // Check if we unexpectedly lose communication with the installer process
