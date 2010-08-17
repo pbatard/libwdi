@@ -28,11 +28,7 @@
 #include <setupapi.h>
 #include <process.h>
 #include <sddl.h>
-#if defined(_MSC_VER)
-#include <newdev.h>
-#else
-#include <ddk/newdev.h>
-#endif
+
 #include "installer.h"
 #include "libwdi.h"
 #include "msapi_utf8.h"

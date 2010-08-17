@@ -23,10 +23,11 @@
 #include <commdlg.h>
 #include <shellapi.h>
 #include <setupapi.h>
-#if defined(_MSC_VER)
-#include <newdev.h>
-#else
+#include <config.h>
+#if defined(HAVE_DDK_NEWDEV_H)
 #include <ddk/newdev.h>
+#else
+#include <newdev.h>
 #endif
 
 #define wchar_to_utf8_no_alloc(wsrc, dest, dest_size) \
