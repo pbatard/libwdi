@@ -22,7 +22,7 @@
 		#define WINVER 0x0500
 	#endif
 	#if !defined(_WIN32_IE)
-		#define _WIN32_IE 0x0400
+		#define _WIN32_IE 0x0501
 	#endif
 #endif
 
@@ -433,7 +433,11 @@ BOOL CALLBACK dialog_proc_1(HWND dialog, UINT message,
 		}
 		g_hwndTrackingTT = CreateTrackingToolTip(list, TEXT(" "));
 
+#if defined(_WIN64)
+		device_list_wndproc_orig = (WNDPROC)SetWindowLongPtr(list, GWLP_WNDPROC, (UINT_PTR)device_list_wndproc);
+#else
 		device_list_wndproc_orig = (WNDPROC)SetWindowLongPtr(list, GWL_WNDPROC, (UINT_PTR)device_list_wndproc);
+#endif
 
 		memset(device, 0, sizeof(*device));
 
@@ -976,7 +980,7 @@ static int save_file(HWND dialog, device_context_t *device)
 
 	if (strlen(device->description))
 	{
-		if (stricmp(device->description,"Insert device description")!=0)
+		if (_stricmp(device->description,"Insert device description")!=0)
 		{
 			strcpy(device->inf_path, device->description);
 			c=device->inf_path;
@@ -1025,7 +1029,7 @@ static int save_file(HWND dialog, device_context_t *device)
 		safe_strcpy(device->inf_dir, MAX_PATH, device->inf_path);
 
 		// strip the filename
-		length = strlen(device->inf_dir);
+		length = (int)strlen(device->inf_dir);
 		while (length)
 		{
 			length--;
