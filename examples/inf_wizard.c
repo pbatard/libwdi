@@ -171,10 +171,10 @@ HWND create_tooltip(HWND hMain, HINSTANCE hInstance, UINT max_tip_width, create_
 HWND CreateTrackingToolTip(HWND hDlg, TCHAR* pText);
 
 HWND create_label(char* text, HWND hParent, HINSTANCE hInstance, UINT x, UINT y, UINT cx, UINT cy, DWORD dwStyle, UINT uID);
-HWND create_labeled_text(char* label, char* text, 
-						 HWND hParent, HINSTANCE hInstance, 
+HWND create_labeled_text(char* label, char* text,
+						 HWND hParent, HINSTANCE hInstance,
 						 UINT left, UINT top, UINT height,
-						 UINT label_width, UINT text_width, 
+						 UINT label_width, UINT text_width,
 						 UINT uIDLabel, UINT uIDText);
 
 BOOL CALLBACK dialog_proc_0(HWND dialog, UINT message,
@@ -346,7 +346,7 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 			TrackMouseEvent(&tme);
 
 			// Activate the tooltip.
-			SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE, 
+			SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE,
 				(WPARAM)TRUE, (LPARAM)&g_toolItem);
 			g_TrackingMouse = TRUE;
 		}
@@ -354,7 +354,7 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 		newX = LOWORD(lParam);
 		newY = HIWORD(lParam);
 
-		// Make sure the mouse has actually moved. The presence of the tooltip 
+		// Make sure the mouse has actually moved. The presence of the tooltip
 		// causes Windows to send the message continuously.
 		if ((newX != oldX) || (newY != oldY))
 		{
@@ -368,11 +368,11 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 			if ((ListView_HitTest(hDlg, &hitTestInfo) == -1) || newX > ListView_GetColumnWidth(hDlg, 0))
 			{
 				safe_sprintf(tipText, sizeof(tipText) - 1, TEXT("%s"), TEXT(""));
-		        SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE,FALSE, (LPARAM)&g_toolItem);
+				SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE,FALSE, (LPARAM)&g_toolItem);
 			}
 			else
 			{
-		        SendMessage(g_hwndTrackingTT, TTM_SETDELAYTIME,TTDT_INITIAL, 1000);
+				SendMessage(g_hwndTrackingTT, TTM_SETDELAYTIME,TTDT_INITIAL, 1000);
 
 				memset(&lvitem, 0 , sizeof(lvitem));
 
@@ -383,13 +383,13 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 				dev_context = (device_context_t*)lvitem.lParam;
 				// Update the text.
 				safe_sprintf(tipText, sizeof(tipText)-1 , TEXT("%s"), wdi_get_vendor_name(dev_context->wdi->vid));
-		        SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE,TRUE, (LPARAM)&g_toolItem);
+				SendMessage(g_hwndTrackingTT, TTM_TRACKACTIVATE,TRUE, (LPARAM)&g_toolItem);
 
 			}
 			g_toolItem.lpszText = tipText;
 			SendMessage(g_hwndTrackingTT, TTM_SETTOOLINFO, 0, (LPARAM)&g_toolItem);
 
-			// Position the tooltip. 
+			// Position the tooltip.
 			// The coordinates are adjusted so that the tooltip does not
 			// overlap the mouse pointer.
 			pt.x = newX;
@@ -603,11 +603,11 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 				device->description, sizeof(tmp));
 
 			GetWindowText(GetDlgItem(dialog, ID_TEXT_VID), tmp, sizeof(tmp));
-			if(sscanf(tmp, "0x%04x", &val) == 1) 
+			if(sscanf(tmp, "0x%04x", &val) == 1)
 				device->wdi->vid = (WORD)val;
 
 			GetWindowText(GetDlgItem(dialog, ID_TEXT_PID), tmp, sizeof(tmp));
-			if(sscanf(tmp, "0x%04x", &val) == 1) 
+			if(sscanf(tmp, "0x%04x", &val) == 1)
 				device->wdi->pid = (WORD)val;
 
 			GetWindowText(GetDlgItem(dialog, ID_TEXT_MI), tmp, sizeof(tmp));
@@ -639,10 +639,10 @@ HWND create_label(char* text, HWND hParent, HINSTANCE hInstance, UINT x, UINT y,
 		hParent, (HMENU) uID, hInstance, 0);
 }
 
-HWND create_labeled_text(char* label, char* text, 
-						 HWND hParent, HINSTANCE hInstance, 
+HWND create_labeled_text(char* label, char* text,
+						 HWND hParent, HINSTANCE hInstance,
 						 UINT left, UINT top, UINT height,
-						 UINT label_width, UINT text_width, 
+						 UINT label_width, UINT text_width,
 						 UINT uIDLabel, UINT uIDText)
 {
 	HWND hwnd = NULL;
@@ -823,14 +823,14 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 			// Install the driver
 			ret = infwizard_install_driver(dialog, device);
 
-			// Clear installing text and restore the arrow cursor 
+			// Clear installing text and restore the arrow cursor
 			SetWindowText(GetDlgItem(dialog, IDL_INSTALLING_TEXT), "");
 			SetCursor(LoadCursor(NULL,IDC_ARROW));
 
 			// infwizard_install_driver() will display a message if it fails
 			if (ret == ERROR_SUCCESS)
 			{
-				MessageBoxA(dialog,"Installation successful.", 
+				MessageBoxA(dialog,"Installation successful.",
 					"Driver Install Complete", MB_OK | MB_APPLMODAL);
 
 				// Close the wizard
@@ -1118,13 +1118,13 @@ HWND CreateTrackingToolTip(HWND hDlg, TCHAR* pText)
 	// Create a tooltip.
 	HWND hwndTT = CreateWindowEx(WS_EX_TOPMOST,
 		TOOLTIPS_CLASS, NULL,
-		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,		
+		WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		hDlg, NULL, g_hInst,NULL);
 
 	if (!hwndTT)
-	{   
+	{
 		return NULL;
 	}
 
@@ -1139,7 +1139,7 @@ HWND CreateTrackingToolTip(HWND hDlg, TCHAR* pText)
 	GetClientRect (hDlg, &g_toolItem.rect);
 
 	// Associate the tooltip with the tool window.
-	SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &g_toolItem);	
+	SendMessage(hwndTT, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &g_toolItem);
 	SendMessage(hwndTT, TTM_SETMAXTIPWIDTH, 0, 300);
 
 	return hwndTT;
