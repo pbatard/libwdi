@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.08.03
+ * Version: 2010.08.16
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -2566,6 +2566,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1d0a, "Johnson Controls, Inc. The Automotive Business Unit" },
 	{ 0x1d0b, "HAN HUA CABLE & WIRE TECHNOLOGY (J.X.) CO., LTD." },
 	{ 0x1d14, "ALPHA-SAT TECHNOLOGY LIMITED" },
+	{ 0x1d17, "C-Thru Music Ltd." },
 	{ 0x1d19, "Dexatek Technology Ltd." },
 	{ 0x1d1f, "Diostech Co., Ltd." },
 	{ 0x1d20, "SAMTACK INC." },
@@ -2597,6 +2598,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x2019, "PLANEX" },
 	{ 0x2040, "Hauppauge" },
 	{ 0x2047, "Texas Instruments" },
+	{ 0x2087, "Cando" },
 	{ 0x20b1, "XMOS Ltd" },
 	{ 0x20df, "Simtec Electronics" },
 	{ 0x2101, "ActionStar" },
@@ -2606,6 +2608,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x2227, "SAMWOO Enterprise" },
 	{ 0x2233, "RadioShack Corporation" },
 	{ 0x2237, "Kobo Inc." },
+	{ 0x22a6, "Pie Digital, Inc." },
 	{ 0x22b8, "Motorola PCS" },
 	{ 0x22b9, "eTurboTouch Technology, Inc." },
 	{ 0x22ba, "Technology Innovation Holdings, Ltd" },
@@ -2653,6 +2656,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x5041, "Linksys (?)" },
 	{ 0x50c2, "Averatec (?)" },
 	{ 0x5173, "Sweex" },
+	{ 0x5219, "I-Tetra" },
 	{ 0x5345, "Owon" },
 	{ 0x544d, "Transmeta Corp." },
 	{ 0x5543, "UC-Logic Technology Corp." },
@@ -2674,10 +2678,12 @@ struct vendor_name usb_vendor[] = {
 	{ 0x6993, "Yealink Network Technology Co., Ltd." },
 	{ 0x6a75, "Shanghai Jujo Electronics Co., Ltd" },
 	{ 0x7104, "CME (Central Music Co.)" },
+	{ 0x726c, "StackFoundry LLC" },
 	{ 0x734c, "TBS Technologies China" },
 	{ 0x7392, "Edimax Technology Co., Ltd" },
 	{ 0x8086, "Intel Corp." },
 	{ 0x8087, "Intel Corp." },
+	{ 0x80ee, "VirtualBox" },
 	{ 0x8282, "Keio" },
 	{ 0x8341, "EGO Systems, Inc." },
 	{ 0x9016, "Sitecom" },
