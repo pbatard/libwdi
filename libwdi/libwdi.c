@@ -1225,6 +1225,7 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.lpFile = exename;
 		shExecInfo.lpParameters = inf_name;
 		shExecInfo.lpDirectory = path;
+		shExecInfo.lpClass = NULL;
 		shExecInfo.nShow = SW_HIDE;
 		shExecInfo.hInstApp = NULL;
 
