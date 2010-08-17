@@ -151,6 +151,13 @@ if errorlevel 1 goto builderror
 del afxres.h
 copy obj%BUILD_ALT_DIR%\%cpudir%\zadig.exe . >NUL 2>&1
 
+copy inf_wizard_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\inf-wizard.exe . >NUL 2>&1
+
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..
 
