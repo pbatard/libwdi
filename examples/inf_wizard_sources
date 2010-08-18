@@ -22,8 +22,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\oldnames.lib \
            ..\libwdi\libwdi.lib
 
-# http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/
-SXS_APPLICATION_MANIFEST=inf_wizard.manifest
+SXS_MANIFEST=inf_wizard.manifest
 
 SOURCES=inf_wizard.c \
         inf_wizard_rc.rc

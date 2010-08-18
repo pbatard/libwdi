@@ -50,7 +50,7 @@
 #define RC_PRODUCT_STR    DIALOG_CAPTION
 #define RC_FILE_NAME_STR  "inf-wizard.exe"
 
-//#include "common.rc"
+#include "libusb-win32_version.rc"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -123,7 +123,7 @@ BEGIN
     PUSHBUTTON      "Install Now..",ID_BUTTON_INSTALLNOW, 20,140,70,15
 END
 
-//ID_MANIFEST RT_MANIFEST "common_controls.manifest"
+ID_MANIFEST RT_MANIFEST "inf_wizard.manifest"
 
 #endif
 
