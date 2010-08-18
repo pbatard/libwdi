@@ -49,7 +49,7 @@ BEGIN
     "\r\n"
     "// Must reference a manifest for visual styles and elevation\r\n"
     "// Oh, and it must happen at the end, or MinGW will ignore it!\r\n"
-    "#if defined(__MINGW32__) || defined(__CYGWIN__)\r\n"
+    "#if defined(__GNUC__)\r\n"
     "CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST ""zadig.manifest""\r\n"
     "#endif\r\n"
     "\0"
@@ -241,7 +241,7 @@ END
 
 // Must reference a manifest for visual styles and elevation
 // Oh, and it must happen at the end, or MinGW will ignore it!
-#if defined(__MINGW32__) || defined(__CYGWIN__)
+#if defined(__GNUC__)
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "zadig.manifest"
 #endif
 
