@@ -21,7 +21,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            .\getopt\getopt.lib
 
 # http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/
-SXS_APPLICATION_MANIFEST=zadic.manifest
+SXS_APPLICATION_MANIFEST=elevation.manifest
 
 SOURCES=zadic.c \
         zadic.rc

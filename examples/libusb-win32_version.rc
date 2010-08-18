@@ -17,7 +17,7 @@
  */
 
 #include <winver.h>
-#include "libusb_version.h"
+#include "libusb-win32_version.h"
 
 #define RT_MANIFEST 24
 #define ID_MANIFEST 1

@@ -341,7 +341,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\inf_wizard.manifest"
+				RelativePath=".\common_controls.manifest"
 				>
 			</File>
 			<File

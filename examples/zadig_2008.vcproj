@@ -357,7 +357,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\zadig.manifest"
+				RelativePath=".\common_controls_and_elevation.manifest"
 				>
 			</File>
 			<File

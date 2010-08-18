@@ -27,7 +27,7 @@
 #endif
 
 #define INITGUID
-#include "libusb_version.h"
+#include "libusb-win32_version.h"
 #include "libwdi.h"
 
 #include <windows.h>

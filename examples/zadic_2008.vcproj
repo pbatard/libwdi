@@ -333,7 +333,7 @@
 			Name="Resource Files"
 			>
 			<File
-				RelativePath=".\zadic.manifest"
+				RelativePath=".\elevation.manifest"
 				>
 			</File>
 		</Filter>

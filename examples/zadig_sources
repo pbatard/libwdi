@@ -24,7 +24,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            .\libconfig\libconfig.lib
 
 # http://jpassing.com/2008/02/01/how-to-use-manifests-with-buildexe/
-SXS_APPLICATION_MANIFEST=zadig.manifest
+SXS_APPLICATION_MANIFEST=common_controls_and_elevation.manifest
 
 SOURCES=zadig.c \
         zadig_stdlg.c \

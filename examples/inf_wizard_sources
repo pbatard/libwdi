@@ -22,7 +22,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\oldnames.lib \
            ..\libwdi\libwdi.lib
 
-SXS_MANIFEST=inf_wizard.manifest
+SXS_MANIFEST=common_controls.manifest
 
 SOURCES=inf_wizard.c \
         inf_wizard_rc.rc
