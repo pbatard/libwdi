@@ -30,7 +30,7 @@
 
 #define STR_BUFFER_SIZE             256
 #define NOTIFICATION_DELAY          1000
-#define MAX_LOG_SIZE                0xFFFF
+#define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
 #define LIBWDI_URL                  "http://libusb.org/wiki/libwdi"
