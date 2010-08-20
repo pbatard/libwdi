@@ -273,6 +273,7 @@ int LIBWDI_API wdi_unregister_logger(HWND hWnd)
 int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size)
 {
 	int size;
+	DWORD r;
 
 	MUTEX_START;
 
@@ -297,6 +298,10 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 	}
 
 	*message_size = 0;
+	r = GetLastError();
+	if ((r == ERROR_INSUFFICIENT_BUFFER) || (r == ERROR_MORE_DATA)) {
+		MUTEX_RETURN WDI_ERROR_OVERFLOW;
+	}
 	MUTEX_RETURN WDI_ERROR_IO;
 }
 

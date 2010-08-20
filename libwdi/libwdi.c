@@ -1129,7 +1129,7 @@ static int install_driver_internal(void* arglist)
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
-	DWORD err, rd_count, to_read, offset, bufsize = STR_BUFFER_SIZE;
+	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
 	BOOL is_x64 = false;
 	char *buffer = NULL, *new_buffer;
 

@@ -732,7 +732,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static uintptr_t notification_delay_thid = -1L;
 	static DWORD last_scroll = 0;
 	char str_tmp[5];
-	char log_buf[STR_BUFFER_SIZE];
+	char log_buf[2*STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
 	const char* vid_string;
 	int nb_devices, tmp, r;

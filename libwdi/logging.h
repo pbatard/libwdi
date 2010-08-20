@@ -21,7 +21,7 @@
 
 #define LOGGER_PIPE_NAME           "\\\\.\\pipe\\libwdi-logger"
 #define LOGGER_PIPE_SIZE           8192
-#define LOGBUF_SIZE                256
+#define LOGBUF_SIZE                512
 
 // Prevent two exclusive libwdi calls from running at the same time
 #define MUTEX_START char mutex_name[10+sizeof(__FUNCTION__)]; HANDLE mutex;                \
