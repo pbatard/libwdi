@@ -1093,7 +1093,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	main_instance = hInstance;
 
 	// Initialize COM for folder selection
-	CoInitialize(NULL);
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 
 	// Initialize libconfig
 	config_init(&cfg);
@@ -1107,7 +1107,8 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	}
 
 	// Exit libconfig
-	config_destroy(&cfg);
+	// TODO: This call can prevent cygwin from exiting cleanly, probably due to a libconfig bug.
+//	config_destroy(&cfg);
 
 	CloseHandle(mutex);
 
