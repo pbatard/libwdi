@@ -339,6 +339,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libwdi\msapi_utf8.h"
+				>
+			</File>
+			<File
 				RelativePath=".\resource.h"
 				>
 			</File>
@@ -353,11 +357,11 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\zadig.ico"
+				RelativePath=".\common_controls_and_elevation.manifest"
 				>
 			</File>
 			<File
-				RelativePath=".\common_controls_and_elevation.manifest"
+				RelativePath=".\zadig.ico"
 				>
 			</File>
 			<File
