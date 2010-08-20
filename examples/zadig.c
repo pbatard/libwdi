@@ -890,8 +890,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		return (INT_PTR)FALSE;
 
-	// Set background colour of read only fields to white
+	// Set background colour of read only fields
 	case WM_CTLCOLORSTATIC:
+		// Must be transparent for XP and non Aero Vista/7
+		SetBkMode((HDC)wParam, TRANSPARENT);
 		if ( ((HWND)lParam == hVid)
 		  || ((HWND)lParam == hPid)
 		  || ((HWND)lParam == hMi) ) {
@@ -901,6 +903,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		} else if ((HWND)lParam == hTarget) {
 			return (INT_PTR)grey_brush;
 		}
+		// Restore transparency if we don't change the background
+		SetBkMode((HDC)wParam, OPAQUE);
 		return (INT_PTR)FALSE;
 
 	case WM_COMMAND:
