@@ -218,6 +218,8 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
+	if (dev == NULL) return WDI_ERROR_NO_DEVICE;
+
 	installation_running = true;
 	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
 		// If the device is created from scratch, override the existing device
@@ -844,6 +846,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if (!from_install) {
 			current_device_index = 0;
 		}
+		device = NULL;
 		r = wdi_create_list(&list, &cl_options);
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices();
