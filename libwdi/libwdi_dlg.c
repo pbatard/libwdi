@@ -322,8 +322,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 
 	app_instance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
-	// protect access to the thread varaiables and prevent 2 progress
-	// dialogs from exeuting at the same time
+	// protect access to the thread variables and prevent 2 progress
+	// dialogs from executing at the same time
 	progress_mutex = CreateMutex(NULL, TRUE, NULL);
 	if ((progress_mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) {
 		wdi_err("could not obtain progress dialog mutex - is another dialog active?");
@@ -347,7 +347,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
 		wc.lpszClassName = "wdi_progress_class";
 		wc.lpszMenuName  = NULL;
-		wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 
 		if (!RegisterClassExA(&wc)) {
 			wdi_err("can't register class %s", windows_error_str(0));
