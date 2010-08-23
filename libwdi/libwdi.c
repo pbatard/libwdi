@@ -462,41 +462,42 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driv
  */
 const char* LIBWDI_API wdi_strerror(int errcode)
 {
+	static char unknown[] = "Unknown error (-9223372036854775808)";	// min 64 bit int in decimal
 	switch (errcode)
 	{
 	case WDI_SUCCESS:
 		return "Success";
 	case WDI_ERROR_IO:
-		return "Input/output error";
+		return "Input/Output error";
 	case WDI_ERROR_INVALID_PARAM:
 		return "Invalid parameter";
 	case WDI_ERROR_ACCESS:
-		return "Access denied (insufficient permissions)";
+		return "Access denied";
 	case WDI_ERROR_NO_DEVICE:
-		return "No such device (it may have been disconnected)";
+		return "No such device";
 	case WDI_ERROR_NOT_FOUND:
 		return "Requested resource not found";
 	case WDI_ERROR_BUSY:
-		return "Requested resource busy or same function call already in process";
+		return "Requested resource busy or similar call already in progress";
 	case WDI_ERROR_TIMEOUT:
 		return "Operation timed out";
 	case WDI_ERROR_OVERFLOW:
 		return "Overflow";
 	case WDI_ERROR_INTERRUPTED:
-		return "System call interrupted (perhaps due to signal)";
+		return "System call interrupted";
 	case WDI_ERROR_RESOURCE:
-		return "Could not acquire resource (insufficient memory, etc.)";
+		return "Could not allocate resource";
 	case WDI_ERROR_NOT_SUPPORTED:
-		return "Operation not supported or unimplemented on this platform";
+		return "Operation not supported or not implemented";
 	case WDI_ERROR_EXISTS:
 		return "Resource already exists";
 	case WDI_ERROR_USER_CANCEL:
 		return "Cancelled by user";
 	// The errors below are generated during driver installation
 	case WDI_ERROR_PENDING_INSTALLATION:
-		return "Another installer is already running";
+		return "Another installation is detected pending";
 	case WDI_ERROR_NEEDS_ADMIN:
-		return "Unable to run installer process with administrative privileges";
+		return "Unable to run process with required administrative privileges";
 	case WDI_ERROR_WOW64:
 		return "Attempted to use a 32 bit installer on a 64 bit machine";
 	case WDI_ERROR_INF_SYNTAX:
@@ -508,7 +509,8 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
-	return "Unknown error";
+	static_sprintf(unknown, "Unknown Error: %d", errcode);
+	return (const char*)unknown;
 }
 
 // convert a GUID to an hex GUID string
@@ -1264,7 +1266,7 @@ static int install_driver_internal(void* arglist)
 	buffer = malloc(bufsize);
 	if (buffer == NULL) {
 		wdi_err("unable to alloc buffer: aborting");
-		r =WDI_ERROR_RESOURCE; goto out;
+		r = WDI_ERROR_RESOURCE; goto out;
 	}
 
 	while (r == WDI_SUCCESS) {
