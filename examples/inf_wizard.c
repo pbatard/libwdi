@@ -47,15 +47,18 @@
 #define MAX_TEXT_LENGTH 256
 
 // Copied from libwdi
-#define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
-#define safe_strncpy(dst, dst_max, src, count) strncpy(dst, src, min(count, dst_max - 1))
-#define safe_strcpy(dst, dst_max, src) safe_strncpy(dst, dst_max, src, strlen(src)+1)
-#define safe_strncat(dst, dst_max, src, count) strncat(dst, src, min(count, dst_max - strlen(dst) - 1))
-#define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, strlen(src)+1)
+#define safe_free(p) do {if (p != NULL) {free((void*)p); p = NULL;}} while(0)
+#define safe_min(a, b) min((size_t)(a), (size_t)(b))
+#define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, src, safe_min(count, dst_max)); \
+	((char*)dst)[safe_min(count, dst_max)-1] = 0;} while(0)
+#define safe_strcpy(dst, dst_max, src) safe_strcp(dst, dst_max, src, safe_strlen(src)+1)
+#define safe_strncat(dst, dst_max, src, count) strncat(dst, src, safe_min(count, dst_max - safe_strlen(dst) - 1))
+#define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, safe_strlen(src)+1)
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
+#define safe_strlen(str) ((str==NULL)?0:strlen(str))
 #define safe_swprintf _snwprintf
 #define safe_strdup _strdup
 
@@ -1075,7 +1078,7 @@ int infwizard_install_driver(HWND dialog, device_context_t *device)
 
 	memset(&options,0,sizeof(options));
 	options.hWnd = dialog;
-	if ((ret = wdi_install_driver(device->wdi, device->inf_dir, device->inf_name, &options) != WDI_SUCCESS))
+	if ((ret = wdi_install_driver(device->wdi, device->inf_dir, device->inf_name, &options)) != WDI_SUCCESS)
 	{
 		MessageBoxA(dialog, wdi_strerror(ret),"Error Installing Driver", MB_OK|MB_ICONWARNING);
 	}
