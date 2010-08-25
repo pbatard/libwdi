@@ -62,7 +62,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
-				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				UACExecutionLevel="1"
 				GenerateDebugInformation="true"
@@ -136,7 +135,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
-				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				UACExecutionLevel="1"
 				GenerateDebugInformation="true"
@@ -209,7 +207,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
-				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
 				UACExecutionLevel="1"
 				GenerateDebugInformation="false"
@@ -284,7 +281,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
-				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
 				UACExecutionLevel="1"
 				GenerateDebugInformation="false"
