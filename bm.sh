@@ -18,10 +18,4 @@ make -j2
 target_dir=e:/dailies/libwdi/$date
 mkdir -p $target_dir
 cp -v examples/zadig.exe $target_dir
-
-# libusb0 only Zadig with IA64
-make clean
-./configure --disable-shared --enable-toggable-debug --enable-examples-build --disable-debug --enable-ia64 --with-libusb0="D:/libusb-win32"
-make -j2
-cp -v examples/zadig.exe $target_dir/zadig0.exe
 md5sum $target_dir/zadig.exe
