@@ -76,7 +76,7 @@ enum user_message_type {
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
-#define safe_strlen(str) ((str==NULL)?0:strlen(str))
+#define safe_strlen(str) ((((char*)str)==NULL)?0:strlen(str))
 #define safe_strdup _strdup
 
 #if defined(_MSC_VER)
