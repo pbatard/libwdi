@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.08.16
+ * Version: 2010.08.24
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -605,7 +605,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0647, "Acton Research Corp." },
 	{ 0x0648, "Inside Out Networks" },
 	{ 0x0649, "Weli Science Co., Ltd" },
-	{ 0x064b, "White Mountain DSP, Inc." },
+	{ 0x064b, "Analog Devices, Inc. (White Mountain DSP)" },
 	{ 0x064c, "Ji-Haw Industrial Co., Ltd" },
 	{ 0x064d, "TriTech Microelectronics, Ltd" },
 	{ 0x064e, "Suyin Corp." },
@@ -2272,6 +2272,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1628, "Stonestreet One, Inc." },
 	{ 0x162a, "Airgo Networks Inc." },
 	{ 0x162f, "WiQuest Communications, Inc." },
+	{ 0x1630, "2Wire, Inc." },
 	{ 0x1631, "Good Way Technology" },
 	{ 0x1645, "Entrega [hex]" },
 	{ 0x1649, "SofTec Microsystems" },
@@ -2592,6 +2593,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1f82, "TANDBERG" },
 	{ 0x1f84, "Inverness Medical Innovations, Inc." },
 	{ 0x1f87, "Stantum" },
+	{ 0x1fbd, "Delphin Technology AG" },
 	{ 0x1fe7, "Vertex Wireless Co., Ltd." },
 	{ 0x2001, "D-Link Corp." },
 	{ 0x2013, "Unknown (Pinnacle?)" },
@@ -2669,6 +2671,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x6189, "Sitecom" },
 	{ 0x6253, "TwinHan Technology Co., Ltd" },
 	{ 0x636c, "CoreLogic, Inc." },
+	{ 0x6472, "Unknown (Sony?)" },
 	{ 0x6547, "Arkmicro Technologies Inc." },
 	{ 0x6615, "IRTOUCHSYSTEMS Co. Ltd." },
 	{ 0x6666, "Prototype product Vendor ID" },
