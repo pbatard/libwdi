@@ -810,7 +810,7 @@ static int extract_binaries(char* path)
 
 		fd = fcreate(filename, "w");
 		if (fd == NULL) {
-			wdi_err("failed to create file: %s", filename);
+			wdi_err("failed to create file '%s' (%s)", filename, windows_error_str(0));
 			return WDI_ERROR_RESOURCE;
 		}
 

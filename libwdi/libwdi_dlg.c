@@ -146,6 +146,7 @@ static void center_dialog(HWND dialog)
 	int nHeight;
 
 	hParent = GetParent(dialog);
+	if (hParent == NULL) return;
 
 	// Get the size of the dialog box.
 	GetWindowRect(dialog, &DialogRect);
@@ -234,8 +235,11 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		// Reset static variables
 		installation_time = 0;
 		msg_index = 0;
-
 		hProgress = hDlg;
+
+		// Start modal (disable parent Window)
+		EnableWindow(GetParent(hDlg), FALSE);
+
 		init_children(hProgress);
 		center_dialog(hProgress);
 
@@ -271,6 +275,9 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		wParam = (WPARAM)WDI_ERROR_RESOURCE;
 
 	case UM_PROGRESS_STOP:
+		// If you don't re-enable the parent Window before leaving
+		// all kind of bad things happen (other Windows get activated, etc.)
+		EnableWindow(GetParent(hDlg), TRUE);
 		PostQuitMessage((int)wParam);
 		DestroyWindow(hProgress);
 		return (INT_PTR)TRUE;
@@ -314,7 +321,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	HWND hDlg;
 	MSG msg;
 	WNDCLASSEX wc;
-	BOOL bRet;
+	BOOL r;
 
 	if ( (function == NULL) || (hWnd == NULL) ) {
 		return WDI_ERROR_INVALID_PARAM;
@@ -338,13 +345,15 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 
 	// First we create  Window class if it doesn't already exist
 	if (!GetClassInfoExA(app_instance, "wdi_progress_class", &wc)) {
-		wc.cbSize        = sizeof(WNDCLASSEX);
-		wc.style         = CS_DBLCLKS | CS_SAVEBITS;
-		wc.lpfnWndProc   = progress_callback;
-		wc.cbClsExtra    = wc.cbWndExtra = 0;
-		wc.hInstance     = GetModuleHandle(NULL);
-		wc.hIcon         = wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-		wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+		wc.cbSize = sizeof(WNDCLASSEX);
+		wc.style = CS_DBLCLKS | CS_SAVEBITS;
+		wc.lpfnWndProc = progress_callback;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = app_instance;
+		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wc.lpszClassName = "wdi_progress_class";
 		wc.lpszMenuName  = NULL;
 		wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
@@ -369,12 +378,11 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 
 	// Finally we Display the dialog...
 	ShowWindow(hDlg, SW_SHOWNORMAL);
-	EnableWindow(hWnd, FALSE);	// Start modal (disable main Window)
 	UpdateWindow(hDlg);
 
 	// ...and handle the message processing loop
-	while( (bRet = GetMessage(&msg, NULL, 0, 0)) != 0) {
-		if (bRet == -1) {
+	while( (r = GetMessage(&msg, NULL, 0, 0)) != 0) {
+		if (r == -1) {
 			wdi_err("GetMessage error");
 		} else {
 			TranslateMessage(&msg);
@@ -382,7 +390,6 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		}
 	}
 
-	EnableWindow(hWnd, TRUE);	// End modal (restore main Window)
 	safe_closehandle(progress_mutex);
 
 	return (int)msg.wParam;
