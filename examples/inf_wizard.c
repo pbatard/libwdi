@@ -643,7 +643,7 @@ HWND create_label(char* text, HWND hParent, HINSTANCE hInstance, UINT x, UINT y,
 {
 	return CreateWindowA("Static", text, WS_CHILD | WS_VISIBLE | dwStyle,
 		x, y, cx, cy,
-		hParent, (HMENU) uID, hInstance, 0);
+		hParent, (HMENU)((UINT_PTR)uID), hInstance, 0);
 }
 
 HWND create_labeled_text(char* label, char* text,
@@ -810,7 +810,7 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 					hBrushStatic = CreateSolidBrush( (COLORREF) GetSysColor(COLOR_BTNFACE));
 				}
 
-				return (UINT) hBrushStatic;
+				return PtrToUlong(hBrushStatic);
 			}
 
 			// Let Windows do default handling
