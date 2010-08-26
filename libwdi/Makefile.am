@@ -11,7 +11,7 @@ noinst_PROGRAMS += installer_x86
 noinst_EXES += installer_x86.exe
 installer_x86_SOURCES = installer.h installer.c
 installer_x86_CFLAGS = -m32 $(NO_CYGWIN) $(AM_CFLAGS)
-installer_x86_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
+installer_x86_LDFLAGS = -m32 $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x86_LDADD = -lsetupapi -lnewdev
 endif
 
@@ -21,7 +21,7 @@ noinst_EXES += installer_x64.exe
 installer_x64_CC = gcc $(NO_CYGWIN)
 installer_x64_SOURCES = installer.h installer.c
 installer_x64_CFLAGS = -m64 -D_WIN64 $(NO_CYGWIN) $(AM_CFLAGS)
-installer_x64_LDFLAGS = $(NO_CYGWIN) $(AM_LDFLAGS) -static
+installer_x64_LDFLAGS = -m64 $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x64_LDADD = -lsetupapi -lnewdev
 endif
 
