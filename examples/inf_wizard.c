@@ -87,7 +87,7 @@ typedef struct
 	BOOL user_allocated_wdi;
 	BOOL modified; // unused
 
-	VS_FIXEDFILEINFO* driver_info;
+	VS_FIXEDFILEINFO driver_info;
 } device_context_t;
 
 typedef struct
@@ -764,11 +764,11 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 			create_labeled_text(bufferLabel,bufferText,dialog,g_hInst,x,y,LBL_HEIGHT,LBL_WIDTH,TXT_WIDTH, ID_INFO_TEXT, ID_INFO_TEXT);
 
 			y += LBL_HEIGHT+LBL_SEP*2;
-			if  (device->driver_info)
+			if (device->driver_info.dwSignature)
 			{
 				safe_sprintf(bufferLabel, MAX_TEXT_LENGTH, package_contents_fmt_0, "libusb-win32",
-					(int)device->driver_info->dwFileVersionMS>>16, (int)device->driver_info->dwFileVersionMS&0xFFFF,
-					(int)device->driver_info->dwFileVersionLS>>16, (int)device->driver_info->dwFileVersionLS&0xFFFF,
+					(int)device->driver_info.dwFileVersionMS>>16, (int)device->driver_info.dwFileVersionMS&0xFFFF,
+					(int)device->driver_info.dwFileVersionLS>>16, (int)device->driver_info.dwFileVersionLS&0xFFFF,
 					"x86, x64, ia64");
 
 			}
@@ -781,7 +781,7 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 			free(bufferLabel);
 
 		}
-		if ((device->driver_info) && GetFileAttributesA(device->inf_path)!=INVALID_FILE_ATTRIBUTES)
+		if ((device->driver_info.dwSignature) && GetFileAttributesA(device->inf_path)!=INVALID_FILE_ATTRIBUTES)
 			EnableWindow(GetDlgItem(dialog, ID_BUTTON_INSTALLNOW), TRUE);
 		else
 			EnableWindow(GetDlgItem(dialog, ID_BUTTON_INSTALLNOW), FALSE);
