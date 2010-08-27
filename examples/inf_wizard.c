@@ -326,6 +326,7 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 	LVHITTESTINFO hitTestInfo;
 	LVITEM lvitem;
 	device_context_t* dev_context;
+	BOOL ignored;
 
 	switch(message)
 	{
@@ -381,7 +382,7 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 
 				lvitem.iItem = hitTestInfo.iItem;
 				lvitem.mask =  LVIF_PARAM;
-				ListView_GetItem(hDlg,&lvitem);
+				ignored = ListView_GetItem(hDlg,&lvitem);
 
 				dev_context = (device_context_t*)lvitem.lParam;
 				// Update the text.
@@ -857,8 +858,9 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 static void device_list_init(HWND list)
 {
 	LVCOLUMN lvc;
+	int ignored;
 
-	ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT);
+	ignored = (int)ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT);
 
 	memset(&lvc, 0, sizeof(lvc));
 
@@ -868,22 +870,22 @@ static void device_list_init(HWND list)
 	lvc.cx = 70;
 	lvc.iSubItem = 0;
 	lvc.pszText = "Vendor ID";
-	ListView_InsertColumn(list, 1, &lvc);
+	ignored = ListView_InsertColumn(list, 1, &lvc);
 
 	lvc.cx = 70;
 	lvc.iSubItem = 1;
 	lvc.pszText = "Product ID";
-	ListView_InsertColumn(list, 2, &lvc);
+	ignored = ListView_InsertColumn(list, 2, &lvc);
 
 	lvc.cx = 260;
 	lvc.iSubItem = 2;
 	lvc.pszText = "Description";
-	ListView_InsertColumn(list, 3, &lvc);
+	ignored = ListView_InsertColumn(list, 3, &lvc);
 
 	lvc.cx = 40;
 	lvc.iSubItem = 3;
 	lvc.pszText = "MI";
-	ListView_InsertColumn(list, 4, &lvc);
+	ignored = ListView_InsertColumn(list, 4, &lvc);
 }
 
 static void device_list_refresh(HWND list)
@@ -930,6 +932,7 @@ static void device_list_add(HWND list, device_context_t *device)
 	char vid[32];
 	char pid[32];
 	char mi[32];
+	int ignored;
 
 	memset(&item, 0, sizeof(item));
 	memset(vid, 0, sizeof(vid));
@@ -946,7 +949,7 @@ static void device_list_add(HWND list, device_context_t *device)
 	item.mask = LVIF_TEXT | LVIF_PARAM;
 	item.lParam = (LPARAM)device;
 
-	ListView_InsertItem(list, &item);
+	ignored = ListView_InsertItem(list, &item);
 
 	ListView_SetItemText(list, 0, 0, vid);
 	ListView_SetItemText(list, 0, 1, pid);
@@ -957,6 +960,7 @@ static void device_list_add(HWND list, device_context_t *device)
 static void device_list_clean(HWND list)
 {
 	LVITEM item;
+	BOOL ignored;
 
 	memset(&item, 0, sizeof(LVITEM));
 
@@ -965,7 +969,7 @@ static void device_list_clean(HWND list)
 		if (item.lParam)
 			free((void *)item.lParam);
 
-		ListView_DeleteItem(list, 0);
+		ignored = ListView_DeleteItem(list, 0);
 		memset(&item, 0, sizeof(LVITEM));
 	}
 }
