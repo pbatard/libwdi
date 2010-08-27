@@ -320,6 +320,8 @@ bool select_next_driver(int increment)
 {
 	int i;
 	bool found = false;
+	VS_FIXEDFILEINFO file_info;
+	char driver_text[64];
 
 	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
 		pd_options.driver_type = (WDI_NB_DRIVERS + pd_options.driver_type + increment)%WDI_NB_DRIVERS;
@@ -332,8 +334,15 @@ bool select_next_driver(int increment)
 		found = true;
 		break;
 	}
-	SetDlgItemTextA(hMain, IDC_TARGET,
-		found?driver_display_name[pd_options.driver_type]:"(NONE)");
+	if (found) {
+		wdi_is_driver_supported(pd_options.driver_type, &file_info);
+		safe_sprintf(driver_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+			(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
+			(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
+	} else {
+		safe_sprintf(driver_text, 64, "(NONE)");
+	}
+	SetDlgItemTextA(hMain, IDC_TARGET, driver_text);
 	return found;
 }
 
