@@ -123,22 +123,22 @@ static char *windows_error_str(DWORD retval)
 static char err_string[ERR_BUFFER_SIZE];
 
 	DWORD size;
-	DWORD errcode, format_errcode;
+	DWORD error_code, format_error;
 
-	errcode = retval?retval:GetLastError();
+	error_code = retval?retval:GetLastError();
 
-	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", errcode);
+	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", error_code);
 
-	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&err_string[strlen(err_string)],
 		ERR_BUFFER_SIZE-(DWORD)strlen(err_string), NULL);
 	if (size == 0) {
-		format_errcode = GetLastError();
-		if (format_errcode)
+		format_error = GetLastError();
+		if (format_error)
 			safe_sprintf(err_string, ERR_BUFFER_SIZE,
-				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
+				"Windows error code %u (FormatMessage error code %u)", error_code, format_error);
 		else
-			safe_sprintf(err_string, ERR_BUFFER_SIZE, "Unknown error code %u", errcode);
+			safe_sprintf(err_string, ERR_BUFFER_SIZE, "Unknown error code %u", error_code);
 	}
 	return err_string;
 }

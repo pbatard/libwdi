@@ -194,22 +194,22 @@ static char err_string[STR_BUFFER_SIZE];
 
 	DWORD size;
 	size_t i;
-	uint32_t errcode, format_errcode;
+	uint32_t error_code, format_error;
 
-	errcode = retval?retval:GetLastError();
+	error_code = retval?retval:GetLastError();
 
-	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", errcode);
+	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", error_code);
 
-	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errcode,
+	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[safe_strlen(err_string)],
 		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
 	if (size == 0) {
-		format_errcode = GetLastError();
-		if (format_errcode)
+		format_error = GetLastError();
+		if (format_error)
 			safe_sprintf(err_string, STR_BUFFER_SIZE,
-				"Windows error code %u (FormatMessage error code %u)", errcode, format_errcode);
+				"Windows error code %u (FormatMessage error code %u)", error_code, format_error);
 		else
-			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", errcode);
+			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", error_code);
 	} else {
 		// Remove CR/LF terminators
 		for (i=safe_strlen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
@@ -452,13 +452,13 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
  * points to a constant string.
  * The returned string is encoded in ASCII form and always starts with a
  * capital letter and ends without any dot.
- * \param errcode the error code whose description is desired
+ * \param error_code the error code whose description is desired
  * \returns a short description of the error code in English
  */
-const char* LIBWDI_API wdi_strerror(int errcode)
+const char* LIBWDI_API wdi_strerror(int error_code)
 {
 	static char unknown[] = "Unknown error (-9223372036854775808)";	// min 64 bit int in decimal
-	switch (errcode)
+	switch (error_code)
 	{
 	case WDI_SUCCESS:
 		return "Success";
@@ -504,7 +504,7 @@ const char* LIBWDI_API wdi_strerror(int errcode)
 	case WDI_ERROR_OTHER:
 		return "Other error";
 	}
-	static_sprintf(unknown, "Unknown Error: %d", errcode);
+	static_sprintf(unknown, "Unknown Error: %d", error_code);
 	return (const char*)unknown;
 }
 
