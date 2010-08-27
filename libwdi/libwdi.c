@@ -403,16 +403,16 @@ static FILE *fcreate(const char *filename, const char *mode)
 /*
  * Find out if the driver selected is actually embedded in this version of the library
  */
-bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driver_info)
+bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	if (driver_info != NULL) {
-		*driver_info = NULL;
+		memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
 	}
 	switch (driver_type) {
 	case WDI_WINUSB:
 #if defined(DDK_DIR)
 		if (driver_info != NULL) {
-			*driver_info = (VS_FIXEDFILEINFO*)&driver_version[0];
+			memcpy(driver_info, &driver_version[0], sizeof(VS_FIXEDFILEINFO));
 		}
 		// WinUSB is not supported on Win2k/2k3
 		GET_WINDOWS_VERSION;
@@ -427,7 +427,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO** driv
 	case WDI_LIBUSB:
 #if defined(LIBUSB0_DIR)
 		if (driver_info != NULL) {
-			*driver_info = (VS_FIXEDFILEINFO*)&driver_version[1];
+			memcpy(driver_info, &driver_version[1], sizeof(VS_FIXEDFILEINFO));
 		}
 		return true;
 #else
