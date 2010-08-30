@@ -185,39 +185,43 @@ fi
 AC_SUBST([ARCH_CFLAGS])
 AC_SUBST([ARCH_RCFLAGS])
 
-if test "x$DDK_DIR" != "x"; then
-	# check that the required WinUSB DDK files are available
-	if test "x$enable_64bit" != "xno"; then
-	# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
-	AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
-		[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
+# AC_CHECK_FILES only works when not cross compiling
+if test "$cross_compiling" != "yes"
+then
+	if test "x$DDK_DIR" != "x"; then
+		# check that the required WinUSB DDK files are available
+		if test "x$enable_64bit" != "xno"; then
+		# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll],,
+			[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
+		fi
+		if test "x$enable_32bit" != "xno"; then
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
+			[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-ddkdir)])])
+		fi
+		if test "x$enable_ia64" != "xno"; then
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/ia64/winusbcoinstaller2.dll],,
+			[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
+		fi
 	fi
-	if test "x$enable_32bit" != "xno"; then
-	AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll],,
-		[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-ddkdir)])])
+	
+	if test "x$LIBUSB0_DIR" != "x"; then
+		# check that the required libusb0 driver files are available
+		AC_CHECK_FILES([$LIBUSB0_DIR/bin/x86/libusb0.sys $LIBUSB0_DIR/bin/x86/libusb0_x86.dll],,
+			[AC_MSG_ERROR([the libusb0 x86 driver files could not be detected (--with-libusb0)])])
+		if test "x$enable_64bit" != "xno"; then
+		AC_CHECK_FILES([$LIBUSB0_DIR/bin/amd64/libusb0.sys $LIBUSB0_DIR/bin/amd64/libusb0.dll],,
+			[AC_MSG_ERROR([the libusb0 amd64 driver files could not be detected (--with-libusb0)])])
+		fi
+		if test "x$enable_ia64" != "xno"; then
+		AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
+			[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
+		fi
 	fi
-	if test "x$enable_ia64" != "xno"; then
-	AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/ia64/winusbcoinstaller2.dll],,
-		[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
-	fi
-fi
 
-if test "x$LIBUSB0_DIR" != "x"; then
-	# check that the required libusb0 driver files are available
-	AC_CHECK_FILES([$LIBUSB0_DIR/bin/x86/libusb0.sys $LIBUSB0_DIR/bin/x86/libusb0_x86.dll],,
-		[AC_MSG_ERROR([the libusb0 x86 driver files could not be detected (--with-libusb0)])])
-	if test "x$enable_64bit" != "xno"; then
-	AC_CHECK_FILES([$LIBUSB0_DIR/bin/amd64/libusb0.sys $LIBUSB0_DIR/bin/amd64/libusb0.dll],,
-		[AC_MSG_ERROR([the libusb0 amd64 driver files could not be detected (--with-libusb0)])])
+	if test "x$USER_DIR" != "x"; then
+		AC_CHECK_FILE([$USER_DIR],,[AC_MSG_ERROR([the custom driver directory could not be detected (--with-userdir)])])
 	fi
-	if test "x$enable_ia64" != "xno"; then
-	AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
-		[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
-	fi
-fi
-
-if test "x$USER_DIR" != "x"; then
-	AC_CHECK_FILE([$USER_DIR],,[AC_MSG_ERROR([the custom driver directory could not be detected (--with-userdir)])])
 fi
 
 # Message logging
