@@ -29,23 +29,19 @@ set ORG_BUILD_DEFAULT_TARGETS=%BUILD_DEFAULT_TARGETS%
 set version=1.0
 
 set cpudir=i386
-rem set BUILD_ALT_DIR=Win32
 if %ORG_BUILDARCH%==x86 goto isI386
 set cpudir=amd64
-rem set BUILD_ALT_DIR=x64
+echo #define BUILD64> libwdi\build64.h
+goto main_start
 :isI386
+echo #define NO_BUILD64> libwdi\build64.h
 
+:main_start
 cd libwdi
 set srcPath=obj%BUILD_ALT_DIR%\%cpudir%
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
-copy embedder_sources sources >NUL 2>&1
-@echo on
-build -cwgZ
-@echo off
-if errorlevel 1 goto builderror
-copy %srcPath%\embedder.exe . >NUL 2>&1
 
 set 386=1
 set AMD64=
@@ -53,6 +49,13 @@ set BUILD_DEFAULT_TARGETS=-386
 set _AMD64bit=
 set _BUILDARCH=x86
 set PATH=%BASEDIR%\bin\x86;%BASEDIR%\bin\x86\x86
+
+copy embedder_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\i386\embedder.exe . >NUL 2>&1
 
 copy installer_x86_sources sources >NUL 2>&1
 @echo on

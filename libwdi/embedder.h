@@ -29,11 +29,9 @@
 
 // Some adjustment is needed for MSVC
 #if defined(_MSC_VER)
-// Because the embedder is compiled as 32 bit always, the only way to detect if we're
-// building 64 bit in MSVC is to add a custom include
-#if !defined(DDKBUILD)
+// Because the embedder is compiled as 32 bit always, we detect
+// 64 bit MS compilations through an additional include
 #include "build64.h"
-#endif
 #define __STR2__(x) #x
 #define __STR1__(x) __STR2__(x)
 #if (defined(_WIN64) || defined(BUILD64)) && defined(OPT_M32)
