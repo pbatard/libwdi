@@ -854,6 +854,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if (!from_install) {
 			current_device_index = 0;
 		}
+		editable_desc = NULL;
 		device = NULL;
 		r = wdi_create_list(&list, &cl_options);
 		if (r == WDI_SUCCESS) {
