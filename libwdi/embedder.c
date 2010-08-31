@@ -347,8 +347,9 @@ int __cdecl main (int argc, char *argv[])
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {
+		fname[0] = 0;
 		_splitpath(embeddable[i].file_name, NULL, NULL, fname, ext);
-		strncat(fname, ext, sizeof(fname));
+		strncat(fname, ext, sizeof(fname)-strlen(fname));
 		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"");
 		// We need to handle backslash sequences
