@@ -8,6 +8,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwdi (static)", "libwdi\l
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedder", "libwdi\embedder_2008.vcproj", "{792D44D5-28A7-4EB3-B84B-8021FE3189F9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61} = {5FAEF8F7-C809-4A68-862F-F8BC6E775B61}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadic", "examples\zadic_2008.vcproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -45,6 +48,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external utilities", "external utilities", "{B1F3B94A-4EC4-406E-9CBF-056E1EA03DE0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detect_64build", "libwdi\detect_64build_2008.vcproj", "{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,11 +106,9 @@ Global
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Debug|Win32.ActiveCfg = Debug|Win32
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Debug|Win32.Build.0 = Debug|Win32
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Debug|x64.ActiveCfg = Debug|Win32
-		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Debug|x64.Build.0 = Debug|Win32
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Release|Win32.ActiveCfg = Release|Win32
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Release|Win32.Build.0 = Release|Win32
 		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Release|x64.ActiveCfg = Release|Win32
-		{9B1C561E-F95B-4849-A7AA-A4350E227C20}.Release|x64.Build.0 = Release|Win32
 		{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}.Debug|Win32.ActiveCfg = Debug|x64
 		{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}.Debug|Win32.Build.0 = Debug|x64
 		{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}.Debug|x64.ActiveCfg = Debug|x64
@@ -130,6 +133,14 @@ Global
 		{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}.Release|Win32.Build.0 = Release|Win32
 		{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}.Release|x64.ActiveCfg = Release|x64
 		{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}.Release|x64.Build.0 = Release|x64
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Debug|Win32.Build.0 = Debug|Win32
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Debug|x64.ActiveCfg = Debug|x64
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Debug|x64.Build.0 = Debug|x64
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Release|Win32.ActiveCfg = Release|Win32
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Release|Win32.Build.0 = Release|Win32
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Release|x64.ActiveCfg = Release|x64
+		{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

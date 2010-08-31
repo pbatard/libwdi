@@ -29,9 +29,14 @@
 
 // Some adjustment is needed for MSVC
 #if defined(_MSC_VER)
+// Because the embedder is compiled as 32 bit always, the only way to detect if we're
+// building 64 bit in MSVC is to add a custom include
+#if !defined(DDKBUILD)
+#include "build64.h"
+#endif
 #define __STR2__(x) #x
 #define __STR1__(x) __STR2__(x)
-#if defined(_WIN64) && defined(OPT_M32)
+#if (defined(_WIN64) || defined(BUILD64)) && defined(OPT_M32)
 // a 64 bit application/library CANNOT be used on 32 bit platforms
 #pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support")
 #undef OPT_M32
