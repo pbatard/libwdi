@@ -1,38 +1,39 @@
-libwdi: Windows Driver Installer library for USB devices
 
-Features:
+            libwdi: Windows Driver Installer library for USB devices
+                         http://libusb.org/wiki/libwdi
+
+Providing application developers and driver makers, with a convenient way to
+extract and install USB drivers on end-users' systems.
+
+Main features:
 - Automated driverless device detection
 - Automated inf creation, using the name reported by the USB device
 - Automated driver files extraction, for both 32 and 64 bit platforms
 - Automated driver installation, including UAC elevation where necessary
-- When statically linked, only the final executable needs to be redistributed to
-  ensure that a driver can be automatically installed on any Windows platform.
+- A single library, embedding all the required files. Can be statically or 
+  dynamically linked to an application, so that driver installation can be
+  taken care automatically of when required.
+- Ability to produce a single library that runs and can install drivers on any
+  platform from Windows 2000 to Windows 7
+- Ability to produce a single library that runs and can install drivers on both
+  32 and 64 bit versions of Windows
 
-For the reditributale library to work on both 64 and 32 bit, you must use a 
-compiler that can produce both 32 and 64 bit binaries, and compile the library
-as 32 bit.
-For gcc, that means that your compiler should support both the -m32 and -m64
-options, and for Visual Studio, that means using a non Express version.
-Note that you still have the possibility to use other compilers to produce a 32
-bit (or 64 bit) only library, and automated configuration will be smart enough
-to detect this, and compile/embed only the required 32 or 64 bit resources.
-If you want to compile a 64 bit only library, make sure you comment OPT_M32 in
-config.h, or use the --disable-32bit option when runing configure.
+Additional features:
+- Allows the embedding and selection of WinUSB, libusb0.sys (from libusb-win32)
+  or your own USB driver (eg. WHQL drivers)
+- Full locale support. API strings are UTF-8, and the generated inf is UTF-16.
+- Open source, with a proprietary application friendly license (LGPL v2.1)
 
-For gcc, the best solution right now, to have -m32 and -m64 with very little
-effort, is to download WPG System 64 from http://www.cadforte.com/system64.html
-as the MinGW-32 and cygwin only compile 32 bit binaries by default, and the 
-official binary packages from MinGW-w64 don't have multilib enabled, so they are
-64 bit only. 
+Installation and Compilation:
+  Please visit: http://libusb.org/wiki/libwdi_install
 
-Compiling:
-Regardless of your development environment, you must either have the Windows DDK
-installed, or have the winusb/wdf 32 and 64 bit redistributable DLLs.
-On cygwin/mingw, you need to supply the path to your DDK with the --with-ddkdir
-option when calling configure (see autogen.sh).
-For MSVC, you must edit msvc/config.h and set DDK_PATH path accordingly.
+API usage:
+  Please visit: http://libusb.org/wiki/libwdi_usage
 
+FAQ:
+  Please visit: http://libusb.org/wiki/libwdi_faq
+  
 Dependencies:
-The Zadig GUI application uses a slightly modified version of libconfig 1.4.5
-(LGPL v2.1), which is copyright Mark Lindner et al.
-See http://www.hyperrealm.com/libconfig/ for details.
+  The Zadig GUI application uses a slightly modified version of libconfig 1.4.5
+  (included, LGPL v2.1), which is copyright Mark Lindner et al.
+  See http://www.hyperrealm.com/libconfig/ for details.
