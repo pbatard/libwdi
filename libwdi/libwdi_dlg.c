@@ -175,7 +175,6 @@ static void center_dialog(HWND dialog)
 static void init_children(HWND hDlg) {
 
 	HFONT hFont;
-	// TODO: DPI Scaling?
 	// Progress Bar
 	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASS,
 		NULL,

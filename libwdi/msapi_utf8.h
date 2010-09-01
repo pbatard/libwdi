@@ -379,6 +379,8 @@ out:
 	return ret;
 }
 
+// NOTE: when used, nFileOffset & nFileExtension MUST be provided
+// in number of Unicode characters, NOT number of UTF-8 bytes
 static __inline BOOL WINAPI GetOpenSaveFileNameU(LPOPENFILENAMEA lpofn, BOOL save)
 {
 	BOOL ret = FALSE;
@@ -390,6 +392,7 @@ static __inline BOOL WINAPI GetOpenSaveFileNameU(LPOPENFILENAMEA lpofn, BOOL sav
 	wofn.hwndOwner = lpofn->hwndOwner;
 	wofn.hInstance = lpofn->hInstance;
 
+	// No support for custom filters
 	if (lpofn->lpstrCustomFilter != NULL) goto out;
 
 	// Count on Microsoft to use an moronic scheme for filters
@@ -421,21 +424,18 @@ static __inline BOOL WINAPI GetOpenSaveFileNameU(LPOPENFILENAMEA lpofn, BOOL sav
 	} else {
 		wofn.lpstrFilter = NULL;
 	}
-//	wofn.lpstrCustomFilter = utf8_to_wchar(lpofn->lpstrCustomFilter);
 	wofn.nMaxCustFilter = lpofn->nMaxCustFilter;
 	wofn.nFilterIndex = lpofn->nFilterIndex;
 	wofn.lpstrFile = calloc(lpofn->nMaxFile, sizeof(wchar_t));
 	utf8_to_wchar_no_alloc(lpofn->lpstrFile, wofn.lpstrFile, lpofn->nMaxFile);
 	wofn.nMaxFile = lpofn->nMaxFile;
-	// TODO: buffer
-	wofn.lpstrFileTitle = utf8_to_wchar(lpofn->lpstrFileTitle);
-	wofn.nMaxFileTitle = lpofn->nMaxFileTitle; // TODO
+	wofn.lpstrFileTitle = calloc(lpofn->nMaxFileTitle, sizeof(wchar_t));
+	utf8_to_wchar_no_alloc(lpofn->lpstrFileTitle, wofn.lpstrFileTitle, lpofn->nMaxFileTitle);
+	wofn.nMaxFileTitle = lpofn->nMaxFileTitle;
 	wofn.lpstrInitialDir = utf8_to_wchar(lpofn->lpstrInitialDir);
 	wofn.lpstrTitle = utf8_to_wchar(lpofn->lpstrTitle);
 	wofn.Flags = lpofn->Flags;
-	// TODO: find the backslash
 	wofn.nFileOffset = lpofn->nFileOffset;
-	// TODO: fidn the dot
 	wofn.nFileExtension = lpofn->nFileExtension;
 	wofn.lpstrDefExt = utf8_to_wchar(lpofn->lpstrDefExt);
 	wofn.lCustData = lpofn->lCustData;
@@ -451,12 +451,13 @@ static __inline BOOL WINAPI GetOpenSaveFileNameU(LPOPENFILENAMEA lpofn, BOOL sav
 		ret = GetOpenFileNameW(&wofn);
 	}
 	err = GetLastError();
-	if ((ret) && (wchar_to_utf8_no_alloc(wofn.lpstrFile, lpofn->lpstrFile, lpofn->nMaxFile) == 0)) {
+	if ( (ret)
+	  && ( (wchar_to_utf8_no_alloc(wofn.lpstrFile, lpofn->lpstrFile, lpofn->nMaxFile) == 0)
+	    || (wchar_to_utf8_no_alloc(wofn.lpstrFileTitle, lpofn->lpstrFileTitle, lpofn->nMaxFileTitle) == 0) ) ) {
 		err = GetLastError();
 		ret = FALSE;
 	}
 out:
-//	ufree(wofn.lpstrCustomFilter);
 	sfree(wofn.lpstrDefExt);
 	sfree(wofn.lpstrFile);
 	sfree(wofn.lpstrFileTitle);

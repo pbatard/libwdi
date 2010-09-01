@@ -269,7 +269,6 @@ void browse_for_folder(void) {
 			}
 		}
 
-		// TODO: UTF8-ize?
 		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
 		if (SUCCEEDED(hr)) {
 			if (wpath != NULL) {
