@@ -12,7 +12,7 @@ Main features:
 - Automated driver installation, including UAC elevation where necessary
 - A single library, embedding all the required files. Can be statically or 
   dynamically linked to an application, so that driver installation can be
-  taken care automatically of when required.
+  taken care of automatically when required.
 - Ability to produce a single library that runs and can install drivers on any
   platform from Windows 2000 to Windows 7
 - Ability to produce a single library that runs and can install drivers on both
@@ -21,7 +21,9 @@ Main features:
 Additional features:
 - Allows the embedding and selection of WinUSB, libusb0.sys (from libusb-win32)
   or your own USB driver (eg. WHQL drivers)
-- Full locale support. API strings are UTF-8, and the generated inf is UTF-16.
+- Full locale support. API strings are UTF-8, and the generated inf is UTF-16
+- USB Vendor ID to Manufacturer Name resolution, based on the data maintained by
+  Stephen J. Gowdy at http://www.linux-usb.org/usb.ids
 - Open source, with a proprietary application friendly license (LGPL v2.1)
 
 Installation and Compilation:
