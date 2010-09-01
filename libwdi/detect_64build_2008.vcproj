@@ -24,11 +24,10 @@
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
 			CharacterSet="2"
-			EnableManagedIncrementalBuild="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Clearing 64 bit build macro"
+				Description="detected 32 bit build"
 				CommandLine="echo #define NO_BUILD64&gt; $(InputDir)\build64.h"
 			/>
 			<Tool
@@ -47,11 +46,10 @@
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
 			CharacterSet="2"
-			EnableManagedIncrementalBuild="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Setting 64 bit build macro"
+				Description="detected 64 bit build"
 				CommandLine="echo #define BUILD64&gt; $(InputDir)\build64.h"
 			/>
 			<Tool
@@ -71,12 +69,10 @@
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
 			CharacterSet="2"
-			WholeProgramOptimization="1"
-			EnableManagedIncrementalBuild="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Clearing 64 bit build macro"
+				Description="detected 32 bit build"
 				CommandLine="echo #define NO_BUILD64&gt; $(InputDir)\build64.h"
 			/>
 			<Tool
@@ -95,18 +91,14 @@
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
 			CharacterSet="2"
-			WholeProgramOptimization="1"
-			EnableManagedIncrementalBuild="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				Description="Setting 64 bit build macro"
+				Description="detected 64 bit build"
 				CommandLine="echo #define BUILD64&gt; $(InputDir)\build64.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				Description="detected 64 build"
-				CommandLine="copy NUL:  ${InputDir}\test&#x0D;&#x0A;"
 			/>
 			<Tool
 				Name="VCMIDLTool"
