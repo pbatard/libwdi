@@ -139,6 +139,22 @@ static __inline BOOL SHGetPathFromIDListU(LPCITEMIDLIST pidl, char* pszPath)
 	return ret;
 }
 
+static __inline HWND CreateWindowU(char* lpClassName, char* lpWindowName,
+	DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent,
+	HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+	HWND ret = NULL;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(lpClassName);
+	wconvert(lpWindowName);
+	ret = CreateWindowW(wlpClassName, wlpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+	err = GetLastError();
+	wfree(lpClassName);
+	wfree(lpWindowName);
+	SetLastError(err);
+	return ret;
+}
+
 static __inline int GetWindowTextU(HWND hWnd, char* lpString, int nMaxCount)
 {
 	int ret = 0;
