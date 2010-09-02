@@ -5,13 +5,17 @@
 type -P sed &>/dev/null || { echo "sed command not found. Aborting." >&2; exit 1; }
 type -P git &>/dev/null || { echo "git command not found. Aborting." >&2; exit 1; }
 
-TAG=$(git describe --tags --abbrev=0 2>/dev/null)
-if [ ! -n "$TAG" ]; then
-  echo Unable to read tag - aborting.
-  exit 1
+if [ ! -n "$1" ]; then
+  TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+  if [ ! -n "$TAG" ]; then
+    echo Unable to read tag - aborting.
+    exit 1
+  fi
+else
+  TAG=$1
 fi
 if [ ! ${TAG:0:1} = 'w' ]; then
-  echo Tag '$TAG' does not start with 'w' - aborting
+  echo Tag "$TAG" does not start with 'w' - aborting
   exit 1
 fi
 TAGVER=${TAG:1}
