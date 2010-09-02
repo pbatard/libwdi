@@ -29,6 +29,7 @@
 #define INITGUID
 #include "libusb-win32_version.h"
 #include "libwdi.h"
+#include "msapi_utf8.h"
 
 #include <windows.h>
 #include <commdlg.h>
@@ -589,10 +590,10 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 				safe_sprintf(tmp,sizeof(tmp) - 1, "0x%02X", device->wdi->mi);
 			SetWindowText(GetDlgItem(dialog, ID_TEXT_MI), tmp);
 
-			SetWindowText(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
+			SetWindowTextU(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
 				device->manufacturer);
 
-			SetWindowText(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
+			SetWindowTextU(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
 				device->description);
 		}
 		return TRUE;
@@ -604,10 +605,10 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 			//memset(device, 0, sizeof(*device));
 			device->wdi->is_composite=false;
 
-			GetWindowText(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
+			GetWindowTextU(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
 				device->manufacturer, sizeof(tmp));
 
-			GetWindowText(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
+			GetWindowTextU(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
 				device->description, sizeof(tmp));
 
 			GetWindowText(GetDlgItem(dialog, ID_TEXT_VID), tmp, sizeof(tmp));
@@ -642,7 +643,7 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 }
 HWND create_label(char* text, HWND hParent, HINSTANCE hInstance, UINT x, UINT y, UINT cx, UINT cy, DWORD dwStyle, UINT uID)
 {
-	return CreateWindowA("Static", text, WS_CHILD | WS_VISIBLE | dwStyle,
+	return CreateWindowU("Static", text, WS_CHILD | WS_VISIBLE | dwStyle,
 		x, y, cx, cy,
 		hParent, (HMENU)((UINT_PTR)uID), hInstance, 0);
 }
@@ -782,7 +783,7 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 			free(bufferLabel);
 
 		}
-		if ((device->driver_info.dwSignature) && GetFileAttributesA(device->inf_path)!=INVALID_FILE_ATTRIBUTES)
+		if ((device->driver_info.dwSignature) && GetFileAttributesU(device->inf_path)!=INVALID_FILE_ATTRIBUTES)
 			EnableWindow(GetDlgItem(dialog, ID_BUTTON_INSTALLNOW), TRUE);
 		else
 			EnableWindow(GetDlgItem(dialog, ID_BUTTON_INSTALLNOW), FALSE);
@@ -974,10 +975,70 @@ static void device_list_clean(HWND list)
 	}
 }
 
+/*
+ * Converts a name + ext UTF-8 pair to a valid MS filename.
+ * Returned string is allocated and needs to be freed manually
+ */
+static char* to_valid_filename(char* name, char* ext)
+{
+	size_t i, j, k;
+	bool found;
+	char* ret;
+	wchar_t unauthorized[] = L"\x0001\x0002\x0003\x0004\x0005\x0006\x0007\x0008\x000a"
+		L"\x000b\x000c\x000d\x000e\x000f\x0010\x0011\x0012\x0013\x0014\x0015\x0016\x0017"
+		L"\x0018\x0019\x001a\x001b\x001c\x001d\x001e\x001f\x007f\"<>|:*";
+	wchar_t to_underscore[] = L" \t";
+	wchar_t *wname, *wext, *wret;
+
+	if ((name == NULL) || (ext == NULL)) {
+		return NULL;
+	}
+
+	// Convert to UTF-16
+	wname = utf8_to_wchar(name);
+	wext = utf8_to_wchar(ext);
+	if ((wname == NULL) || (wext == NULL)) {
+		safe_free(wname); safe_free(wext); return NULL;
+	}
+
+	// The returned UTF-8 string will never be larger than the sum of its parts
+	wret = calloc(2*(wcslen(wname) + wcslen(wext) + 2), 1);
+	if (wret == NULL) {
+		safe_free(wname); safe_free(wext); return NULL;
+	}
+	wcscpy(wret, wname);
+	safe_free(wname);
+	wcscat(wret, wext);
+	safe_free(wext);
+
+	for (i=0, k=0; i<wcslen(wret); i++) {
+		found = false;
+		for (j=0; j<wcslen(unauthorized); j++) {
+			if (wret[i] == unauthorized[j]) {
+				found = true; break;
+			}
+		}
+		if (found) continue;
+		found = false;
+		for (j=0; j<wcslen(to_underscore); j++) {
+			if (wret[i] == to_underscore[j]) {
+				wret[k++] = '_';
+				found = true; break;
+			}
+		}
+		if (found) continue;
+		wret[k++] = wret[i];
+	}
+	wret[k] = 0;
+	ret = wchar_to_utf8(wret);
+	safe_free(wret);
+	return ret;
+}
+
 static int save_file(HWND dialog, device_context_t *device)
 {
 	OPENFILENAME open_file;
-	char* c;
+	char* valid_name;
 	int length;
 
 	memset(&open_file, 0, sizeof(open_file));
@@ -989,30 +1050,11 @@ static int save_file(HWND dialog, device_context_t *device)
 	{
 		if (_stricmp(device->description,"Insert device description")!=0)
 		{
-			strcpy(device->inf_path, device->description);
-			c=device->inf_path;
-			while(c[0])
+			valid_name = to_valid_filename(device->description, ".inf");
+			if (valid_name != NULL)
 			{
-				if (c[0]>='A' && c[0]<='Z') { c++; continue;}
-				if (c[0]>='a' && c[0]<='z') { c++; continue;}
-				if (c[0]>='0' && c[0]<='9') { c++; continue;}
-
-				switch(c[0])
-				{
-				case '_':
-				case ' ':
-				case '.':
-					c[0]='_';
-					break;
-				default: // remove
-					if (!c[1])
-						c[0]='\0';
-					else
-						memmove(c,c+1,strlen(c+1)+1);
-					break;
-				}
-
-				c++;
+				strncpy(device->inf_path, valid_name, MAX_PATH);
+				free(valid_name);
 			}
 		}
 	}
@@ -1031,7 +1073,7 @@ static int save_file(HWND dialog, device_context_t *device)
 	open_file.Flags = OFN_PATHMUSTEXIST;
 	open_file.lpstrDefExt = "inf";
 
-	if (GetSaveFileName(&open_file))
+	if (GetSaveFileNameU(&open_file))
 	{
 		safe_strcpy(device->inf_dir, MAX_PATH, device->inf_path);
 
