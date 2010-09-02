@@ -954,7 +954,7 @@ static void device_list_add(HWND list, device_context_t *device)
 
 	ListView_SetItemText(list, 0, 0, vid);
 	ListView_SetItemText(list, 0, 1, pid);
-	ListView_SetItemText(list, 0, 2, device->description);
+	ListView_SetItemTextU(list, 0, 2, device->description);
 	ListView_SetItemText(list, 0, 3, mi);
 }
 
