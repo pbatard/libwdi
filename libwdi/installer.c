@@ -40,6 +40,12 @@
 
 #define REQUEST_TIMEOUT 5000
 
+// UpdateDriverForPlugAndPlayDevices.InstallFlags constants
+#define INSTALLFLAG_FORCE                 0x00000001
+#define INSTALLFLAG_READONLY              0x00000002
+#define INSTALLFLAG_NONINTERACTIVE        0x00000004
+#define INSTALLFLAG_BITS                  0x00000007
+
 /*
  * Cfgmgr32.dll interface
  */

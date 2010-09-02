@@ -79,7 +79,6 @@ esac
 
 AM_LDFLAGS="-no-undefined -avoid-version"
 AC_CHECK_TOOL(RC, windres, no)
-AC_CHECK_HEADER([ddk/newdev.h], [AC_DEFINE(HAVE_DDK_NEWDEV_H, [], [Is newdev.h from ddk/])], , [#include <windows.h>])
 
 # 32 bit support
 save_CFLAGS="${CFLAGS}"
