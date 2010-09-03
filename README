@@ -27,13 +27,13 @@ Additional features:
 - Open source, with a proprietary application friendly license (LGPL v2.1)
 
 Installation and Compilation:
-  Please visit: http://libusb.org/wiki/libwdi_install
+  Please visit: http://libusb.org/wiki/libwdi/install
 
 API usage:
-  Please visit: http://libusb.org/wiki/libwdi_usage
+  Please visit: http://libusb.org/wiki/libwdi/usage
 
 FAQ:
-  Please visit: http://libusb.org/wiki/libwdi_faq
+  Please visit: http://libusb.org/wiki/libwdi/faq
   
 Dependencies:
   The Zadig GUI application uses a slightly modified version of libconfig 1.4.5

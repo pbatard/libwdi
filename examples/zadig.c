@@ -1051,7 +1051,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			DialogBoxA(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
-			ShellExecuteA(hDlg, "open", "http://libusb.org/wiki/libwdi_zadig",
+			ShellExecuteA(hDlg, "open", "http://libusb.org/wiki/libwdi/zadig",
 				NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_EXTRACT:
