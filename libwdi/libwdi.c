@@ -281,6 +281,7 @@ static int check_dir(char* path, bool create)
 	PSID sid = NULL;
 	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
+	char* full_path;
 
 	file_attributes = GetFileAttributesU(path);
 	if (file_attributes == INVALID_FILE_ATTRIBUTES) {
@@ -323,14 +324,25 @@ static int check_dir(char* path, bool create)
 
 	// SHCreateDirectoryEx creates subdirectories as required
 	r = SHCreateDirectoryExU(NULL, path, ps);
+	if (r == ERROR_BAD_PATHNAME) {
+		// A relative path was used => Convert to full
+		full_path = malloc(MAX_PATH);
+		if (full_path == NULL) {
+			wdi_err("could not allocate buffer to convert relative path");
+			if (sid != NULL) LocalFree(sid);
+			return WDI_ERROR_RESOURCE;
+		}
+		GetCurrentDirectoryU(MAX_PATH, full_path);
+		safe_strcat(full_path, MAX_PATH, "\\");
+		safe_strcat(full_path, MAX_PATH, path);
+		r = SHCreateDirectoryExU(NULL, full_path, ps);
+		free(full_path);
+	}
 	if (sid != NULL) LocalFree(sid);
 
 	switch(r) {
 	case ERROR_SUCCESS:
 		return WDI_SUCCESS;
-	case ERROR_BAD_PATHNAME:
-		wdi_err("directory path is invalid %s", path);
-		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILENAME_EXCED_RANGE:
 		wdi_err("directory name is too long %s", path);
 		return WDI_ERROR_INVALID_PARAM;
