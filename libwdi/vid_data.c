@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.08.24
+ * Version: 2010.09.08
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -2306,6 +2306,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x16c0, "VOTI" },
 	{ 0x16ca, "Wireless Cables, Inc." },
 	{ 0x16cc, "silex technology, Inc." },
+	{ 0x16d0, "GrauTec" },
 	{ 0x16d3, "Frontline Test Equipment, Inc." },
 	{ 0x16d5, "AnyDATA Corporation" },
 	{ 0x16d6, "JABLOCOM s.r.o." },
@@ -2600,6 +2601,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x2019, "PLANEX" },
 	{ 0x2040, "Hauppauge" },
 	{ 0x2047, "Texas Instruments" },
+	{ 0x2080, "Barnes & Noble" },
 	{ 0x2087, "Cando" },
 	{ 0x20b1, "XMOS Ltd" },
 	{ 0x20df, "Simtec Electronics" },
