@@ -2,7 +2,7 @@ SUBDIRS = libconfig
 
 INCLUDES = -I$(top_srcdir)
 
-noinst_PROGRAMS = zadic zadig inf-wizard
+noinst_PROGRAMS = zadic zadig inf-wizard wdi_simple
 
 zadic_rc.o: zadic.rc resource.h
 	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -static -i $< -o $@
@@ -28,3 +28,11 @@ inf_wizard_SOURCES = inf_wizard.c
 inf_wizard_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(NO_CYGWIN) $(AM_CFLAGS)
 inf_wizard_LDFLAGS = -mwindows $(NO_CYGWIN) $(AM_LDFLAGS) -static
 inf_wizard_LDADD = inf_wizard_rc.o -L../libwdi/.libs -lwdi -lcomctl32
+
+wdi_simple_rc.o: wdi-simple.rc
+	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -static -i $< -o $@
+
+wdi_simple_SOURCES = wdi-simple.c
+wdi_simple_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(NO_CYGWIN) $(AM_CFLAGS)
+wdi_simple_LDFLAGS = -mwindows $(NO_CYGWIN) $(AM_LDFLAGS) -static
+wdi_simple_LDADD = wdi_simple_rc.o -L../libwdi/.libs -lwdi -lcomctl32

@@ -141,7 +141,7 @@ build -cwgZ
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\zadic.exe . >NUL 2>&1
 
-rem Work around MS's VC++ and DDK weird icompatibilities wth regards to rc files
+rem Work around MS's VC++ and DDK weird icompatibilities with regards to rc files
 echo #include ^<windows.h^> > afxres.h
 echo #ifndef IDC_STATIC >> afxres.h
 echo #define IDC_STATIC -1 >> afxres.h
@@ -160,6 +160,13 @@ build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\inf-wizard.exe . >NUL 2>&1
+
+copy wdi-simple_sources sources >NUL 2>&1
+@echo on
+build -cwgZ
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%cpudir%\wdi-simple.exe . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..
