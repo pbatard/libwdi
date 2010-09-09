@@ -499,10 +499,10 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("device not detected (copying driver files for next time device is plugged in)");
 		return WDI_SUCCESS;
 	case ERROR_INVALID_PARAMETER:
-		plog("invalid path or hardware ID");
+		plog("invalid path or hardware ID (%s)", path);
 		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
-		plog("the system can not find the file specified");
+		plog("the system can not find the file specified (%s)", path);
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");

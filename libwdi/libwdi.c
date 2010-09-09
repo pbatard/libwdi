@@ -1231,23 +1231,28 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
-		shExecInfo.lpFile = exename;
+		shExecInfo.lpFile = (is_x64)?"installer_x64.exe":"installer_x86.exe";
 		shExecInfo.lpParameters = inf_name;
 		shExecInfo.lpDirectory = path;
 		shExecInfo.lpClass = NULL;
 		shExecInfo.nShow = SW_HIDE;
 		shExecInfo.hInstApp = NULL;
 
-		err = 0;
+		err = ERROR_SUCCESS;
 		if (!ShellExecuteExU(&shExecInfo)) {
 			err = GetLastError();
 		}
 
-		if ((err == ERROR_CANCELLED) || (shExecInfo.hProcess == NULL)) {
+		switch(err) {
+		case ERROR_SUCCESS:
+			break;
+		case ERROR_CANCELLED:
 			wdi_info("operation cancelled by the user");
 			r = WDI_ERROR_USER_CANCEL; goto out;
-		}
-		else if (err) {
+		case ERROR_FILE_NOT_FOUND:
+			wdi_info("could not find installer executable");
+			r = WDI_ERROR_NOT_FOUND; goto out;
+		default:
 			wdi_err("ShellExecuteEx failed: %s", windows_error_str(err));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
