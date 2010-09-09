@@ -61,6 +61,9 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 #endif
 
 	switch (level) {
+	case WDI_LOG_LEVEL_DEBUG:
+		prefix = "debug";
+		break;
 	case WDI_LOG_LEVEL_INFO:
 		prefix = "info";
 		break;
@@ -69,9 +72,6 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 		break;
 	case WDI_LOG_LEVEL_ERROR:
 		prefix = "error";
-		break;
-	case WDI_LOG_LEVEL_DEBUG:
-		prefix = "debug";
 		break;
 	default:
 		prefix = "unknown";
@@ -129,6 +129,10 @@ void console_wdi_log_v(enum wdi_log_level level,
 #endif
 
 	switch (level) {
+	case WDI_LOG_LEVEL_DEBUG:
+		stream = stderr;
+		prefix = "debug";
+		break;
 	case WDI_LOG_LEVEL_INFO:
 		prefix = "info";
 		break;
@@ -139,10 +143,6 @@ void console_wdi_log_v(enum wdi_log_level level,
 	case WDI_LOG_LEVEL_ERROR:
 		stream = stderr;
 		prefix = "error";
-		break;
-	case WDI_LOG_LEVEL_DEBUG:
-		stream = stderr;
-		prefix = "debug";
 		break;
 	default:
 		stream = stderr;
@@ -313,9 +313,6 @@ int LIBWDI_API wdi_set_log_level(int level)
 #if defined(ENABLE_DEBUG_LOGGING)
 	return WDI_ERROR_NOT_SUPPORTED;
 #endif
-	if ( (level < WDI_LOG_LEVEL_DEBUG) || (level > WDI_LOG_LEVEL_ERROR) ) {
-		return WDI_ERROR_INVALID_PARAM;
-	}
 	global_log_level = level;
 	return WDI_SUCCESS;
 }
