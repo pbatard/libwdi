@@ -41,6 +41,8 @@ sed -f cmd.sed examples/zadic.rc > examples/zadic_.rc
 mv examples/zadic_.rc examples/zadic.rc
 sed -f cmd.sed examples/zadig.rc > examples/zadig_.rc
 mv examples/zadig_.rc examples/zadig.rc
+sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple_.rc
+mv examples/wdi-simple_.rc examples/wdi-simple.rc
 
 rm cmd.sed
 
