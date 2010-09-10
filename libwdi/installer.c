@@ -208,13 +208,43 @@ char* req_id(enum installer_code id_code)
 	memset(id, 0, MAX_PATH_LENGTH);
 	size = request_data(id_code, (void*)id, MAX_PATH_LENGTH);
 	if (size > 0) {
-		plog("got %s: %s", id_text[id_code-IC_GET_DEVICE_ID], id);
-		return id;
+		plog("got %s: '%s'", id_text[id_code-IC_GET_DEVICE_ID], id);
+		return (id[0] != 0)?id:NULL;
 	}
 
 	plog("failed to read %s", id_text[id_code-IC_GET_DEVICE_ID]);
 	return NULL;
 }
+
+/*
+ * Force the re-enumeration of a device and all of its children
+ * This causes driver installation for devices where either the driver
+ * is already available, or for devices where a device_id was not provided,
+ * yet that are plugged in.
+ * If device_id is NULL, this call re-enumerates all devices
+ */
+int enumerate_device(char* device_id)
+{
+	DEVINST dev_inst;
+	CONFIGRET status;
+
+	plog("re-enumerating driver node %s...", device_id?device_id:"<root>");
+	status = CM_Locate_DevNode(&dev_inst, device_id, 0);
+	if (status != CR_SUCCESS) {
+		plog("failed to locate device_id %s: %x\n", device_id?device_id:"<root>", status);
+		return -1;
+	}
+
+	status = CM_Reenumerate_DevNode(dev_inst, CM_REENUMERATE_RETRY_INSTALLATION);
+	if (status != CR_SUCCESS) {
+		plog("failed to re-enumerate device node: CR code %X", status);
+		return -1;
+	}
+
+	plog("re-enumeration succeeded...");
+	return 0;
+}
+
 
 /*
  * Flag phantom/removed devices for reinstallation. See:
@@ -623,13 +653,14 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
-	if ((hardware_id != NULL) && (hardware_id[0] != 0)) {
+	if (hardware_id != NULL) {
 		plog("Installing driver for %s - please wait...", hardware_id);
 		b = UpdateDriverForPlugAndPlayDevicesU(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
 		send_status(IC_SET_TIMEOUT_DEFAULT);
 		if (b == true) {
 			// Success
 			plog("driver update completed");
+			enumerate_device(device_id);
 			ret = WDI_SUCCESS;
 			goto out;
 		}
@@ -648,6 +679,7 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 	if (b) {
 		plog("copied inf to %s", destname);
 		ret = WDI_SUCCESS;
+		enumerate_device(device_id);
 		goto out;
 	}
 
