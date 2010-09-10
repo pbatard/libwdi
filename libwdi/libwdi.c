@@ -853,10 +853,11 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 								  char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
+	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "user driver" };
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
-	int driver_type, r;
+	int driver_type = 0, r;
 	SYSTEMTIME system_time;
 	FILETIME file_time;
 	char* cat_name = NULL;
@@ -900,23 +901,27 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN r;
 	}
 
-	if (options == NULL) {
+	if (options != NULL) {
+		driver_type = options->driver_type;
+	}
+
+	if (!wdi_is_driver_supported(driver_type, NULL)) {
 		for (driver_type=0; driver_type<WDI_NB_DRIVERS; driver_type++) {
 			if (wdi_is_driver_supported(driver_type, NULL)) {
+				wdi_warn("unsupported or no driver type specified, will use %s",
+					driver_display_name[driver_type]);
 				break;
 			}
 		}
 		if (driver_type == WDI_NB_DRIVERS) {
-			wdi_warn("Program assertion failed - no driver supported");
+			wdi_warn("program assertion failed - no driver supported");
 			MUTEX_RETURN WDI_ERROR_NOT_FOUND;
 		}
-	} else {
-		driver_type = options->driver_type;
 	}
 
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
 	if (driver_type == WDI_USER) {
-		wdi_warn("Custom driver - extracting binaries only (no inf/cat creation)");
+		wdi_warn("custom driver - extracting binaries only (no inf/cat creation)");
 		MUTEX_RETURN extract_binaries(path);
 	}
 
@@ -1061,7 +1066,7 @@ static int process_message(char* buffer, DWORD size)
 		if (current_device->device_id != NULL) {
 			WriteFile(pipe_handle, current_device->device_id, (DWORD)safe_strlen(current_device->device_id), &tmp, NULL);
 		} else {
-			wdi_warn("no device_id - sending empty string");
+			wdi_dbg("no device_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
 		}
 		break;
@@ -1070,7 +1075,7 @@ static int process_message(char* buffer, DWORD size)
 		if (current_device->hardware_id != NULL) {
 			WriteFile(pipe_handle, current_device->hardware_id, (DWORD)safe_strlen(current_device->hardware_id), &tmp, NULL);
 		} else {
-			wdi_warn("no hardware_id - sending empty string");
+			wdi_dbg("no hardware_id - sending empty string");
 			WriteFile(pipe_handle, "\0", 1, &tmp, NULL);
 		}
 		break;
