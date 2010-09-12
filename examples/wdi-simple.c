@@ -78,13 +78,15 @@ HWND GetConsoleHwnd(void)
 
 int __cdecl main(int argc, char** argv)
 {
-	struct wdi_device_info dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
+	struct wdi_device_info *ldev, dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
+	struct wdi_options_create_list ocl = {true, true, true};
 	struct wdi_options_prepare_driver opd = {WDI_WINUSB, NULL};
 	struct wdi_options_install_driver oid = {NULL};
 	int c, r;
 	int opt_silent = 0, opt_extract = 0, log_level = WDI_LOG_LEVEL_WARNING;
 	char *inf_name = INF_NAME;
 	char *ext_dir = DEFAULT_DIR;
+	bool matching_device_found;
 
 	static struct option long_options[] = {
 		{"name", required_argument, 0, 'n'},
@@ -163,8 +165,30 @@ int __cdecl main(int argc, char** argv)
 	if ((r != WDI_SUCCESS) || (opt_extract))
 		return r;
 
-	oprintf("Installing driver...\n");
-	r = wdi_install_driver(&dev, ext_dir, inf_name, &oid);
-	oprintf("  %s\n", wdi_strerror(r));
+	oprintf("Installing driver(s)...\n");
+
+	// Try to match against a plugged device to avoid device manager prompts
+	matching_device_found = false;
+	if (wdi_create_list(&ldev, &ocl) == WDI_SUCCESS) {
+		r = WDI_SUCCESS;
+		for (; (ldev != NULL) && (r == WDI_SUCCESS); ldev = ldev->next) {
+			if ( (ldev->vid == dev.vid) && (ldev->pid == dev.pid) && (ldev->mi == dev.mi) ) {
+				dev.hardware_id = ldev->hardware_id;
+				dev.device_id = ldev->device_id;
+				matching_device_found = true;
+				oprintf("  %s: ", dev.hardware_id);
+				fflush(stdout);
+				r = wdi_install_driver(&dev, ext_dir, inf_name, &oid);
+				oprintf("%s\n", wdi_strerror(r));
+			}
+		}
+	}
+
+	// No plugged USB device matches this one -> install driver
+	if (!matching_device_found) {
+		r = wdi_install_driver(&dev, ext_dir, inf_name, &oid);
+		oprintf("  %s\n", wdi_strerror(r));
+	}
+
 	return r;
 }
