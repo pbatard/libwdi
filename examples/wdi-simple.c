@@ -90,14 +90,16 @@ int __cdecl main(int argc, char** argv)
 
 	static struct option long_options[] = {
 		{"name", required_argument, 0, 'n'},
+		{"inf", required_argument, 0, 'f'},
 		{"manufacturer", required_argument, 0, 'm'},
-		{"dir", required_argument, 0, 'd'},
 		{"vid", required_argument, 0, 'v'},
 		{"pid", required_argument, 0, 'p'},
 		{"iid", required_argument, 0, 'i'},
 		{"type", required_argument, 0, 't'},
-		{"dest", no_argument, 0, 'x'},
+		{"dest", required_argument, 0, 'd'},
+		{"extract", no_argument, 0, 'x'},
 		{"silent", no_argument, 0, 's'},
+		{"progressbar", no_argument, 0, 'b'},
 		{"log", required_argument, 0, 'l'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
@@ -105,7 +107,7 @@ int __cdecl main(int argc, char** argv)
 
 	while(1)
 	{
-		c = getopt_long(argc, argv, "n:f:m:d:v:p:i:l:hxsb", long_options, NULL);
+		c = getopt_long(argc, argv, "n:f:m:d:v:p:i:l:t:hxsb", long_options, NULL);
 		if (c == -1)
 			break;
 		switch(c) {
