@@ -123,43 +123,45 @@ long tokenize_string(const char* src, // text to bo tokenized
 		//ASSERT(src_count >=0);
 
 		// If src_count equals 0 this is a token prefix and the end of src.
-		if (src_count > 0)
+		if (src_count <= 0)
 		{
-			// iterate through the match/replace tokens
-			while ((next_match=&token_entities[match_replace_pos++]))
+			dst_pos += src_count;
+			break;
+		}
+		// iterate through the match/replace tokens
+		while ((next_match=&token_entities[match_replace_pos++]))
+		{
+			// the match and replace fields must both be set
+			if (!next_match->match || !next_match->replace)
 			{
-				// the match and replace fields must both be set
-				if (!next_match->match || !next_match->replace)
+				break;
+			}
+			match_length=(long)strlen(next_match->match);
+
+			// if this token will be longer than what's left in src buffer, skip it.
+			if (src_count < (match_length+tok_suffix_size))
+				continue; // not found
+
+			// check for a match suffix
+			if (strncmp(src+match_length,tok_suffix,tok_suffix_size)!=0)
+				continue; // not found
+
+			if (strncmp(src,next_match->match,match_length)==0)
+			{
+				// found a valid token match
+				replace_length=(long)strlen(next_match->replace);
+
+				if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size,
+					next_match->replace, replace_length))
 				{
-					break;
+					return -ERROR_NOT_ENOUGH_MEMORY;
 				}
-				match_length=(long)strlen(next_match->match);
 
-				// if this token will be longer than what's left in src buffer, skip it.
-				if (src_count < (match_length+tok_suffix_size))
-					continue; // not found
-
-				// check for a match suffix
-				if (strncmp(src+match_length,tok_suffix,tok_suffix_size)!=0)
-					continue; // not found
-
-				if (strncmp(src,next_match->match,match_length)==0)
-				{
-					// found a valid token match
-					replace_length=(long)strlen(next_match->replace);
-
-					if (!grow_strcpy(&pDst, dst, &dst_pos, &dst_alloc_size,
-						next_match->replace, replace_length))
-					{
-						return -ERROR_NOT_ENOUGH_MEMORY;
-					}
-
-					src+=match_length+tok_suffix_size;
-					src_count-=(match_length+tok_suffix_size);
-					match_found=1;
-					match_count++;
-					break;
-				}
+				src+=match_length+tok_suffix_size;
+				src_count-=(match_length+tok_suffix_size);
+				match_found=1;
+				match_count++;
+				break;
 			}
 		}
 		if (!match_found)
