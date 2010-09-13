@@ -8,9 +8,6 @@
 // Generated from the TEXTINCLUDE 2 resource.
 //
 #include "afxres.h"
-#ifndef PBS_MARQUEE
-#define PBS_MARQUEE 0x08
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -38,9 +35,6 @@ END
 2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
-    "#ifndef PBS_MARQUEE\r\n"
-    "#define PBS_MARQUEE 0x08\r\n"
-    "#endif\r\n"
     "\0"
 END
 

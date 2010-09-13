@@ -20,7 +20,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            ..\libwdi\libwdi.lib \
            .\getopt\getopt.lib
 
-SXS_MANIFEST=common_controls.manifest
+SXS_APPLICATION_MANIFEST=common_controls.manifest
 
 SOURCES=wdi-simple.c \
         wdi-simple.rc
