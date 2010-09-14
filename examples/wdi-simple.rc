@@ -2,7 +2,9 @@
 #error Do not open or edit this file with App Studio
 #endif
 
+#if defined(__GNUC__)
 #include "afxres.h"
+#endif
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 1,0,1,118
