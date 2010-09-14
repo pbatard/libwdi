@@ -54,7 +54,8 @@ void usage(void)
 	printf("-d, --dest <dir>           set the extraction directory\n");
 	printf("-x, --extract              extract files only (don't install)\n");
 	printf("-s, --silent               silent mode\n");
-	printf("-b, --progressbar          display a progress bar during install\n");
+	printf("-b, --progressbar=[HWND]   display a progress bar during install\n");
+	printf("                           an optional HWND can be specified\n");
 	printf("-l, --log                  set log level (0 = debug, 4 = none)\n");
 	printf("-h, --help                 display usage\n");
 	printf("\n");
@@ -99,7 +100,7 @@ int __cdecl main(int argc, char** argv)
 		{"dest", required_argument, 0, 'd'},
 		{"extract", no_argument, 0, 'x'},
 		{"silent", no_argument, 0, 's'},
-		{"progressbar", no_argument, 0, 'b'},
+		{"progressbar", optional_argument, 0, 'b'},
 		{"log", required_argument, 0, 'l'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
@@ -148,7 +149,7 @@ int __cdecl main(int argc, char** argv)
 			log_level = WDI_LOG_LEVEL_NONE;
 			break;
 		case 'b':
-			oid.hWnd =  GetConsoleHwnd();
+			oid.hWnd = (optarg)?(HWND)strtol(optarg, NULL, 0):GetConsoleHwnd();
 			break;
 		case 'l':
 			log_level = (int)strtol(optarg, NULL, 0);
