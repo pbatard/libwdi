@@ -256,6 +256,18 @@ static __inline HANDLE CreateFileU(const char* lpFileName, DWORD dwDesiredAccess
 	return ret;
 }
 
+static __inline BOOL DeleteFileU(const char* lpFileName)
+{
+	BOOL ret = FALSE;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(lpFileName);
+	ret = DeleteFileW(wlpFileName);
+	err = GetLastError();
+	wfree(lpFileName);
+	SetLastError(err);
+	return ret;
+}
+
 // This function differs from regular GetTextExtentPoint in that it uses a zero terminated string
 static __inline BOOL GetTextExtentPointU(HDC hdc, const char* lpString, LPSIZE lpSize)
 {
