@@ -230,7 +230,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 	LRESULT loc;
 	HANDLE handle;
 	static int installation_time = 0;	// active installation time, in secs
-	const int msg_max = sizeof(progress_message) / sizeof(progress_message[0]);
+	const int msg_max = ARRAYSIZE(progress_message);
 	static int msg_index = 0;
 	int i;
 	// coordinates that we want to disable (=> no resize)

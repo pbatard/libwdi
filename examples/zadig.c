@@ -193,12 +193,12 @@ int get_driver_type(struct wdi_device_info* dev)
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
 	}
-	for (i=0; i<sizeof(libusb_name)/sizeof(libusb_name[0]); i++) {
+	for (i=0; i<ARRAYSIZE(libusb_name); i++) {
 		if (safe_strcmp(dev->driver, libusb_name[i]) == 0) {
 			return DT_LIBUSB;
 		}
 	}
-	for (i=0; i<sizeof(system_name)/sizeof(system_name[0]); i++) {
+	for (i=0; i<ARRAYSIZE(system_name); i++) {
 		if (safe_strcmp(dev->driver, system_name[i]) == 0) {
 			return DT_SYSTEM;
 		}
