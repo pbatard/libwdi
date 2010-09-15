@@ -192,7 +192,7 @@ static void init_children(HWND hDlg) {
 	PostMessage(hProgressBar, PBM_SETMARQUEE, TRUE, 0);
 
 	// Progress Text
-	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY, WC_STATIC,
+	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY|WS_EX_TRANSPARENT, WC_STATIC,
 		"Installing Driver...",
 		WS_CHILDWINDOW | WS_VISIBLE | WS_GROUP,
 		12,12,250,16,
@@ -309,6 +309,9 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		hProgress = INVALID_HANDLE_VALUE;
 		return (INT_PTR)FALSE;
 
+	case WM_CTLCOLORSTATIC:
+		SetBkMode((HDC)wParam, TRANSPARENT);
+		return (INT_PTR)GetStockObject(NULL_BRUSH);
 	}
 	return DefWindowProc(hDlg, message, wParam, lParam);
 }
