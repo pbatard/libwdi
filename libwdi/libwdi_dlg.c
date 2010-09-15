@@ -80,13 +80,22 @@ static int (*progress_function)(void*);
 static void* progress_arglist;
 static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
-// Work around for CreateFont on DDK (would require end user apps linking with Gdi32 othwerwise)
+// Work around for GDI calls on DDK (would require end user apps linking with Gdi32 othwerwise)
 static HFONT (WINAPI *pCreateFontA)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR) = NULL;
-#define INIT_CREATEFONT if (pCreateFontA== NULL) {	\
+static HGDIOBJ (WINAPI *pGetStockObject)(int) = NULL;
+static int (WINAPI *pSetBkMode)(HDC, int) = NULL;
+
+#define IS_CREATEFONT_AVAILABLE (pCreateFontA != NULL)
+#define IS_BACKGROUND_AVAILABLE ((pGetStockObject != NULL) && (pSetBkMode != NULL))
+
+#define INIT_GDI32 do {	\
 	pCreateFontA = (HFONT (WINAPI *)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR))	\
 		GetProcAddress(GetModuleHandleA("Gdi32"), "CreateFontA"); \
-	}
-#define IS_CREATEFONT_AVAILABLE (pCreateFontA != NULL)
+	pGetStockObject = (HGDIOBJ (WINAPI *)(int))	\
+		GetProcAddress(GetModuleHandleA("Gdi32"), "GetStockObject"); \
+	pSetBkMode = (int (WINAPI *)(HDC, int))	\
+		GetProcAddress(GetModuleHandleA("Gdi32"), "SetBkMode"); \
+	} while(0)
 
 extern char *windows_error_str(uint32_t retval);
 
@@ -205,7 +214,7 @@ static void init_children(HWND hDlg) {
 	}
 
 	// Set the font to MS Dialog default
-	INIT_CREATEFONT;
+	INIT_GDI32;
 	if (IS_CREATEFONT_AVAILABLE) {
 		hFont = pCreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
 			DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
@@ -310,8 +319,8 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		return (INT_PTR)FALSE;
 
 	case WM_CTLCOLORSTATIC:
-		SetBkMode((HDC)wParam, TRANSPARENT);
-		return (INT_PTR)GetStockObject(NULL_BRUSH);
+		pSetBkMode((HDC)wParam, TRANSPARENT);
+		return (INT_PTR)pGetStockObject(NULL_BRUSH);
 	}
 	return DefWindowProc(hDlg, message, wParam, lParam);
 }
