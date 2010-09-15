@@ -1,3 +1,11 @@
 For the latest changes, visit: http://git.libusb.org/?p=libwdi.git;a=shortlog
 
+o v1.0.2 (2010.09.15) 
+  Bugfixes :
+  - WinUSB inf file appends libusb0 template
+  - inf-wizard does not support international characters
+  Improvements:
+  - Relative path for extraction dir
+  - Logging (silent mode)
+  - New sample (wdi-simple) and setup script example
 o v1.0.1 (2010.09.01) - Initial Release
