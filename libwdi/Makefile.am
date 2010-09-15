@@ -27,7 +27,7 @@ endif
 # call host's gcc to allow 64 bit cross compilation from a 32 bit Windows host
 # as we can't use $(CC), we assert that the host's default compiler is always gcc
 embedder: embedder.h embedder_files.h embedder.c
-	gcc -o $@ -I.. embedder.c -lversion 
+	gcc -o $@ -I.. embedder.c 
 
 EXTRA_DIST = $(LIB_SRC)
 

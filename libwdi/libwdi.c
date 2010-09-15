@@ -115,6 +115,7 @@ bool dlls_available = false;
 bool installer_completed = false;
 DWORD timeout = DEFAULT_TIMEOUT;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
+static VS_FIXEDFILEINFO driver_version[2] = { {0}, {0} };
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 enum windows_version windows_version = WINDOWS_UNDEFINED;
@@ -140,6 +141,19 @@ static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
 
+// Version
+static BOOL (WINAPI *pVerQueryValueA)(LPCVOID, LPCSTR, LPVOID, PUINT) = NULL;
+static BOOL (WINAPI *pGetFileVersionInfoA)(LPCSTR, DWORD, DWORD, LPVOID) = NULL;
+static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
+#define INIT_VERSION_DLL(h) do {											\
+	pVerQueryValueA = (BOOL (WINAPI *)(LPCVOID, LPCSTR, LPVOID, PUINT))		\
+		GetProcAddress(h, "VerQueryValueA");								\
+	pGetFileVersionInfoA = (BOOL (WINAPI *)(LPCSTR, DWORD, DWORD, LPVOID))	\
+		GetProcAddress(h, "GetFileVersionInfoA");							\
+	pGetFileVersionInfoSizeA = (BOOL (WINAPI *)(LPCSTR, LPDWORD))			\
+		GetProcAddress(h, "GetFileVersionInfoSizeA");						\
+	} while (0);
+#define IS_VERSION_API_AVAILABLE ((pVerQueryValueA != NULL) && (pGetFileVersionInfoA != NULL) && (pGetFileVersionInfoSizeA != NULL))
 
 /*
  * Cfgmgr32.dll, SetupAPI.dll interface
@@ -413,6 +427,102 @@ static FILE *fcreate(const char *filename, const char *mode)
 }
 
 /*
+ * Retrieve the version info from the WinUSB or libusb0.sys drivers
+ */
+int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
+{
+	FILE *fd;
+	int res, r;
+	char* tmpdir;
+	char filename[MAX_PATH];
+	DWORD version_size;
+	void* version_buf;
+	UINT junk;
+	VS_FIXEDFILEINFO *file_info;
+	HMODULE h;
+
+
+	const char* driver_name[2] = {"winusbcoinstaller2.dll", "libusb0.sys"};
+
+	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
+		return WDI_ERROR_INVALID_PARAM;
+	}
+
+	// No need to extract the version again if available
+	if (driver_version[driver_type].dwSignature != 0) {
+		memcpy(driver_info, &driver_version[driver_type], sizeof(VS_FIXEDFILEINFO));
+		return WDI_SUCCESS;
+	}
+
+	// Avoid the need for end user apps to link against version.lib
+	h = GetModuleHandle("Version.dll");
+	if (h == NULL) {
+		h = LoadLibrary("Version.dll");
+	}
+	if (h == NULL) {
+		wdi_warn("unable to open version.dll");
+		return WDI_ERROR_RESOURCE;
+	}
+
+	INIT_VERSION_DLL(h);
+	if (!IS_VERSION_API_AVAILABLE) {
+		wdi_warn("unable to access version.dll");
+		return WDI_ERROR_RESOURCE;
+	}
+
+	for (res=0; res<nb_resources; res++) {
+		// Identify the WinUSB and libusb0 files we'll pick the date & version of
+		if (strcmp(resource[res].name, driver_name[driver_type]) == 0) {
+			break;
+		}
+	}
+	if (res == nb_resources) {
+		return WDI_ERROR_NOT_FOUND;
+	}
+
+	// First, we need a physical file => extract it
+	tmpdir = getenv("TEMP");
+	if (tmpdir == NULL) {
+		wdi_err("unable to use TEMP to extract file");
+		return WDI_ERROR_RESOURCE;
+	}
+	r = check_dir(tmpdir, true);
+	if (r != WDI_SUCCESS) {
+		return r;
+	}
+
+	safe_strcpy(filename, MAX_PATH_LENGTH, tmpdir);
+	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
+	safe_strcat(filename, MAX_PATH_LENGTH, resource[res].name);
+
+	fd = fcreate(filename, "w");
+	if (fd == NULL) {
+		wdi_err("failed to create file '%s' (%s)", filename, windows_error_str(0));
+		return WDI_ERROR_RESOURCE;
+	}
+
+	fwrite(resource[res].data, 1, resource[res].size, fd);
+	fclose(fd);
+
+	// Read the version
+	version_size = pGetFileVersionInfoSizeA(filename, NULL);
+	version_buf = malloc(version_size);
+	if (version_buf != NULL) {
+		if ( (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
+		  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+			memcpy(&driver_version[driver_type], file_info, sizeof(VS_FIXEDFILEINFO));
+			memcpy(driver_info, file_info, sizeof(VS_FIXEDFILEINFO));
+		}
+		free(version_buf);
+	}
+
+	DeleteFileU(filename);
+
+	return WDI_SUCCESS;
+}
+
+
+/*
  * Find out if the driver selected is actually embedded in this version of the library
  */
 bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
@@ -420,12 +530,11 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 	if (driver_info != NULL) {
 		memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
 	}
+	get_version_info(driver_type, driver_info);
+
 	switch (driver_type) {
 	case WDI_WINUSB:
 #if defined(DDK_DIR)
-		if (driver_info != NULL) {
-			memcpy(driver_info, &driver_version[0], sizeof(VS_FIXEDFILEINFO));
-		}
 		// WinUSB is not supported on Win2k/2k3
 		GET_WINDOWS_VERSION;
 		if ( (windows_version == WINDOWS_2K)
@@ -438,9 +547,6 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #endif
 	case WDI_LIBUSB:
 #if defined(LIBUSB0_DIR)
-		if (driver_info != NULL) {
-			memcpy(driver_info, &driver_version[1], sizeof(VS_FIXEDFILEINFO));
-		}
 		return true;
 #else
 		return false;
@@ -983,7 +1089,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Extra check, in case somebody modifies our code
-	if ((driver_type < 0) && (driver_type > sizeof(driver_version)/sizeof(driver_version[0]))) {
+	if ((driver_type < 0) && (driver_type > ARRAYSIZE(driver_version))) {
 		wdi_err("program assertion failed - driver_version[] index out of range");
 		MUTEX_RETURN WDI_ERROR_OTHER;
 	}
