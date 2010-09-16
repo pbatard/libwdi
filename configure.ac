@@ -1,4 +1,4 @@
-AC_INIT([libwdi], [1.0.1], [libusb-devel@lists.sourceforge.net], [libwdi], [http://libusb.org/wiki/windows_backend])
+AC_INIT([libwdi], [1.0.2], [libusb-devel@lists.sourceforge.net], [libwdi], [http://libusb.org/wiki/windows_backend])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])
