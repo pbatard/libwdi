@@ -85,5 +85,3 @@ struct emb embeddable_fixed[] = {
 	{ "winusb.inf.in", "" },
 	{ "libusb-win32.inf.in", "" },
 };
-
-

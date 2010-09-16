@@ -483,7 +483,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	// First, we need a physical file => extract it
 	tmpdir = getenv("TEMP");
 	if (tmpdir == NULL) {
-		wdi_err("unable to use TEMP to extract file");
+		wdi_warn("unable to use TEMP to extract file");
 		return WDI_ERROR_RESOURCE;
 	}
 	r = check_dir(tmpdir, true);
@@ -497,7 +497,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 
 	fd = fcreate(filename, "w");
 	if (fd == NULL) {
-		wdi_err("failed to create file '%s' (%s)", filename, windows_error_str(0));
+		wdi_warn("failed to create file '%s' (%s)", filename, windows_error_str(0));
 		return WDI_ERROR_RESOURCE;
 	}
 
@@ -507,18 +507,23 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	// Read the version
 	version_size = pGetFileVersionInfoSizeA(filename, NULL);
 	version_buf = malloc(version_size);
-	if (version_buf != NULL) {
-		if ( (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
-		  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
-			memcpy(&driver_version[driver_type], file_info, sizeof(VS_FIXEDFILEINFO));
-			memcpy(driver_info, file_info, sizeof(VS_FIXEDFILEINFO));
-		}
-		free(version_buf);
+	r = WDI_SUCCESS;
+	if ( (version_buf != NULL)
+	  && (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
+	  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+		// Fill the creation date of VS_FIXEDFILEINFO with the one from embedded.h
+		file_info->dwFileDateLS = (DWORD)resource[res].creation_time;
+		file_info->dwFileDateMS = resource[res].creation_time >> 32;
+		memcpy(&driver_version[driver_type], file_info, sizeof(VS_FIXEDFILEINFO));
+		memcpy(driver_info, file_info, sizeof(VS_FIXEDFILEINFO));
+	} else {
+		wdi_warn("unable to allocate buffer for version info");
+		r = WDI_ERROR_RESOURCE;
 	}
-
+	safe_free(version_buf);
 	DeleteFileU(filename);
 
-	return WDI_SUCCESS;
+	return r;
 }
 
 
@@ -965,7 +970,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	GUID guid;
 	int driver_type = 0, r;
 	SYSTEMTIME system_time;
-	FILETIME file_time;
+	FILETIME file_time, local_time;
 	char* cat_name = NULL;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
@@ -1098,7 +1103,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	file_time.dwHighDateTime = driver_version[driver_type].dwFileDateMS;
 	file_time.dwLowDateTime = driver_version[driver_type].dwFileDateLS;
 	if ( ((file_time.dwHighDateTime == 0) && (file_time.dwLowDateTime == 0))
-	  || (!FileTimeToSystemTime(&file_time, &system_time)) ) {
+	  || (!FileTimeToLocalFileTime(&file_time, &local_time))
+	  || (!FileTimeToSystemTime(&local_time, &system_time)) ) {
 		GetLocalTime(&system_time);
 	}
 	static_sprintf(inf_entities[DRIVER_DATE].replace,

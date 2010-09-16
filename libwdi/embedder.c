@@ -30,31 +30,55 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
-#include <config.h>
 #include <stdint.h>
+#include <inttypes.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <string.h>
+#include <dirent.h>
+#include <unistd.h>
+#endif
+
+#include <config.h>
 #include "embedder.h"
 #include "embedder_files.h"
 
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
-
-#if defined(__CYGWIN__ )
-#include <libgen.h>	// for basename()
-#define _MAX_FNAME 256
-#define _MAX_EXT 256
-extern int _snprintf(char *buffer, size_t count, const char *format, ...);
-// Hack a _splitpath() for cygwin, according to our *very specific* needs
-void __inline _splitpath(char *path, char *drive, char *dir, char *fname, char *ext) {
-	strncpy(fname, basename(path), _MAX_FNAME);
-	ext[0] = 0;
-}
-#endif
 
 const int nb_embeddables_fixed = sizeof(embeddable_fixed)/sizeof(struct emb);
 int nb_embeddables;
 struct emb* embeddable = embeddable_fixed;
 #if defined(USER_DIR)
 char initial_dir[] = USER_DIR;
+#endif
+
+#ifndef MAX_PATH
+#ifdef PATH_MAX
+#define MAX_PATH PATH_MAX
+#else
+#define MAX_PATH 260
+#endif
+#endif
+
+#if defined(_WIN32)
+#define NATIVE_STAT				_stat
+#define NATIVE_STRDUP			_strdup
+#define NATIVE_UNLINK			_unlink
+#define NATIVE_SEPARATOR		'\\'
+#define NON_NATIVE_SEPARATOR	'/'
+#else
+#define NATIVE_STAT				stat
+#define NATIVE_STRDUP			strdup
+#define NATIVE_UNLINK			unlink
+#define NATIVE_SEPARATOR		'/'
+#define NON_NATIVE_SEPARATOR	'\\'
+#if defined(USER_DIR)
+static char cwd[MAX_PATH];
+#endif
 #endif
 
 void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
@@ -74,43 +98,127 @@ void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 	fprintf(fd, "\n");
 }
 
+int get_full_path(char* src, char* dst)
+{
+#if defined(_WIN32)
+	DWORD r;
+#else
+	char *dn, *bn;
+#endif
+	if ((src == NULL) || (dst == NULL)) {
+		return -1;
+	}
+#if defined(_WIN32)
+	r = GetFullPathNameA(src, MAX_PATH, dst, NULL);
+	if ((r != 0) || (r <= MAX_PATH)) {
+		return -1;
+	}
+#else
+	// On UNIX, the dirname and basename functions are such a mess
+	// you're better off not using them at all.
+	bn = strrchr(src, '/');
+	if (bn == NULL) {
+		dn = ".";
+		bn = src;
+	} else {
+		dn = src;
+		bn[0] = 0;
+		bn += 1;
+	}
+	if (realpath(dn, dst) != NULL) {
+		strcat(dst, "/");
+		strcat(dst, bn);
+		if (dn == src) {
+			bn -= 1;
+			bn[0] = '/';
+		}
+		return -1;
+	}
+#endif
+	fprintf(stderr, "Unable to get full path for %s\n", src);
+	return 0;
+}
+
+void __inline handle_separators(char* path)
+{
+	size_t i;
+	if (path == NULL) return;
+	for (i=0; i<strlen(path); i++) {
+		if (path[i] == NON_NATIVE_SEPARATOR) {
+			path[i] = NATIVE_SEPARATOR;
+		}
+	}
+}
+
 #if defined(USER_DIR)
 // Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
-void ScanDir(char *dirname, BOOL countfiles)
+void scan_dir(char *dirname, int countfiles)
 {
-	BOOL            fFinished;
-	HANDLE          hList;
-	TCHAR           szDir[MAX_PATH+1];
-	TCHAR           szSubDir[MAX_PATH+1];
-	WIN32_FIND_DATA FileData;
+	char			dir[MAX_PATH+1];
+	char			subdir[MAX_PATH+1];
+	char*			entry;
+#if defined(_WIN32)
+	HANDLE			hList;
+	WIN32_FIND_DATA	FileData;
+#else
+	int r;
+	DIR *dp;
+	struct dirent*	dir_entry;
+	struct stat		stat_info;
+#endif
 
 	// Get the proper directory path
-	sprintf(szDir, "%s\\%s\\*", initial_dir, dirname);
-
-	// Get the first file
-	hList = FindFirstFile(szDir, &FileData);
-	if (hList == INVALID_HANDLE_VALUE) {
+	if ( (strlen(initial_dir) + strlen(dirname) + 4) > sizeof(dir) ) {
+		fprintf(stderr, "path overflow\n");
 		return;
 	}
+	sprintf(dir, "%s%c%s", initial_dir, NATIVE_SEPARATOR, dirname);
+#if defined(_WIN32)
+	strcat(dir, "\\*");
+#endif
+
+	// Get the first file
+#if defined(_WIN32)
+	hList = FindFirstFile(dir, &FileData);
+	if (hList == INVALID_HANDLE_VALUE) return;
+#else
+	dp = opendir(dir);
+	if (dp == NULL) return;
+	dir_entry = readdir(dp);
+	if (dir_entry == NULL) return;
+#endif
 
 	// Traverse through the directory structure
-	fFinished = FALSE;
-	while (!fFinished) {
+	do {
 		// Check the object is a directory or not
+#if defined(_WIN32)
+		entry = FileData.cFileName;
 		if (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-			if ( (strcmp(FileData.cFileName, ".") != 0)
-			  && (strcmp(FileData.cFileName, "..") != 0)) {
-
+#else
+		entry = dir_entry->d_name;
+		chdir(dir);
+		r = NATIVE_STAT(entry, &stat_info);
+		chdir(cwd);
+		if (r != 0) {
+			continue;
+		}
+		if (S_ISDIR(stat_info.st_mode)) {
+#endif
+			if ( (strcmp(entry, ".") != 0)
+			  && (strcmp(entry, "..") != 0)) {
 				// Get the full path for sub directory
-				sprintf(szSubDir, "%s\\%s", dirname, FileData.cFileName);
-
-				ScanDir(szSubDir, countfiles);
+				if ( (strlen(dirname) + strlen(entry) + 2) > sizeof(subdir) ) {
+					fprintf(stderr, "path overflow\n");
+					return;
+				}
+				sprintf(subdir, "%s%c%s", dirname, NATIVE_SEPARATOR, entry);
+				scan_dir(subdir, countfiles);
 			}
 		} else {
 			if (!countfiles) {
 				if ( (embeddable[nb_embeddables].file_name =
 					  malloc(strlen(initial_dir) + strlen(dirname) +
-					  strlen(FileData.cFileName) + 2) ) == NULL) {
+					  strlen(entry) + 2) ) == NULL) {
 					return;
 				}
 				if ( (embeddable[nb_embeddables].extraction_subdir =
@@ -118,40 +226,36 @@ void ScanDir(char *dirname, BOOL countfiles)
 					return;
 				}
 				sprintf(embeddable[nb_embeddables].file_name,
-					"%s%s\\%s", initial_dir, dirname, FileData.cFileName );
-				if (dirname[0] == '\\') {
+					"%s%s%c%s", initial_dir, dirname, NATIVE_SEPARATOR, entry);
+				if (dirname[0] == NATIVE_SEPARATOR) {
 					sprintf(embeddable[nb_embeddables].extraction_subdir,
 						"%s", dirname+1);
 				} else {
 					safe_free(embeddable[nb_embeddables].extraction_subdir);
-					embeddable[nb_embeddables].extraction_subdir = _strdup(".");
+					embeddable[nb_embeddables].extraction_subdir = NATIVE_STRDUP(".");
 				}
 			}
 			nb_embeddables++;
 		}
-
-		if (!FindNextFile(hList, &FileData)) {
-			if (GetLastError() == ERROR_NO_MORE_FILES) {
-				fFinished = TRUE;
-			}
-		}
 	}
-
+#if defined(_WIN32)
+	while ( FindNextFile(hList, &FileData) || (GetLastError() != ERROR_NO_MORE_FILES) );
 	FindClose(hList);
+#else
+	while ((dir_entry = readdir(dp)) != NULL);
+	closedir(dp);
+#endif
 }
 
 void add_user_files(void) {
 	int i;
 
-	// Switch slashes to backslashes
-	for (i=0; i<(int)strlen(initial_dir); i++) {
-		if (initial_dir[i] == '/') {
-			initial_dir[i] = '\\';
-		}
-	}
-
+#if !defined(_WIN32)
+	getcwd(cwd, sizeof(cwd));
+#endif
+	handle_separators(initial_dir);
 	// Dry run to count additional files
-	ScanDir("", TRUE);
+	scan_dir("", -1);
 	if (nb_embeddables == nb_embeddables_fixed) {
 		fprintf(stderr, "No user embeddable files found.\n");
 		return;
@@ -171,27 +275,35 @@ void add_user_files(void) {
 	nb_embeddables = nb_embeddables_fixed;
 
 	// Fill in the array
-	ScanDir("", FALSE);
+	scan_dir("", 0);
 }
 #endif
 
-int __cdecl main (int argc, char *argv[])
+int64_t __inline unix_to_msfiletime(time_t t)
 {
-	int ret, i, j;
-	DWORD r;
-	WIN32_FIND_DATA file_data;
-	SYSTEMTIME file_date;
+	int64_t ret = (int64_t)t;
+	ret *= INT64_C(10000000);
+	ret += INT64_C(116444736000000000);
+	return ret;
+}
+
+int
+#ifdef DDKBUILD
+__cdecl
+#endif
+main (int argc, char *argv[])
+{
+	int ret = 1, i, j;
 	size_t size;
 	size_t* file_size;
+	time_t* ctime;
 	FILE *fd, *header_fd;
-	HANDLE header_handle = INVALID_HANDLE_VALUE, file_handle = INVALID_HANDLE_VALUE;
-	FILETIME header_time, file_time;
-	BOOL rebuild = TRUE;
+	struct NATIVE_STAT stbuf;
+	struct tm* ltm;
 	char internal_name[] = "file_###";
-	unsigned char* buffer;
+	unsigned char* buffer = NULL;
 	char fullpath[MAX_PATH];
-	char fname[_MAX_FNAME];
-	char ext[_MAX_EXT];
+	char* fname;
 
 	// Disable stdout bufferring
 	setvbuf(stdout, NULL, _IONBF,0);
@@ -201,80 +313,58 @@ int __cdecl main (int argc, char *argv[])
 		return 1;
 	}
 
+	// The lengths you need to go to, to be able to modify strings these days...
+	for (i=0; i<nb_embeddables_fixed; i++) {
+		size = strlen(embeddable_fixed[i].file_name)+1;
+		fname = malloc(size);
+		if (fname == NULL) {
+			fprintf(stderr, "Couldn't allocate buffer");
+			goto out1;
+		}
+		memcpy(fname, embeddable_fixed[i].file_name, size);
+		embeddable_fixed[i].file_name = fname;
+	}
+
 	nb_embeddables = nb_embeddables_fixed;
 #if defined(USER_DIR)
 	add_user_files();
 #endif
-	// Check if any of the embedded files have changed
-	header_handle = CreateFileA(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if (header_handle != INVALID_HANDLE_VALUE) {
-		// Header already exists
-		header_time.dwHighDateTime = 0; header_time.dwLowDateTime = 0;
-		GetFileTime(header_handle, NULL, NULL, &header_time);
-		rebuild = FALSE;
-		for (i=0; ; i++) {
-			if (file_handle != INVALID_HANDLE_VALUE) {
-				CloseHandle(file_handle);
-				file_handle = INVALID_HANDLE_VALUE;
-			}
-			if ( (i>=nb_embeddables) || (rebuild) )
-				break;
-			file_handle = CreateFileA(embeddable[i].file_name, GENERIC_READ, FILE_SHARE_READ,
-				NULL, OPEN_EXISTING, 0, NULL);
-			if (file_handle != INVALID_HANDLE_VALUE) {
-				file_time.dwHighDateTime = 0; file_time.dwLowDateTime = 0;
-				GetFileTime(file_handle, NULL, NULL, &file_time);
-				if (CompareFileTime(&header_time, &file_time) <= 0) {
-					rebuild = TRUE;
-					break;
-				}
-			}
-		}
-		CloseHandle(header_handle);
-	}
-
-	if (!rebuild) {
-		printf("  resources haven't changed - skipping step\n");
-		return 0;
-	}
 
 	size = sizeof(size_t)*nb_embeddables;
 	file_size = malloc(size);
-	if (file_size == NULL) {
-		fprintf(stderr, "Couldn't even allocate a measly %d bytes\n", (int)size);
-		return 1;
-	}
+	if (file_size == NULL) goto out1;
+	size = sizeof(time_t)*nb_embeddables;
+	ctime = malloc(size);
+	if (ctime == NULL)  goto out1;
 
 	header_fd = fopen(argv[1], "w");
 	if (header_fd == NULL) {
 		fprintf(stderr, "Can't create file '%s'\n", argv[1]);
-		ret = 1;
 		goto out1;
 	}
 	fprintf(header_fd, "#pragma once\n");
 
 	for (i=0; i<nb_embeddables; i++) {
-		r = GetFullPathNameA(embeddable[i].file_name, MAX_PATH, fullpath, NULL);
-		if ((r == 0) || (r > MAX_PATH)) {
+		handle_separators(embeddable[i].file_name);
+		if (!get_full_path(embeddable[i].file_name, fullpath)) {
 			fprintf(stderr, "Unable to get full path for %s\n", embeddable[i].file_name);
-			ret = 1;
 			goto out2;
 		}
 		printf("Embedding '%s' ", fullpath);
 		fd = fopen(embeddable[i].file_name, "rb");
 		if (fd == NULL) {
 			fprintf(stderr, "Couldn't open file '%s'\n", fullpath);
-			ret = 1;
 			goto out2;
 		}
 
-		// Read the creation date (once more)
-		file_data.ftCreationTime.dwHighDateTime = 0;
-		file_data.ftCreationTime.dwLowDateTime = 0;
-		if ( (FindFirstFileA(fullpath, &file_data) != INVALID_HANDLE_VALUE)
-		  && (FileTimeToSystemTime(&file_data.ftCreationTime, &file_date)) ) {
-			printf("(%04d.%02d.%02d)\n", file_date.wYear, file_date.wMonth, file_date.wDay);
+		// Read the creation date
+		memset(&stbuf, 0, sizeof(stbuf));
+		if ( (NATIVE_STAT(fullpath, &stbuf) == 0) && ((ltm = localtime(&stbuf.st_ctime)) != NULL) ) {
+			printf("(%04d.%02d.%02d)\n", ltm->tm_year+1900, ltm->tm_mon+1, ltm->tm_mday);
+		} else {
+			printf("\n");
 		}
+		ctime[i] = stbuf.st_ctime;
 
 		fseek(fd, 0, SEEK_END);
 		size = (size_t)ftell(fd);
@@ -284,38 +374,40 @@ int __cdecl main (int argc, char *argv[])
 		buffer = (unsigned char*) malloc(size);
 		if (buffer == NULL) {
 			fprintf(stderr, "Couldn't allocate buffer");
-			ret = 1;
 			goto out3;
 		}
 
 		if (fread(buffer, 1, size, fd) != size) {
 			fprintf(stderr, "Read error");
-			ret = 1;
 			goto out4;
 		}
 		fclose(fd);
 
-		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
+		sprintf(internal_name, "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
 		dump_buffer_hex(header_fd, buffer, size);
 		fprintf(header_fd, "};\n\n");
 		safe_free(buffer);
-		fclose(fd);
 	}
-
 	fprintf(header_fd, "struct res {\n" \
 		"\tchar* subdir;\n" \
 		"\tchar* name;\n" \
 		"\tsize_t size;\n" \
+		"\tint64_t creation_time;\n" \
 		"\tconst unsigned char* data;\n" \
 		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {
-		fname[0] = 0;
-		_splitpath(embeddable[i].file_name, NULL, NULL, fname, ext);
-		strncat(fname, ext, sizeof(fname)-strlen(fname));
-		_snprintf(internal_name, sizeof(internal_name), "file_%03X", (unsigned char)i);
+		// Split the path
+		fname = &embeddable[i].file_name[0];
+		for (j = 0; embeddable[i].file_name[j] != 0; j++) {
+			if ( (embeddable[i].file_name[j] == '\\')
+			  || (embeddable[i].file_name[j] == '/') ) {
+				fname = &embeddable[i].file_name[j+1];
+			}
+		}
+		sprintf(internal_name, "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "\t{ \"");
 		// We need to handle backslash sequences
 		for (j=0; j<(int)strlen(embeddable[i].extraction_subdir); j++) {
@@ -324,24 +416,15 @@ int __cdecl main (int argc, char *argv[])
 				fputc('\\', header_fd);
 			}
 		}
-		fprintf(header_fd, "\", \"%s\", %d, %s },\n",
-			fname, (int)file_size[i], internal_name);
+		fprintf(header_fd, "\", \"%s\", %d, INT64_C(%"PRId64"), %s },\n",
+			fname, (int)file_size[i], unix_to_msfiletime(ctime[i]), internal_name);
 	}
 	fprintf(header_fd, "};\n");
-	fprintf(header_fd, "const int nb_resources = sizeof(resource)/sizeof(resource[0]);\n\n");
+	fprintf(header_fd, "const int nb_resources = ARRAYSIZE(resource);\n\n");
 
 	fclose(header_fd);
-	safe_free(file_size);
-#if defined(USER_DIR)
-	for (i=nb_embeddables_fixed; i<nb_embeddables; i++) {
-		safe_free(embeddable[i].extraction_subdir);
-		safe_free(embeddable[i].file_name);
-	}
-	if (embeddable != embeddable_fixed) {
-		safe_free(embeddable);
-	}
-#endif
-	return 0;
+	ret = 0;
+	goto out1;
 
 out4:
 	safe_free(buffer);
@@ -350,8 +433,21 @@ out3:
 out2:
 	fclose(header_fd);
 	// Must delete a failed file so that Make can relaunch its build
-	DeleteFile(argv[1]);
+	NATIVE_UNLINK(argv[1]);
 out1:
+#if defined(USER_DIR)
+	for (i=nb_embeddables_fixed; i<nb_embeddables; i++) {
+		safe_free(embeddable[i].file_name);
+		safe_free(embeddable[i].extraction_subdir);
+	}
+	if (embeddable != embeddable_fixed) {
+		safe_free(embeddable);
+	}
+#endif
 	safe_free(file_size);
+	safe_free(ctime);
+	for (i=0; i<nb_embeddables_fixed; i++) {
+		safe_free(embeddable_fixed[i].file_name);
+	}
 	return ret;
 }
