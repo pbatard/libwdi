@@ -135,7 +135,7 @@ int get_full_path(char* src, char* dst)
 		return -1;
 	}
 #endif
-	fprintf(stderr, "Unable to get full path for %s\n", src);
+	fprintf(stderr, "Unable to get full path for '%s'.\n", src);
 	return 0;
 }
 
@@ -169,7 +169,7 @@ void scan_dir(char *dirname, int countfiles)
 
 	// Get the proper directory path
 	if ( (strlen(initial_dir) + strlen(dirname) + 4) > sizeof(dir) ) {
-		fprintf(stderr, "path overflow\n");
+		fprintf(stderr, "Path overflow.\n");
 		return;
 	}
 	sprintf(dir, "%s%c%s", initial_dir, NATIVE_SEPARATOR, dirname);
@@ -208,7 +208,7 @@ void scan_dir(char *dirname, int countfiles)
 			  && (strcmp(entry, "..") != 0)) {
 				// Get the full path for sub directory
 				if ( (strlen(dirname) + strlen(entry) + 2) > sizeof(subdir) ) {
-					fprintf(stderr, "path overflow\n");
+					fprintf(stderr, "Path overflow.\n");
 					return;
 				}
 				sprintf(subdir, "%s%c%s", dirname, NATIVE_SEPARATOR, entry);
@@ -309,7 +309,7 @@ main (int argc, char *argv[])
 	setvbuf(stdout, NULL, _IONBF,0);
 
 	if (argc != 2) {
-		fprintf(stderr, "You must supply a header name\n");
+		fprintf(stderr, "You must supply a header name.\n");
 		return 1;
 	}
 
@@ -318,7 +318,7 @@ main (int argc, char *argv[])
 		size = strlen(embeddable_fixed[i].file_name)+1;
 		fname = malloc(size);
 		if (fname == NULL) {
-			fprintf(stderr, "Couldn't allocate buffer");
+			fprintf(stderr, "Couldn't allocate buffer.");
 			goto out1;
 		}
 		memcpy(fname, embeddable_fixed[i].file_name, size);
@@ -339,7 +339,7 @@ main (int argc, char *argv[])
 
 	header_fd = fopen(argv[1], "w");
 	if (header_fd == NULL) {
-		fprintf(stderr, "Can't create file '%s'\n", argv[1]);
+		fprintf(stderr, "Can't create file '%s'.\n", argv[1]);
 		goto out1;
 	}
 	fprintf(header_fd, "#pragma once\n");
@@ -347,13 +347,13 @@ main (int argc, char *argv[])
 	for (i=0; i<nb_embeddables; i++) {
 		handle_separators(embeddable[i].file_name);
 		if (!get_full_path(embeddable[i].file_name, fullpath)) {
-			fprintf(stderr, "Unable to get full path for %s\n", embeddable[i].file_name);
+			fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
 			goto out2;
 		}
 		printf("Embedding '%s' ", fullpath);
 		fd = fopen(embeddable[i].file_name, "rb");
 		if (fd == NULL) {
-			fprintf(stderr, "Couldn't open file '%s'\n", fullpath);
+			fprintf(stderr, "Couldn't open file '%s'.\n", fullpath);
 			goto out2;
 		}
 
@@ -373,12 +373,12 @@ main (int argc, char *argv[])
 
 		buffer = (unsigned char*) malloc(size);
 		if (buffer == NULL) {
-			fprintf(stderr, "Couldn't allocate buffer");
+			fprintf(stderr, "Couldn't allocate buffer.\n");
 			goto out3;
 		}
 
 		if (fread(buffer, 1, size, fd) != size) {
-			fprintf(stderr, "Read error");
+			fprintf(stderr, "Read error.\n");
 			goto out4;
 		}
 		fclose(fd);
@@ -420,7 +420,7 @@ main (int argc, char *argv[])
 			fname, (int)file_size[i], unix_to_msfiletime(ctime[i]), internal_name);
 	}
 	fprintf(header_fd, "};\n");
-	fprintf(header_fd, "const int nb_resources = ARRAYSIZE(resource);\n\n");
+	fprintf(header_fd, "\nconst int nb_resources = ARRAYSIZE(resource);\n");
 
 	fclose(header_fd);
 	ret = 0;
