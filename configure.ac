@@ -11,6 +11,7 @@ AC_PROG_LIBTOOL
 AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
+
 WDF_VER="01009"
 AC_DEFINE_UNQUOTED([WDF_VER], ["${WDF_VER}"], [DDK WDF coinstaller version (string)])
 
@@ -79,6 +80,16 @@ esac
 
 AM_LDFLAGS="-no-undefined -avoid-version"
 AC_CHECK_TOOL(RC, windres, no)
+
+# cross compiling support
+if test "x$CC_FOR_BUILD" = "x"; then
+	if test "x$cross_compiling" = "xyes"; then
+		AC_CHECK_PROGS(CC_FOR_BUILD, gcc, cc)
+	else
+		CC_FOR_BUILD="$CC"
+	fi
+fi
+AC_SUBST(CC_FOR_BUILD)
 
 # 32 bit support
 save_CFLAGS="${CFLAGS}"

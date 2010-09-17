@@ -24,10 +24,9 @@ installer_x64_LDFLAGS = -m64 $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x64_LDADD = -lsetupapi -lnewdev
 endif
 
-# call host's gcc to allow 64 bit cross compilation from a 32 bit Windows host
-# as we can't use $(CC), we assert that the host's default compiler is always gcc
+# call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
-	gcc -o $@ -I.. embedder.c 
+	$(CC_FOR_BUILD) -Wall -I.. embedder.c -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 
@@ -40,7 +39,7 @@ libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
 
 embedded.h: embedder $(noinst_PROGRAMS)
-	./embedder.exe embedded.h
+	./embedder embedded.h
 
 clean-local:
-	-rm -rf embedded.h embedder.exe
+	-rm -rf embedded.h embedder embedder.exe
