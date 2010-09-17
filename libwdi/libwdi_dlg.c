@@ -296,6 +296,11 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 			if ( (msg_index < msg_max) && (installation_time > 15*(msg_index+1)) ) {
 				// Change the progress blurb
 				SetWindowTextA(hProgressText, progress_message[msg_index]);
+				// Force a full redraw fot the transparent text background
+				ShowWindow(hProgressText, SW_HIDE);
+				UpdateWindow(hProgressText);
+				ShowWindow(hProgressText, SW_SHOW);
+				UpdateWindow(hProgressText);
 				msg_index++;
 			} else if ( (installation_time > 300) && (progress_thid != -1L) ) {
 				// Wait 300 (loose) seconds and kill the thread
