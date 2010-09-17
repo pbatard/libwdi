@@ -26,7 +26,7 @@ endif
 
 # call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
-	$(CC_FOR_BUILD) -Wall -I.. embedder.c -o $@
+	$(CC_FOR_BUILD) -I.. embedder.c -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 
