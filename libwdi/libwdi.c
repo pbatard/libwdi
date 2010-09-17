@@ -167,6 +167,15 @@ DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
 DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
+// Convert a UNIX timestamp to a MS FileTime one
+int64_t __inline unixtime_to_msfiletime(time_t t)
+{
+	int64_t ret = (int64_t)t;
+	ret *= INT64_C(10000000);
+	ret += INT64_C(116444736000000000);
+	return ret;
+}
+
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
 static void detect_version(void)
@@ -435,6 +444,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	int res, r;
 	char* tmpdir;
 	char filename[MAX_PATH];
+	int64_t t;
 	DWORD version_size;
 	void* version_buf;
 	UINT junk;
@@ -512,8 +522,9 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	  && (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
 	  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
 		// Fill the creation date of VS_FIXEDFILEINFO with the one from embedded.h
-		file_info->dwFileDateLS = (DWORD)resource[res].creation_time;
-		file_info->dwFileDateMS = resource[res].creation_time >> 32;
+		t = unixtime_to_msfiletime(resource[res].creation_time);
+		file_info->dwFileDateLS = (DWORD)t;
+		file_info->dwFileDateMS = t >> 32;
 		memcpy(&driver_version[driver_type], file_info, sizeof(VS_FIXEDFILEINFO));
 		memcpy(driver_info, file_info, sizeof(VS_FIXEDFILEINFO));
 	} else {

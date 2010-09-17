@@ -279,14 +279,6 @@ void add_user_files(void) {
 }
 #endif
 
-int64_t __inline unix_to_msfiletime(time_t t)
-{
-	int64_t ret = (int64_t)t;
-	ret *= INT64_C(10000000);
-	ret += INT64_C(116444736000000000);
-	return ret;
-}
-
 int
 #ifdef DDKBUILD
 __cdecl
@@ -295,8 +287,8 @@ main (int argc, char *argv[])
 {
 	int ret = 1, i, j;
 	size_t size;
-	size_t* file_size;
-	time_t* ctime;
+	size_t* file_size = NULL;
+	int64_t* file_time = NULL;
 	FILE *fd, *header_fd;
 	struct NATIVE_STAT stbuf;
 	struct tm* ltm;
@@ -333,9 +325,9 @@ main (int argc, char *argv[])
 	size = sizeof(size_t)*nb_embeddables;
 	file_size = malloc(size);
 	if (file_size == NULL) goto out1;
-	size = sizeof(time_t)*nb_embeddables;
-	ctime = malloc(size);
-	if (ctime == NULL)  goto out1;
+	size = sizeof(int64_t)*nb_embeddables;
+	file_time = malloc(size);
+	if (file_time == NULL) goto out1;
 
 	header_fd = fopen(argv[1], "w");
 	if (header_fd == NULL) {
@@ -364,7 +356,7 @@ main (int argc, char *argv[])
 		} else {
 			printf("\n");
 		}
-		ctime[i] = stbuf.st_ctime;
+		file_time[i] = (int64_t)stbuf.st_ctime;
 
 		fseek(fd, 0, SEEK_END);
 		size = (size_t)ftell(fd);
@@ -417,7 +409,7 @@ main (int argc, char *argv[])
 			}
 		}
 		fprintf(header_fd, "\", \"%s\", %d, INT64_C(%"PRId64"), %s },\n",
-			fname, (int)file_size[i], unix_to_msfiletime(ctime[i]), internal_name);
+			fname, (int)file_size[i], file_time[i], internal_name);
 	}
 	fprintf(header_fd, "};\n");
 	fprintf(header_fd, "\nconst int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
@@ -445,7 +437,7 @@ out1:
 	}
 #endif
 	safe_free(file_size);
-	safe_free(ctime);
+	safe_free(file_time);
 	for (i=0; i<nb_embeddables_fixed; i++) {
 		safe_free(embeddable_fixed[i].file_name);
 	}
