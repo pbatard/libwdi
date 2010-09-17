@@ -41,6 +41,9 @@
 #include "libconfig/libconfig.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
+#endif
 
 void toggle_driverless(bool refresh);
 bool parse_ini(void);

@@ -2715,7 +2715,7 @@ const char* LIBWDI_API wdi_get_vendor_name(unsigned short vid)
 {
 	int i;
 
-	for(i=0; i<ARRAYSIZE(usb_vendor); i++) {
+	for(i=0; i<sizeof(usb_vendor)/sizeof(usb_vendor[0]); i++) {
 		if (usb_vendor[i].vid == vid) {
 			return usb_vendor[i].name;
 		}

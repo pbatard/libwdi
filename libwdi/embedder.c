@@ -420,7 +420,7 @@ main (int argc, char *argv[])
 			fname, (int)file_size[i], unix_to_msfiletime(ctime[i]), internal_name);
 	}
 	fprintf(header_fd, "};\n");
-	fprintf(header_fd, "\nconst int nb_resources = ARRAYSIZE(resource);\n");
+	fprintf(header_fd, "\nconst int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
 
 	fclose(header_fd);
 	ret = 0;
