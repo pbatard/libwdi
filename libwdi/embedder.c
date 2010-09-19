@@ -279,8 +279,8 @@ void add_user_files(void) {
 	scan_dir("", -1);
 	if (nb_embeddables == nb_embeddables_fixed) {
 		fprintf(stderr, "No user embeddable files found.\n");
-		fprintf(stderr, "Note that the USER_DIR path must be provided in Windows format\n"
-		fprintf(stderr, "(eg: 'C:\signed-driver').if compiling from a Windows platform.\n");
+		fprintf(stderr, "Note that the USER_DIR path must be provided in Windows format\n");
+		fprintf(stderr, "(eg: 'C:\\signed-driver').if compiling from a Windows platform.\n");
 		return;
 	}
 
@@ -308,13 +308,14 @@ __cdecl
 #endif
 main (int argc, char *argv[])
 {
-	int ret = 1, i, j;
+	int ret = 1, i, j, rebuild;
 	size_t size;
 	char* file_name = NULL;
 	char* junk;
 	size_t* file_size = NULL;
 	int64_t* file_time = NULL;
 	FILE *fd, *header_fd;
+	time_t header_time;
 	struct NATIVE_STAT stbuf;
 	struct tm* ltm;
 	char internal_name[] = "file_###";
@@ -333,6 +334,25 @@ main (int argc, char *argv[])
 #if defined(USER_DIR)
 	add_user_files();
 #endif
+	// Check if any of the embedded files have changed
+	rebuild = 0;
+	if (NATIVE_STAT(argv[1], &stbuf) == 0) {
+		header_time = stbuf.st_ctime;
+		for (i=0; i<nb_embeddables; i++) {
+			if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
+				fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
+				goto out1;
+			}
+			if ( (NATIVE_STAT(fullpath, &stbuf) == 0) && (stbuf.st_ctime > header_time) ) {
+				rebuild = 1;
+				break;
+			}
+		}
+		if (!rebuild) {
+			printf("  resources haven't changed - skipping step\n");
+			ret = 0; goto out1;
+		}
+	}
 
 	size = sizeof(size_t)*nb_embeddables;
 	file_size = malloc(size);
@@ -423,8 +443,7 @@ main (int argc, char *argv[])
 	fprintf(header_fd, "\nconst int nb_resources = sizeof(resource)/sizeof(resource[0]);\n");
 
 	fclose(header_fd);
-	ret = 0;
-	goto out1;
+	ret = 0; goto out1;
 
 out4:
 	safe_free(buffer);
