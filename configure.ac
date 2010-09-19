@@ -55,7 +55,7 @@ case $host in
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
 	AM_CFLAGS="-DWINVER=0x500"
-	save_CFLAGS="${CFLAGS}"
+	saved_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} -mno-cygwin"
 	AC_MSG_CHECKING([if -mno-cygwin is supported])
 	AC_TRY_COMPILE(, [;],
@@ -67,7 +67,7 @@ case $host in
 		AC_MSG_RESULT([no])
 		AC_MSG_ERROR([you must ensure that -mno-cygwin is supported on cygwin])
 	fi
-	CFLAGS="${save_CFLAGS}"
+	CFLAGS="${saved_CFLAGS}"
 	# if you try to redefine CC to "gcc -mno-cygwin", all kind of bad things happen
 	# => use a variable instead
 	NO_CYGWIN="-mno-cygwin"
@@ -82,8 +82,8 @@ AM_LDFLAGS="-no-undefined -avoid-version"
 AC_CHECK_TOOL(RC, windres, no)
 
 # cross compiling support
-if test "x$CC_FOR_BUILD" = "x"; then
-	if test "x$cross_compiling" = "xyes"; then
+if test "x$CC_FOR_BUILD" == "x"; then
+	if test "x$cross_compiling" == "xyes"; then
 		AC_CHECK_PROGS(CC_FOR_BUILD, gcc, cc)
 	else
 		CC_FOR_BUILD="$CC"
@@ -91,8 +91,39 @@ if test "x$CC_FOR_BUILD" = "x"; then
 fi
 AC_SUBST(CC_FOR_BUILD)
 
+# detect if the host's CC_FOR_BUILD actually produces executables that run
+# (this is required for the embedder)
+saved_CC="${CC}"
+saved_CFLAGS="${CFLAGS}"
+saved_LDFLAGS="${LDFLAGS}"
+# we need to disable cross compiling  detection for this test
+saved_cross_compiling=$cross_compiling
+cross_compiling=no
+CC="${CC_FOR_BUILD}"
+CFLAGS=""
+LDFLAGS=""
+AC_MSG_CHECKING([whether the build compiler can produce executables that run on this host])
+AC_RUN_IFELSE(AC_LANG_PROGRAM([]),[
+	AC_MSG_RESULT([yes])
+	cc_for_build_ok="yes"
+	],
+	[
+	AC_MSG_RESULT([no])
+	cc_for_build_ok="no"
+	])
+CC="${saved_CC}"
+CFLAGS="${saved_CFLAGS}"
+LDFLAGS="${saved_LDFLAGS}"
+cross_compiling=$saved_cross_compiling
+if test "x$cc_for_build_ok" != "xyes"; then
+	AC_ERROR([The build compiler cannot produce executables for this
+  platform. You might have to define the CC_FOR_BUILD environment variable.
+  For instance, on 32 bit Windows, if using a multilib MinGW-w64 that defaults
+  to 64 bit executables, you would need: export CC_FOR_BUILD="gcc -m32"])
+fi
+
 # 32 bit support
-save_CFLAGS="${CFLAGS}"
+saved_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -m32"
 AC_MSG_CHECKING([whether the compiler can produce 32 bit binaries])
 AC_TRY_COMPILE(, [;],
@@ -103,10 +134,10 @@ if test "x$compiler_has_m32" == "xyes"; then
 else
 	AC_MSG_RESULT([no])
 fi
-CFLAGS="${save_CFLAGS}"
+CFLAGS="${saved_CFLAGS}"
 
 # 64 bit support
-save_CFLAGS="${CFLAGS}"
+saved_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -m64"
 AC_MSG_CHECKING([whether the compiler can produce 64 bit binaries])
 AC_TRY_COMPILE(, [;],
@@ -117,7 +148,7 @@ if test "x$compiler_has_m64" == "xyes"; then
 else
 	AC_MSG_RESULT([no])
 fi
-CFLAGS="${save_CFLAGS}"
+CFLAGS="${saved_CFLAGS}"
 
 if test "x$compiler_has_m64" != "xyes" -a "x$compiler_has_m32" != "xyes"; then
 	AC_MSG_ERROR([neither -m32 nor -m64 is supported by your compiler])
@@ -278,11 +309,11 @@ AC_ARG_ENABLE([examples-build], [AS_HELP_STRING([--enable-examples-build],
 AM_CONDITIONAL([BUILD_EXAMPLES], [test "x$build_examples" != "xno"])
 
 # check for -Wno-pointer-sign compiler support (GCC >= 4)
-saved_cflags="$CFLAGS"
+saved_CFLAGS="${CFLAGS}"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 AC_COMPILE_IFELSE(AC_LANG_PROGRAM([]),
 	nopointersign_cflags="-Wno-pointer-sign", nopointersign_cflags="")
-CFLAGS="$saved_cflags"
+CFLAGS="${saved_CFLAGS}"
 
 AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Werror-implicit-function-declaration $nopointersign_cflags"
 
