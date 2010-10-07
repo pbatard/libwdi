@@ -1,1 +1,4 @@
 *.sh -crlf
+.gitattributes export-ignore
+.gitignore export-ignore
+*.sh export-ignore
