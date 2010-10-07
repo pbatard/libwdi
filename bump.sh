@@ -19,7 +19,10 @@ if [ ! ${TAG:0:1} = 'w' ]; then
   exit 1
 fi
 TAGVER=${TAG:1}
-# increment - ideally, we'd check that tagver is really numeric here
+case $TAGVER in *[!0-9]*) 
+  echo "$TAGVER is not a number - aborting"
+  exit 1
+esac
 TAGVER=`expr $TAGVER + 1`
 echo Bumping version to w$TAGVER
 
@@ -31,18 +34,18 @@ s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\)
 _EOF
 
 # First run sed to substitute our variable in the sed command file
-sed -e "s/@@TAGVER@@/$TAGVER/g" cmd.sed > cmd_.sed
-mv cmd_.sed cmd.sed
+sed -e "s/@@TAGVER@@/$TAGVER/g" cmd.sed > cmd.sed~
+mv cmd.sed~ cmd.sed
 
 # Run sed to update the .rc files minor version
-sed -f cmd.sed libwdi/libwdi.rc > libwdi/libwdi_.rc
-mv libwdi/libwdi_.rc libwdi/libwdi.rc
-sed -f cmd.sed examples/zadic.rc > examples/zadic_.rc
-mv examples/zadic_.rc examples/zadic.rc
-sed -f cmd.sed examples/zadig.rc > examples/zadig_.rc
-mv examples/zadig_.rc examples/zadig.rc
-sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple_.rc
-mv examples/wdi-simple_.rc examples/wdi-simple.rc
+sed -f cmd.sed libwdi/libwdi.rc > libwdi/libwdi.rc~
+mv libwdi/libwdi.rc~ libwdi/libwdi.rc
+sed -f cmd.sed examples/zadic.rc > examples/zadic.rc~
+mv examples/zadic.rc~ examples/zadic.rc
+sed -f cmd.sed examples/zadig.rc > examples/zadig.rc~
+mv examples/zadig.rc~ examples/zadig.rc
+sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple.rc~
+mv examples/wdi-simple.rc~ examples/wdi-simple.rc~
 
 rm cmd.sed
 
