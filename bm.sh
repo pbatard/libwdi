@@ -1,7 +1,6 @@
 #!/bin/sh
-
-# This file is used *internally*  by the developers to produce the binaries
-# It is not meant for general use
+# Create a Zadig release
+# !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
 date=`date +%Y.%m.%d`
 

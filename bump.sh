@@ -1,6 +1,6 @@
 #!/bin/sh
-
 # This script bumps the version and updates the rc files and git tree accordingly
+# !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
 type -P sed &>/dev/null || { echo "sed command not found. Aborting." >&2; exit 1; }
 type -P git &>/dev/null || { echo "git command not found. Aborting." >&2; exit 1; }
