@@ -1,11 +1,12 @@
 For the latest changes, visit: http://git.libusb.org/?p=libwdi.git;a=shortlog
 
-o v1.0.3 (2010.10.??)
+o v1.0.3 (2010.10.07)
   Bugfixes:
   - progress bar text was not being erased properly
   Improvements:
   - libwdi can now be cross-compiled
   - MinGW and MS generated DLLs are interchangeable
+  - updated inf-wizard libusb-win32 sample to v1.2.2.0
 o v1.0.2 (2010.09.15) 
   Bugfixes:
   - WinUSB inf file appends libusb0 template
