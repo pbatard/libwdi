@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2010.09.08
+ * Version: 2010.09.20
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -2454,6 +2454,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x1a86, "QinHeng Electronics" },
 	{ 0x1a89, "Dynalith Systems Co., Ltd." },
 	{ 0x1a8b, "SGS Taiwan Ltd." },
+	{ 0x1a90, "Corsair Voyager GT 16GB" },
 	{ 0x1a98, "Leica Camera AG" },
 	{ 0x1aa4, "Data Drive Thru, Inc." },
 	{ 0x1aa5, "UBeacon Technologies, Inc." },
@@ -2618,6 +2619,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x22ba, "Technology Innovation Holdings, Ltd" },
 	{ 0x2304, "Pinnacle Systems, Inc." },
 	{ 0x2318, "Shining Technologies, Inc. [hex]" },
+	{ 0x2373, "Pumatronix Ltda" },
 	{ 0x2375, "Digit@lway, Inc." },
 	{ 0x2406, "SANHO Digital Electronics Co., Ltd." },
 	{ 0x2478, "Tripp-Lite" },
