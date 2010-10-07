@@ -27,5 +27,6 @@ cp -r m4 autom4te.cache $TARGET_DIR
 cp aclocal.m4 compile config.guess config.sub config.h.in configure depcomp INSTALL install-sh ltmain.sh Makefile.in missing $TARGET_DIR
 cp libwdi/Makefile.in $TARGET_DIR/libwdi/Makefile.in
 cp examples/Makefile.in $TARGET_DIR/examples/Makefile.in
+cp examples/libconfig/Makefile.in $TARGET_DIR/examples/libconfig/Makefile.in
 tar -C $BASEDIR -cf $BASEDIR/libwdi-$VERSION.tar libwdi-$VERSION
 gzip $BASEDIR/libwdi-$VERSION.tar
