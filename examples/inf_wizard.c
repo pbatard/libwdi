@@ -1040,6 +1040,7 @@ static int save_file(HWND dialog, device_context_t *device)
 	OPENFILENAME open_file;
 	char* valid_name;
 	int length;
+	char ofd_filter[MAX_PATH];
 
 	memset(&open_file, 0, sizeof(open_file));
 	memset(device->inf_path, 0, sizeof(device->inf_path));
@@ -1061,11 +1062,15 @@ static int save_file(HWND dialog, device_context_t *device)
 	if (!strlen(device->inf_path))
 		strcpy(device->inf_path, "your_file.inf");
 
+	memcpy(ofd_filter, 
+		"inf files (*.inf)\0*.inf\0\0", 
+		sizeof("inf files (*.inf)\0*.inf\0\0"));
+
 	open_file.lStructSize = sizeof(OPENFILENAME);
 	open_file.hwndOwner = dialog;
 	open_file.lpstrFile = device->inf_path;
 	open_file.nMaxFile = sizeof(device->inf_path);
-	open_file.lpstrFilter = "*.inf\0*.inf\0";
+	open_file.lpstrFilter = ofd_filter;
 	open_file.nFilterIndex = 1;
 	open_file.lpstrFileTitle = device->inf_name;
 	open_file.nMaxFileTitle = sizeof(device->inf_name);
