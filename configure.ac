@@ -47,14 +47,16 @@ AC_MSG_CHECKING([development environment])
 case $host in
 *-mingw*)
 	AC_MSG_RESULT([MinGW])
-	AM_CFLAGS="-Wshadow -DWINVER=0x500"
+	create_import_lib="yes"
 	NO_CYGWIN=""
 	LIBCONFIG_LIBADD=""
 	LIBCONFIG_CFLAGS=""
+	AM_CFLAGS="-Wshadow"
+	AM_LDFLAGS="-Wl,--add-stdcall-alias"
+	AC_CHECK_TOOL(DLLTOOL, dlltool, false)	
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
-	AM_CFLAGS="-DWINVER=0x500"
 	saved_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} -mno-cygwin"
 	AC_MSG_CHECKING([if -mno-cygwin is supported])
@@ -73,13 +75,17 @@ case $host in
 	NO_CYGWIN="-mno-cygwin"
 	LIBCONFIG_LIBADD="-L/lib/mingw -lcrtdll -lmingwex"
 	LIBCONFIG_CFLAGS="-static -I/usr/include/mingw -D__MINGW_FEATURES__"
+	AM_CFLAGS=""
+	AM_LDFLAGS=""
 	;;
 *)
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
-AM_LDFLAGS="-no-undefined -avoid-version"
+AM_CFLAGS="${AM_CFLAGS} -std=c99 -DWINVER=0x500"
+AM_LDFLAGS="${AM_LDFLAGS} -no-undefined -avoid-version"
 AC_CHECK_TOOL([RC], [windres], [no])
+AM_CONDITIONAL([CREATE_IMPORT_LIB], [test "x$create_import_lib" = "xyes"])
 
 # cross compiling support
 if test "x$CC_FOR_BUILD" == "x"; then

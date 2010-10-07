@@ -367,6 +367,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\libwdi.def"
+				>
+			</File>
+			<File
 				RelativePath=".\libwdi.rc"
 				>
 			</File>

@@ -1,12 +1,6 @@
 #TARGETTYPE is not defined, to allow selection between static lib or DLL with ddk_build
 TARGETNAME=libwdi
-#Must be set, else DLL build will look for libwdi.def
-DLLDEF=
-
-#DLL_EXPORT must be provided as a macro when buidling a DLL
-!IF "$(TARGETTYPE)"=="DYNLINK"
-DLL_DEFINES=/DDLL_EXPORT
-!ENDIF
+DLLDEF=libwdi.def
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3

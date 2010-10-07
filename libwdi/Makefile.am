@@ -1,3 +1,9 @@
+all-local: embedded.h libwdi.la
+if CREATE_IMPORT_LIB
+# Rebuild the import lib from the .def so that MS and MinGW DLLs can be interchanged
+	$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
+endif
+
 INCLUDES = -I$(top_srcdir)
 
 BUILT_SOURCES = embedded.h
