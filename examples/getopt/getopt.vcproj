@@ -23,7 +23,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\getopt"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -82,7 +82,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\getopt"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -141,7 +141,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\getopt"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -200,7 +200,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\lib\getopt"
 			ConfigurationType="4"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool

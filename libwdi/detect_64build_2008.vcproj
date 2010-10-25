@@ -23,7 +23,7 @@
 			OutputDirectory="$(InputDir)"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -45,7 +45,7 @@
 			OutputDirectory="$(InputDir)"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -68,7 +68,7 @@
 			OutputDirectory="$(InputDir)"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -90,7 +90,7 @@
 			OutputDirectory="$(InputDir)"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\detect_64build"
 			ConfigurationType="10"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"

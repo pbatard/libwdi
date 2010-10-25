@@ -23,7 +23,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll\libwdi"
 			ConfigurationType="2"
-			CharacterSet="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -93,6 +93,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll\libwdi"
 			ConfigurationType="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -162,7 +163,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll\libwdi"
 			ConfigurationType="2"
-			CharacterSet="2"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -232,6 +233,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll"
 			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\dll\libwdi"
 			ConfigurationType="2"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
