@@ -95,8 +95,9 @@ enum windows_version {
 /*
  * API macros - from libusb-win32 1.x
  */
-#define DLL_DECLARE(api, ret, name, args)                    \
-  typedef ret (api * __dll_##name##_t)args; __dll_##name##_t name = NULL
+#define DLL_DECLARE(api, ret, name, args)                     \
+	typedef ret (api * __dll_##name##_t)args;                 \
+	static __dll_##name##_t name = NULL
 
 #define DLL_LOAD(dll, name, ret_on_failure)                   \
 	do {                                                      \
