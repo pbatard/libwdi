@@ -185,7 +185,7 @@ static void init_children(HWND hDlg) {
 
 	HFONT hFont;
 	// Progress Bar
-	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASS,
+	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASSA,
 		NULL,
 		WS_CHILDWINDOW | WS_VISIBLE | PBS_MARQUEE,
 		10,35,250,12,
@@ -201,7 +201,7 @@ static void init_children(HWND hDlg) {
 	PostMessage(hProgressBar, PBM_SETMARQUEE, TRUE, 0);
 
 	// Progress Text
-	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY|WS_EX_TRANSPARENT, WC_STATIC,
+	hProgressText = CreateWindowExA(WS_EX_NOPARENTNOTIFY|WS_EX_TRANSPARENT, WC_STATICA,
 		"Installing Driver...",
 		WS_CHILDWINDOW | WS_VISIBLE | WS_GROUP,
 		12,12,250,16,
@@ -336,7 +336,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	HWND hDlg;
 	MSG msg;
-	WNDCLASSEX wc;
+	WNDCLASSEXA wc;
 	BOOL r;
 
 	if ( (function == NULL) || (hWnd == NULL) ) {

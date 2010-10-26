@@ -641,7 +641,7 @@ bool parse_ini(void) {
 
 	// Set the default extraction dir
 	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
-		SetDlgItemText(hMain, IDC_FOLDER, tmp);
+		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
 	}
 
 	// Set the default driver
@@ -1008,7 +1008,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			browse_for_folder();
 			break;
 		case IDC_CLEAR:		// button: "Clear Log"
-			Edit_SetText(hInfo, "");
+			SetWindowTextA(hInfo, "");
 			break;
 		case IDC_SAVE:		// button: "Save Log"
 			log_size = GetWindowTextLengthU(hInfo);
@@ -1051,7 +1051,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
-			DialogBoxA(main_instance, MAKEINTRESOURCE(IDD_ABOUTBOX), hMain, about_callback);
+			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
 			ShellExecuteA(hDlg, "open", "http://libusb.org/wiki/libwdi/zadig",
@@ -1095,10 +1095,10 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	HANDLE mutex = NULL;
 
 	// Prevent 2 applications from running at the same time
-	mutex = CreateMutex(NULL, TRUE, "Global/Zadig");
+	mutex = CreateMutexA(NULL, TRUE, "Global/Zadig");
 	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS))
 	{
-		MessageBox(NULL, "Another Zadig application is running.\n"
+		MessageBoxA(NULL, "Another Zadig application is running.\n"
 			"Please close the first application before running another one.",
 			"Other instance detected", MB_ICONSTOP);
 		return 0;
@@ -1118,7 +1118,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 	// Create the main Window
 	if (DialogBoxA(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
-		MessageBox(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
+		MessageBoxA(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
 	}
 
 	// Exit libconfig

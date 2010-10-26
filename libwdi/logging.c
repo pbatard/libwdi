@@ -186,7 +186,7 @@ int create_logger(DWORD buffsize)
 	}
 
 	// Read end of the pipe
-	logger_rd_handle = CreateNamedPipe(LOGGER_PIPE_NAME, PIPE_ACCESS_INBOUND,
+	logger_rd_handle = CreateNamedPipeA(LOGGER_PIPE_NAME, PIPE_ACCESS_INBOUND,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, buffsize, buffsize, 0, NULL);
 	if (logger_rd_handle == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, "could not create logger pipe for reading: %s\n", windows_error_str(0));
@@ -194,7 +194,7 @@ int create_logger(DWORD buffsize)
 	}
 
 	// Write end of the pipe
-	logger_wr_handle = CreateFile(LOGGER_PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+	logger_wr_handle = CreateFileA(LOGGER_PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL, NULL);
 	if (logger_wr_handle == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, "could not create logger pipe for writing: %s\n", windows_error_str(0));

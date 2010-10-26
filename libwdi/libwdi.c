@@ -137,7 +137,7 @@ const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
 #define INIT_VISTA_SHELL32 if (pIsUserAnAdmin == NULL) {				\
 	pIsUserAnAdmin = (BOOL (WINAPI *)(void))							\
-		GetProcAddress(GetModuleHandle("SHELL32"), "IsUserAnAdmin");	\
+		GetProcAddress(GetModuleHandleA("SHELL32"), "IsUserAnAdmin");	\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
 
@@ -165,7 +165,7 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG)
 // This call is only available on XP and later
 DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 // This call is only available on Vista and later
-DLL_DECLARE(WINAPI, BOOL, SetupDiGetDeviceProperty, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
+DLL_DECLARE(WINAPI, BOOL, SetupDiGetDevicePropertyA, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
 // Convert a UNIX timestamp to a MS FileTime one
 int64_t __inline unixtime_to_msfiletime(time_t t)
@@ -224,7 +224,7 @@ static char err_string[STR_BUFFER_SIZE];
 	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%d] ", error_code);
 
 	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &err_string[safe_strlen(err_string)],
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[safe_strlen(err_string)],
 		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
 	if (size == 0) {
 		format_error = GetLastError();
@@ -465,9 +465,9 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	}
 
 	// Avoid the need for end user apps to link against version.lib
-	h = GetModuleHandle("Version.dll");
+	h = GetModuleHandleA("Version.dll");
 	if (h == NULL) {
-		h = LoadLibrary("Version.dll");
+		h = LoadLibraryA("Version.dll");
 	}
 	if (h == NULL) {
 		wdi_warn("unable to open version.dll");
@@ -675,7 +675,7 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Sibling, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
-	DLL_LOAD(Setupapi.dll, SetupDiGetDeviceProperty, FALSE);
+	DLL_LOAD(Setupapi.dll, SetupDiGetDevicePropertyA, FALSE);
 	return WDI_SUCCESS;
 }
 
@@ -706,7 +706,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	}
 
 	// List all connected USB devices
-	dev_info = SetupDiGetClassDevs(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
+	dev_info = SetupDiGetClassDevsA(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
 	if (dev_info == INVALID_HANDLE_VALUE) {
 		*list = NULL;
 		MUTEX_RETURN WDI_ERROR_NO_DEVICE;
@@ -1310,7 +1310,7 @@ static int install_driver_internal(void* arglist)
 		// This application is not 64 bit, but it might be 32 bit
 		// running in WOW64
 		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetModuleHandle("KERNEL32"), "IsWow64Process");
+			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
 		if (pIsWow64Process != NULL) {
 			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
 		}
@@ -1319,7 +1319,7 @@ static int install_driver_internal(void* arglist)
 	}
 
 	// Use a pipe to communicate with our installer
-	pipe_handle = CreateNamedPipe(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
+	pipe_handle = CreateNamedPipeA(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
 		wdi_err("could not create read pipe: %s", windows_error_str(0));

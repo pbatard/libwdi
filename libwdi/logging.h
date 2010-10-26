@@ -26,7 +26,7 @@
 // Prevent two exclusive libwdi calls from running at the same time
 #define MUTEX_START char mutex_name[10+sizeof(__FUNCTION__)]; HANDLE mutex;                \
 	safe_snprintf(mutex_name, 10+sizeof(__FUNCTION__), "Global\\%s", __FUNCTION__);        \
-	mutex = CreateMutex(NULL, TRUE, mutex_name);                                           \
+	mutex = CreateMutexA(NULL, TRUE, mutex_name);                                          \
 	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) return WDI_ERROR_BUSY
 #define MUTEX_RETURN CloseHandle(mutex); return
 

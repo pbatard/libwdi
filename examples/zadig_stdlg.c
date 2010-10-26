@@ -42,7 +42,7 @@ static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID,
 #endif
 #define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {						\
 	pSHCreateItemFromParsingName = (HRESULT (WINAPI *)(PCWSTR, IBindCtx*, REFIID, void **))	\
-			GetProcAddress(GetModuleHandle("SHELL32"), "SHCreateItemFromParsingName");		\
+			GetProcAddress(GetModuleHandleA("SHELL32"), "SHCreateItemFromParsingName");		\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
 
@@ -130,7 +130,7 @@ static char err_string[ERR_BUFFER_SIZE];
 	safe_sprintf(err_string, ERR_BUFFER_SIZE, "[%d] ", error_code);
 
 	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&err_string[strlen(err_string)],
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[strlen(err_string)],
 		ERR_BUFFER_SIZE-(DWORD)strlen(err_string), NULL);
 	if (size == 0) {
 		format_error = GetLastError();

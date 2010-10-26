@@ -59,7 +59,7 @@ typedef DEVNODEID_A DEVNODEID;
 typedef DEVINSTID_A DEVINSTID;
 #endif
 
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNode, (PDEVINST, DEVINSTID, ULONG));
+DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
@@ -75,7 +75,7 @@ PSID user_psid = NULL;
 // Setup the Cfgmgr32 DLLs
 static int init_dlls(void)
 {
-	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNode, TRUE);
+	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNodeA, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_DevNode_Status, TRUE);
 	DLL_LOAD(Msvcrt.dll, __wgetmainargs, FALSE);
@@ -229,7 +229,7 @@ int enumerate_device(char* device_id)
 	CONFIGRET status;
 
 	plog("re-enumerating driver node %s...", device_id?device_id:"<root>");
-	status = CM_Locate_DevNode(&dev_inst, device_id, 0);
+	status = CM_Locate_DevNodeA(&dev_inst, device_id, 0);
 	if (status != CR_SUCCESS) {
 		plog("failed to locate device_id %s: %x\n", device_id?device_id:"<root>", status);
 		return -1;
