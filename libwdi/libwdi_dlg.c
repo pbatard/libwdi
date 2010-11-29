@@ -336,7 +336,7 @@ LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	HWND hDlg;
 	MSG msg;
-	WNDCLASSEXA wc;
+	WNDCLASSEXW wc;
 	BOOL r;
 
 	if ( (function == NULL) || (hWnd == NULL) ) {
@@ -360,7 +360,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	// => create the whole dialog manually.
 
 	// First we create  Window class if it doesn't already exist
-	if (!GetClassInfoExA(app_instance, "wdi_progress_class", &wc)) {
+	if (!GetClassInfoExW(app_instance, L"wdi_progress_class", &wc)) {
 		wc.cbSize = sizeof(WNDCLASSEX);
 		wc.style = CS_DBLCLKS | CS_SAVEBITS;
 		wc.lpfnWndProc = progress_callback;
@@ -370,11 +370,11 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.lpszClassName = "wdi_progress_class";
+		wc.lpszClassName = L"wdi_progress_class";
 		wc.lpszMenuName  = NULL;
 		wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 
-		if (!RegisterClassExA(&wc)) {
+		if (!RegisterClassExW(&wc)) {
 			wdi_err("can't register class %s", windows_error_str(0));
 			safe_closehandle(progress_mutex);
 			return WDI_ERROR_RESOURCE;
@@ -382,8 +382,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	}
 
 	// Then we create the dialog base
-	hDlg = CreateWindowExA(WS_EX_WINDOWEDGE | WS_EX_CONTROLPARENT,
-		"wdi_progress_class", "Installing driver...",
+	hDlg = CreateWindowExW(WS_EX_WINDOWEDGE | WS_EX_CONTROLPARENT,
+		L"wdi_progress_class", L"Installing Driver...",
 		WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_CAPTION | WS_POPUP | WS_VISIBLE | WS_THICKFRAME,
 		100, 100, 287, 102, hWnd, NULL, app_instance, NULL);
 	if (hDlg == NULL) {
