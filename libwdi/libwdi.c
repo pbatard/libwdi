@@ -133,13 +133,20 @@ typedef struct {
 const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
 
-// The following is only available on Vista and later
+// The following are only available on Vista and later
 static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
+static BOOL (WINAPI *pSetupDiGetDevicePropertyW)(HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD) = NULL;
 #define INIT_VISTA_SHELL32 if (pIsUserAnAdmin == NULL) {				\
 	pIsUserAnAdmin = (BOOL (WINAPI *)(void))							\
 		GetProcAddress(GetModuleHandleA("SHELL32"), "IsUserAnAdmin");	\
 	}
+#define INIT_VISTA_GET_DEV_PROP {														\
+	pSetupDiGetDevicePropertyW = (BOOL (WINAPI *)(HDEVINFO, PSP_DEVINFO_DATA,			\
+		const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD))						\
+		GetProcAddress(GetModuleHandleA("Setupapi.dll"), "SetupDiGetDevicePropertyW");	\
+	}
 #define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
+#define IS_VISTA_GET_DEV_PROP_AVAILABLE (pSetupDiGetDevicePropertyW != NULL)
 
 // Version
 static BOOL (WINAPI *pVerQueryValueA)(LPCVOID, LPCSTR, LPVOID, PUINT) = NULL;
@@ -164,8 +171,6 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 // This call is only available on XP and later
 DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
-// This call is only available on Vista and later
-DLL_DECLARE(WINAPI, BOOL, SetupDiGetDevicePropertyA, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 
 // Convert a UNIX timestamp to a MS FileTime one
 int64_t __inline unixtime_to_msfiletime(time_t t)
@@ -675,7 +680,6 @@ static int init_dlls(void)
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Sibling, TRUE);
 	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
 	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
-	DLL_LOAD(Setupapi.dll, SetupDiGetDevicePropertyA, FALSE);
 	return WDI_SUCCESS;
 }
 
@@ -799,12 +803,15 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		} else {
 			// On Windows 7, the information we want ("Bus reported device description") is
 			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
-			if (SetupDiGetDeviceProperty == NULL) {
-				wdi_warn("failed to locate SetupDiGetDeviceProperty() is Setupapi.dll");
+			if (!IS_VISTA_GET_DEV_PROP_AVAILABLE) {
+				INIT_VISTA_GET_DEV_PROP;
+			}
+			if (!IS_VISTA_GET_DEV_PROP_AVAILABLE) {
+				wdi_warn("failed to locate SetupDiGetDevicePropertyW() in Setupapi.dll");
 				desc[0] = 0;
-			} else if (!SetupDiGetDeviceProperty(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
+			} else if (!pSetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
-				// fallback to SPDRP_DEVICEDESC (USB husb still use it)
+				// fallback to SPDRP_DEVICEDESC (USB hubs still use it)
 				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
 					wdi_dbg("could not read device description for %d: %s",
