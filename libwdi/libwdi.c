@@ -937,6 +937,11 @@ static int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
 
+		if ( (safe_strlen(path) + safe_strlen(resource[i].subdir) + safe_strlen(resource[i].name)) > (MAX_PATH_LENGTH - 3)) {
+			wdi_err("qualified path is too long: '%s'", filename);
+			return WDI_ERROR_RESOURCE;
+		}
+
 		fd = fcreate(filename, "w");
 		if (fd == NULL) {
 			wdi_err("failed to create file '%s' (%s)", filename, windows_error_str(0));
@@ -1066,6 +1071,10 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
+	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH_LENGTH - 2)) {
+		wdi_err("qualified path for inf file is too long: '%s'", filename);
+		MUTEX_RETURN WDI_ERROR_RESOURCE;
+	}
 
 	// Populate the inf and cat names
 	static_strcpy(inf_entities[INF_FILENAME].replace, inf_name);
@@ -1262,7 +1271,7 @@ static int install_driver_internal(void* arglist)
 	SHELLEXECUTEINFOA shExecInfo;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
-	char exename[STR_BUFFER_SIZE];
+	char exename[MAX_PATH_LENGTH];
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
@@ -1334,13 +1343,13 @@ static int install_driver_internal(void* arglist)
 	}
 	overlapped.hEvent = handle[0];
 
-	safe_strcpy(exename, STR_BUFFER_SIZE, path);
+	safe_strcpy(exename, sizeof(exename), path);
 	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
 	if (is_x64) {
-		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x64.exe");
+		safe_strcat(exename, sizeof(exename), "\\installer_x64.exe");
 	} else {
-		safe_strcat(exename, STR_BUFFER_SIZE, "\\installer_x86.exe");
+		safe_strcat(exename, sizeof(exename), "\\installer_x86.exe");
 	}
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
@@ -1392,8 +1401,8 @@ static int install_driver_internal(void* arglist)
 		si.cb = sizeof(si);
 		memset(&pi, 0, sizeof(pi));
 
-		safe_strcat(exename, STR_BUFFER_SIZE, " ");
-		safe_strcat(exename, STR_BUFFER_SIZE, inf_name);
+		safe_strcat(exename, sizeof(exename), " ");
+		safe_strcat(exename, sizeof(exename), inf_name);
 		if (!CreateProcessU(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, path, &si, &pi)) {
 			wdi_err("CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;

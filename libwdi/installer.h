@@ -29,8 +29,8 @@
 #define false FALSE
 #endif
 
-#define MAX_DESC_LENGTH             128
-#define MAX_PATH_LENGTH             128
+#define MAX_DESC_LENGTH             256
+#define MAX_PATH_LENGTH             512
 #define MAX_KEY_LENGTH              256
 #define STR_BUFFER_SIZE             256
 #define MAX_GUID_STRING_LENGTH      40
