@@ -1,4 +1,6 @@
 *.sh -crlf
+*.ac -crlf
+*.am -crlf
 .gitattributes export-ignore
 .gitignore export-ignore
 *.sh export-ignore
