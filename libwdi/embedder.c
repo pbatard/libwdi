@@ -343,13 +343,19 @@ main (int argc, char *argv[])
 	// Check if any of the embedded files have changed
 	rebuild = 0;
 	if (NATIVE_STAT(argv[1], &stbuf) == 0) {
-		header_time = stbuf.st_ctime;
+		header_time = stbuf.st_mtime;	// make sure to use modification time!
 		for (i=0; i<nb_embeddables; i++) {
 			if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
 				fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
 				goto out1;
 			}
-			if ( (NATIVE_STAT(fullpath, &stbuf) == 0) && (stbuf.st_ctime > header_time) ) {
+			if (NATIVE_STAT(fullpath, &stbuf) != 0) {
+				printf("unable to stat '%s' - assuming rebuild needed\n", fullpath);
+				rebuild = 1;
+				break;
+			}
+			if (stbuf.st_mtime > header_time) {
+				printf("detected change for '%s'\n", fullpath);
 				rebuild = 1;
 				break;
 			}
