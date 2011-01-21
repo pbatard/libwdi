@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include <windows.h>
+#include <stdio.h>
 #include <shlobj.h>
 #include <commdlg.h>
 #include <shellapi.h>
@@ -540,6 +541,17 @@ out:
 	wfree(OEMSourceMediaLocation);
 	wfree(DestinationInfFileName);
 	SetLastError(err);
+	return ret;
+}
+
+static __inline FILE* fopenU(const char* filename, const char* mode)
+{
+	FILE* ret = NULL;
+	wconvert(filename);
+	wconvert(mode);
+	ret = _wfopen(wfilename, wmode);
+	wfree(filename);
+	wfree(mode);
 	return ret;
 }
 
