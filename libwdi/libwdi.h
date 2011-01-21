@@ -233,6 +233,13 @@ LIBWDI_EXP int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info
  */
 LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_install_driver* options);
+
+/*
+ * Install a code signing certificate in the Trusted Publisher repository
+*  requires elevated privileges when running the application
+ */
+LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* path, char* cert_name);
+
 /*
  * Set the log verbosity
  */

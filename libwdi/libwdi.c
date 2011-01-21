@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include <sddl.h>
 #include <fcntl.h>
+#include <wincrypt.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -159,11 +160,27 @@ static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
 		GetProcAddress(h, "GetFileVersionInfoA");							\
 	pGetFileVersionInfoSizeA = (BOOL (WINAPI *)(LPCSTR, LPDWORD))			\
 		GetProcAddress(h, "GetFileVersionInfoSizeA");						\
-	} while (0);
+	} while (0)
 #define IS_VERSION_API_AVAILABLE ((pVerQueryValueA != NULL) && (pGetFileVersionInfoA != NULL) && (pGetFileVersionInfoSizeA != NULL))
 
+// Crypt32 (Certificate Store handling)
+static HCERTSTORE (WINAPI *pCertOpenStore)(LPCSTR, DWORD, ULONG_PTR, DWORD, const void*) = NULL;
+static BOOL (WINAPI *pCertAddEncodedCertificateToStore)(HCERTSTORE, DWORD, const BYTE*, DWORD, DWORD, PCCERT_CONTEXT*) = NULL;
+static BOOL (WINAPI *pCertCloseStore)(HCERTSTORE, DWORD) = NULL;
+#define INIT_CRYPT32_DLL(h) do {											\
+	pCertOpenStore = (HCERTSTORE (WINAPI *)(LPCSTR, DWORD,					\
+						ULONG_PTR, DWORD, const void*))				\
+		GetProcAddress(h, "CertOpenStore");									\
+	pCertAddEncodedCertificateToStore = (BOOL (WINAPI *)(HCERTSTORE, DWORD,	\
+						const BYTE*, DWORD, DWORD, PCCERT_CONTEXT*))		\
+		GetProcAddress(h, "CertAddEncodedCertificateToStore");				\
+	pCertCloseStore = (BOOL (WINAPI *)(HCERTSTORE, DWORD))					\
+		GetProcAddress(h, "CertCloseStore");								\
+	} while (0)
+#define IS_CRYPT32_API_AVAILABLE ((pCertOpenStore != NULL) && (pCertAddEncodedCertificateToStore != NULL) && (pCertCloseStore != NULL))
+
 /*
- * Cfgmgr32.dll, SetupAPI.dll interface
+ * Cfgmgr32.dll, SetupAPI.dll, Crypt32.dll interfaces
  */
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
@@ -1533,4 +1550,95 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 	}
 	wdi_dbg("using progress bar mode");
 	return run_with_progress_bar(options->hWnd, install_driver_internal, (void*)&params);
+}
+
+// Install a driver signing certificate to the Trusted Publisher system store
+// This allows promptless installation if you also provide a signed inf/cat pair
+int LIBWDI_API wdi_install_trusted_certificate(char* path, char* cert_name)
+{
+	DWORD size;
+	FILE* fd;
+	HCERTSTORE hSystemStore;
+	HMODULE h;
+	char* full_path;
+	unsigned char* buffer = NULL;
+	size_t len;
+
+	GET_WINDOWS_VERSION;
+	INIT_VISTA_SHELL32;
+
+	// Avoid the need for end user apps to link against crypt32.lib
+	h = GetModuleHandleA("Crypt32.dll");
+	if (h == NULL) {
+		h = LoadLibraryA("Crypt32.dll");
+	}
+	if (h == NULL) {
+		wdi_warn("unable to open crypt32.dll");
+		return WDI_ERROR_RESOURCE;
+	}
+
+	INIT_CRYPT32_DLL(h);
+	if (!IS_CRYPT32_API_AVAILABLE) {
+		wdi_warn("unable to access crypt32.dll");
+		return WDI_ERROR_RESOURCE;
+	}
+
+	if ((safe_strlen(path) == 0) || (safe_strlen(cert_name) == 0)) {
+		return WDI_ERROR_INVALID_PARAM;
+	}
+
+	if ( (windows_version < WINDOWS_VISTA) || (IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin())) ) {
+		len = safe_strlen(path) + safe_strlen(cert_name) + 2;
+		full_path = (char*)malloc(len);
+		if (full_path == NULL) {
+			return WDI_ERROR_RESOURCE;
+		}
+		safe_strcpy(full_path, len, path);
+		safe_strcat(full_path, len, "\\");
+		safe_strcat(full_path, len, cert_name);
+
+		if ((fd = fopenU(full_path, "rb")) == NULL) {
+			wdi_err("Can't open file '%s'", full_path);
+			safe_free(full_path);
+			return WDI_ERROR_NOT_FOUND;
+		}
+		safe_free(full_path);
+
+		fseek(fd, 0, SEEK_END);
+		size = ftell(fd);
+		fseek(fd, 0, SEEK_SET);
+
+		buffer = (unsigned char*)malloc(size);
+		if (buffer == NULL) {
+			return WDI_ERROR_RESOURCE;
+		}
+		fread(buffer, 1, size, fd);
+		fclose(fd);
+
+		hSystemStore = pCertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+			0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
+
+		if (hSystemStore == NULL) {
+			wdi_err("Unable to open system store.");
+			safe_free(buffer);
+			return WDI_ERROR_ACCESS;
+		}
+
+		if (!pCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+			buffer, size, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
+			wdi_err("Could not add certificate.");
+			safe_free(buffer);
+			return WDI_ERROR_ACCESS;
+		}
+		safe_free(buffer);
+		wdi_dbg("Certificate '%s' successfully added as Trusted Publisher", cert_name);
+
+		if (!pCertCloseStore(hSystemStore, 0)) {
+			wdi_err("Unable to close the system store.");
+		}
+		return WDI_SUCCESS;
+	}
+
+	wdi_dbg("this call must be run with elevated privileges on Vista and later");
+	return WDI_ERROR_NEEDS_ADMIN;
 }

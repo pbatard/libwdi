@@ -6,6 +6,7 @@ EXPORTS
   wdi_destroy_list
   wdi_prepare_driver
   wdi_install_driver
+  wdi_install_trusted_certificate
   wdi_get_vendor_name
   wdi_register_logger
   wdi_unregister_logger
@@ -17,6 +18,7 @@ EXPORTS
   wdi_destroy_list@4 = wdi_destroy_list
   wdi_prepare_driver@4 = wdi_prepare_driver
   wdi_install_driver@4 = wdi_install_driver
+  wdi_install_trusted_certificate@4 = wdi_install_trusted_certificate
   wdi_get_vendor_name@4 = wdi_get_vendor_name
   wdi_register_logger@4 = wdi_register_logger
   wdi_unregister_logger@4 = wdi_unregister_logger
@@ -28,6 +30,7 @@ EXPORTS
   wdi_destroy_list@8 = wdi_destroy_list
   wdi_prepare_driver@8 = wdi_prepare_driver
   wdi_install_driver@8 = wdi_install_driver
+  wdi_install_trusted_certificate@8 = wdi_install_trusted_certificate
   wdi_get_vendor_name@8 = wdi_get_vendor_name
   wdi_register_logger@8 = wdi_register_logger
   wdi_unregister_logger@8 = wdi_unregister_logger
@@ -39,6 +42,7 @@ EXPORTS
   wdi_destroy_list@12 = wdi_destroy_list
   wdi_prepare_driver@12 = wdi_prepare_driver
   wdi_install_driver@12 = wdi_install_driver
+  wdi_install_trusted_certificate@12 = wdi_install_trusted_certificate
   wdi_get_vendor_name@12 = wdi_get_vendor_name
   wdi_register_logger@12 = wdi_register_logger
   wdi_unregister_logger@12 = wdi_unregister_logger
@@ -50,6 +54,7 @@ EXPORTS
   wdi_destroy_list@16 = wdi_destroy_list
   wdi_prepare_driver@16 = wdi_prepare_driver
   wdi_install_driver@16 = wdi_install_driver
+  wdi_install_trusted_certificate@16 = wdi_install_trusted_certificate
   wdi_get_vendor_name@16 = wdi_get_vendor_name
   wdi_register_logger@16 = wdi_register_logger
   wdi_unregister_logger@16 = wdi_unregister_logger
