@@ -180,11 +180,13 @@ void scan_dir(char *dirname, int countfiles)
 {
 	char dir[MAX_PATH+1];
 	char subdir[MAX_PATH+1];
-	char* entry;
 #if defined(_WIN32)
+	char entry[MAX_PATH];
+	wchar_t wdir[MAX_PATH+1];
 	HANDLE hList;
-	WIN32_FIND_DATA FileData;
+	WIN32_FIND_DATAW FileData;
 #else
+	char* entry;
 	int r;
 	DIR *dp;
 	char cwd[MAX_PATH];
@@ -202,7 +204,8 @@ void scan_dir(char *dirname, int countfiles)
 	// Get the first file
 #if defined(_WIN32)
 	strcat(dir, "\\*");
-	hList = FindFirstFile(dir, &FileData);
+	MultiByteToWideChar(CP_UTF8, 0, dir, -1, wdir, MAX_PATH);
+	hList = FindFirstFileW(wdir, &FileData);
 	if (hList == INVALID_HANDLE_VALUE) return;
 #else
 	dp = opendir(dir);
@@ -215,7 +218,7 @@ void scan_dir(char *dirname, int countfiles)
 	do {
 		// Check the object is a directory or not
 #if defined(_WIN32)
-		entry = FileData.cFileName;
+		WideCharToMultiByte(CP_UTF8, 0, FileData.cFileName, -1, entry, MAX_PATH, NULL, NULL);
 		if (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 #else
 		entry = dir_entry->d_name;
@@ -263,7 +266,7 @@ void scan_dir(char *dirname, int countfiles)
 		}
 	}
 #if defined(_WIN32)
-	while ( FindNextFile(hList, &FileData) || (GetLastError() != ERROR_NO_MORE_FILES) );
+	while ( FindNextFileW(hList, &FileData) || (GetLastError() != ERROR_NO_MORE_FILES) );
 	FindClose(hList);
 #else
 	while ((dir_entry = readdir(dp)) != NULL);
@@ -321,6 +324,9 @@ main (int argc, char *argv[])
 	char internal_name[] = "file_###";
 	unsigned char* buffer = NULL;
 	char fullpath[MAX_PATH];
+#if defined(_WIN32)
+	wchar_t wfullpath[MAX_PATH];
+#endif
 
 	// Disable stdout bufferring
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -373,8 +379,14 @@ main (int argc, char *argv[])
 			fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
 			goto out2;
 		}
+#if defined(_WIN32)
+		MultiByteToWideChar(CP_UTF8, 0, fullpath, -1, wfullpath, MAX_PATH);
+		wprintf(L"Embedding '%s' ", wfullpath);
+		fd = _wfopen(wfullpath, L"rb");
+#else
 		printf("Embedding '%s' ", fullpath);
-		fd = fopen(fullpath, "rb");
+		fd = fopen(wfullpath, L"rb");
+#endif
 		if (fd == NULL) {
 			fprintf(stderr, "Couldn't open file '%s'.\n", fullpath);
 			goto out2;
