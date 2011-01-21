@@ -603,6 +603,28 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 
 
 /*
+ * Find out if a file is embedded in the current libwdi resources
+ * path is the relative path for
+ */
+bool LIBWDI_API wdi_is_file_embedded(char* path, char* name)
+{
+	int i;
+
+	for (i=0; i<nb_resources; i++) {
+		if (safe_strcmp(name, resource[i].name) == 0) {
+			if (path == NULL) {
+				return true;
+			}
+			if (safe_strcmp(path, resource[i].subdir) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+/*
  * Returns a constant string with an English short description of the given
  * error code. The caller should never free() the returned pointer since it
  * points to a constant string.

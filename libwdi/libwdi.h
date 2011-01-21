@@ -201,9 +201,16 @@ struct wdi_options_install_driver {
 LIBWDI_EXP const char* LIBWDI_API wdi_strerror(int errcode);
 
 /*
- * Check if a specific driver is supported (embedded) in the current version of libwdi
+ * Check if a specific driver is supported (embedded) in the current libwdi binary
  */
 LIBWDI_EXP bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info);
+
+/*
+ * Check if a specific file is embedded in the current libwdi binary
+ * path is the relative path that would be used for extraction and can be NULL,
+ * in which case any instance of "name" will return true, no matter the extraction path
+ */
+LIBWDI_EXP bool LIBWDI_API wdi_is_file_embedded(char* path, char* name);
 
 /*
  * Retrieve the full Vendor name from a Vendor ID (VID)
