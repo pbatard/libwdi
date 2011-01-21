@@ -195,6 +195,14 @@ struct wdi_options_install_driver {
 	HWND hWnd;
 };
 
+// wdi_install_trusted_certificate options:
+struct wdi_options_install_cert {
+	/** handle to a Window application that can receive a modal progress dialog */
+	HWND hWnd;
+	/** Should the warning about a Trusted Publisher installation be disabled? */
+	bool disable_warning;
+};
+
 /*
  * Convert a libwdi error to a human readable error message
  */
@@ -246,7 +254,8 @@ LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info
  * the Trusted Publisher repository. Requires elevated privileges when
  * running the application on Vista and later.
  */
-LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* cert_name);
+LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
+														  struct wdi_options_install_cert* options);
 
 /*
  * Set the log verbosity

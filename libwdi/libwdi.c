@@ -165,22 +165,39 @@ static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
 
 // Crypt32 (Certificate Store handling)
 static HCERTSTORE (WINAPI *pCertOpenStore)(LPCSTR, DWORD, ULONG_PTR, DWORD, const void*) = NULL;
-static BOOL (WINAPI *pCertAddEncodedCertificateToStore)(HCERTSTORE, DWORD, const BYTE*, DWORD, DWORD, PCCERT_CONTEXT*) = NULL;
+static PCCERT_CONTEXT (WINAPI *pCertCreateCertificateContext)(DWORD, const BYTE*, DWORD) = NULL;
+static PCCERT_CONTEXT (WINAPI *pCertFindCertificateInStore)(HCERTSTORE, DWORD, DWORD, DWORD, const void*, PCCERT_CONTEXT) = NULL;
+static BOOL (WINAPI *pCertAddCertificateContextToStore)(HCERTSTORE, PCCERT_CONTEXT, DWORD, PCCERT_CONTEXT*) = NULL;
+static BOOL (WINAPI *pCertFreeCertificateContext)(PCCERT_CONTEXT) = NULL;
 static BOOL (WINAPI *pCertCloseStore)(HCERTSTORE, DWORD) = NULL;
+static DWORD (WINAPI *pCertGetNameStringA)(PCCERT_CONTEXT, DWORD, DWORD, void*, LPSTR, DWORD) = NULL;
 #define INIT_CRYPT32_DLL(h) do {											\
 	pCertOpenStore = (HCERTSTORE (WINAPI *)(LPCSTR, DWORD,					\
-						ULONG_PTR, DWORD, const void*))				\
+						ULONG_PTR, DWORD, const void*))						\
 		GetProcAddress(h, "CertOpenStore");									\
-	pCertAddEncodedCertificateToStore = (BOOL (WINAPI *)(HCERTSTORE, DWORD,	\
-						const BYTE*, DWORD, DWORD, PCCERT_CONTEXT*))		\
-		GetProcAddress(h, "CertAddEncodedCertificateToStore");				\
+	pCertCreateCertificateContext = (PCCERT_CONTEXT (WINAPI *)(DWORD,		\
+						const BYTE*, DWORD))								\
+		GetProcAddress(h, "CertCreateCertificateContext");					\
+	pCertFindCertificateInStore = (PCCERT_CONTEXT (WINAPI *)(HCERTSTORE,	\
+						DWORD, DWORD, DWORD, const void*, PCCERT_CONTEXT))	\
+		GetProcAddress(h, "CertFindCertificateInStore");					\
+	pCertAddCertificateContextToStore = (BOOL (WINAPI *)(HCERTSTORE,		\
+						PCCERT_CONTEXT, DWORD, PCCERT_CONTEXT*))			\
+		GetProcAddress(h, "CertAddCertificateContextToStore");				\
+	pCertFreeCertificateContext = (BOOL (WINAPI *)(PCCERT_CONTEXT))			\
+		GetProcAddress(h, "CertFreeCertificateContext");					\
 	pCertCloseStore = (BOOL (WINAPI *)(HCERTSTORE, DWORD))					\
 		GetProcAddress(h, "CertCloseStore");								\
+	pCertGetNameStringA = (DWORD (WINAPI *)(PCCERT_CONTEXT, DWORD, DWORD,	\
+						void*, LPSTR, DWORD))								\
+		GetProcAddress(h, "CertGetNameStringA");							\
 	} while (0)
-#define IS_CRYPT32_API_AVAILABLE ((pCertOpenStore != NULL) && (pCertAddEncodedCertificateToStore != NULL) && (pCertCloseStore != NULL))
+#define IS_CRYPT32_API_AVAILABLE ((pCertOpenStore != NULL) && (pCertCreateCertificateContext != NULL)	\
+	&& (pCertFindCertificateInStore != NULL) && (pCertAddCertificateContextToStore != NULL)				\
+	&& (pCertFreeCertificateContext != NULL) && (pCertCloseStore != NULL) && (pCertGetNameStringA != NULL))
 
 /*
- * Cfgmgr32.dll, SetupAPI.dll, Crypt32.dll interfaces
+ * Cfgmgr32.dll, SetupAPI.dll interfaces
  */
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
@@ -1576,11 +1593,15 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 
 // Install a driver signing certificate to the Trusted Publisher system store
 // This allows promptless installation if you also provide a signed inf/cat pair
-int LIBWDI_API wdi_install_trusted_certificate(char* cert_name)
+int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
+											   struct wdi_options_install_cert* options)
 {
-	HCERTSTORE hSystemStore;
+	int i, r;
 	HMODULE h;
-	int i;
+	HCERTSTORE hSystemStore;
+	const CERT_CONTEXT *cert_ctx, *store_cert_ctx;
+	char org[STR_BUFFER_SIZE], org_unit[STR_BUFFER_SIZE];
+	char msg_string[1024];
 
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
@@ -1624,15 +1645,56 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name)
 			return WDI_ERROR_ACCESS;
 		}
 
-		if (!pCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
-			resource[i].data, (DWORD)resource[i].size, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
-			wdi_err("could not add certificate '%s': %s", cert_name, windows_error_str(0));
+		/* Check whether certificate already exists
+		 * We have to do this manually to be able to produce a warning on
+		 * first installation or replacement
+		 */
+		cert_ctx = pCertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+			resource[i].data, (DWORD)resource[i].size);
+
+		if (cert_ctx == NULL) {
+			wdi_err("could not create context for certificate '%s': %s", cert_name, windows_error_str(0));
 			return WDI_ERROR_ACCESS;
 		}
-		wdi_dbg("Certificate '%s' successfully added as Trusted Publisher", cert_name);
+
+		store_cert_ctx = pCertFindCertificateInStore(hSystemStore, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+			0, CERT_FIND_EXISTING, (const void*)cert_ctx, NULL);
+		if (store_cert_ctx == NULL) {
+			pCertFreeCertificateContext(store_cert_ctx);
+
+			r = IDOK;
+			if ((options == NULL) || (!options->disable_warning)) {
+				org[0] = 0; org_unit[0] = 0;
+				pCertGetNameStringA(cert_ctx, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATION_NAME, org, sizeof(org));
+				pCertGetNameStringA(cert_ctx, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATIONAL_UNIT_NAME, org_unit, sizeof(org_unit));
+				safe_sprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
+					"as a Trusted Publisher on your system:\n\n '%s%s%s%s'\n\n"
+					"This will allow this Publisher to run software with elevated privileges,\n"
+					"as well as install driver packages, without further security notices.\n\n"
+					"If this is not what you want, you can cancel this operation now.", org,
+					(org_unit[0] != 0)?" (":"", org_unit, (org_unit[0] != 0)?")":"");
+				r = MessageBoxA((options!=NULL)?options->hWnd:NULL, msg_string,
+					"Warning: Trusted Certificate installation", MB_OKCANCEL | MB_ICONWARNING);
+			}
+			if (r != IDOK) {
+				wdi_info("operation cancelled by the user");
+			} else {
+				if (!pCertAddCertificateContextToStore(hSystemStore, cert_ctx, CERT_STORE_ADD_NEWER, NULL)) {
+					wdi_err("could not add certificate '%s': %s", cert_name, windows_error_str(0));
+					pCertFreeCertificateContext(cert_ctx);
+					pCertCloseStore(hSystemStore, 0);
+					return WDI_ERROR_ACCESS;
+				}
+				wdi_warn("certificate '%s' successfully added as Trusted Publisher", cert_name);
+			}
+		} else {
+			wdi_info("certificate '%s' is already set as a Trusted Publisher", cert_name);
+		}
+
+		pCertFreeCertificateContext(cert_ctx);
 
 		if (!pCertCloseStore(hSystemStore, 0)) {
-			wdi_err("Unable to close the system store: %s", windows_error_str(0));
+			wdi_err("unable to close the system store: %s", windows_error_str(0));
 		}
 		return WDI_SUCCESS;
 	}
