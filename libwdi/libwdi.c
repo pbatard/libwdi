@@ -1554,15 +1554,11 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 
 // Install a driver signing certificate to the Trusted Publisher system store
 // This allows promptless installation if you also provide a signed inf/cat pair
-int LIBWDI_API wdi_install_trusted_certificate(char* path, char* cert_name)
+int LIBWDI_API wdi_install_trusted_certificate(char* cert_name)
 {
-	DWORD size;
-	FILE* fd;
 	HCERTSTORE hSystemStore;
 	HMODULE h;
-	char* full_path;
-	unsigned char* buffer = NULL;
-	size_t len;
+	int i;
 
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
@@ -1583,58 +1579,38 @@ int LIBWDI_API wdi_install_trusted_certificate(char* path, char* cert_name)
 		return WDI_ERROR_RESOURCE;
 	}
 
-	if ((safe_strlen(path) == 0) || (safe_strlen(cert_name) == 0)) {
+	if (safe_strlen(cert_name) == 0) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
 
 	if ( (windows_version < WINDOWS_VISTA) || (IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin())) ) {
-		len = safe_strlen(path) + safe_strlen(cert_name) + 2;
-		full_path = (char*)malloc(len);
-		if (full_path == NULL) {
-			return WDI_ERROR_RESOURCE;
+		for (i=0; i<nb_resources; i++) {
+			if (safe_strcmp(cert_name, resource[i].name) == 0) {
+				break;
+			}
 		}
-		safe_strcpy(full_path, len, path);
-		safe_strcat(full_path, len, "\\");
-		safe_strcat(full_path, len, cert_name);
-
-		if ((fd = fopenU(full_path, "rb")) == NULL) {
-			wdi_err("Can't open file '%s'", full_path);
-			safe_free(full_path);
+		if (i == nb_resources) {
+			wdi_err("unable to locate certificate '%s' in embedded resources", cert_name);
 			return WDI_ERROR_NOT_FOUND;
 		}
-		safe_free(full_path);
-
-		fseek(fd, 0, SEEK_END);
-		size = ftell(fd);
-		fseek(fd, 0, SEEK_SET);
-
-		buffer = (unsigned char*)malloc(size);
-		if (buffer == NULL) {
-			return WDI_ERROR_RESOURCE;
-		}
-		fread(buffer, 1, size, fd);
-		fclose(fd);
 
 		hSystemStore = pCertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
 			0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
 
 		if (hSystemStore == NULL) {
-			wdi_err("Unable to open system store.");
-			safe_free(buffer);
+			wdi_err("unable to open system store: %s", windows_error_str(0));
 			return WDI_ERROR_ACCESS;
 		}
 
 		if (!pCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
-			buffer, size, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
-			wdi_err("Could not add certificate.");
-			safe_free(buffer);
+			resource[i].data, (DWORD)resource[i].size, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
+			wdi_err("could not add certificate '%s': %s", cert_name, windows_error_str(0));
 			return WDI_ERROR_ACCESS;
 		}
-		safe_free(buffer);
 		wdi_dbg("Certificate '%s' successfully added as Trusted Publisher", cert_name);
 
 		if (!pCertCloseStore(hSystemStore, 0)) {
-			wdi_err("Unable to close the system store.");
+			wdi_err("Unable to close the system store: %s", windows_error_str(0));
 		}
 		return WDI_SUCCESS;
 	}

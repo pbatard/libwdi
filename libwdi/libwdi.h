@@ -235,10 +235,11 @@ LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info
 								  char* inf_name, struct wdi_options_install_driver* options);
 
 /*
- * Install a code signing certificate in the Trusted Publisher repository
-*  requires elevated privileges when running the application
+ * Install a code signing certificate (from embedded resources) into
+ * the Trusted Publisher repository. Requires elevated privileges when
+ * running the application on Vista and later.
  */
-LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* path, char* cert_name);
+LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* cert_name);
 
 /*
  * Set the log verbosity
