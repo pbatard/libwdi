@@ -65,6 +65,7 @@ char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = {false, false, true};
 struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL};
+struct wdi_options_install_cert ic_options= {NULL, false};
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -632,6 +633,7 @@ bool parse_ini(void) {
 	config_lookup_bool(&cfg, "include_hubs", &cl_options.list_hubs);
 	config_lookup_bool(&cfg, "extract_only", &extract_only);
 	config_lookup_bool(&cfg, "trim_whitespaces", &cl_options.trim_whitespaces);
+	config_lookup_bool(&cfg, "disable_cert_install_warning", &ic_options.disable_warning);
 
 	// Set the log level
 	config_lookup_int(&cfg, "log_level", &log_level);
@@ -642,6 +644,17 @@ bool parse_ini(void) {
 	// Set the default extraction dir
 	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
 		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
+	}
+
+	// Set the certificate name to install, if any
+	if (config_lookup_string(&cfg, "install_cert", &tmp) == CONFIG_TRUE) {
+		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
+		if (wdi_is_file_embedded(NULL, (char*)tmp)) {
+			ic_options.hWnd = hMain;
+			wdi_install_trusted_certificate((char*)tmp, &ic_options);
+		} else {
+			dprintf("certificate '%s' not found in this application", tmp);
+		}
 	}
 
 	// Set the default driver
