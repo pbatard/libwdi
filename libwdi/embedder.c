@@ -391,7 +391,7 @@ main (int argc, char *argv[])
 		fd = _wfopen(wfullpath, L"rb");
 #else
 		printf("Embedding '%s' ", fullpath);
-		fd = fopen(wfullpath, L"rb");
+		fd = fopen(fullpath, "rb");
 #endif
 		if (fd == NULL) {
 			fprintf(stderr, "Couldn't open file '%s'.\n", fullpath);

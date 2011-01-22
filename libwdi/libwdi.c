@@ -1637,7 +1637,7 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 			return WDI_ERROR_NOT_FOUND;
 		}
 
-		hSystemStore = pCertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+		hSystemStore = pCertOpenStore((LPCSTR)CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
 			0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
 
 		if (hSystemStore == NULL) {
