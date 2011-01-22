@@ -1,5 +1,14 @@
 For the latest changes, visit: http://git.libusb.org/?p=libwdi.git;a=shortlog
 
+o v1.0.4 (2011.01.22)
+  Bugfixes:
+  - improper title for progress bar
+  - improper detection of updated files for embedder run
+  Improvements:
+  - embedding of user files with international characters should be possible
+  - new wdi_install_trusted_certificate API call, for promptless driver
+    installation of static signed driver packages
+  - new wdi_is_file_embedded API call
 o v1.0.3 (2010.10.07)
   Bugfixes:
   - progress bar text was not being erased properly
