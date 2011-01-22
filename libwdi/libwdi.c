@@ -1596,7 +1596,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 											   struct wdi_options_install_cert* options)
 {
-	int i, r;
+	int i, r, user_input;
 	HMODULE h;
 	HCERTSTORE hSystemStore;
 	const CERT_CONTEXT *cert_ctx, *store_cert_ctx;
@@ -1646,14 +1646,15 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 		}
 
 		/* Check whether certificate already exists
-		 * We have to do this manually to be able to produce a warning on
-		 * first installation or replacement
+		 * We have to do this manually, so that we can produce a warning to the user
+		 * before any certificate is added to the store (first time or update)
 		 */
 		cert_ctx = pCertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
 			resource[i].data, (DWORD)resource[i].size);
 
 		if (cert_ctx == NULL) {
 			wdi_err("could not create context for certificate '%s': %s", cert_name, windows_error_str(0));
+			pCertCloseStore(hSystemStore, 0);
 			return WDI_ERROR_ACCESS;
 		}
 
@@ -1662,7 +1663,7 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 		if (store_cert_ctx == NULL) {
 			pCertFreeCertificateContext(store_cert_ctx);
 
-			r = IDOK;
+			user_input = IDOK;
 			if ((options == NULL) || (!options->disable_warning)) {
 				org[0] = 0; org_unit[0] = 0;
 				pCertGetNameStringA(cert_ctx, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATION_NAME, org, sizeof(org));
@@ -1673,32 +1674,34 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 					"as well as install driver packages, without further security notices.\n\n"
 					"If this is not what you want, you can cancel this operation now.", org,
 					(org_unit[0] != 0)?" (":"", org_unit, (org_unit[0] != 0)?")":"");
-				r = MessageBoxA((options!=NULL)?options->hWnd:NULL, msg_string,
+				user_input = MessageBoxA((options!=NULL)?options->hWnd:NULL, msg_string,
 					"Warning: Trusted Certificate installation", MB_OKCANCEL | MB_ICONWARNING);
 			}
-			if (r != IDOK) {
+			if (user_input != IDOK) {
 				wdi_info("operation cancelled by the user");
+				r = WDI_ERROR_USER_CANCEL;
 			} else {
 				if (!pCertAddCertificateContextToStore(hSystemStore, cert_ctx, CERT_STORE_ADD_NEWER, NULL)) {
 					wdi_err("could not add certificate '%s': %s", cert_name, windows_error_str(0));
-					pCertFreeCertificateContext(cert_ctx);
-					pCertCloseStore(hSystemStore, 0);
-					return WDI_ERROR_ACCESS;
+					r = WDI_ERROR_ACCESS;
+				} else {
+					wdi_warn("certificate '%s' successfully added as Trusted Publisher", cert_name);
+					r = WDI_SUCCESS;
 				}
-				wdi_warn("certificate '%s' successfully added as Trusted Publisher", cert_name);
 			}
 		} else {
 			wdi_info("certificate '%s' is already set as a Trusted Publisher", cert_name);
+			r = WDI_ERROR_EXISTS;
 		}
 
 		pCertFreeCertificateContext(cert_ctx);
 
 		if (!pCertCloseStore(hSystemStore, 0)) {
-			wdi_err("unable to close the system store: %s", windows_error_str(0));
+			wdi_warn("unable to close the system store: %s", windows_error_str(0));
 		}
-		return WDI_SUCCESS;
+		return r;
 	}
 
-	wdi_dbg("this call must be run with elevated privileges on Vista and later");
+	wdi_err("this call must be run with elevated privileges on Vista and later");
 	return WDI_ERROR_NEEDS_ADMIN;
 }
