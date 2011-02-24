@@ -31,6 +31,14 @@ if test "x$LIBUSB0_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([LIBUSB0_DIR], ["${LIBUSB0_DIR}"], [embed libusb0 driver files from the following location])
 fi
 
+AC_ARG_WITH([libusbk],
+ 	[AS_HELP_STRING([--with-libusbk], [embed libusbk driver files from the following location])],
+ 	[LIBUSBK_DIR=$withval],
+ 	[LIBUSBK_DIR=""])
+if test "x$LIBUSBK_DIR" != "x"; then
+	AC_DEFINE_UNQUOTED([LIBUSBK_DIR], ["${LIBUSBK_DIR}"], [embed libusbk driver files from the following location])
+fi
+
 AC_ARG_WITH([userdir],
  	[AS_HELP_STRING([--with-userdir], [embed user defined driver files from the following location])],
  	[USER_DIR=$withval],
@@ -260,6 +268,20 @@ then
 		if test "x$enable_ia64" != "xno"; then
 		AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
 			[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
+		fi
+	fi
+
+	if test "x$LIBUSBK_DIR" != "x"; then
+		# check that the required libusbk driver files are available
+		AC_CHECK_FILES([$LIBUSBK_DIR/driver/i386/libusbK.sys $LIBUSBK_DIR/driver/i386/libusbK.dll $LIBUSBK_DIR/driver/i386/libusb0.dll],,
+			[AC_MSG_ERROR([the libusbk x86 driver files could not be detected (--with-libusbk)])])
+		if test "x$enable_64bit" != "xno"; then
+		AC_CHECK_FILES([$LIBUSBK_DIR/driver/x64/libusbK.sys $LIBUSBK_DIR/driver/x64/libusbK.dll $LIBUSBK_DIR/driver/x64/libusb0.dll],,
+			[AC_MSG_ERROR([the libusbk amd64 driver files could not be detected (--with-libusbk)])])
+		fi
+		if test "x$enable_ia64" != "xno"; then
+		AC_CHECK_FILES([$LIBUSBK_DIR/driver/ia64/libusbK.sys $LIBUSBK_DIR/driver/ia64/libusbK.dll $LIBUSBK_DIR/driver/ia64/libusb0.dll],,
+			[AC_MSG_ERROR([the libusbk ia64 driver files could not be detected (--with-libusbk)])])
 		fi
 	fi
 

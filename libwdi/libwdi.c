@@ -116,7 +116,9 @@ bool dlls_available = false;
 bool installer_completed = false;
 DWORD timeout = DEFAULT_TIMEOUT;
 HANDLE pipe_handle = INVALID_HANDLE_VALUE;
-static VS_FIXEDFILEINFO driver_version[2] = { {0}, {0} };
+static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
+const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys"};
+const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb-win32.inf.in", "libusbk.inf.in"};
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 enum windows_version windows_version = WINDOWS_UNDEFINED;
@@ -490,9 +492,6 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	VS_FIXEDFILEINFO *file_info;
 	HMODULE h;
 
-
-	const char* driver_name[2] = {"winusbcoinstaller2.dll", "libusb0.sys"};
-
 	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
@@ -600,8 +599,14 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #else
 		return false;
 #endif
-	case WDI_LIBUSB:
+	case WDI_LIBUSB0:
 #if defined(LIBUSB0_DIR)
+		return true;
+#else
+		return false;
+#endif
+	case WDI_LIBUSBK:
+#if defined(LIBUSBK_DIR)
 		return true;
 #else
 		return false;
@@ -1020,7 +1025,7 @@ static int extract_binaries(char* path)
 }
 
 // tokenizes a resource stored in resource.h
-static long tokenize_internal(char* resource_name, char** dst, const token_entity_t* token_entities,
+static long tokenize_internal(const char* resource_name, char** dst, const token_entity_t* token_entities,
 					   const char* tok_prefix, const char* tok_suffix, int recursive)
 {
 	int i;
@@ -1115,7 +1120,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN extract_binaries(path);
 	}
 
-	if ( (driver_type != WDI_LIBUSB) && (driver_type != WDI_WINUSB) )  {
+	if ( (driver_type != WDI_LIBUSB0) && (driver_type != WDI_LIBUSBK) && (driver_type != WDI_WINUSB) )  {
 		wdi_err("unknown type");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
@@ -1197,7 +1202,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		(int)driver_version[driver_type].dwFileVersionLS>>16, (int)driver_version[driver_type].dwFileVersionLS&0xFFFF);
 
 	// Tokenize the file
-	if ((inf_file_size = tokenize_internal((driver_type == WDI_WINUSB)?"winusb.inf.in":"libusb-win32.inf.in",
+	if ((inf_file_size = tokenize_internal(inf_template[driver_type],
 		&dst, inf_entities, "#", "#" ,0)) > 0) {
 		fd = fcreate(filename, "w");
 		if (fd == NULL) {

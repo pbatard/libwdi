@@ -52,7 +52,8 @@ extern "C" {
  */
 enum wdi_driver_type {
 	WDI_WINUSB,
-	WDI_LIBUSB,
+	WDI_LIBUSB0,
+	WDI_LIBUSBK,
 	WDI_USER,
 	WDI_NB_DRIVERS	// Total number of drivers in the enum
 };

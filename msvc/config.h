@@ -15,6 +15,11 @@
 #define LIBUSB0_DIR "D:/libusb-win32"
 #endif
 
+/* embed libusbk driver files from the following location */
+#ifndef LIBUSBK_DIR
+#define LIBUSBK_DIR "D:/lusbw"
+#endif
+
 /* embed user defined driver files from the following location */
 #ifndef USER_DIR
 // #define USER_DIR "C:/signed-driver"

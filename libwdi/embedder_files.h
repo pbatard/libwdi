@@ -20,7 +20,8 @@
 #pragma once
 
 /*
- * This include defines the driver files that should be embedded in the library
+ * This include defines the driver files that should be embedded in the library.
+ * This file is meant to be used by libwdi developers only.
  * If you want to add extra files from a specific directory (eg signed inf and cat)
  * you should either define the macro USER_DIR in msvc/config.h (MS compilers) or
  * use the --with-userdir option when running configure.
@@ -42,6 +43,14 @@ struct emb embeddable_fixed[] = {
 	{ DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
 	{ DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86" },
 #endif
+#if defined(LIBUSBK_DIR)
+#if !defined(DDK_DIR)
+	{ LIBUSBK_DIR "\\driver\\i386\\WdfCoInstaller" WDF_VER ".dll", "x86" },
+#endif
+	{ LIBUSBK_DIR "\\driver\\i386\\libusbK.sys", "x86" },
+	{ LIBUSBK_DIR "\\driver\\i386\\libusbK.dll", "x86" },
+	{ LIBUSBK_DIR "\\driver\\i386\\libusb0.dll", "x86" },
+#endif
 	{ INSTALLER_PATH_32 "\\installer_x86.exe", "." },
 #endif
 
@@ -54,6 +63,16 @@ struct emb embeddable_fixed[] = {
 #if defined(LIBUSB0_DIR)
 	{ LIBUSB0_DIR "\\bin\\amd64\\libusb0.dll", "amd64" },
 	{ LIBUSB0_DIR "\\bin\\amd64\\libusb0.sys", "amd64" },
+#endif
+#if defined(LIBUSBK_DIR)
+#if !defined(DDK_DIR)
+	{ LIBUSBK_DIR "\\driver\\x64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
+#endif
+	{ LIBUSBK_DIR "\\driver\\x64\\libusbK.sys", "amd64" },
+	{ LIBUSBK_DIR "\\driver\\x64\\libusbK.dll", "amd64" },
+	{ LIBUSBK_DIR "\\driver\\x64\\libusbK_x86.dll", "amd64" },
+	{ LIBUSBK_DIR "\\driver\\x64\\libusb0.dll", "amd64" },
+	{ LIBUSBK_DIR "\\driver\\x64\\libusb0_x86.dll", "amd64" },
 #endif
 	{ INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
@@ -84,4 +103,5 @@ struct emb embeddable_fixed[] = {
 // inf templates for the tokenizer ("" directory means no extraction)
 	{ "winusb.inf.in", "" },
 	{ "libusb-win32.inf.in", "" },
+	{ "libusbk.inf.in", "" },
 };

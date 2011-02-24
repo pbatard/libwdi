@@ -62,7 +62,7 @@ HMENU hMenuLogLevel;
 WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "Custom (extract only)" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbk", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = {false, false, true};
 struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL};
 struct wdi_options_install_cert ic_options= {NULL, false};

@@ -571,7 +571,7 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 
 		if (device)
 		{
-			wdi_is_driver_supported(WDI_LIBUSB, &device->driver_info);
+			wdi_is_driver_supported(WDI_LIBUSB0, &device->driver_info);
 
 			//g_hwndTrackingTT = CreateTrackingToolTip(dialog,TEXT(" "));
 			hToolTip = create_tooltip(dialog, g_hInst, 300, tooltips_dlg2);
@@ -1062,8 +1062,8 @@ static int save_file(HWND dialog, device_context_t *device)
 	if (!strlen(device->inf_path))
 		strcpy(device->inf_path, "your_file.inf");
 
-	memcpy(ofd_filter, 
-		"inf files (*.inf)\0*.inf\0\0", 
+	memcpy(ofd_filter,
+		"inf files (*.inf)\0*.inf\0\0",
 		sizeof("inf files (*.inf)\0*.inf\0\0"));
 
 	open_file.lStructSize = sizeof(OPENFILENAME);
@@ -1107,7 +1107,7 @@ int infwizard_prepare_driver(HWND dialog, device_context_t *device)
 	int ret;
 
 	memset(&options,0,sizeof(options));
-	options.driver_type = WDI_LIBUSB;
+	options.driver_type = WDI_LIBUSB0;
 	options.vendor_name = device->manufacturer;
 
 	if (device->wdi->desc)
