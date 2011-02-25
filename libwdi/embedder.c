@@ -295,6 +295,7 @@ void add_user_files(void) {
 	}
 	// Copy the fixed part of our table into our new array
 	for (i=0; i<nb_embeddables_fixed; i++) {
+		embeddable[i].reuse_last = 0;
 		embeddable[i].file_name = embeddable_fixed[i].file_name;
 		embeddable[i].extraction_subdir = embeddable_fixed[i].extraction_subdir;
 	}
@@ -323,6 +324,7 @@ main (int argc, char *argv[])
 	struct tm* ltm;
 	char internal_name[] = "file_###";
 	unsigned char* buffer = NULL;
+	unsigned char last;
 	char fullpath[MAX_PATH];
 #if defined(_WIN32)
 	wchar_t wfullpath[MAX_PATH];
@@ -381,6 +383,9 @@ main (int argc, char *argv[])
 	fprintf(header_fd, "#pragma once\n");
 
 	for (i=0; i<nb_embeddables; i++) {
+		if (embeddable[i].reuse_last) {
+			continue;
+		}
 		if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
 			fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
 			goto out2;
@@ -440,9 +445,12 @@ main (int argc, char *argv[])
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
 	for (i=0; i<nb_embeddables; i++) {
-		sprintf(internal_name, "file_%03X", (unsigned char)i);
+		if (!embeddable[i].reuse_last) {
+			last = (unsigned char)i;
+		}
+		sprintf(internal_name, "file_%03X", last);
 		fprintf(header_fd, "\t{ \"");
-		// Backslashes need to be escapeed
+		// Backslashes need to be escaped
 		for (j=0; j<(int)strlen(embeddable[i].extraction_subdir); j++) {
 			if ( (embeddable[i].extraction_subdir[j] == NATIVE_SEPARATOR)
 			  || (embeddable[i].extraction_subdir[j] == NON_NATIVE_SEPARATOR) ) {
@@ -454,7 +462,7 @@ main (int argc, char *argv[])
 		}
 		basename_split(embeddable[i].file_name, &junk, &file_name);
 		fprintf(header_fd, "\", \"%s\", %d, INT64_C(%"PRId64"), %s },\n",
-			file_name, (int)file_size[i], file_time[i], internal_name);
+			file_name, (int)file_size[last], file_time[last], internal_name);
 		basename_free(embeddable[i].file_name);
 	}
 	fprintf(header_fd, "};\n");
