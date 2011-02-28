@@ -85,49 +85,50 @@ struct emb embeddable_fixed[] = {
 
 #	if	defined(OPT_M32)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\driver\\i386\\WdfCoInstaller" WDF_VER ".dll", "x86" },
+			{ 0, LIBUSBK_DIR "\\sys\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
 #		endif	// DDK_DIR
-		{ 0, LIBUSBK_DIR "\\driver\\i386\\libusbK.sys", "x86" },
-		{ 0, LIBUSBK_DIR "\\driver\\i386\\libusbK.dll", "x86" },
+		{ 0, LIBUSBK_DIR "\\sys\\x86\\libusbK.sys", "x86" },
+		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusbK.dll", "x86" },
 #		if defined(OPT_M64)
 			{ 1, "libusbK_x86.dll", "amd64" },	// reuse
 #		endif	// OPT_M64
 #		if !defined(LIBUSB0_DIR)
-			{ 0, LIBUSBK_DIR "\\driver\\i386\\libusb0.dll", "x86" },
+			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb0.dll", "x86" },
 #			if defined(OPT_M64)
 				{ 1, "libusb0_x86.dll", "amd64" },	// reuse
 #			endif	// OPT_M64
 #		endif	// LIBUSB0_DIR
-//		{ 0, LIBUSBK_DIR "\\driver\\i386\\libusb-1.0.dll", "x86" },
+		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
 #		if defined(OPT_M64)
-//			{ 1, "libusb-1.0_x86.dll", "amd64" },	// reuse
+			{ 1, "libusb-1.0_x86.dll", "amd64" },	// reuse
 #		endif	// OPT_M64
 #	endif	// OPT_M32
 
 #	if defined(OPT_M64)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\driver\\x64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
+			{ 0, LIBUSBK_DIR "\\sys\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
 #		endif	// DDK_DIR
-		{ 0, LIBUSBK_DIR "\\driver\\x64\\libusbK.sys", "amd64" },
-		{ 0, LIBUSBK_DIR "\\driver\\x64\\libusbK.dll", "amd64" },
+		{ 0, LIBUSBK_DIR "\\sys\\amd64\\libusbK.sys", "amd64" },
+		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusbK.dll", "amd64" },
+		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb-1.0.dll", "amd64" },
 #		if !defined(LIBUSB0_DIR)
-			{ 0, LIBUSBK_DIR "\\driver\\x64\\libusb0.dll", "amd64" },
+			{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb0.dll", "amd64" },
 #		endif	// LIBUSB0_DIR
 #		if !defined(OPT_M32)
-			{ 0, LIBUSBK_DIR "\\driver\\x64\\libusbK_x86.dll", "amd64" },
+			{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusbK_x86.dll", "amd64" },
 #			if !defined(LIBUSB0_DIR)
-				{ 0, LIBUSBK_DIR "\\driver\\x64\\libusb0_x86.dll", "amd64" },
+				{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb0_x86.dll", "amd64" },
 #			endif	// LIBUSB0_DIR
 #		endif	// OPT_M32
 #	endif	// OPT_M64
 
 #	if defined(OPT_IA64)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\driver\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
+			{ 0, LIBUSBK_DIR "\\sys\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
 #		endif	// DDK_DIR
-		{ 0, LIBUSBK_DIR "\\driver\\ia64\\libusbK.sys", "ia64" },
-		{ 0, LIBUSBK_DIR "\\driver\\ia64\\libusbK.dll", "ia64" },
-		{ 0, LIBUSBK_DIR "\\driver\\ia64\\libusb0.dll", "ia64" },
+		{ 0, LIBUSBK_DIR "\\sys\\ia64\\libusbK.sys", "ia64" },
+		{ 0, LIBUSBK_DIR "\\dll\\ia64\\libusbK.dll", "ia64" },
+		{ 0, LIBUSBK_DIR "\\dll\\ia64\\libusb0.dll", "ia64" },
 #	endif	// OPT_IA64
 
 #endif	// LIBUSBK_DIR
