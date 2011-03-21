@@ -157,12 +157,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="profile.c" />
     <ClCompile Include="zadig.c" />
     <ClCompile Include="zadig_stdlg.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="libconfig\libconfig.h" />
     <ClInclude Include="..\libwdi\msapi_utf8.h" />
+    <ClInclude Include="profile.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="zadig.h" />
   </ItemGroup>
@@ -178,10 +179,6 @@
   <ItemGroup>
     <ProjectReference Include="..\libwdi\libwdi_static_2010.vcxproj">
       <Project>{9aa0e745-1a0a-4700-8ecb-6a6de9dbf8b9}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="libconfig\libconfig.vcxproj">
-      <Project>{2945b0ac-ab99-483f-9fdc-cf76613e3034}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

@@ -118,18 +118,6 @@ if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\getopt.lib . >NUL 2>&1
 
 if EXIST Makefile.hide ren Makefile.hide Makefile
-cd ..\libconfig
-
-del Makefile.hide >NUL 2>&1
-if EXIST Makefile ren Makefile Makefile.hide
-copy libconfig_sources sources >NUL 2>&1
-@echo on
-build -cwgZ
-@echo off
-if errorlevel 1 goto builderror
-copy obj%BUILD_ALT_DIR%\%cpudir%\libconfig.lib . >NUL 2>&1
-
-if EXIST Makefile.hide ren Makefile.hide Makefile
 cd ..
 
 del Makefile.hide >NUL 2>&1

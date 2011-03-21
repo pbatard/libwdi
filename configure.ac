@@ -349,5 +349,5 @@ AC_SUBST([NO_CYGWIN])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
 
-AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/libconfig/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT

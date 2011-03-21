@@ -38,7 +38,7 @@
 #include "msapi_utf8.h"
 #include "resource.h"
 #include "zadig.h"
-#include "libconfig/libconfig.h"
+#include "profile.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
 #ifndef ARRAYSIZE
@@ -78,9 +78,6 @@ bool create_device = false;
 bool extract_only = false;
 bool from_install = false;
 bool installation_running = false;
-// Libconfig
-config_t cfg;
-config_setting_t *setting;
 
 /*
  * On screen logging and status
@@ -606,11 +603,13 @@ void init_dialog(HWND hDlg)
 }
 
 /*
- * Use libconfig to parse the default ini file
+ * Parse the default ini file
  */
 bool parse_ini(void) {
-	const char* tmp = NULL;
+	profile_t profile;
+	char* tmp = NULL;
 	int i;
+	long r;
 
 	// Check if the ini file exists
 	if (GetFileAttributesU(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
@@ -619,35 +618,36 @@ bool parse_ini(void) {
 	}
 
 	// Parse the file
-	if (!config_read_file(&cfg, INI_NAME)) {
-		dprintf("%s:%d - %s", config_error_file(&cfg),
-			config_error_line(&cfg), config_error_text(&cfg));
+	r = profile_open(INI_NAME, &profile);
+	if (r) {
+		dprintf("error while processing '%s': %s", INI_NAME, profile_errtostr(r));
 		return false;
 	}
 
 	dprintf("reading ini file '%s'", INI_NAME);
 
 	// Set the various boolean options
-	config_lookup_bool(&cfg, "advanced_mode", &advanced_mode);
-	config_lookup_bool(&cfg, "list_all", &cl_options.list_all);
-	config_lookup_bool(&cfg, "include_hubs", &cl_options.list_hubs);
-	config_lookup_bool(&cfg, "extract_only", &extract_only);
-	config_lookup_bool(&cfg, "trim_whitespaces", &cl_options.trim_whitespaces);
-	config_lookup_bool(&cfg, "disable_cert_install_warning", &ic_options.disable_warning);
+	profile_get_boolean(profile, "general", "advanced_mode", NULL, false, &advanced_mode);
+	profile_get_boolean(profile, "device", "list_all", NULL, false, &cl_options.list_all);
+	profile_get_boolean(profile, "device", "include_hubs", NULL, false, &cl_options.list_hubs);
+	profile_get_boolean(profile, "driver", "extract_only", NULL, false, &extract_only);
+	profile_get_boolean(profile, "device", "trim_whitespaces", NULL, false, &cl_options.trim_whitespaces);
+	profile_get_boolean(profile, "security", "disable_cert_install_warning", NULL, false, &ic_options.disable_warning);
 
 	// Set the log level
-	config_lookup_int(&cfg, "log_level", &log_level);
-	if ((log_level < 0) && (log_level > 3)) {
+	profile_get_integer(profile, "general", "log_level", NULL, WDI_LOG_LEVEL_INFO, &log_level);
+	if ((log_level < WDI_LOG_LEVEL_DEBUG) && (log_level > WDI_LOG_LEVEL_NONE)) {
 		log_level = WDI_LOG_LEVEL_INFO;
 	}
 
 	// Set the default extraction dir
-	if (config_lookup_string(&cfg, "default_dir", &tmp) == CONFIG_TRUE) {
+	if (profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) {
 		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
 	}
 
 	// Set the certificate name to install, if any
-	if (config_lookup_string(&cfg, "install_cert", &tmp) == CONFIG_TRUE) {
+	if ( (profile_get_string(profile, "security", "install_cert", NULL, NULL, &tmp) == 0)
+	  && (tmp != NULL) ) {
 		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
 		if (wdi_is_file_embedded(NULL, (char*)tmp)) {
 			ic_options.hWnd = hMain;
@@ -658,8 +658,8 @@ bool parse_ini(void) {
 	}
 
 	// Set the default driver
-	config_lookup_int(&cfg, "default_driver", &default_driver_type);
-	if ((default_driver_type < 0) || (default_driver_type >= WDI_NB_DRIVERS)) {
+	profile_get_integer(profile, "driver", "default_driver", NULL, WDI_WINUSB, &default_driver_type);
+	if ((default_driver_type < WDI_WINUSB) || (default_driver_type >= WDI_NB_DRIVERS)) {
 		dprintf("invalid value '%d' for ini option 'default_driver'", default_driver_type);
 		default_driver_type = WDI_WINUSB;
 	}
@@ -681,56 +681,66 @@ bool parse_ini(void) {
 		dprintf("default driver set to '%s'", driver_display_name[default_driver_type]);
 	}
 
+	profile_close(profile);
+
 	return true;
 }
 
 /*
- * Use libconfig to parse a preset device configuration file
+ * Parse a preset device configuration file
  */
 bool parse_preset(char* filename)
 {
-	config_setting_t *dev;
-	int tmp;
+	profile_t profile;
+	unsigned int tmp = 0x10000;
+	long r;
 	char str_tmp[5];
-	const char* desc = NULL;
+	char* desc = NULL;
 
 	if (filename == NULL) {
 		return false;
 	}
 
-	if (!config_read_file(&cfg, filename)) {
-		dprintf("%s:%d - %s", config_error_file(&cfg),
-			config_error_line(&cfg), config_error_text(&cfg));
+	r = profile_open(filename, &profile);
+	if (r) {
+		dprintf("error while processing '%s': %s", filename, profile_errtostr(r));
 		return false;
 	}
 
-	dev = config_lookup(&cfg, "device");
-	if (dev != NULL) {
-		if (!create_device) {
-			toggle_create(false);
-		}
-
-		if (config_setting_lookup_string(dev, "Description", &desc)) {
-			SetDlgItemTextU(hMain, IDC_DEVICEEDIT, (char*)desc);
-		}
-
-		if (config_setting_lookup_int(dev, "VID", &tmp)) {
-			safe_sprintf(str_tmp, 5, "%04X", tmp);
-			SetDlgItemTextA(hMain, IDC_VID, str_tmp);
-		}
-
-		if (config_setting_lookup_int(dev, "PID", &tmp)) {
-			safe_sprintf(str_tmp, 5, "%04X", tmp);
-			SetDlgItemTextA(hMain, IDC_PID, str_tmp);
-		}
-
-		if (config_setting_lookup_int(dev, "MI", &tmp)) {
-			safe_sprintf(str_tmp, 5, "%02X", tmp);
-			SetDlgItemTextA(hMain, IDC_MI, str_tmp);
-		}
-		return true;
+	profile_get_uint(profile, "device", "VID", NULL, 0x10000, &tmp);
+	if (tmp > 0xFFFF) {
+		dprintf("no VID found in preset file - aborting readout");
+		profile_close(profile);
+		return false;
 	}
-	return false;
+
+	if (!create_device) {
+		toggle_create(false);
+	}
+
+	safe_sprintf(str_tmp, 5, "%04X", tmp);
+	SetDlgItemTextA(hMain, IDC_VID, str_tmp);
+
+	profile_get_string(profile, "device", "Description", NULL, NULL, &desc);
+	if (desc != NULL) {
+		SetDlgItemTextU(hMain, IDC_DEVICEEDIT, (char*)desc);
+	}
+
+	profile_get_uint(profile, "device", "PID", NULL, 0x10000, &tmp);
+	if (tmp <= 0xFFFF) {
+		safe_sprintf(str_tmp, 5, "%04X", tmp);
+		SetDlgItemTextA(hMain, IDC_PID, str_tmp);
+	}
+
+	profile_get_uint(profile, "device", "MI", NULL, 0x100, &tmp);
+	if (tmp <= 0xFF) {
+		safe_sprintf(str_tmp, 5, "%02X", tmp);
+		SetDlgItemTextA(hMain, IDC_MI, str_tmp);
+	}
+
+	profile_close(profile);
+
+	return true;
 }
 
 /*
@@ -1123,9 +1133,6 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	// Initialize COM for folder selection
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 
-	// Initialize libconfig
-	config_init(&cfg);
-
 	// Retrieve the current application directory
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 
@@ -1133,10 +1140,6 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	if (DialogBoxA(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
 		MessageBoxA(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
 	}
-
-	// Exit libconfig
-	// TODO: This call can prevent cygwin from exiting cleanly, probably due to a libconfig bug.
-//	config_destroy(&cfg);
 
 	CloseHandle(mutex);
 
