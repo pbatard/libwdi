@@ -1,2 +1,2 @@
-*.sh     -crlf
-*.inf.in -crlf
+*.sh     eol=lf
+*.inf.in eol=crlf
