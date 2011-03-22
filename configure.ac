@@ -90,7 +90,7 @@ case $host in
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
-AM_CFLAGS="${AM_CFLAGS} -std=c99 -DWINVER=0x500"
+AM_CFLAGS="${AM_CFLAGS} -DWINVER=0x500"
 AM_LDFLAGS="${AM_LDFLAGS} -no-undefined -avoid-version"
 AC_CHECK_TOOL([RC], [windres], [no])
 AM_CONDITIONAL([CREATE_IMPORT_LIB], [test "x$create_import_lib" = "xyes"])
