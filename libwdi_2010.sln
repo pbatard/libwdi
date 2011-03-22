@@ -4,27 +4,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{CE
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external utilities", "external utilities", "{B1F3B94A-4EC4-406E-9CBF-056E1EA03DE0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwdi (static)", "libwdi\libwdi_static_2010.vcxproj", "{9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwdi (static)", "libwdi\.msvc\libwdi_static_2010.vcxproj", "{9AA0E745-1A0A-4700-8ECB-6A6DE9DBF8B9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedder", "libwdi\embedder_2010.vcxproj", "{792D44D5-28A7-4EB3-B84B-8021FE3189F9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedder", "libwdi\.msvc\embedder_2010.vcxproj", "{792D44D5-28A7-4EB3-B84B-8021FE3189F9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wdi-simple", "examples\wdi-simple_2010.vcxproj", "{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wdi-simple", "examples\.msvc\wdi-simple_2010.vcxproj", "{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadic", "examples\zadic_2010.vcxproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadic", "examples\.msvc\zadic_2010.vcxproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadig", "examples\zadig_2010.vcxproj", "{F7F7842F-2912-454E-ADF5-0B22987946E2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadig", "examples\.msvc\zadig_2010.vcxproj", "{F7F7842F-2912-454E-ADF5-0B22987946E2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inf-wizard", "examples\inf_wizard_2010.vcxproj", "{FCAEB263-64F1-4CB3-8173-A65DC62850B3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inf-wizard", "examples\.msvc\inf_wizard_2010.vcxproj", "{FCAEB263-64F1-4CB3-8173-A65DC62850B3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwdi (dll)", "libwdi\libwdi_dll_2010.vcxproj", "{79275348-41A4-4D07-8990-4068C9594A2C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwdi (dll)", "libwdi\.msvc\libwdi_dll_2010.vcxproj", "{79275348-41A4-4D07-8990-4068C9594A2C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x86", "libwdi\installer_x86_2010.vcxproj", "{9B1C561E-F95B-4849-A7AA-A4350E227C20}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x86", "libwdi\.msvc\installer_x86_2010.vcxproj", "{9B1C561E-F95B-4849-A7AA-A4350E227C20}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x64", "libwdi\installer_x64_2010.vcxproj", "{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x64", "libwdi\.msvc\installer_x64_2010.vcxproj", "{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "getopt", "examples\getopt\getopt.vcxproj", "{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "getopt", "examples\getopt\.msvc\getopt.vcxproj", "{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detect_64build", "libwdi\detect_64build_2010.vcxproj", "{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detect_64build", "libwdi\.msvc\detect_64build_2010.vcxproj", "{5FAEF8F7-C809-4A68-862F-F8BC6E775B61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

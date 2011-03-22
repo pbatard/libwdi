@@ -50,14 +50,14 @@ set _AMD64bit=
 set _BUILDARCH=x86
 set PATH=%BASEDIR%\bin\x86;%BASEDIR%\bin\x86\x86
 
-copy embedder_sources sources >NUL 2>&1
+copy .msvc\embedder_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\i386\embedder.exe . >NUL 2>&1
 
-copy installer_x86_sources sources >NUL 2>&1
+copy .msvc\installer_x86_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -71,7 +71,7 @@ set _AMD64bit=true
 set _BUILDARCH=AMD64
 set PATH=%BASEDIR%\bin\x86\amd64;%BASEDIR%\bin\x86
 
-copy installer_x64_sources sources >NUL 2>&1
+copy .msvc\installer_x64_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -94,7 +94,7 @@ embedder.exe embedded.h
 
 rem DLL or static lib selection (must use concatenation)
 echo TARGETTYPE=%TARGET% > target
-copy target+libwdi_sources sources >NUL 2>&1
+copy target+.msvc\libwdi_sources sources >NUL 2>&1
 del target
 @echo on
 build -cwgZ
@@ -110,7 +110,7 @@ cd examples\getopt
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
-copy getopt_sources sources >NUL 2>&1
+copy .msvc\getopt_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -122,7 +122,7 @@ cd ..
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
-copy zadic_sources sources >NUL 2>&1
+copy .msvc\zadic_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -134,7 +134,7 @@ echo #include ^<windows.h^> > afxres.h
 echo #ifndef IDC_STATIC >> afxres.h
 echo #define IDC_STATIC -1 >> afxres.h
 echo #endif >> afxres.h
-copy zadig_sources sources >NUL 2>&1
+copy .msvc\zadig_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
@@ -142,14 +142,14 @@ if errorlevel 1 goto builderror
 del afxres.h
 copy obj%BUILD_ALT_DIR%\%cpudir%\zadig.exe . >NUL 2>&1
 
-copy inf_wizard_sources sources >NUL 2>&1
+copy .msvc\inf_wizard_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\inf-wizard.exe . >NUL 2>&1
 
-copy wdi-simple_sources sources >NUL 2>&1
+copy .msvc\wdi-simple_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
 @echo off
