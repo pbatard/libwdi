@@ -347,6 +347,7 @@ main (int argc, char *argv[])
 	if (NATIVE_STAT(argv[1], &stbuf) == 0) {
 		header_time = stbuf.st_mtime;	// make sure to use modification time!
 		for (i=0; i<nb_embeddables; i++) {
+			if (embeddable[i].reuse_last) break;
 			if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
 				fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
 				goto out1;
