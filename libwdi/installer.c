@@ -573,6 +573,103 @@ static __inline int process_error(DWORD r, char* path) {
 	}
 }
 
+// Disable or restore the system restore creation point settings for driver install
+bool disable_system_restore(bool enabled)
+{
+	OSVERSIONINFO os_version;
+	LONG r;
+	DWORD disp, regtype, val, val_size=sizeof(DWORD);
+	HRESULT hr;
+	IGroupPolicyObject* pLGPO;
+	static DWORD original_val = -1;		// -1 = key doesn't exist
+	HKEY machine_key, dsrkey;
+	// MSVC is finicky about these ones => redefine them
+	const IID my_IID_IGroupPolicyObject = 
+		{ 0xea502723, 0xa23d, 0x11d1, { 0xa7, 0xd3, 0x0, 0x0, 0xf8, 0x75, 0x71, 0xe3 } };
+	const IID my_CLSID_GroupPolicyObject = 
+		{ 0xea502722, 0xa23d, 0x11d1, { 0xa7, 0xd3, 0x0, 0x0, 0xf8, 0x75, 0x71, 0xe3 } };
+	GUID ext_guid = REGISTRY_EXTENSION_GUID;
+	// Can be anything really
+	GUID snap_guid = { 0x3D271CFC, 0x2BC6, 0x4AC2, {0xB6, 0x33, 0x3B, 0xDF, 0xF5, 0xBD, 0xAB, 0x2A} };
+
+	// This call only makes sense on Vista or later
+	memset(&os_version, 0, sizeof(OSVERSIONINFO));
+	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
+		if (os_version.dwMajorVersion < 6) {
+			return true;
+		}
+	}
+
+	// We need an IGroupPolicyObject instance to set a Local Group Policy
+	hr = CoCreateInstance(&my_CLSID_GroupPolicyObject, NULL, CLSCTX_INPROC_SERVER, &my_IID_IGroupPolicyObject, (LPVOID*)&pLGPO);
+	if (FAILED(hr)) {
+		plog("CoCreateInstance failed; hr = %x", hr);
+		goto error;
+	}
+
+	hr = pLGPO->lpVtbl->OpenLocalMachineGPO(pLGPO, GPO_OPEN_LOAD_REGISTRY);
+	if (FAILED(hr)) {
+		plog("OpenLocalMachineGPO failed - error %x", hr);
+		goto error;
+	}
+
+	hr = pLGPO->lpVtbl->GetRegistryKey(pLGPO, GPO_SECTION_MACHINE, &machine_key);
+	if (FAILED(hr)) {
+		plog("GetRegistryKey failed - error %x", hr);
+		goto error;
+	}
+
+	// The DisableSystemRestore is set in Software\Policies\Microsoft\Windows\DeviceInstall\Settings
+	r = RegCreateKeyExA(machine_key, "Software\\Policies\\Microsoft\\Windows\\DeviceInstall\\Settings",
+		0, NULL, 0, KEY_SET_VALUE | KEY_QUERY_VALUE, NULL, &dsrkey, &disp);
+	if (r != ERROR_SUCCESS) {
+		plog("RegCreateKeyEx failed - error %x", hr);
+		goto error;
+	}
+
+	if ((disp == REG_OPENED_EXISTING_KEY) && (enabled) && (original_val == -1)) {
+		// backup existing value for restore
+		regtype = REG_DWORD;
+		r = RegQueryValueExA(dsrkey, "DisableSystemRestore", NULL, &regtype, (LPBYTE)&original_val, &val_size);
+		if (r == ERROR_FILE_NOT_FOUND) {
+			// The Key exists but not its value, which is OK
+			original_val = -1;
+		} else if (r != ERROR_SUCCESS) {
+			plog("failed to read original DisableSystemRestore value - error %x", r);
+		}
+	}
+
+	if ((enabled) || (original_val != -1)) {
+		val = (enabled)?1:original_val;
+		r = RegSetValueExA(dsrkey, "DisableSystemRestore", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+	} else {
+		r = RegDeleteValueA(dsrkey, "DisableSystemRestore");
+	}
+	if (r != ERROR_SUCCESS) {
+		plog("RegSetValueEx / RegDeleteValue failed - error %x", r);
+	}
+	RegCloseKey(dsrkey);
+
+	// Apply policy
+	hr = pLGPO->lpVtbl->Save(pLGPO, TRUE, (enabled)?TRUE:FALSE, &ext_guid, &snap_guid);
+	if (r != S_OK) {
+		plog("unable to apply DisableSystemRestore policy - error %x", hr);
+		goto error;
+	} else {
+		plog("successfully %s the system restore point creation setting", (enabled)?"disabled":"restored");
+	}
+
+	RegCloseKey(machine_key);
+	pLGPO->lpVtbl->Release(pLGPO);
+	return true;
+
+error:
+	if (machine_key != NULL) RegCloseKey(machine_key);
+	if (pLGPO != NULL) pLGPO->lpVtbl->Release(pLGPO);
+	return false;
+}
+
 // TODO: allow commandline options (v2)
 // TODO: remove existing infs for similar devices (v2)
 int __cdecl main(int argc_ansi, char** argv_ansi)
@@ -605,6 +702,9 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 		ret = WDI_ERROR_RESOURCE;
 		goto out;
 	}
+
+	// Initialize COM for Restore Point disabling
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 
 	// libwdi provides the arguments as UTF-16 => read them and convert to UTF-8
 	if (__wgetmainargs != NULL) {
@@ -651,6 +751,9 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 		// "more recent driver was found" error from UpdateForPnP. Weird...
 	}
 
+	// Disable the creation of a restore point
+	disable_system_restore(true);
+
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
 	if (hardware_id != NULL) {
@@ -696,6 +799,8 @@ out:
 	// Report any error status code and wait for target app to read it
 	send_status(IC_INSTALLER_COMPLETED);
 	pstat(ret);
+	// Restore the system restore point creation original settings
+	disable_system_restore(false);
 	// TODO: have libwi send an ACK?
 	Sleep(1000);
 	SetEvent(syslog_terminate_event);

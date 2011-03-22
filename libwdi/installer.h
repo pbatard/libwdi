@@ -19,6 +19,7 @@
 #pragma once
 
 #include <windows.h>
+#include <objbase.h>
 #if !defined(bool)
 #define bool BOOL
 #endif
@@ -170,3 +171,41 @@ typedef struct {
 	LPCSTR  pMfgName;
 } INSTALLERINFO, *PINSTALLERINFO;
 typedef const PINSTALLERINFO PCINSTALLERINFO;
+
+/*
+ * GPEdit Interface (from MinGW-w64)
+ */
+typedef enum _GROUP_POLICY_OBJECT_TYPE {
+  GPOTypeLocal = 0,GPOTypeRemote,GPOTypeDS
+} GROUP_POLICY_OBJECT_TYPE,*PGROUP_POLICY_OBJECT_TYPE;
+
+#define REGISTRY_EXTENSION_GUID { 0x35378EAC,0x683F,0x11D2, {0xA8,0x9A,0x00,0xC0,0x4F,0xBB,0xCF,0xA2} }
+#define GPO_OPEN_LOAD_REGISTRY 0x00000001
+#define GPO_SECTION_MACHINE 2
+
+#undef INTERFACE
+#define INTERFACE IGroupPolicyObject
+  DECLARE_INTERFACE_(IGroupPolicyObject,IUnknown) {
+    STDMETHOD(QueryInterface) (THIS_ REFIID riid,LPVOID *ppvObj) PURE;
+    STDMETHOD_(ULONG,AddRef) (THIS) PURE;
+    STDMETHOD_(ULONG,Release) (THIS) PURE;
+    STDMETHOD(New) (THIS_ LPOLESTR pszDomainName,LPOLESTR pszDisplayName,DWORD dwFlags) PURE;
+    STDMETHOD(OpenDSGPO) (THIS_ LPOLESTR pszPath,DWORD dwFlags) PURE;
+    STDMETHOD(OpenLocalMachineGPO) (THIS_ DWORD dwFlags) PURE;
+    STDMETHOD(OpenRemoteMachineGPO) (THIS_ LPOLESTR pszComputerName,DWORD dwFlags) PURE;
+    STDMETHOD(Save) (THIS_ BOOL bMachine, BOOL bAdd,GUID *pGuidExtension,GUID *pGuid) PURE;
+    STDMETHOD(Delete) (THIS) PURE;
+    STDMETHOD(GetName) (THIS_ LPOLESTR pszName,int cchMaxLength) PURE;
+    STDMETHOD(GetDisplayName) (THIS_ LPOLESTR pszName,int cchMaxLength) PURE;
+    STDMETHOD(SetDisplayName) (THIS_ LPOLESTR pszName) PURE;
+    STDMETHOD(GetPath) (THIS_ LPOLESTR pszPath,int cchMaxPath) PURE;
+    STDMETHOD(GetDSPath) (THIS_ DWORD dwSection,LPOLESTR pszPath,int cchMaxPath) PURE;
+    STDMETHOD(GetFileSysPath) (THIS_ DWORD dwSection,LPOLESTR pszPath,int cchMaxPath) PURE;
+    STDMETHOD(GetRegistryKey) (THIS_ DWORD dwSection,HKEY *hKey) PURE;
+    STDMETHOD(GetOptions) (THIS_ DWORD *dwOptions) PURE;
+    STDMETHOD(SetOptions) (THIS_ DWORD dwOptions,DWORD dwMask) PURE;
+    STDMETHOD(GetType) (THIS_ GROUP_POLICY_OBJECT_TYPE *gpoType) PURE;
+    STDMETHOD(GetMachineName) (THIS_ LPOLESTR pszName,int cchMaxLength) PURE;
+    STDMETHOD(GetPropertySheetPages) (THIS_ HPROPSHEETPAGE **hPages,UINT *uPageCount) PURE;
+  };
+  typedef IGroupPolicyObject *LPGROUPPOLICYOBJECT;
