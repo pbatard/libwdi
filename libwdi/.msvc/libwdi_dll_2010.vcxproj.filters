@@ -29,6 +29,9 @@
     <ClCompile Include="..\vid_data.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\pki.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\msvc\config.h">
@@ -50,6 +53,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\tokenizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mssign32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

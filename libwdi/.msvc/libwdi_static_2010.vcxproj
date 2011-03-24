@@ -159,6 +159,7 @@ embedder embedded.h</Command>
     <ClCompile Include="..\libwdi.c" />
     <ClCompile Include="..\libwdi_dlg.c" />
     <ClCompile Include="..\logging.c" />
+    <ClCompile Include="..\pki.c" />
     <ClCompile Include="..\tokenizer.c" />
     <ClCompile Include="..\vid_data.c" />
   </ItemGroup>
@@ -168,6 +169,7 @@ embedder embedded.h</Command>
     <ClInclude Include="..\libwdi.h" />
     <ClInclude Include="..\logging.h" />
     <ClInclude Include="..\msapi_utf8.h" />
+    <ClInclude Include="..\mssign32.h" />
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\tokenizer.h" />
   </ItemGroup>

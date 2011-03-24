@@ -10,7 +10,7 @@ BUILT_SOURCES = embedded.h
 noinst_PROGRAMS =
 noinst_EXES =
 lib_LTLIBRARIES = libwdi.la
-LIB_SRC = resource.h logging.h tokenizer.h installer.h libwdi.h logging.c tokenizer.c vid_data.c libwdi_dlg.c libwdi.c
+LIB_SRC = resource.h logging.h tokenizer.h installer.h mssign32.h libwdi.h logging.c tokenizer.c vid_data.c pki.c libwdi_dlg.c libwdi.c
 
 if OPT_M32
 noinst_PROGRAMS += installer_x86
