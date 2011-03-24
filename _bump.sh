@@ -54,5 +54,5 @@ cd libwdi
 . vid_data.sh
 cd ..
 
-git commit -a -m "bumped internal version"
+git commit -a -m "[internal] bumped internal version" -e
 git tag "w$TAGVER"
