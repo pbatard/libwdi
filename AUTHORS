@@ -1,11 +1,11 @@
-copyright (c) 2010 Pete Batard <pbatard@gmail.com>
-copyright (c) 2010 Travis Robinson <libusbdotnet@gmail.com>
+copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
+copyright (c) 2010-2011 Travis Robinson <libusbdotnet@gmail.com>
 
 zadic improvements:
   copyright (c) 2010 Joseph Marshall <jmarshall@gcdataconcepts.com>
 
-libconfig authors: 
-  Mark Lindner, Daniel Marjamäki, Andrew Tytula, Glenn Herteg
+profile parser author: 
+  Theodore Ts'o
 
 additional testing, improvement suggestions and other wise advice:
   Xiaofan Chen
