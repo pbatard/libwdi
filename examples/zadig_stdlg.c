@@ -32,6 +32,7 @@
 #include <commdlg.h>
 #include <sddl.h>
 
+#include "libwdi.h"
 #include "resource.h"
 #include "zadig.h"
 #include "../libwdi/msapi_utf8.h"
@@ -71,6 +72,8 @@ char* to_valid_filename(char* name, char* ext)
 	if ((name == NULL) || (ext == NULL)) {
 		return NULL;
 	}
+
+	if (strlen(name) > WDI_MAX_STRLEN) return NULL;
 
 	// Convert to UTF-16
 	wname = utf8_to_wchar(name);

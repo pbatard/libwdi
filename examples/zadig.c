@@ -91,6 +91,9 @@ void w_printf_v(bool update_status, const char *format, va_list args)
 	size = safe_vsnprintf(str, STR_BUFFER_SIZE, format, args);
 	if (size < 0) {
 		str[STR_BUFFER_SIZE-1] = 0;
+		str[STR_BUFFER_SIZE-2] = ']';
+		str[STR_BUFFER_SIZE-3] = str[STR_BUFFER_SIZE-4] = str[STR_BUFFER_SIZE-5] = '.';
+		str[STR_BUFFER_SIZE-6] = '[';
 	}
 	slen = safe_strlen(str);
 	str[slen] = '\r';
@@ -219,7 +222,7 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
-	if (dev == NULL) return WDI_ERROR_NO_DEVICE;
+	if ((dev == NULL) && (!extract_only)) return WDI_ERROR_NO_DEVICE;
 
 	installation_running = true;
 	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
@@ -261,6 +264,11 @@ int install_driver(void)
 	}
 
 	inf_name = to_valid_filename(dev->desc, ".inf");
+	if (inf_name == NULL) {
+		dsprintf("'%s' is %s for a device name", 
+			dev->desc, (strlen(dev->desc)>WDI_MAX_STRLEN)?"too long":"invalid");
+		r = WDI_ERROR_INVALID_PARAM; goto out;
+	}
 	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
