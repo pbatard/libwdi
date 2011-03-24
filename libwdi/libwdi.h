@@ -20,6 +20,11 @@
 #pragma once
 #include <windows.h>
 
+/*
+ * Maximum length for any string used by libwdi structures
+ */
+#define WDI_MAX_STRLEN		200
+
 #if !defined(bool)
 #define bool BOOL
 #endif

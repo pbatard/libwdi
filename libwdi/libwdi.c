@@ -1109,7 +1109,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	safe_strcpy(filename, MAX_PATH_LENGTH, path);
 	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
 	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
-	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH_LENGTH - 2)) {
+	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (256 - 2)) {
 		wdi_err("qualified path for inf file is too long: '%s'", filename);
 		MUTEX_RETURN WDI_ERROR_RESOURCE;
 	}
