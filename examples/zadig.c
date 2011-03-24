@@ -62,9 +62,9 @@ HMENU hMenuLogLevel;
 WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbk", "Custom (extract only)" };
+char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = {false, false, true};
-struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL};
+struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL, NULL};
 struct wdi_options_install_cert ic_options= {NULL, false};
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
@@ -188,7 +188,7 @@ void __cdecl notification_delay_thread(void* param)
 int get_driver_type(struct wdi_device_info* dev)
 {
 	int i;
-	const char* libusb_name[] = { "WinUSB", "libusb0" };
+	const char* libusb_name[] = { "WinUSB", "libusb0", "libusbK" };
 	const char* system_name[] = { "usbhub", "usbccgp", "USBSTOR", "HidUsb"};
 
 	if ((dev == NULL) || (dev->driver == NULL)) {

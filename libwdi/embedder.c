@@ -393,10 +393,10 @@ main (int argc, char *argv[])
 		}
 #if defined(_WIN32)
 		MultiByteToWideChar(CP_UTF8, 0, fullpath, -1, wfullpath, MAX_PATH);
-		wprintf(L"Embedding '%s' ", wfullpath);
+		wprintf(L"  Embedding '%s' ", wfullpath);
 		fd = _wfopen(wfullpath, L"rb");
 #else
-		printf("Embedding '%s' ", fullpath);
+		printf("  Embedding '%s' ", fullpath);
 		fd = fopen(fullpath, "rb");
 #endif
 		if (fd == NULL) {

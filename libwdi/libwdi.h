@@ -188,6 +188,8 @@ struct wdi_options_prepare_driver {
 	int driver_type;
 	/** Vendor name that should be used for the Manufacturer in the inf */
 	char* vendor_name;
+	/** Device GUID (with braces) that should be used, instead of the automatically generated one */
+	char* device_guid;
 };
 
 // wdi_install_driver options:

@@ -1018,7 +1018,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 								  char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
-	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "user driver" };
+	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
 	char filename[MAX_PATH_LENGTH];
 	FILE* fd;
 	GUID guid;
@@ -1028,7 +1028,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	char* cat_name = NULL;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
-	char *dst = NULL;
+	char *strguid, *dst = NULL;
 	wchar_t *wdst = NULL;
 	long inf_file_size;
 
@@ -1137,8 +1137,13 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Populate the Device Interface GUID
-	CoCreateGuid(&guid);
-	static_sprintf(inf_entities[DEVICE_INTERFACE_GUID].replace, "%s", guid_to_string(guid));
+	if ((options != NULL) && (options->device_guid != NULL)) {
+		strguid = options->device_guid;
+	} else {
+		CoCreateGuid(&guid);
+		strguid = guid_to_string(guid);
+	}
+	static_sprintf(inf_entities[DEVICE_INTERFACE_GUID].replace, "%s", strguid);
 
 	// Resolve the Manufacturer (Vendor Name)
 	if ((options != NULL) && (options->vendor_name != NULL)) {
