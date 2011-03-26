@@ -24,6 +24,7 @@
 #include <conio.h>
 #include <stdint.h>
 #include <config.h>
+#include <string.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -138,9 +139,55 @@ typedef PCCERT_CONTEXT (WINAPI *CertCreateSelfSignCertificate_t)(
 );
 
 /*
+ * WinTrust.dll
+ */
+
+typedef struct CRYPTCATSTORE_ {
+	DWORD      cbStruct;
+	DWORD      dwPublicVersion;
+	LPWSTR     pwszP7File;
+	HCRYPTPROV hProv;
+	DWORD      dwEncodingType;
+	DWORD      fdwStoreFlags;
+	HANDLE     hReserved;
+	HANDLE     hAttrs;
+	HCRYPTMSG  hCryptMsg;
+	HANDLE     hSorted;
+} CRYPTCATSTORE;
+
+typedef HANDLE (WINAPI *CryptCATOpen_t)(
+	LPWSTR pwszFileName,
+	DWORD fdwOpenFlags,
+	ULONG_PTR hProv,
+	DWORD dwPublicVersion,
+	DWORD dwEncodingType
+);
+
+typedef BOOL (WINAPI *CryptCATClose_t)(
+	HANDLE hCatalog
+);
+
+typedef CRYPTCATSTORE* (WINAPI *CryptCATStoreFromHandle_t)(
+	HANDLE hCatalog
+);
+
+typedef BOOL (WINAPI *CryptCATPersistStore_t)(
+	HANDLE hCatalog
+);
+
+typedef BOOL (WINAPI *CryptCATAdminCalcHashFromFileHandle_t)(
+	HANDLE hFile,
+	DWORD *pcbHash,
+	BYTE *pbHash,
+	DWORD dwFlags
+);
+
+
+/*
  * Parts of the following functions are based on:
  * http://blogs.msdn.com/b/alejacma/archive/2009/03/16/how-to-create-a-self-signed-certificate-with-cryptoapi-c.aspx
  * http://blogs.msdn.com/b/alejacma/archive/2008/12/11/how-to-sign-exe-files-with-an-authenticode-certificate-part-2.aspx
+ * http://www.jensign.com/hash/index.html
  */
 
 /*
@@ -457,14 +504,14 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	}
 
 	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, 0, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
-		wdi_warn("error getting CSP %s\n", windows_error_str(0));
+		wdi_warn("error getting CSP: %s", windows_error_str(0));
 		goto out;
 	}
 
 	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_DELETEKEYSET)) {
 		retval = TRUE;
 	} else {
-		wdi_warn("failed to delete private key: %s\n", windows_error_str(0));
+		wdi_warn("failed to delete private key: %s", windows_error_str(0));
 	}
 
 out:
@@ -537,7 +584,6 @@ int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	wszFileName = utf8_to_wchar(szFileName);
 	if (wszFileName == NULL) {
 		wdi_warn("unable to convert '%s' to UTF16");
-		r = WDI_ERROR_RESOURCE;
 		goto out;
 	}
 	signerFileInfo.pwszFileName = wszFileName;
@@ -612,3 +658,150 @@ out:
 	return r;
 }
 
+/*
+ * Update the inf name, inf hash as well as VID/PID/MI from a libwdi .cat template
+ * all filenames MUST BE LOWERCASE!!!
+ */
+// TODO: dynamically generated cat from CDF a la MakeCat with up to date hashes
+int update_cat(char* cat_path, char* inf_path, char* usb_hwid, int driver_type)
+{
+	// The following constants define the byte offsets to patch in the cat templates
+	const uint32_t infhash_str_pos[WDI_NB_DRIVERS-1] = {0x253, 0x937, 0x412};
+	const uint32_t infhash_pos[WDI_NB_DRIVERS-1] = {0x350, 0xa34, 0x50f};
+	const uint32_t infname_str_pos[WDI_NB_DRIVERS-1] = {0x3f4, 0xad8, 0x5b3};
+	const uint32_t vidpidmi_str_pos[WDI_NB_DRIVERS-1] = {0xbb3, 0xed5, 0x1b20};
+	PF_DECL(CryptCATOpen);
+	PF_DECL(CryptCATClose);
+	PF_DECL(CryptCATPersistStore);
+//	PF_DECL(CryptCATStoreFromHandle);
+	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
+	HCRYPTPROV hProv = 0;
+	HANDLE hInf = NULL, hCatFile = NULL, hCatCrypt = NULL;
+	LPBYTE pbCatBuffer = NULL, pbHash = NULL;
+	DWORD dwCatSize, cbHash = 0;
+	size_t winfname_len;
+	char* inf_short;
+	int i, r = WDI_ERROR_OTHER;
+	wchar_t *winfname = NULL, *wcat_path = NULL;
+	wchar_t wusb_hwid[] = L"vid_0000&pid_0000&mi_00";
+
+	if ( (cat_path == NULL) || (inf_path == NULL) || (usb_hwid == NULL)
+	  || (driver_type < 0) || (driver_type > WDI_NB_DRIVERS-1) ) {
+		wdi_warn("illegal parameter");
+		r = WDI_ERROR_INVALID_PARAM;
+		goto out;
+	}
+
+	PF_INIT(CryptCATOpen, wintrust);
+	PF_INIT(CryptCATClose, wintrust);
+	PF_INIT(CryptCATPersistStore, wintrust);
+//	PF_INIT(CryptCATStoreFromHandle, wintrust);	 // TODO
+	PF_INIT(CryptCATAdminCalcHashFromFileHandle, wintrust);
+	if ( (pfCryptCATOpen == NULL) || (pfCryptCATClose == NULL) || (pfCryptCATPersistStore == NULL)
+	  || (pfCryptCATAdminCalcHashFromFileHandle == NULL) ) {
+		wdi_warn("unable to access wintrust DLL: %s", windows_error_str(0));
+		r = WDI_ERROR_RESOURCE;
+		goto out;
+	}
+
+
+	// Compute the inf hash
+	hInf = CreateFileU(inf_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hInf == INVALID_HANDLE_VALUE) {
+		wdi_warn("could not open file '%s'", inf_path);
+		r = WDI_ERROR_ACCESS;
+		goto out;
+	}
+	if ( (!pfCryptCATAdminCalcHashFromFileHandle(hInf, &cbHash, NULL, 0))
+	  || ((pbHash = (BYTE *)malloc(cbHash)) == NULL)
+	  || (!pfCryptCATAdminCalcHashFromFileHandle(hInf, &cbHash, pbHash, 0)) ) {
+		wdi_warn("failed to compute hash: %s", windows_error_str(0));
+		r = WDI_ERROR_IO;
+		goto out;
+	}
+
+	// MS APIs: when it's A LOT easier to hack a file directly than go through 'em
+	hCatFile = CreateFileU(cat_path, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	dwCatSize = GetFileSize(hCatFile, NULL);
+	if ( (dwCatSize == INVALID_FILE_SIZE) || ((pbCatBuffer = (BYTE*)malloc(dwCatSize)) == NULL)
+	  || (!ReadFile(hCatFile, pbCatBuffer, dwCatSize, &dwCatSize, NULL)) ) {
+		wdi_warn("failed to read cat file '%s': %s", cat_path, windows_error_str(0));
+		r = WDI_ERROR_ACCESS;
+		goto out;
+	}
+
+	// Write the Hash, as both an UTF-16 string and as a byte hash
+	for (i=0; i<20; i++) {
+		_snwprintf((wchar_t*)(&pbCatBuffer[infhash_str_pos[driver_type]+4*i]), 3, L"%02X", pbHash[i]);
+		pbCatBuffer[infhash_pos[driver_type]+i] = pbHash[i];
+	}
+
+	// Find the \ marker in the qualified path and write the inf name in UTF-16
+	for (inf_short = &inf_path[safe_strlen(inf_path)]; (inf_short > inf_path) && (*inf_short!='\\'); inf_short--);
+	inf_short++;
+	winfname = utf8_to_wchar(inf_short);
+	if (winfname == NULL) {
+		wdi_warn("could not convert '%s' to UTF-16", inf_short);
+		r = WDI_ERROR_RESOURCE;
+		goto out;
+	}
+	winfname_len = wcslen(winfname);
+	if (winfname_len > WDI_MAX_STRLEN + 4) {
+		wdi_warn("'%s' is too long", inf_short);
+		r = WDI_ERROR_INVALID_PARAM;
+		goto out;
+	}
+	wcscpy((wchar_t*)(&pbCatBuffer[infname_str_pos[driver_type]]), winfname);
+
+	// update the vid_####&pid_####[&mi_###] string
+	utf8_to_wchar_no_alloc(usb_hwid, wusb_hwid, sizeof(wusb_hwid));
+	_wcslwr(wusb_hwid);
+	wcscpy((wchar_t*)(&pbCatBuffer[vidpidmi_str_pos[driver_type]]), wusb_hwid);
+
+	// Save the file back
+	SetFilePointer(hCatFile, 0, NULL, FILE_BEGIN);
+	if (!WriteFile(hCatFile, pbCatBuffer, dwCatSize, &dwCatSize, NULL)) {
+		wdi_warn("failed to write cat file '%s': %s", cat_path, windows_error_str(0));
+		r = WDI_ERROR_IO;
+		goto out;
+	}
+	CloseHandle(hCatFile);
+
+	/*
+	 * The cat hashes MUST always appear in incremental order, as the device installer
+	 * fails with error 0xE000024B ("INF hash is not present in the catalog. Driver
+	 * package appears to be tampered.") if the hashes are unsorted.
+	 * A call to CryptCATPersistStore() does the sorting for us.
+	 */
+	if (!CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+		wdi_warn("unable to acquire crypt context for CAT");
+		r = WDI_ERROR_RESOURCE;
+		goto out;
+	}
+	wcat_path = utf8_to_wchar(cat_path);
+	hCatCrypt= pfCryptCATOpen(wcat_path, 0, hProv, 0, 0);
+	if (hCatCrypt == INVALID_HANDLE_VALUE) {
+		wdi_warn("unable to open existing cat file '%s': %s", cat_path, windows_error_str(0));
+		r = WDI_ERROR_RESOURCE;
+		goto out;
+	}
+	if (pfCryptCATPersistStore(hCatCrypt)) {
+		wdi_info("successfully updated cat file");
+		r = WDI_SUCCESS;
+	} else {
+		wdi_warn("unable to sort cat file: %s",  windows_error_str(0));
+		r = WDI_ERROR_IO;
+	}
+
+out:
+	if (hProv) (CryptReleaseContext(hProv,0));
+	if (hInf) CloseHandle(hInf);
+	if (hCatFile) CloseHandle(hCatFile);
+	if (hCatCrypt) pfCryptCATClose(hCatCrypt);
+	if (winfname != NULL) free(winfname);
+	if (wcat_path != NULL) free(wcat_path);
+	if (pbHash == NULL) free(pbHash);
+	if (pbCatBuffer == NULL) free(pbCatBuffer);
+
+	return r;
+}

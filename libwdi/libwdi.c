@@ -72,6 +72,7 @@ extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist
 // These ones are defined in pki
 extern int AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
 extern int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
+extern int update_cat(char* cat_path, char* inf_path, char* usb_hwid, int driver_type);
 
 /*
  * Structure used for the threaded call to install_driver_internal()
@@ -122,6 +123,7 @@ HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
 const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys"};
 const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb-win32.inf.in", "libusbk.inf.in"};
+const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb-win32.cat.in", "libusbk.cat.in"};
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 enum windows_version windows_version = WINDOWS_UNDEFINED;
@@ -1019,7 +1021,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 {
 	const wchar_t bom = 0xFEFF;
 	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
-	char filename[MAX_PATH_LENGTH];
+	// CreateFileW appears to be limited to MAX_PATH_LENGTH/2
+	char inf_path[MAX_PATH_LENGTH/2], cat_path[MAX_PATH_LENGTH/2], cert_subject[64];
+	int i;
 	FILE* fd;
 	GUID guid;
 	int driver_type = 0, r;
@@ -1105,16 +1109,19 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN r;
 	}
 
-	// Set the inf filename
-	safe_strcpy(filename, MAX_PATH_LENGTH, path);
-	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
-	safe_strcat(filename, MAX_PATH_LENGTH, inf_name);
-	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (256 - 2)) {
-		wdi_err("qualified path for inf file is too long: '%s'", filename);
+	// Populate the inf and cat names & paths
+	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH_LENGTH/2 - 2)) {
+		wdi_err("qualified path for inf file is too long: '%s\\%s", path, inf_name);
 		MUTEX_RETURN WDI_ERROR_RESOURCE;
 	}
+	safe_strcpy(inf_path, sizeof(inf_path), path);
+	safe_strcat(inf_path, sizeof(inf_path), "\\");
+	safe_strcat(inf_path, sizeof(inf_path), inf_name);
+	safe_strcpy(cat_path, sizeof(cat_path), inf_path);
+	cat_path[safe_strlen(cat_path)-3] = 'c';
+	cat_path[safe_strlen(cat_path)-2] = 'a';
+	cat_path[safe_strlen(cat_path)-1] = 't';
 
-	// Populate the inf and cat names
 	static_strcpy(inf_entities[INF_FILENAME].replace, inf_name);
 	cat_name = safe_strdup(inf_name);
 	if (cat_name == NULL) {
@@ -1179,14 +1186,19 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	// Tokenize the file
 	if ((inf_file_size = tokenize_internal(inf_template[driver_type],
 		&dst, inf_entities, "#", "#" ,0)) > 0) {
-		fd = fcreate(filename, "w");
+		fd = fcreate(inf_path, "w");
 		if (fd == NULL) {
-			wdi_err("failed to create file: %s", filename);
+			wdi_err("failed to create file: %s", inf_path);
 			MUTEX_RETURN WDI_ERROR_ACCESS;
 		}
 		// Converting to UTF-16 is the only way to get devices using a
 		// non-english locale to display properly in device manager. UTF-8 will not do.
 		wdst = utf8_to_wchar(dst);
+		if (wdst == NULL) {
+			wdi_err("could not convert '%s' to UTF-16", dst);
+			safe_free(dst);
+			MUTEX_RETURN WDI_ERROR_RESOURCE;
+		}
 		fwrite(&bom, 2, 1, fd);	// Write the BOM
 		fwrite(wdst, 2, wcslen(wdst), fd);
 		fclose(fd);
@@ -1197,32 +1209,46 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
 
-	// Create a blank cat file
-	filename[safe_strlen(filename)-3] = 'c';
-	filename[safe_strlen(filename)-2] = 'a';
-	filename[safe_strlen(filename)-1] = 't';
-	fd = fcreate(filename, "w");
+	// Extract the cat file template
+	fd = fcreate(cat_path, "w");
 	if (fd == NULL) {
-		wdi_err("failed to create file: %s", filename);
+		wdi_err("failed to create file: %s", cat_path);
 		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
-	fprintf(fd, "This file will contain the digital signature of the files to be installed\n"
-		"on the system.\nThis file will be provided by Microsoft upon certification of your drivers.");
+	for (i=0; i<nb_resources; i++) {
+		// Ignore driver files
+		if (resource[i].subdir[0] != 0) {
+			continue;
+		}
+		if (strcmp(resource[i].name, cat_template[driver_type]) == 0) {
+			fwrite(resource[i].data, 1, resource[i].size,fd);
+			break;
+		}
+	}
 	fclose(fd);
+	if (i==nb_resources) {
+		wdi_err("error - could not find cat template '%s'!", cat_template[driver_type]);
+		MUTEX_RETURN WDI_ERROR_NOT_FOUND;
+	}
 
-	// Restore extension for debug output
-	filename[safe_strlen(filename)-3] = 'i';
-	filename[safe_strlen(filename)-2] = 'n';
-	filename[safe_strlen(filename)-1] = 'f';
-	wdi_info("succesfully created %s", filename);
+	wdi_info("succesfully created '%s'", inf_path);
 
-// #define SELFSIGN_TEST
-#if defined(SELFSIGN_TEST)
-	// TODO: check if elevated
-	MUTEX_RETURN SelfSignFile("C:\\usb_driver\\winusb.cat", "CN=USB\\VID_045E&PID_0289 (Self Signed)");
-#else
-	MUTEX_RETURN WDI_SUCCESS;
-#endif
+	GET_WINDOWS_VERSION;
+	INIT_VISTA_SHELL32;
+	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin()) )  {
+		// On Vista and later, try to update and self-sign the cat file to remove security prompts
+		// the DEVICE_HARDWARE_ID is the "VID_####&PID_####[&MI_##]" string
+		wdi_info("Vista or later detected - trying to update and self-sign .cat...");
+		sprintf(cert_subject, "CN=USB\\%s (Self Signed)", inf_entities[DEVICE_HARDWARE_ID].replace);
+		r = update_cat(cat_path, inf_path, inf_entities[DEVICE_HARDWARE_ID].replace, driver_type);
+		if (r == WDI_SUCCESS) {
+			r = SelfSignFile(cat_path, cert_subject);
+		}
+		MUTEX_RETURN r;
+	} else {
+		MUTEX_RETURN WDI_SUCCESS;
+	}
+
 }
 
 // Handle messages received from the elevated installer through the pipe
