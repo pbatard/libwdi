@@ -1,6 +1,7 @@
 /*
- * Library for USB automated driver installation - PKI part
+ * libwdi: Library for automated Windows Driver Installation - PKI part
  * Copyright (c) 2011 Pete Batard <pbatard@gmail.com>
+ * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,27 +18,46 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+// Undefine the following to run the program as standalone
+//#define CATSIGN_STANDALONE
+
 #include <windows.h>
 #include <setupapi.h>
 #include <wincrypt.h>
 #include <stdio.h>
 #include <conio.h>
 #include <stdint.h>
-#include <config.h>
 #include <string.h>
+#include "mssign32.h"
 
+#ifndef CATSIGN_STANDALONE
+#include <config.h>
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
-#include "mssign32.h"
-#include "msapi_utf8.h"
+extern char *windows_error_str(uint32_t retval);
+#else
+#define wdi_log(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
+#define wdi_dbg wdi_log
+#define wdi_warn wdi_log
+#define wdi_info wdi_log
+static char *windows_error_str(unsigned int retval) {
+static char err_string[20];
+	unsigned int error_code;
+	error_code = retval?retval:GetLastError();
+	_snprintf(err_string, MAX_PATH, "Error #%X", error_code);
+	return err_string;
+}
+#endif
+
+#define PF_INIT_OR_OUT(proc, dllname) \
+	PF_INIT(proc, dllname); if (pf##proc == NULL) { \
+	wdi_warn("unable to access %s DLL", #dllname); goto out; }
 
 #define KEY_CONTAINER L"libwdi key container"
 #ifndef CERT_STORE_PROV_SYSTEM_A
 #define CERT_STORE_PROV_SYSTEM_A ((LPCSTR) 9)
 #endif
-
-extern char *windows_error_str(uint32_t retval);
 
 /*
  * Crypt32.dll
@@ -102,6 +122,16 @@ typedef BOOL (WINAPI *CryptEncodeObject_t)(
 	DWORD *pcbEncoded
 );
 
+typedef BOOL (WINAPI *CryptDecodeObject_t)(
+	DWORD dwCertEncodingType,
+	LPCSTR lpszStructType,
+	const BYTE *pbEncoded,
+	DWORD cbEncoded,
+	DWORD dwFlags,
+	void *pvStructInfo,
+	DWORD *pcbStructInfo
+);
+
 typedef BOOL (WINAPI *CertStrToNameA_t)(
 	DWORD dwCertEncodingType,
 	LPCSTR pszX500,
@@ -141,6 +171,56 @@ typedef PCCERT_CONTEXT (WINAPI *CertCreateSelfSignCertificate_t)(
 /*
  * WinTrust.dll
  */
+#define CRYPTCAT_OPEN_CREATENEW			0x00000001
+#define CRYPTCAT_OPEN_ALWAYS			0x00000002
+
+#define CRYPTCAT_ATTR_AUTHENTICATED		0x10000000
+#define CRYPTCAT_ATTR_UNAUTHENTICATED	0x20000000
+#define CRYPTCAT_ATTR_NAMEASCII			0x00000001
+#define CRYPTCAT_ATTR_NAMEOBJID			0x00000002
+#define CRYPTCAT_ATTR_DATAASCII			0x00010000
+#define CRYPTCAT_ATTR_DATABASE64		0x00020000
+#define CRYPTCAT_ATTR_DATAREPLACE		0x00040000 
+
+#define SPC_UUID_LENGTH					16
+#define SPC_URL_LINK_CHOICE				1
+#define SPC_MONIKER_LINK_CHOICE			2
+#define SPC_FILE_LINK_CHOICE			3
+#define SHA1_HASH_LENGTH				20
+#define SPC_PE_IMAGE_DATA_OBJID			"1.3.6.1.4.1.311.2.1.15"
+#define SPC_CAB_DATA_OBJID				"1.3.6.1.4.1.311.2.1.25"
+
+typedef BYTE SPC_UUID[SPC_UUID_LENGTH];
+typedef struct _SPC_SERIALIZED_OBJECT {
+	SPC_UUID ClassId;
+	CRYPT_DATA_BLOB SerializedData;
+} SPC_SERIALIZED_OBJECT,*PSPC_SERIALIZED_OBJECT;
+
+typedef struct SPC_LINK_ {
+	DWORD dwLinkChoice;
+	union {
+		LPWSTR pwszUrl;
+		SPC_SERIALIZED_OBJECT Moniker;
+		LPWSTR pwszFile;
+	};
+} SPC_LINK,*PSPC_LINK;
+
+typedef struct _SPC_PE_IMAGE_DATA {
+	CRYPT_BIT_BLOB Flags;
+	PSPC_LINK pFile;
+} SPC_PE_IMAGE_DATA,*PSPC_PE_IMAGE_DATA;
+
+// MinGW32 doesn't know this one either
+typedef struct _CRYPT_ATTRIBUTE_TYPE_VALUE_REDEF {
+	LPSTR            pszObjId;
+	CRYPT_OBJID_BLOB Value;
+} CRYPT_ATTRIBUTE_TYPE_VALUE_REDEF;
+
+typedef struct SIP_INDIRECT_DATA_ {
+  CRYPT_ATTRIBUTE_TYPE_VALUE_REDEF Data;
+  CRYPT_ALGORITHM_IDENTIFIER       DigestAlgorithm;
+  CRYPT_HASH_BLOB                  Digest;
+} SIP_INDIRECT_DATA, *PSIP_INDIRECT_DATA;
 
 typedef struct CRYPTCATSTORE_ {
 	DWORD      cbStruct;
@@ -154,6 +234,29 @@ typedef struct CRYPTCATSTORE_ {
 	HCRYPTMSG  hCryptMsg;
 	HANDLE     hSorted;
 } CRYPTCATSTORE;
+
+typedef struct CRYPTCATMEMBER_ {
+	DWORD              cbStruct;
+	LPWSTR             pwszReferenceTag;
+	LPWSTR             pwszFileName;
+	GUID               gSubjectType;
+	DWORD              fdwMemberFlags;
+	PSIP_INDIRECT_DATA pIndirectData;
+	DWORD              dwCertVersion;
+	DWORD              dwReserved;
+	HANDLE             hReserved;
+	CRYPT_ATTR_BLOB    sEncodedIndirectData;
+	CRYPT_ATTR_BLOB    sEncodedMemberInfo;
+} CRYPTCATMEMBER;
+
+typedef struct CRYPTCATATTRIBUTE_ {
+	DWORD  cbStruct;
+	LPWSTR pwszReferenceTag;
+	DWORD  dwAttrTypeAndAction;
+	DWORD  cbValue;
+	BYTE   *pbValue;
+	DWORD  dwReserved;
+} CRYPTCATATTRIBUTE;
 
 typedef HANDLE (WINAPI *CryptCATOpen_t)(
 	LPWSTR pwszFileName,
@@ -171,6 +274,49 @@ typedef CRYPTCATSTORE* (WINAPI *CryptCATStoreFromHandle_t)(
 	HANDLE hCatalog
 );
 
+typedef CRYPTCATATTRIBUTE* (WINAPI *CryptCATEnumerateCatAttr_t)(
+	HANDLE hCatalog,
+	CRYPTCATATTRIBUTE *pPrevAttr
+);
+
+typedef CRYPTCATATTRIBUTE* (WINAPI *CryptCATPutCatAttrInfo_t)(
+	HANDLE hCatalog,
+	LPWSTR pwszReferenceTag,
+	DWORD dwAttrTypeAndAction,
+	DWORD cbData,
+	BYTE *pbData
+);
+
+typedef CRYPTCATMEMBER* (WINAPI *CryptCATEnumerateMember_t)(
+	HANDLE hCatalog,
+	CRYPTCATMEMBER *pPrevMember
+);
+
+typedef CRYPTCATMEMBER* (WINAPI *CryptCATPutMemberInfo_t)(
+	HANDLE hCatalog,
+	LPWSTR pwszFileName,
+	LPWSTR pwszReferenceTag,
+	GUID *pgSubjectType,
+	DWORD dwCertVersion,
+	DWORD cbSIPIndirectData,
+	BYTE *pbSIPIndirectData
+);
+
+typedef CRYPTCATATTRIBUTE* (WINAPI *CryptCATEnumerateAttr_t)(
+	HANDLE hCatalog,
+	CRYPTCATMEMBER *pCatMember,
+	CRYPTCATATTRIBUTE *pPrevAttr
+);
+
+typedef CRYPTCATATTRIBUTE* (WINAPI *CryptCATPutAttrInfo_t)(
+	HANDLE hCatalog,
+	CRYPTCATMEMBER *pCatMember,
+	LPWSTR pwszReferenceTag,
+	DWORD dwAttrTypeAndAction,
+	DWORD cbData,
+	BYTE *pbData
+);
+
 typedef BOOL (WINAPI *CryptCATPersistStore_t)(
 	HANDLE hCatalog
 );
@@ -181,6 +327,30 @@ typedef BOOL (WINAPI *CryptCATAdminCalcHashFromFileHandle_t)(
 	BYTE *pbHash,
 	DWORD dwFlags
 );
+
+
+/*
+ * Convert an UTF8 string to UTF-16 (allocate returned string)
+ * Return NULL on error
+ */
+static __inline LPWSTR UTF8toWCHAR(LPCSTR szStr)
+{
+	int size = 0;
+	LPWSTR wszStr = NULL;
+
+	// Find out the size we need to allocate for our converted string
+	size = MultiByteToWideChar(CP_UTF8, 0, szStr, -1, NULL, 0);
+	if (size <= 1)	// An empty string would be size 1
+		return NULL;
+
+	if ((wszStr = (wchar_t*)calloc(size, sizeof(wchar_t))) == NULL)
+		return NULL;
+	if (MultiByteToWideChar(CP_UTF8, 0, szStr, -1, wszStr, size) != size) {
+		free(wszStr);
+		return NULL;
+	}
+	return wszStr;
+}
 
 
 /*
@@ -199,30 +369,29 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 	PF_DECL(CertAddCertificateContextToStore);
 	PF_DECL(CertCloseStore);
 	HCERTSTORE hSystemStore = NULL;
+	BOOL r = FALSE;
 
-	PF_INIT(CertOpenStore, crypt32);
-	PF_INIT(CertAddCertificateContextToStore, crypt32);
-	PF_INIT(CertCloseStore, crypt32);
-	if ((pfCertOpenStore == NULL) || (pfCertAddCertificateContextToStore == NULL) || (pfCertCloseStore == NULL)) {
-		wdi_warn("unable to access crypt32 DLL");
-		return FALSE;
-	}
+	PF_INIT_OR_OUT(CertOpenStore, crypt32);
+	PF_INIT_OR_OUT(CertAddCertificateContextToStore, crypt32);
+	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 
 	hSystemStore = pfCertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING,
 		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, szStoreName);
 	if (hSystemStore == NULL) {
 		wdi_warn("failed to open system store '%s': %s", szStoreName, windows_error_str(0));
-		return FALSE;
+		goto out;
 	} 
 
 	if (!pfCertAddCertificateContextToStore(hSystemStore, pCertContext, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
 		wdi_warn("failed to add certificate to system store '%s': %s", szStoreName, windows_error_str(0));
 		pfCertCloseStore(hSystemStore, 0);
-		return FALSE;
-	} 
+		goto out;
+	}
+	r = TRUE;
 
+out:
 	pfCertCloseStore(hSystemStore, 0);
-	return TRUE;
+	return r;
 }
 
 /*
@@ -239,17 +408,11 @@ void RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	PCCERT_CONTEXT pCertContext;
 	CERT_NAME_BLOB certNameBlob = {0, NULL};
 	
-	PF_INIT(CertOpenStore, crypt32);
-	PF_INIT(CertFindCertificateInStore, crypt32);
-	PF_INIT(CertDeleteCertificateFromStore, crypt32);
-	PF_INIT(CertCloseStore, crypt32);
-	PF_INIT(CertStrToNameA, crypt32);
-
-	if ( (pfCertOpenStore == NULL) || (pfCertDeleteCertificateFromStore == NULL) // || (pfCertDuplicateCertificateContext == NULL)
-	  || (pfCertFindCertificateInStore == NULL) || (pfCertCloseStore == NULL) || (pfCertStrToNameA == NULL) ) {
-		wdi_warn("unable to access crypt32 DLL");
-		goto out;
-	}
+	PF_INIT_OR_OUT(CertOpenStore, crypt32);
+	PF_INIT_OR_OUT(CertFindCertificateInStore, crypt32);
+	PF_INIT_OR_OUT(CertDeleteCertificateFromStore, crypt32);
+	PF_INIT_OR_OUT(CertCloseStore, crypt32);
+	PF_INIT_OR_OUT(CertStrToNameA, crypt32);
 
 	hSystemStore = pfCertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING,
 		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, szStoreName);
@@ -282,7 +445,7 @@ out:
  * Add certificate data to the TrustedPublisher system store
  * Unless bDisableWarning is set, warn the user before install
  */
-int AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableWarning, HWND hWnd)
+BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableWarning, HWND hWnd)
 {
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertCreateCertificateContext);
@@ -291,32 +454,27 @@ int AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableW
 	PF_DECL(CertFreeCertificateContext);
 	PF_DECL(CertGetNameStringA);
 	PF_DECL(CertCloseStore);
-	int r = WDI_ERROR_OTHER, user_input;
-	HCERTSTORE hSystemStore;
-	PCCERT_CONTEXT pCertContext, pStoreCertContext = NULL;
-	char org[STR_BUFFER_SIZE], org_unit[STR_BUFFER_SIZE];
+	BOOL r = FALSE;
+	int user_input;
+	HCERTSTORE hSystemStore = NULL;
+	PCCERT_CONTEXT pCertContext = NULL, pStoreCertContext = NULL;
+	char org[MAX_PATH], org_unit[MAX_PATH];
 	char msg_string[1024];
 
-	PF_INIT(CertOpenStore, crypt32);
-	PF_INIT(CertCreateCertificateContext, crypt32);
-	PF_INIT(CertFindCertificateInStore, crypt32);
-	PF_INIT(CertAddCertificateContextToStore, crypt32);
-	PF_INIT(CertFreeCertificateContext, crypt32);
-	PF_INIT(CertGetNameStringA, crypt32);
-	PF_INIT(CertCloseStore, crypt32);
-	if ( (pfCertOpenStore == NULL) || (pfCertCreateCertificateContext == NULL)	|| (pfCertFindCertificateInStore == NULL)
-	  || (pfCertAddCertificateContextToStore == NULL) || (pfCertFreeCertificateContext == NULL)
-	  || (pfCertCloseStore == NULL) || (pfCertGetNameStringA == NULL) ) {
-		wdi_warn("unable to access crypt32 DLL");
-		return WDI_ERROR_RESOURCE;
-	}
+	PF_INIT_OR_OUT(CertOpenStore, crypt32);
+	PF_INIT_OR_OUT(CertCreateCertificateContext, crypt32);
+	PF_INIT_OR_OUT(CertFindCertificateInStore, crypt32);
+	PF_INIT_OR_OUT(CertAddCertificateContextToStore, crypt32);
+	PF_INIT_OR_OUT(CertFreeCertificateContext, crypt32);
+	PF_INIT_OR_OUT(CertGetNameStringA, crypt32);
+	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 
 	hSystemStore = pfCertOpenStore((LPCSTR)CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING,
 		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
 
 	if (hSystemStore == NULL) {
-		wdi_err("unable to open system store: %s", windows_error_str(0));
-		return WDI_ERROR_ACCESS;
+		wdi_warn("unable to open system store: %s", windows_error_str(0));
+		goto out;
 	}
 
 	/* Check whether certificate already exists
@@ -326,9 +484,9 @@ int AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableW
 	pCertContext = pfCertCreateCertificateContext(X509_ASN_ENCODING, pbCertData, dwCertSize);
 
 	if (pCertContext == NULL) {
-		wdi_err("could not create context for certificate: %s", windows_error_str(0));
+		wdi_warn("could not create context for certificate: %s", windows_error_str(0));
 		pfCertCloseStore(hSystemStore, 0);
-		return WDI_ERROR_ACCESS;
+		goto out;
 	}
 
 	pStoreCertContext = pfCertFindCertificateInStore(hSystemStore, X509_ASN_ENCODING, 0,
@@ -339,7 +497,7 @@ int AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableW
 			org[0] = 0; org_unit[0] = 0;
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATION_NAME, org, sizeof(org));
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATIONAL_UNIT_NAME, org_unit, sizeof(org_unit));
-			safe_sprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
+			_snprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
 				"as a Trusted Publisher on your system:\n\n '%s%s%s%s'\n\n"
 				"This will allow this Publisher to run software with elevated privileges,\n"
 				"as well as install driver packages, without further security notices.\n\n"
@@ -350,25 +508,21 @@ int AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableW
 		}
 		if (user_input != IDOK) {
 			wdi_info("operation cancelled by the user");
-			r = WDI_ERROR_USER_CANCEL;
 		} else {
 			if (!pfCertAddCertificateContextToStore(hSystemStore, pCertContext, CERT_STORE_ADD_NEWER, NULL)) {
-				wdi_err("could not add certificate: %s", windows_error_str(0));
-				r = WDI_ERROR_ACCESS;
+				wdi_warn("could not add certificate: %s", windows_error_str(0));
 			} else {
-				r = WDI_SUCCESS;
+				r = TRUE;
 			}
 		}
 	} else {
-		r = WDI_ERROR_EXISTS;
+		r = TRUE;	// Cert already exists
 	}
 
+out:
 	if (pCertContext != NULL) pfCertFreeCertificateContext(pCertContext);
 	if (pStoreCertContext != NULL) pfCertFreeCertificateContext(pStoreCertContext);
-
-	if (!pfCertCloseStore(hSystemStore, 0)) {
-		wdi_warn("unable to close the system store: %s", windows_error_str(0));
-	}
+	if (hSystemStore) pfCertCloseStore(hSystemStore, 0);
 	return r;
 }
 
@@ -398,15 +552,10 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	BYTE* pbEnhKeyUsage = NULL;
 	BOOL success = FALSE;
 
-	PF_INIT(CryptEncodeObject, crypt32);
-	PF_INIT(CertStrToNameA, crypt32);
-	PF_INIT(CertCreateSelfSignCertificate, crypt32);
-	PF_INIT(CertFreeCertificateContext, crypt32);
-	if ( (pfCryptEncodeObject == NULL) || (pfCertFreeCertificateContext == NULL)
-	  || (pfCertStrToNameA == NULL) ||  (pfCertCreateSelfSignCertificate == NULL) ) {
-		wdi_warn("unable to access crypt32 DLL: %s", windows_error_str(0));
-		goto out;
-	}
+	PF_INIT_OR_OUT(CryptEncodeObject, crypt32);
+	PF_INIT_OR_OUT(CertStrToNameA, crypt32);
+	PF_INIT_OR_OUT(CertCreateSelfSignCertificate, crypt32);
+	PF_INIT_OR_OUT(CertFreeCertificateContext, crypt32);
 
 	// Set Enhanced Key Usage extension to Code Signing only
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, (LPVOID)&certEnhKeyUsage, NULL, &dwSize))
@@ -497,11 +646,7 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	DWORD dwKeySpec;
 	BOOL bFreeCSP, retval = FALSE;
 
-	PF_INIT(CryptAcquireCertificatePrivateKey, crypt32);
-	if (pfCryptAcquireCertificatePrivateKey == NULL) {
-		wdi_warn("unable to access crypt32 DLL: %s", windows_error_str(0));
-		goto out;
-	}
+	PF_INIT_OR_OUT(CryptAcquireCertificatePrivateKey, crypt32);
 
 	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, 0, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
 		wdi_warn("error getting CSP: %s", windows_error_str(0));
@@ -528,14 +673,14 @@ out:
  * - signing the file provided
  * - deleting the self signed certificate private key so that it cannot be reused
  */
-int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
+BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 {
 	PF_DECL(SignerSignEx);
 	PF_DECL(SignerFreeSignerContext);
 	PF_DECL(CertFreeCertificateContext);
 	PF_DECL(CertCloseStore);
 
-	int r = WDI_ERROR_RESOURCE;
+	BOOL r = FALSE;
 	LPWSTR wszFileName = NULL;
 	HRESULT hResult = S_OK;
 	HCERTSTORE hCertStore = NULL; 
@@ -553,16 +698,10 @@ int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	BYTE pbOidSpOpusInfo[] = SP_OPUS_INFO_DATA;
 	BYTE pbOidStatementType[] = STATEMENT_TYPE_DATA;
 
-	PF_INIT(SignerSignEx, mssign32);
-	PF_INIT(SignerFreeSignerContext, mssign32);
-	PF_INIT(CertFreeCertificateContext, crypt32);
-	PF_INIT(CertCloseStore, crypt32);
-
-	if ( (pfSignerSignEx == NULL) || (pfSignerFreeSignerContext == NULL)
-	  || (pfCertFreeCertificateContext == NULL) || (pfCertCloseStore == NULL) ) {
-		wdi_warn("unable to access mssign32 or crypt32 DLL: %s", windows_error_str(0));
-		goto out;
-	}
+	PF_INIT_OR_OUT(SignerSignEx, mssign32);
+	PF_INIT_OR_OUT(SignerFreeSignerContext, mssign32);
+	PF_INIT_OR_OUT(CertFreeCertificateContext, crypt32);
+	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 
 	// Delete any previous certificate with the same subject
 	RemoveCertFromStore(szCertSubject, "Root");
@@ -581,7 +720,7 @@ int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 
 	// Setup SIGNER_FILE_INFO struct
 	signerFileInfo.cbSize = sizeof(SIGNER_FILE_INFO);
-	wszFileName = utf8_to_wchar(szFileName);
+	wszFileName = UTF8toWCHAR(szFileName);
 	if (wszFileName == NULL) {
 		wdi_warn("unable to convert '%s' to UTF16");
 		goto out;
@@ -634,10 +773,9 @@ int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	hResult = pfSignerSignEx(0, &signerSubjectInfo, &signerCert, &signerSignatureInfo, NULL, NULL, NULL, NULL, &pSignerContext);
 	if (hResult != S_OK) {
 		wdi_warn("SignerSignEx failed. hResult #%X, error %s", hResult, windows_error_str(0));
-		r = WDI_ERROR_UNSIGNED;
 		goto out;
 	}
-	r = WDI_SUCCESS;
+	r = TRUE;
 	wdi_info("successfully signed file '%s'", szFileName);
 
 	// Clean up
@@ -659,149 +797,379 @@ out:
 }
 
 /*
- * Update the inf name, inf hash as well as VID/PID/MI from a libwdi .cat template
- * all filenames MUST BE LOWERCASE!!!
+ * Opens a file and computes the SHA1 Authenticode Hash
  */
-// TODO: dynamically generated cat from CDF a la MakeCat with up to date hashes
-int update_cat(char* cat_path, char* inf_path, char* usb_hwid, int driver_type)
+BOOL calcHash(BYTE* pbHash, LPCSTR szfilePath)
 {
-	// The following constants define the byte offsets to patch in the cat templates
-	const uint32_t infhash_str_pos[WDI_NB_DRIVERS-1] = {0x253, 0x937, 0x412};
-	const uint32_t infhash_pos[WDI_NB_DRIVERS-1] = {0x350, 0xa34, 0x50f};
-	const uint32_t infname_str_pos[WDI_NB_DRIVERS-1] = {0x3f4, 0xad8, 0x5b3};
-	const uint32_t vidpidmi_str_pos[WDI_NB_DRIVERS-1] = {0xbb3, 0xed5, 0x1b20};
+	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
+	BOOL r = FALSE;
+	HANDLE hFile = NULL;
+	DWORD cbHash = SHA1_HASH_LENGTH;
+	LPWSTR wszFilePath = NULL;
+
+	PF_INIT_OR_OUT(CryptCATAdminCalcHashFromFileHandle, wintrust);
+
+	// Compute the SHA1 hash
+	wszFilePath = UTF8toWCHAR(szfilePath);
+	hFile = CreateFileW(wszFilePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		wdi_warn("could not open file '%s' for hashing", szfilePath);
+		goto out;
+	}
+	if ( (!pfCryptCATAdminCalcHashFromFileHandle(hFile, &cbHash, pbHash, 0)) ) {
+		wdi_warn("failed to compute hash: %s", windows_error_str(0));
+		goto out;
+	}
+	r = TRUE;
+
+out:
+	if (wszFilePath != NULL) free(wszFilePath);
+	if (hFile) CloseHandle(hFile);
+	return r;
+}
+
+/*
+ * Add a new member to a cat file, containing the hash for the relevant file
+ */
+BOOL addFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
+{
+	const GUID inf_guid = {0xDE351A42, 0x8E59, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
+	const GUID pe_guid = {0xC689AAB8, 0x8E78, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
+	const BYTE fImageData = 0xA0;		// Flags used for the SPC_PE_IMAGE_DATA "<<<Obsolete>>>" link
+	LPCWSTR wszOSAttr = L"2:5.1,2:5.2,2:6.0,2:6.1";
+
+	PF_DECL(CryptCATPutMemberInfo);
+	PF_DECL(CryptCATPutAttrInfo);
+	PF_DECL(CryptEncodeObject);
+
+	BOOL bPEType = TRUE;
+	CRYPTCATMEMBER* pCatMember = NULL;
+	SIP_INDIRECT_DATA sSIPData;
+	SPC_LINK sSPCLink;
+	SPC_PE_IMAGE_DATA sSPCImageData;
+	WCHAR wszHash[2*SHA1_HASH_LENGTH+1];
+	LPWSTR wszFileName = NULL;
+	LPCSTR szExt;
+	LPSTR szExtCopy = NULL;
+	BYTE pbEncoded[64];
+	DWORD cbEncoded;
+	int i;
+	BOOL r= FALSE;
+
+	PF_INIT_OR_OUT(CryptCATPutMemberInfo, wintrust);
+	PF_INIT_OR_OUT(CryptCATPutAttrInfo, wintrust);
+	PF_INIT_OR_OUT(CryptEncodeObject, crypt32);
+
+	// Create the required UTF-16 strings
+	for (i=0; i<SHA1_HASH_LENGTH; i++) {
+		_snwprintf((wchar_t*)(&wszHash[2*i]), 3, L"%02X", pbFileHash[i]);
+	}
+	wszFileName = UTF8toWCHAR(szFileName);
+	if (wszFileName == NULL) {
+		goto out;
+	}
+	_wcslwr(wszFileName);	// All cat filenames seem to be lowercases
+
+	// Set the PE or CAB/INF type according to the extension
+	for (szExt = &szFileName[strlen(szFileName)]; (szExt > szFileName) && (*szExt!='.'); szExt--);
+	if (szExt == szFileName) {
+		wdi_warn("unhandled file type: '%s' - ignoring", szFileName);
+		goto out;
+	}
+	szExt++;
+	szExtCopy = _strdup(szExt);
+	_strlwr((char*)szExtCopy);
+	if ( (strcmp(szExtCopy, "dll") == 0) || (strcmp(szExtCopy, "sys") == 0) || (strcmp(szExtCopy, "exe") == 0) ) {
+		wdi_dbg("'%s': PE type", szFileName);
+	} else if (strcmp(szExtCopy, "inf") == 0) {
+		wdi_dbg("'%s': INF type", szFileName);
+		bPEType = FALSE;
+	} else {
+		wdi_warn("unhandled file type: '%s' - ignoring", szFileName);
+		goto out;
+	}
+
+	// An "<<<Obsolete>>>" Authenticode link must be populated for each entry
+	sSPCLink.dwLinkChoice = SPC_FILE_LINK_CHOICE;
+	sSPCLink.pwszUrl = L"<<<Obsolete>>>";
+	cbEncoded = sizeof(pbEncoded);
+	// PE and INF encode the link differently
+	if (bPEType) {
+		sSPCImageData.Flags.cbData = 1;
+		sSPCImageData.Flags.cUnusedBits = 0;
+		sSPCImageData.Flags.pbData = (BYTE*)&fImageData;
+		sSPCImageData.pFile = &sSPCLink;
+		if (!pfCryptEncodeObject(X509_ASN_ENCODING, SPC_PE_IMAGE_DATA_OBJID, &sSPCImageData, pbEncoded, &cbEncoded)) {
+			wdi_warn("unable to encode SPC Image Data: %s", windows_error_str(0));
+			goto out;
+		}
+	} else {
+		if (!pfCryptEncodeObject(X509_ASN_ENCODING, SPC_CAB_DATA_OBJID, &sSPCLink, pbEncoded, &cbEncoded)) {
+			wdi_warn("unable to encode SPC Image Data: %s", windows_error_str(0));
+			goto out;
+		}
+	}
+
+	// Populate the SHA1 Hash OID
+	sSIPData.Data.pszObjId = (bPEType)?SPC_PE_IMAGE_DATA_OBJID:SPC_CAB_DATA_OBJID;
+	sSIPData.Data.Value.cbData = cbEncoded;
+	sSIPData.Data.Value.pbData = pbEncoded;
+	sSIPData.DigestAlgorithm.pszObjId = szOID_OIWSEC_sha1;
+	sSIPData.DigestAlgorithm.Parameters.cbData = 0;
+	sSIPData.Digest.cbData = SHA1_HASH_LENGTH;
+	sSIPData.Digest.pbData = pbFileHash;
+
+	// Create the new member
+	if ((pCatMember = pfCryptCATPutMemberInfo(hCat, NULL, wszHash, (GUID*)((bPEType)?&pe_guid:&inf_guid),
+		0x200, sizeof(sSIPData), (BYTE*)&sSIPData)) == NULL) {
+		wdi_warn("unable to create cat entry for file '%s': %s", szFileName, windows_error_str(0));
+		goto out;
+	}
+
+	// Add the "File" and "OSAttr" attributes to the newly created member
+	if ( (pfCryptCATPutAttrInfo(hCat, pCatMember, L"File", 
+		  CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
+		  2*((DWORD)wcslen(wszFileName)+1), (BYTE*)wszFileName) == NULL)
+	  || (pfCryptCATPutAttrInfo(hCat, pCatMember, L"OSAttr", 
+		  CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
+		  2*((DWORD)wcslen(wszOSAttr)+1), (BYTE*)wszOSAttr) == NULL) ) {
+		wdi_warn("unable to create attributes for file '%s': %s", szFileName, windows_error_str(0));
+		goto out;
+	}
+	r = TRUE;
+
+out:
+	if (szExtCopy != NULL) free(szExtCopy);
+	if (wszFileName != NULL) free(wszFileName);
+	return r;
+}
+
+/*
+ * Path and directory manipulation
+ */
+void __inline handleSeparators(LPSTR szPath)
+{
+	size_t i;
+	if (szPath == NULL) return;
+	for (i=0; i<strlen(szPath); i++) {
+		if (szPath[i] == '/') {
+			szPath[i] = '\\';
+		}
+	}
+}
+
+BOOL getFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
+{
+	DWORD r;
+	LPSTR szSrcCopy = NULL;
+
+	if ((szSrc == NULL) || (szDst == NULL) || (dwDstSize == 0)) {
+		return FALSE;
+	}
+	if ((szSrcCopy = (LPSTR)malloc(strlen(szSrc) + 1)) == NULL) return 1;
+	memcpy(szSrcCopy, szSrc, strlen(szSrc) + 1);
+	handleSeparators(szSrcCopy);
+	r = GetFullPathNameA(szSrcCopy, (DWORD)dwDstSize, szDst, NULL);
+	free(szSrcCopy);
+	if ((r != 0) || (r <= dwDstSize)) {
+		return TRUE;
+	}
+	fprintf(stderr, "Unable to get full path for '%s'.\n", szSrc);
+	return FALSE;
+}
+
+// Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
+static CHAR szInitialDir[MAX_PATH];		// We need a global variable
+void scanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFileList)
+{
+	CHAR szDir[MAX_PATH+1];
+	CHAR szSubDir[MAX_PATH+1];
+	CHAR szEntry[MAX_PATH];
+	CHAR szFilePath[MAX_PATH];
+	WCHAR wszDir[MAX_PATH+1];
+	HANDLE hList;
+	WIN32_FIND_DATAW FileData;
+	DWORD i;
+	BYTE pbHash[SHA1_HASH_LENGTH];
+
+	// Get the proper directory path
+	if ( (strlen(szInitialDir) + strlen(szDirName) + 4) > sizeof(szDir) ) {
+		fprintf(stderr, "Path overflow.\n");
+		return;
+	}
+	sprintf(szDir, "%s%c%s", szInitialDir, '\\', szDirName);
+
+	// Get the first file
+	strcat(szDir, "\\*");
+	MultiByteToWideChar(CP_UTF8, 0, szDir, -1, wszDir, MAX_PATH);
+	hList = FindFirstFileW(wszDir, &FileData);
+	if (hList == INVALID_HANDLE_VALUE) return;
+
+	// Traverse through the directory structure
+	do {
+		// Check the object is a directory or not
+		WideCharToMultiByte(CP_UTF8, 0, FileData.cFileName, -1, szEntry, MAX_PATH, NULL, NULL);
+		if (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if ( (strcmp(szEntry, ".") != 0)
+			  && (strcmp(szEntry, "..") != 0)) {
+				// Get the full path for sub directory
+				if ( (strlen(szDirName) + strlen(szEntry) + 2) > sizeof(szSubDir) ) {
+					fprintf(stderr, "Path overflow.\n");
+					return;
+				}
+				sprintf(szSubDir, "%s%c%s", szDirName, '\\', szEntry);
+				scanDirAndHash(hCat, szSubDir, szFileList, cFileList);
+			}
+		} else {
+			for (i=0; i<cFileList; i++) {
+				_strlwr(szEntry);	// must be lowercase for comparison
+				if (strcmp(szEntry, szFileList[i]) == 0) {
+					sprintf(szFilePath, "%s%s%c%s", szInitialDir, szDirName, '\\', szEntry);
+					// TODO: check return value
+					if (calcHash(pbHash, szFilePath)) {
+						wdi_info("successfully hashed '%s'", szFilePath);
+					} else {
+						wdi_info("error hashing '%s'", szFilePath);
+					}
+					addFileHash(hCat, szEntry, pbHash);
+					break;
+				}
+			}
+		}
+	}
+	while ( FindNextFileW(hList, &FileData) || (GetLastError() != ERROR_NO_MORE_FILES) );
+	FindClose(hList);
+}
+
+/*
+ * Create a cat file for driver package signing, and add any listed matching file found in the
+ * szSearchDir directory
+ */
+BOOL createCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList)
+{
 	PF_DECL(CryptCATOpen);
 	PF_DECL(CryptCATClose);
 	PF_DECL(CryptCATPersistStore);
-//	PF_DECL(CryptCATStoreFromHandle);
-	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
+	PF_DECL(CryptCATStoreFromHandle);
+	PF_DECL(CryptCATPutCatAttrInfo);
+
 	HCRYPTPROV hProv = 0;
-	HANDLE hInf = NULL, hCatFile = NULL, hCatCrypt = NULL;
-	LPBYTE pbCatBuffer = NULL, pbHash = NULL;
-	DWORD dwCatSize, cbHash = 0;
-	size_t winfname_len;
-	char* inf_short;
-	int i, r = WDI_ERROR_OTHER;
-	wchar_t *winfname = NULL, *wcat_path = NULL;
-	wchar_t wusb_hwid[] = L"vid_0000&pid_0000&mi_00";
+	HANDLE hCat = NULL;
+	BOOL r = FALSE;
+	DWORD i;
+	LPWSTR wszCatPath = NULL;
+	LPWSTR wszHWID = NULL;
+	LPCWSTR wszOS = L"XPX86,XPX64,VistaX86,VistaX64,7X86,7X64";
 
-	if ( (cat_path == NULL) || (inf_path == NULL) || (usb_hwid == NULL)
-	  || (driver_type < 0) || (driver_type > WDI_NB_DRIVERS-1) ) {
-		wdi_warn("illegal parameter");
-		r = WDI_ERROR_INVALID_PARAM;
-		goto out;
-	}
+	PF_INIT_OR_OUT(CryptCATOpen, wintrust);
+	PF_INIT_OR_OUT(CryptCATClose, wintrust);
+	PF_INIT_OR_OUT(CryptCATPersistStore, wintrust);
+	PF_INIT_OR_OUT(CryptCATStoreFromHandle, wintrust);
+	PF_INIT_OR_OUT(CryptCATPutCatAttrInfo, wintrust);
 
-	PF_INIT(CryptCATOpen, wintrust);
-	PF_INIT(CryptCATClose, wintrust);
-	PF_INIT(CryptCATPersistStore, wintrust);
-//	PF_INIT(CryptCATStoreFromHandle, wintrust);	 // TODO
-	PF_INIT(CryptCATAdminCalcHashFromFileHandle, wintrust);
-	if ( (pfCryptCATOpen == NULL) || (pfCryptCATClose == NULL) || (pfCryptCATPersistStore == NULL)
-	  || (pfCryptCATAdminCalcHashFromFileHandle == NULL) ) {
-		wdi_warn("unable to access wintrust DLL: %s", windows_error_str(0));
-		r = WDI_ERROR_RESOURCE;
-		goto out;
-	}
-
-
-	// Compute the inf hash
-	hInf = CreateFileU(inf_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hInf == INVALID_HANDLE_VALUE) {
-		wdi_warn("could not open file '%s'", inf_path);
-		r = WDI_ERROR_ACCESS;
-		goto out;
-	}
-	if ( (!pfCryptCATAdminCalcHashFromFileHandle(hInf, &cbHash, NULL, 0))
-	  || ((pbHash = (BYTE *)malloc(cbHash)) == NULL)
-	  || (!pfCryptCATAdminCalcHashFromFileHandle(hInf, &cbHash, pbHash, 0)) ) {
-		wdi_warn("failed to compute hash: %s", windows_error_str(0));
-		r = WDI_ERROR_IO;
-		goto out;
-	}
-
-	// MS APIs: when it's A LOT easier to hack a file directly than go through 'em
-	hCatFile = CreateFileU(cat_path, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	dwCatSize = GetFileSize(hCatFile, NULL);
-	if ( (dwCatSize == INVALID_FILE_SIZE) || ((pbCatBuffer = (BYTE*)malloc(dwCatSize)) == NULL)
-	  || (!ReadFile(hCatFile, pbCatBuffer, dwCatSize, &dwCatSize, NULL)) ) {
-		wdi_warn("failed to read cat file '%s': %s", cat_path, windows_error_str(0));
-		r = WDI_ERROR_ACCESS;
-		goto out;
-	}
-
-	// Write the Hash, as both an UTF-16 string and as a byte hash
-	for (i=0; i<20; i++) {
-		_snwprintf((wchar_t*)(&pbCatBuffer[infhash_str_pos[driver_type]+4*i]), 3, L"%02X", pbHash[i]);
-		pbCatBuffer[infhash_pos[driver_type]+i] = pbHash[i];
-	}
-
-	// Find the \ marker in the qualified path and write the inf name in UTF-16
-	for (inf_short = &inf_path[safe_strlen(inf_path)]; (inf_short > inf_path) && (*inf_short!='\\'); inf_short--);
-	inf_short++;
-	winfname = utf8_to_wchar(inf_short);
-	if (winfname == NULL) {
-		wdi_warn("could not convert '%s' to UTF-16", inf_short);
-		r = WDI_ERROR_RESOURCE;
-		goto out;
-	}
-	winfname_len = wcslen(winfname);
-	if (winfname_len > WDI_MAX_STRLEN + 4) {
-		wdi_warn("'%s' is too long", inf_short);
-		r = WDI_ERROR_INVALID_PARAM;
-		goto out;
-	}
-	wcscpy((wchar_t*)(&pbCatBuffer[infname_str_pos[driver_type]]), winfname);
-
-	// update the vid_####&pid_####[&mi_###] string
-	utf8_to_wchar_no_alloc(usb_hwid, wusb_hwid, sizeof(wusb_hwid));
-	_wcslwr(wusb_hwid);
-	wcscpy((wchar_t*)(&pbCatBuffer[vidpidmi_str_pos[driver_type]]), wusb_hwid);
-
-	// Save the file back
-	SetFilePointer(hCatFile, 0, NULL, FILE_BEGIN);
-	if (!WriteFile(hCatFile, pbCatBuffer, dwCatSize, &dwCatSize, NULL)) {
-		wdi_warn("failed to write cat file '%s': %s", cat_path, windows_error_str(0));
-		r = WDI_ERROR_IO;
-		goto out;
-	}
-	CloseHandle(hCatFile);
-
-	/*
-	 * The cat hashes MUST always appear in incremental order, as the device installer
-	 * fails with error 0xE000024B ("INF hash is not present in the catalog. Driver
-	 * package appears to be tampered.") if the hashes are unsorted.
-	 * A call to CryptCATPersistStore() does the sorting for us.
-	 */
 	if (!CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-		wdi_warn("unable to acquire crypt context for CAT");
-		r = WDI_ERROR_RESOURCE;
+		wdi_warn("unable to acquire crypt context for cat creation");
 		goto out;
 	}
-	wcat_path = utf8_to_wchar(cat_path);
-	hCatCrypt= pfCryptCATOpen(wcat_path, 0, hProv, 0, 0);
-	if (hCatCrypt == INVALID_HANDLE_VALUE) {
-		wdi_warn("unable to open existing cat file '%s': %s", cat_path, windows_error_str(0));
-		r = WDI_ERROR_RESOURCE;
+	wszCatPath = UTF8toWCHAR(szCatPath);
+	wszHWID = UTF8toWCHAR(szHWID);
+	_wcslwr(wszHWID);	// Most of the cat strings are converted to lowercase
+	hCat= pfCryptCATOpen(wszCatPath, CRYPTCAT_OPEN_CREATENEW, hProv, 0, 0);
+	if (hCat == INVALID_HANDLE_VALUE) {
+		wdi_warn("unable to create cat file '%s': %s", szCatPath, windows_error_str(0));
 		goto out;
 	}
-	if (pfCryptCATPersistStore(hCatCrypt)) {
-		wdi_info("successfully updated cat file");
-		r = WDI_SUCCESS;
-	} else {
+
+	// Setup the general Cat attributes
+	if (pfCryptCATPutCatAttrInfo(hCat, L"HWID1", CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
+		2*((DWORD)wcslen(wszHWID)+1), (BYTE*)wszHWID) ==  NULL) {
+		wdi_warn("failed to set HWID1 cat attribute: %s", windows_error_str(0));
+		goto out;
+	}
+	if (pfCryptCATPutCatAttrInfo(hCat, L"OS", CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
+		2*((DWORD)wcslen(wszOS)+1), (BYTE*)wszOS) == NULL) {
+		wdi_warn("failed to set OS cat attribute: %s", windows_error_str(0));
+		goto out;
+	}
+
+	// Setup the hash file members
+	if (!getFullPath(szSearchDir, szInitialDir, sizeof(szInitialDir))) {
+		goto out;
+	}
+	// Make sure the list entries are all lowercase
+	for (i=0; i<cFileList; i++) _strlwr(szFileList[i]);
+	scanDirAndHash(hCat, "", szFileList, cFileList);
+
+	// The cat needs to be sorted before being saved
+	if (!pfCryptCATPersistStore(hCat)) {
 		wdi_warn("unable to sort cat file: %s",  windows_error_str(0));
-		r = WDI_ERROR_IO;
+		goto out;
 	}
+	wdi_info("successfully created cat file '%s'", szCatPath);
+	r = TRUE;
 
 out:
-	if (hProv) (CryptReleaseContext(hProv,0));
-	if (hInf) CloseHandle(hInf);
-	if (hCatFile) CloseHandle(hCatFile);
-	if (hCatCrypt) pfCryptCATClose(hCatCrypt);
-	if (winfname != NULL) free(winfname);
-	if (wcat_path != NULL) free(wcat_path);
-	if (pbHash == NULL) free(pbHash);
-	if (pbCatBuffer == NULL) free(pbCatBuffer);
-
+	if (hProv) (CryptReleaseContext(hProv, 0));
+	if (wszCatPath != NULL) free(wszCatPath);
+	if (wszHWID != NULL) free(wszHWID);
+	if ((hCat)) pfCryptCATClose(hCat);
 	return r;
 }
+
+/*
+ * Main entrypoint if run as standalone
+ */
+#ifdef CATSIGN_STANDALONE
+#define CAT_LIST_MAX_ENTRIES 64
+// TODO: feed VID/PID, output catm, self sign etc.
+int __cdecl main(int argc, char** argv)
+{
+	HANDLE hList = NULL;
+	DWORD dwListSize;
+	BYTE* pbList;
+	LPWSTR wszFileListName = NULL;
+	LPSTR szFileList[CAT_LIST_MAX_ENTRIES+1];
+	CHAR* token;
+	int nb_entries;
+
+	if (argc < 2) {
+		printf("usage: catsign filelist.txt\n");
+		return 1;
+	}
+
+	wszFileListName = UTF8toWCHAR(argv[1]);
+	hList = CreateFileW(wszFileListName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	dwListSize = GetFileSize(hList, NULL);
+	if ( (dwListSize == INVALID_FILE_SIZE) || ((pbList = (BYTE*)malloc(dwListSize)) == NULL)
+	  || (!ReadFile(hList, pbList, dwListSize, &dwListSize, NULL)) ) {
+		wdi_warn("failed to read list file '%s': %s", argv[1], windows_error_str(0));
+		goto out;
+	}
+
+	// Build the filename list
+	nb_entries = 0;
+	if ((token = strtok(pbList, "\n\r")) == NULL) {
+		wdi_warn("file list is empty");
+		goto out;
+	}
+	do {
+		// Eliminate leading, trailing spaces & comments (#...)
+		while (isspace(*token)) token++;
+		while (strlen(token) && isspace(token[strlen(token)-1]))
+			token[strlen(token)-1] = 0;
+		if ((*token == '#') || (*token == 0)) continue;
+		szFileList[nb_entries++] = token;
+		if (nb_entries >= CAT_LIST_MAX_ENTRIES) {
+			wdi_warn("more than %d cat entries - ignoring the rest", CAT_LIST_MAX_ENTRIES);
+			break;
+		}
+	} while ((token = strtok(NULL, "\n\r")) != NULL);
+
+	createCat("created.cat", "USB\\VID_ABCD&pid_1234&MI_01", ".", szFileList, nb_entries);
+
+out:
+	if (wszFileListName != NULL) free(wszFileListName);
+	if (hList) CloseHandle(hList);
+	return 0;
+}
+#endif

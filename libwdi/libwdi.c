@@ -2,6 +2,7 @@
  * Library for USB automated driver installation
  * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
+ * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,9 +71,9 @@
 extern HWND find_security_prompt(void);
 extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist);
 // These ones are defined in pki
-extern int AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
-extern int SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
-extern int update_cat(char* cat_path, char* inf_path, char* usb_hwid, int driver_type);
+extern BOOL AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
+extern BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
+extern BOOL createCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList);
 
 /*
  * Structure used for the threaded call to install_driver_internal()
@@ -511,9 +512,9 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 		return r;
 	}
 
-	safe_strcpy(filename, MAX_PATH_LENGTH, tmpdir);
-	safe_strcat(filename, MAX_PATH_LENGTH, "\\");
-	safe_strcat(filename, MAX_PATH_LENGTH, resource[res].name);
+	safe_strcpy(filename, MAX_PATH, tmpdir);
+	safe_strcat(filename, MAX_PATH, "\\");
+	safe_strcat(filename, MAX_PATH, resource[res].name);
 
 	fd = fcreate(filename, "w");
 	if (fd == NULL) {
@@ -958,7 +959,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 static int extract_binaries(char* path)
 {
 	FILE *fd;
-	char filename[MAX_PATH_LENGTH];
+	char filename[MAX_PATH];
 	int i, r;
 
 	for (i=0; i<nb_resources; i++) {
@@ -966,18 +967,18 @@ static int extract_binaries(char* path)
 		if (resource[i].subdir[0] == 0) {
 			continue;
 		}
-		safe_strcpy(filename, MAX_PATH_LENGTH, path);
-		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
-		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].subdir);
+		safe_strcpy(filename, MAX_PATH, path);
+		safe_strcat(filename, MAX_PATH, "\\");
+		safe_strcat(filename, MAX_PATH, resource[i].subdir);
 
 		r = check_dir(filename, true);
 		if (r != WDI_SUCCESS) {
 			return r;
 		}
-		safe_strcat(filename, MAX_PATH_LENGTH, "\\");
-		safe_strcat(filename, MAX_PATH_LENGTH, resource[i].name);
+		safe_strcat(filename, MAX_PATH, "\\");
+		safe_strcat(filename, MAX_PATH, resource[i].name);
 
-		if ( (safe_strlen(path) + safe_strlen(resource[i].subdir) + safe_strlen(resource[i].name)) > (MAX_PATH_LENGTH - 3)) {
+		if ( (safe_strlen(path) + safe_strlen(resource[i].subdir) + safe_strlen(resource[i].name)) > (MAX_PATH - 3)) {
 			wdi_err("qualified path is too long: '%s'", filename);
 			return WDI_ERROR_RESOURCE;
 		}
@@ -1015,26 +1016,26 @@ static long tokenize_internal(const char* resource_name, char** dst, const token
 	return -ERROR_RESOURCE_DATA_NOT_FOUND;
 }
 
+#define CAT_LIST_MAX_ENTRIES 16
 // Create an inf and extract coinstallers in the directory pointed by path
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
 								  char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
 	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
-	// CreateFileW appears to be limited to MAX_PATH_LENGTH/2
-	char inf_path[MAX_PATH_LENGTH/2], cat_path[MAX_PATH_LENGTH/2], cert_subject[64];
-	int i;
-	FILE* fd;
-	GUID guid;
-	int driver_type = 0, r;
-	SYSTEMTIME system_time;
-	FILETIME file_time, local_time;
-	char* cat_name = NULL;
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
-	char *strguid, *dst = NULL;
+	char* cat_list[CAT_LIST_MAX_ENTRIES+1];
+	char inf_path[MAX_PATH], cat_path[MAX_PATH], hw_id[40], cert_subject[64];
+	char *strguid, *token, *cat_name = NULL, *dst = NULL;
 	wchar_t *wdst = NULL;
+	int cat_in, nb_entries;
+	int driver_type = 0, r = WDI_ERROR_OTHER;
 	long inf_file_size;
+	FILE* fd;
+	GUID guid;
+	SYSTEMTIME system_time;
+	FILETIME file_time, local_time;
 
 	MUTEX_START;
 
@@ -1110,7 +1111,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Populate the inf and cat names & paths
-	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH_LENGTH/2 - 2)) {
+	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH - 2)) {
 		wdi_err("qualified path for inf file is too long: '%s\\%s", path, inf_name);
 		MUTEX_RETURN WDI_ERROR_RESOURCE;
 	}
@@ -1208,47 +1209,58 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		wdi_err("could not tokenize inf file (%d)", inf_file_size);
 		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
-
-	// Extract the cat file template
-	fd = fcreate(cat_path, "w");
-	if (fd == NULL) {
-		wdi_err("failed to create file: %s", cat_path);
-		MUTEX_RETURN WDI_ERROR_ACCESS;
-	}
-	for (i=0; i<nb_resources; i++) {
-		// Ignore driver files
-		if (resource[i].subdir[0] != 0) {
-			continue;
-		}
-		if (strcmp(resource[i].name, cat_template[driver_type]) == 0) {
-			fwrite(resource[i].data, 1, resource[i].size,fd);
-			break;
-		}
-	}
-	fclose(fd);
-	if (i==nb_resources) {
-		wdi_err("error - could not find cat template '%s'!", cat_template[driver_type]);
-		MUTEX_RETURN WDI_ERROR_NOT_FOUND;
-	}
-
 	wdi_info("succesfully created '%s'", inf_path);
 
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
 	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin()) )  {
-		// On Vista and later, try to update and self-sign the cat file to remove security prompts
-		// the DEVICE_HARDWARE_ID is the "VID_####&PID_####[&MI_##]" string
-		wdi_info("Vista or later detected - trying to update and self-sign .cat...");
-		sprintf(cert_subject, "CN=USB\\%s (Self Signed)", inf_entities[DEVICE_HARDWARE_ID].replace);
-		r = update_cat(cat_path, inf_path, inf_entities[DEVICE_HARDWARE_ID].replace, driver_type);
-		if (r == WDI_SUCCESS) {
-			r = SelfSignFile(cat_path, cert_subject);
-		}
-		MUTEX_RETURN r;
-	} else {
-		MUTEX_RETURN WDI_SUCCESS;
-	}
+		// On Vista and later, try to create and self-sign the cat file to remove security prompts
 
+		// Find the file containing the list of files we want to hash in the .cat
+		for (cat_in=0; cat_in<nb_resources; cat_in++) {
+			// Ignore driver files
+			if (resource[cat_in].subdir[0] != 0) {
+				continue;
+			}
+			if (strcmp(resource[cat_in].name, cat_template[driver_type]) == 0) {
+				break;
+			}
+		}
+		if (cat_in >= nb_resources) {
+			wdi_warn("error - could not find cat template '%s' cat_template[driver_type]");
+			MUTEX_RETURN WDI_ERROR_NOT_FOUND;
+		}
+
+		// Build the filename list
+		nb_entries = 0;
+		token = strtok(resource[cat_in].data, "\n\r");
+		do {
+			// Eliminate leading, trailing spaces & comments (#...)
+			while (isspace(*token)) token++;
+			while (strlen(token) && isspace(token[strlen(token)-1]))
+				token[strlen(token)-1] = 0;
+			if ((*token == '#') || (*token == 0)) continue;
+			cat_list[nb_entries++] = token;
+			if (nb_entries >= CAT_LIST_MAX_ENTRIES) {
+				wdi_warn("more than %d cat entries - ignoring the rest", CAT_LIST_MAX_ENTRIES);
+				break;
+			}
+		} while ((token = strtok(NULL, "\n\r")) != NULL);
+
+		// Add the inf name to our list
+		cat_list[nb_entries++] = inf_name;
+
+		// the DEVICE_HARDWARE_ID is the "VID_####&PID_####[&MI_##]" string
+		wdi_info("Vista or later detected - creating and self-signing a .cat file...");
+		sprintf(hw_id, "USB\\%s", inf_entities[DEVICE_HARDWARE_ID].replace);
+		sprintf(cert_subject, "CN=%s (Self Signed)", hw_id);
+
+		if ( (!createCat(cat_path, hw_id, path, cat_list, nb_entries))
+		  || (!SelfSignFile(cat_path, cert_subject)) ) {
+			MUTEX_RETURN WDI_ERROR_RESOURCE;
+		}
+	}
+	MUTEX_RETURN WDI_SUCCESS;
 }
 
 // Handle messages received from the elevated installer through the pipe
@@ -1347,7 +1359,7 @@ static int install_driver_internal(void* arglist)
 	SHELLEXECUTEINFOA shExecInfo;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
-	char exename[MAX_PATH_LENGTH];
+	char exename[MAX_PATH];
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
@@ -1609,7 +1621,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 											   struct wdi_options_install_cert* options)
 {
-	int i, r;
+	int i;
 	HWND hWnd = NULL;
 	BOOL disable_warning = FALSE;
 
@@ -1636,13 +1648,12 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 			disable_warning = options->disable_warning;
 		}
 
-		r =  AddCertToTrustedPublisher((BYTE*)resource[i].data, (DWORD)resource[i].size, disable_warning, hWnd);
-		if (r == WDI_SUCCESS) {
-			wdi_warn("certificate '%s' successfully added as Trusted Publisher", cert_name);
-		} else if (r == WDI_ERROR_EXISTS) {
-			wdi_info("certificate '%s' is already set as a Trusted Publisher", cert_name);
+		if (!AddCertToTrustedPublisher((BYTE*)resource[i].data, (DWORD)resource[i].size, disable_warning, hWnd)) {
+			wdi_warn("coulf not add certificate '%s' as Trusted Publisher", cert_name);
+			return WDI_ERROR_RESOURCE;
 		}
-		return r;
+		wdi_info("certificate '%s' successfully added as Trusted Publisher", cert_name);
+		return WDI_SUCCESS;
 	}
 
 	wdi_err("this call must be run with elevated privileges on Vista and later");
