@@ -1,3 +1,2 @@
 *.sh     eol=lf
 *.inf.in eol=crlf
-*.cat    binary
