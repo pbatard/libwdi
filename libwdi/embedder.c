@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,7 +110,7 @@ void __inline handle_separators(char* path)
 // These 2 functions split a path into basename and dirname
 // You must call basename_free to release the resources once done
 // Note that basename_split also normalizes the path separators
-static char* _path_copy;
+static char* _path_copy = NULL;
 int basename_split(char* path, char** dn, char** bn)
 {
 	char* basename_pos;
@@ -216,7 +216,7 @@ void scan_dir(char *dirname, int countfiles)
 
 	// Traverse through the directory structure
 	do {
-		// Check the object is a directory or not
+		// Check if the object is a directory or not
 #if defined(_WIN32)
 		WideCharToMultiByte(CP_UTF8, 0, FileData.cFileName, -1, entry, MAX_PATH, NULL, NULL);
 		if (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -431,7 +431,7 @@ main (int argc, char *argv[])
 		fclose(fd);
 
 		sprintf(internal_name, "file_%03X", (unsigned char)i);
-		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
+		fprintf(header_fd, "unsigned char %s[] = {", internal_name);
 		dump_buffer_hex(header_fd, buffer, size);
 		fprintf(header_fd, "};\n\n");
 		safe_free(buffer);
@@ -441,7 +441,7 @@ main (int argc, char *argv[])
 		"\tchar* name;\n" \
 		"\tsize_t size;\n" \
 		"\tint64_t creation_time;\n" \
-		"\tconst unsigned char* data;\n" \
+		"\tunsigned char* data;\n" \
 		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
