@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (Neutral) resources
+// English resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -66,7 +64,7 @@ IDI_ICON1               ICON                    "zadig.ico"
 // Menu
 //
 
-IDR_MENU1 MENU 
+IDR_MENU1 MENU
 BEGIN
     POPUP "Device"
     BEGIN
@@ -138,11 +136,11 @@ CAPTION "About Zadig"
 FONT 8, "Microsoft Sans Serif", 400, 0, 0x0
 BEGIN
     ICON            IDI_ICON1,IDC_ABOUT_ICON,10,21,20,20
-    LTEXT           "Zadig, Version 1.0",IDC_STATIC,42,14,114,8,SS_NOPREFIX
-    LTEXT           "Copyright (c) 2010 Pete Batard",IDC_STATIC,41,40,114,8
+    LTEXT           "Zadig, Version 1.1.0.131",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Copyright (c) 2010-2011 Pete Batard",IDC_STATIC,41,40,139,8
     DEFPUSHBUTTON   "OK",IDOK,167,72,50,14,WS_GROUP
     LTEXT           "Part of the libwdi project:",IDC_STATIC,41,27,77,8,SS_NOPREFIX
-    CONTROL         "<a href=""http://libusb.org/wiki/libwdi"">http://libusb.org/wiki/libwdi</a>",IDC_URL,
+    CONTROL         "<a href=""http://libwdi.akeo.ie"">http://libwdi.akeo.ie</a>",IDC_URL,
                     "SysLink",WS_TABSTOP,121,27,90,14
 END
 
@@ -181,8 +179,8 @@ BEGIN
     BEGIN
         BLOCK "000904b0"
         BEGIN
-            VALUE "Comments", "http://libusb.org/wiki/libwdi"
-            VALUE "CompanyName", "libusb.org"
+            VALUE "Comments", "http://libwdi.akeo.ie"
+            VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig Application"
             VALUE "FileVersion", "1, 0, 4, 131"
             VALUE "InternalName", "zadig"
@@ -206,7 +204,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     "MAIN_DIALOG", DIALOG
     BEGIN
@@ -222,7 +220,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (Neutral) resources
+#endif    // English resources
 /////////////////////////////////////////////////////////////////////////////
 
 

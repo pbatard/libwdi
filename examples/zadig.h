@@ -33,7 +33,7 @@
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
-#define LIBWDI_URL                  "http://libusb.org/wiki/libwdi"
+#define LIBWDI_URL                  "http://libwdi.akeo.ie"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define LIGHT_GREY                  RGB(248,248,248)

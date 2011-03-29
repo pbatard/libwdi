@@ -1,6 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
+ * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -746,6 +747,8 @@ bool parse_preset(char* filename)
 		SetDlgItemTextA(hMain, IDC_MI, str_tmp);
 	}
 
+	profile_get_string(profile, "device", "GUID", NULL, NULL, &pd_options.device_guid);
+
 	profile_close(profile);
 
 	return true;
@@ -1085,8 +1088,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
-			ShellExecuteA(hDlg, "open", "http://libusb.org/wiki/libwdi/zadig",
-				NULL, NULL, SW_SHOWNORMAL);
+			ShellExecuteA(hDlg, "open", "http://zadig.akeo.ie", NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_EXTRACT:
 			toggle_extract();
