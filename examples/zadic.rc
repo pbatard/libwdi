@@ -7,8 +7,8 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,4,131
- PRODUCTVERSION 1,0,4,131
+ FILEVERSION 1,0,4,132
+ PRODUCTVERSION 1,0,4,132
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -26,13 +26,13 @@ BEGIN
             VALUE "Comments", "http://libusb.org/wiki/libwdi"
             VALUE "CompanyName", "libusb.org"
             VALUE "FileDescription", "Zadic Application"
-            VALUE "FileVersion", "1, 0, 4, 131"
+            VALUE "FileVersion", "1, 0, 4, 132"
             VALUE "InternalName", "zadic"
             VALUE "LegalCopyright", "See individual source files, GNU LGPL v2.1 or later."
             VALUE "LegalTrademarks", "http://www.gnu.org/licenses/lgpl-2.1.html"
             VALUE "OriginalFilename", "zadic.exe"
             VALUE "ProductName", "zadic"
-            VALUE "ProductVersion", "1, 0, 4, 131"
+            VALUE "ProductVersion", "1, 0, 4, 132"
         END
     END
     BLOCK "VarFileInfo"

@@ -31,6 +31,7 @@ s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ FILEVERSION \1,\2,\3,@@TAGVER
 s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@TAGVER@@/
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "FileVersion", "\2, \3, \4, @@TAGVER@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "ProductVersion", "\2, \3, \4, @@TAGVER@@"/
+s/^\(.*\)"Zadig, Version \(.*\)\.\(.*\)"\(.*\)/\1"Zadig, Version \2.@@TAGVER@@"\4/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
