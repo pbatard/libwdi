@@ -175,6 +175,44 @@ typedef PCCERT_CONTEXT (WINAPI *CertCreateSelfSignCertificate_t)(
 	PCERT_EXTENSIONS_ARRAY pExtensions
 );
 
+// MinGW32 doesn't have these ones either
+#ifndef CERT_ALT_NAME_URL
+#define CERT_ALT_NAME_URL 7
+#endif
+#ifndef CERT_RDN_IA5_STRING
+#define CERT_RDN_IA5_STRING 7
+#endif
+#ifndef szOID_PKIX_POLICY_QUALIFIER_CPS
+#define szOID_PKIX_POLICY_QUALIFIER_CPS "1.3.6.1.5.5.7.2.1"
+#endif
+typedef struct _CERT_ALT_NAME_ENTRY_URL {
+	DWORD   dwAltNameChoice;
+	union {
+		LPWSTR  pwszURL;
+	};
+} CERT_ALT_NAME_ENTRY_URL, *PCERT_ALT_NAME_ENTRY_URL;
+
+typedef struct _CERT_ALT_NAME_INFO_URL {
+	DWORD                    cAltEntry;
+	PCERT_ALT_NAME_ENTRY_URL rgAltEntry;
+} CERT_ALT_NAME_INFO_URL, *PCERT_ALT_NAME_INFO_URL;
+
+typedef struct _CERT_POLICY_QUALIFIER_INFO_REDEF {
+	LPSTR            pszPolicyQualifierId;
+	CRYPT_OBJID_BLOB Qualifier;
+} CERT_POLICY_QUALIFIER_INFO_REDEF, *PCERT_POLICY_QUALIFIER_INFO_REDEF;
+
+typedef struct _CERT_POLICY_INFO_ALT {
+	LPSTR                             pszPolicyIdentifier;
+	DWORD                             cPolicyQualifier;
+	PCERT_POLICY_QUALIFIER_INFO_REDEF rgPolicyQualifier;
+} CERT_POLICY_INFO_REDEF, *PCERT_POLICY_INFO_REDEF;
+
+typedef struct _CERT_POLICIES_INFO_ARRAY {
+	DWORD                   cPolicyInfo;
+	PCERT_POLICY_INFO_REDEF rgPolicyInfo;
+} CERT_POLICIES_INFO_ARRAY, *PCERT_POLICIES_INFO_ARRAY;
+
 /*
  * WinTrust.dll
  */
@@ -570,12 +608,12 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	LPSTR szCertPolicyElementId = "1.3.6.1.5.5.7.3.3"; // szOID_PKIX_KP_CODE_SIGNING;
 	CERT_ENHKEY_USAGE certEnhKeyUsage = { 1, &szCertPolicyElementId };
 	// Alternate Name (URL)
-	CERT_ALT_NAME_ENTRY certAltNameEntry = { CERT_ALT_NAME_URL, {(PCERT_OTHER_NAME)L"http://libwdi.akeo.ie"} };
-	CERT_ALT_NAME_INFO certAltNameInfo = { 1, &certAltNameEntry };
+	CERT_ALT_NAME_ENTRY_URL certAltNameEntry = { CERT_ALT_NAME_URL, {L"http://libwdi.akeo.ie"} };
+	CERT_ALT_NAME_INFO_URL certAltNameInfo = { 1, &certAltNameEntry };
 	// Certificate Policies
-	CERT_POLICY_QUALIFIER_INFO certPolicyQualifier;
-	CERT_POLICY_INFO certPolicyInfo = { "1.3.6.1.5.5.7.2.1", 1, &certPolicyQualifier };
-	CERT_POLICIES_INFO certPolicyInfoArray = { 1, &certPolicyInfo };
+	CERT_POLICY_QUALIFIER_INFO_REDEF certPolicyQualifier;
+	CERT_POLICY_INFO_REDEF certPolicyInfo = { "1.3.6.1.5.5.7.2.1", 1, &certPolicyQualifier };
+	CERT_POLICIES_INFO_ARRAY certPolicyInfoArray = { 1, &certPolicyInfo };
 	CHAR szCPSName[] = "http://libwdi-csp.akeo.ie";
 	CERT_NAME_VALUE certCPSValue;
 
