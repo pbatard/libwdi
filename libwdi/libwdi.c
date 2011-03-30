@@ -1211,6 +1211,10 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 	wdi_info("succesfully created '%s'", inf_path);
 
+	if (options->disable_cat) {
+		MUTEX_RETURN WDI_SUCCESS;
+	}
+
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
 	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin()) )  {
@@ -1263,7 +1267,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		// Failures on the following aren't fatal errors
 		if (!CreateCat(cat_path, hw_id, path, cat_list, nb_entries)) {
 			wdi_warn("could not create cat file");
-		} else if (!SelfSignFile(cat_path, cert_subject)) {
+		} else if ((!options->disable_signing) && (!SelfSignFile(cat_path, 
+			(options->cert_subject != NULL)?options->cert_subject:cert_subject))) {
 			wdi_warn("could not sign cat file");
 		}
 		safe_free(cat_in_copy);
