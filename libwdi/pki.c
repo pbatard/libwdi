@@ -45,7 +45,7 @@ static char *windows_error_str(unsigned int retval) {
 static char err_string[20];
 	unsigned int error_code;
 	error_code = retval?retval:GetLastError();
-	_snprintf(err_string, MAX_PATH, "Error #%X", error_code);
+	_snprintf(err_string, MAX_PATH, "errcode #%X", error_code);
 	return err_string;
 }
 #endif
@@ -90,6 +90,13 @@ typedef BOOL (WINAPI *CertAddCertificateContextToStore_t)(
 	PCCERT_CONTEXT pCertContext,
 	DWORD dwAddDisposition,
 	PCCERT_CONTEXT *pStoreContext
+);
+
+typedef BOOL (WINAPI *CertSetCertificateContextProperty_t)(
+	PCCERT_CONTEXT pCertContext,
+	DWORD dwPropId,
+	DWORD dwFlags,
+	const void *pvData
 );
 
 typedef BOOL (WINAPI *CertDeleteCertificateFromStore_t)(
@@ -366,12 +373,15 @@ static __inline LPWSTR UTF8toWCHAR(LPCSTR szStr)
 BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 {
 	PF_DECL(CertOpenStore);
+	PF_DECL(CertSetCertificateContextProperty);
 	PF_DECL(CertAddCertificateContextToStore);
 	PF_DECL(CertCloseStore);
 	HCERTSTORE hSystemStore = NULL;
+	CRYPT_DATA_BLOB libwdiNameBlob = {14, (BYTE*)L"libwdi"};
 	BOOL r = FALSE;
 
 	PF_INIT_OR_OUT(CertOpenStore, crypt32);
+	PF_INIT_OR_OUT(CertSetCertificateContextProperty, crypt32);
 	PF_INIT_OR_OUT(CertAddCertificateContextToStore, crypt32);
 	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 
@@ -382,9 +392,13 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 		goto out;
 	} 
 
+	if (!pfCertSetCertificateContextProperty(pCertContext, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
+		wdi_warn("coud not set friendly name: %s", windows_error_str(0));
+		goto out;
+	}
+
 	if (!pfCertAddCertificateContextToStore(hSystemStore, pCertContext, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
 		wdi_warn("failed to add certificate to system store '%s': %s", szStoreName, windows_error_str(0));
-		pfCertCloseStore(hSystemStore, 0);
 		goto out;
 	}
 	r = TRUE;
@@ -397,7 +411,7 @@ out:
 /*
  * Remove a certificate, identified by its subject, to the system store 'szStoreName'
  */
-void RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
+BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 {
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertFindCertificateInStore);
@@ -407,6 +421,7 @@ void RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	HCERTSTORE hSystemStore = NULL;
 	PCCERT_CONTEXT pCertContext;
 	CERT_NAME_BLOB certNameBlob = {0, NULL};
+	BOOL r = FALSE;
 	
 	PF_INIT_OR_OUT(CertOpenStore, crypt32);
 	PF_INIT_OR_OUT(CertFindCertificateInStore, crypt32);
@@ -433,12 +448,14 @@ void RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	while ((pCertContext = pfCertFindCertificateInStore(hSystemStore, X509_ASN_ENCODING, 0,
 		CERT_FIND_SUBJECT_NAME, (const void*)&certNameBlob, NULL)) != NULL) {
 		pfCertDeleteCertificateFromStore(pCertContext);
-		wdi_info("deleted obsolete '%s' from '%s' store", szCertSubject, szStoreName);
+		wdi_info("deleted existing certificate '%s' from '%s' store", szCertSubject, szStoreName);
 	}
+	r = TRUE;
 
 out:
 	if (certNameBlob.pbData != NULL) free (certNameBlob.pbData);
 	if (hSystemStore != NULL) pfCertCloseStore(hSystemStore, 0);
+	return r;
 }
 
 /*
@@ -529,7 +546,6 @@ out:
 /*
  * Create a self signed certificate for code signing
  */
-// TODO: set "libwdi" as friendly name
 PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 {
 	PF_DECL(CryptEncodeObject);
@@ -537,6 +553,8 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	PF_DECL(CertCreateSelfSignCertificate);
 	PF_DECL(CertFreeCertificateContext);
 
+	BOOL success = FALSE;
+	DWORD dwSize;
 	HCRYPTPROV hCSP = 0;
 	HCRYPTKEY hKey = 0;
 	PCCERT_CONTEXT pCertContext = NULL;
@@ -544,13 +562,22 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	CRYPT_KEY_PROV_INFO KeyProvInfo;
 	CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
 	LPWSTR wszKeyContainer = KEY_CONTAINER;
-	DWORD dwSize;
-	CERT_EXTENSION certExtension;
+	LPBYTE pbEnhKeyUsage = NULL, pbAltNameInfo = NULL, pbCPSNotice = NULL, pbPolicyInfo = NULL;
+	SYSTEMTIME sExpirationDate = { 2029, 01, 01, 01, 00, 00, 00, 000 };
+	CERT_EXTENSION certExtension[3];
 	CERT_EXTENSIONS_ARRAY certExtensionsArray;
+	// Code Signing Enhanced Key Usage
 	LPSTR szCertPolicyElementId = "1.3.6.1.5.5.7.3.3"; // szOID_PKIX_KP_CODE_SIGNING;
 	CERT_ENHKEY_USAGE certEnhKeyUsage = { 1, &szCertPolicyElementId };
-	BYTE* pbEnhKeyUsage = NULL;
-	BOOL success = FALSE;
+	// Alternate Name (URL)
+	CERT_ALT_NAME_ENTRY certAltNameEntry = { CERT_ALT_NAME_URL, {(PCERT_OTHER_NAME)L"http://libwdi.akeo.ie"} };
+	CERT_ALT_NAME_INFO certAltNameInfo = { 1, &certAltNameEntry };
+	// Certificate Policies
+	CERT_POLICY_QUALIFIER_INFO certPolicyQualifier;
+	CERT_POLICY_INFO certPolicyInfo = { "1.3.6.1.5.5.7.2.1", 1, &certPolicyQualifier };
+	CERT_POLICIES_INFO certPolicyInfoArray = { 1, &certPolicyInfo };
+	CHAR szCPSName[] = "http://libwdi-csp.akeo.ie";
+	CERT_NAME_VALUE certCPSValue;
 
 	PF_INIT_OR_OUT(CryptEncodeObject, crypt32);
 	PF_INIT_OR_OUT(CertStrToNameA, crypt32);
@@ -561,16 +588,54 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, (LPVOID)&certEnhKeyUsage, NULL, &dwSize))
 	  || ((pbEnhKeyUsage = (BYTE*)malloc(dwSize)) == NULL)
 	  || (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, (LPVOID)&certEnhKeyUsage, pbEnhKeyUsage, &dwSize)) ) {
-		wdi_warn("could not setup EKU for Code Signing: %s", windows_error_str(0));
+		wdi_warn("could not setup EKU for code signing: %s", windows_error_str(0));
 		goto out;
 	}
-	certExtension.pszObjId = szOID_ENHANCED_KEY_USAGE;
-	certExtension.fCritical = TRUE;		// only allow code signing
-	certExtension.Value.cbData = dwSize;
-	certExtension.Value.pbData = pbEnhKeyUsage;
-	certExtensionsArray.cExtension = 1;
-	certExtensionsArray.rgExtension = &certExtension;
-	wdi_dbg("set code signing EKU");
+	certExtension[0].pszObjId = szOID_ENHANCED_KEY_USAGE;
+	certExtension[0].fCritical = TRUE;		// only allow code signing
+	certExtension[0].Value.cbData = dwSize;
+	certExtension[0].Value.pbData = pbEnhKeyUsage;
+
+	// Set URL as Alt Name parameter
+	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, NULL, &dwSize))
+	  || ((pbAltNameInfo = (BYTE*)malloc(dwSize)) == NULL)
+	  || (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, pbAltNameInfo, &dwSize)) ) {
+		wdi_warn("could not setup URL: %s", windows_error_str(0));
+		goto out;
+	}
+	certExtension[1].pszObjId = szOID_SUBJECT_ALT_NAME;
+	certExtension[1].fCritical = FALSE;
+	certExtension[1].Value.cbData = dwSize;
+	certExtension[1].Value.pbData = pbAltNameInfo;
+
+	// Set the CPS Certificate Policies field - this enables the "Issuer Statement" button on the cert
+	certCPSValue.dwValueType = CERT_RDN_IA5_STRING;
+	certCPSValue.Value.cbData = sizeof(szCPSName);
+	certCPSValue.Value.pbData = (BYTE*)szCPSName;
+	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_NAME_VALUE, (LPVOID)&certCPSValue, NULL, &dwSize))
+		|| ((pbCPSNotice = (BYTE*)malloc(dwSize)) == NULL)
+		|| (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_NAME_VALUE, (LPVOID)&certCPSValue, pbCPSNotice, &dwSize)) ) {
+		wdi_warn("could not setup CPS: %s", windows_error_str(0));
+		goto out;
+	}
+
+	certPolicyQualifier.pszPolicyQualifierId = szOID_PKIX_POLICY_QUALIFIER_CPS;
+	certPolicyQualifier.Qualifier.cbData = dwSize;
+	certPolicyQualifier.Qualifier.pbData = pbCPSNotice;
+	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_CERT_POLICIES, (LPVOID)&certPolicyInfoArray, NULL, &dwSize))
+		|| ((pbPolicyInfo = (BYTE*)malloc(dwSize)) == NULL)
+		|| (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_CERT_POLICIES, (LPVOID)&certPolicyInfoArray, pbPolicyInfo, &dwSize)) ) {
+		wdi_warn("could not setup Certificate Policies: %s", windows_error_str(0));
+		goto out;
+	}
+	certExtension[2].pszObjId = szOID_CERT_POLICIES;
+	certExtension[2].fCritical = FALSE;
+	certExtension[2].Value.cbData = dwSize;
+	certExtension[2].Value.pbData = pbPolicyInfo;
+
+	certExtensionsArray.cExtension = ARRAYSIZE(certExtension);
+	certExtensionsArray.rgExtension = certExtension;
+	wdi_dbg("set Enhanced Key Usage, URL and CPS");
 
 	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) {
 		wdi_dbg("acquired existing key container");
@@ -589,16 +654,13 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	}
 	wdi_dbg("generated new keypair");
 
-	if (hKey) CryptDestroyKey(hKey);
-	if (hCSP) CryptReleaseContext(hCSP, 0);
-	
+	// Set the subject
 	if ( (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, NULL, &SubjectIssuerBlob.cbData, NULL))
 	  || ((SubjectIssuerBlob.pbData = (BYTE*)malloc(SubjectIssuerBlob.cbData)) == NULL)
 	  || (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, SubjectIssuerBlob.pbData, &SubjectIssuerBlob.cbData, NULL)) ) {
 		wdi_warn("could not encode subject name for self signed cert: %s", windows_error_str(0));
 		goto out;
 	}
-	wdi_dbg("encoded subject name: '%s'", szCertSubject);
 
 	// Prepare key provider structure for self-signed certificate
 	memset(&KeyProvInfo, 0, sizeof(KeyProvInfo));
@@ -616,16 +678,21 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	// Create self-signed certificate
 	pCertContext = pfCertCreateSelfSignCertificate((ULONG_PTR)NULL,
-		&SubjectIssuerBlob, 0, &KeyProvInfo, &SignatureAlgorithm, NULL, NULL, &certExtensionsArray);
+		&SubjectIssuerBlob, 0, &KeyProvInfo, &SignatureAlgorithm, NULL, &sExpirationDate, &certExtensionsArray);
 	if (pCertContext == NULL) {
 		wdi_warn("could not create self signed certificate: %s", windows_error_str(0));
 		goto out;
 	}
+	wdi_info("created new self-signed certificate '%s'", szCertSubject);
 	success = TRUE;
 
 out:
 	if (pbEnhKeyUsage != NULL) free(pbEnhKeyUsage);
+	if (pbAltNameInfo != NULL) free(pbAltNameInfo);
+	if (pbCPSNotice != NULL) free(pbCPSNotice);
+	if (pbPolicyInfo != NULL) free(pbPolicyInfo);
 	if (SubjectIssuerBlob.pbData != NULL) free(SubjectIssuerBlob.pbData);
+	if (hKey) CryptDestroyKey(hKey);
 	if (hCSP) CryptReleaseContext(hCSP, 0);
 	if ((!success) && (pCertContext != NULL)) {
 		pfCertFreeCertificateContext(pCertContext);
@@ -716,7 +783,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	  || (!AddCertToStore(pCertContext, "TrustedPublisher")) ) {
 		goto out;
 	}
-	wdi_info("added cert '%s' to 'Root' and 'TrustedPublisher' stores", szCertSubject);
+	wdi_info("added certificate '%s' to 'Root' and 'TrustedPublisher' stores", szCertSubject);
 
 	// Setup SIGNER_FILE_INFO struct
 	signerFileInfo.cbSize = sizeof(SIGNER_FILE_INFO);
@@ -799,7 +866,7 @@ out:
 /*
  * Opens a file and computes the SHA1 Authenticode Hash
  */
-BOOL calcHash(BYTE* pbHash, LPCSTR szfilePath)
+BOOL CalcHash(BYTE* pbHash, LPCSTR szfilePath)
 {
 	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
 	BOOL r = FALSE;
@@ -812,14 +879,8 @@ BOOL calcHash(BYTE* pbHash, LPCSTR szfilePath)
 	// Compute the SHA1 hash
 	wszFilePath = UTF8toWCHAR(szfilePath);
 	hFile = CreateFileW(wszFilePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
-		wdi_warn("could not open file '%s' for hashing", szfilePath);
-		goto out;
-	}
-	if ( (!pfCryptCATAdminCalcHashFromFileHandle(hFile, &cbHash, pbHash, 0)) ) {
-		wdi_warn("failed to compute hash: %s", windows_error_str(0));
-		goto out;
-	}
+	if (hFile == INVALID_HANDLE_VALUE) goto out;
+	if ( (!pfCryptCATAdminCalcHashFromFileHandle(hFile, &cbHash, pbHash, 0)) ) goto out;
 	r = TRUE;
 
 out:
@@ -831,7 +892,7 @@ out:
 /*
  * Add a new member to a cat file, containing the hash for the relevant file
  */
-BOOL addFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
+BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 {
 	const GUID inf_guid = {0xDE351A42, 0x8E59, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
 	const GUID pe_guid = {0xC689AAB8, 0x8E78, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
@@ -947,7 +1008,7 @@ out:
 /*
  * Path and directory manipulation
  */
-void __inline handleSeparators(LPSTR szPath)
+void __inline HandleSeparators(LPSTR szPath)
 {
 	size_t i;
 	if (szPath == NULL) return;
@@ -958,7 +1019,7 @@ void __inline handleSeparators(LPSTR szPath)
 	}
 }
 
-BOOL getFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
+BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 {
 	DWORD r;
 	LPSTR szSrcCopy = NULL;
@@ -968,7 +1029,7 @@ BOOL getFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 	}
 	if ((szSrcCopy = (LPSTR)malloc(strlen(szSrc) + 1)) == NULL) return 1;
 	memcpy(szSrcCopy, szSrc, strlen(szSrc) + 1);
-	handleSeparators(szSrcCopy);
+	HandleSeparators(szSrcCopy);
 	r = GetFullPathNameA(szSrcCopy, (DWORD)dwDstSize, szDst, NULL);
 	free(szSrcCopy);
 	if ((r != 0) || (r <= dwDstSize)) {
@@ -980,7 +1041,7 @@ BOOL getFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 
 // Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
 static CHAR szInitialDir[MAX_PATH];		// We need a global variable
-void scanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFileList)
+void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFileList)
 {
 	CHAR szDir[MAX_PATH+1];
 	CHAR szSubDir[MAX_PATH+1];
@@ -1018,7 +1079,7 @@ void scanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFil
 					return;
 				}
 				sprintf(szSubDir, "%s%c%s", szDirName, '\\', szEntry);
-				scanDirAndHash(hCat, szSubDir, szFileList, cFileList);
+				ScanDirAndHash(hCat, szSubDir, szFileList, cFileList);
 			}
 		} else {
 			for (i=0; i<cFileList; i++) {
@@ -1026,12 +1087,11 @@ void scanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFil
 				if (strcmp(szEntry, szFileList[i]) == 0) {
 					sprintf(szFilePath, "%s%s%c%s", szInitialDir, szDirName, '\\', szEntry);
 					// TODO: check return value
-					if (calcHash(pbHash, szFilePath)) {
-						wdi_info("successfully hashed '%s'", szFilePath);
+					if ( (CalcHash(pbHash, szFilePath)) && AddFileHash(hCat, szEntry, pbHash) ) {
+						wdi_info("added hash for '%s'",  szFilePath);
 					} else {
-						wdi_info("error hashing '%s'", szFilePath);
+						wdi_warn("could not add hash for '%s' - ignored", szFilePath);
 					}
-					addFileHash(hCat, szEntry, pbHash);
 					break;
 				}
 			}
@@ -1045,7 +1105,7 @@ void scanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFil
  * Create a cat file for driver package signing, and add any listed matching file found in the
  * szSearchDir directory
  */
-BOOL createCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList)
+BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList)
 {
 	PF_DECL(CryptCATOpen);
 	PF_DECL(CryptCATClose);
@@ -1076,7 +1136,7 @@ BOOL createCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFil
 	_wcslwr(wszHWID);	// Most of the cat strings are converted to lowercase
 	hCat= pfCryptCATOpen(wszCatPath, CRYPTCAT_OPEN_CREATENEW, hProv, 0, 0);
 	if (hCat == INVALID_HANDLE_VALUE) {
-		wdi_warn("unable to create cat file '%s': %s", szCatPath, windows_error_str(0));
+		wdi_warn("unable to create file '%s': %s", szCatPath, windows_error_str(0));
 		goto out;
 	}
 
@@ -1093,19 +1153,19 @@ BOOL createCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFil
 	}
 
 	// Setup the hash file members
-	if (!getFullPath(szSearchDir, szInitialDir, sizeof(szInitialDir))) {
+	if (!GetFullPath(szSearchDir, szInitialDir, sizeof(szInitialDir))) {
 		goto out;
 	}
 	// Make sure the list entries are all lowercase
 	for (i=0; i<cFileList; i++) _strlwr(szFileList[i]);
-	scanDirAndHash(hCat, "", szFileList, cFileList);
+	ScanDirAndHash(hCat, "", szFileList, cFileList);
 
 	// The cat needs to be sorted before being saved
 	if (!pfCryptCATPersistStore(hCat)) {
-		wdi_warn("unable to sort cat file: %s",  windows_error_str(0));
+		wdi_warn("unable to sort file: %s",  windows_error_str(0));
 		goto out;
 	}
-	wdi_info("successfully created cat file '%s'", szCatPath);
+	wdi_info("successfully created file '%s'", szCatPath);
 	r = TRUE;
 
 out:
@@ -1121,7 +1181,7 @@ out:
  */
 #ifdef CATSIGN_STANDALONE
 #define CAT_LIST_MAX_ENTRIES 64
-// TODO: feed VID/PID, output catm, self sign etc.
+// TODO: feed VID/PID, output cat, self sign etc.
 int __cdecl main(int argc, char** argv)
 {
 	HANDLE hList = NULL;
@@ -1165,7 +1225,7 @@ int __cdecl main(int argc, char** argv)
 		}
 	} while ((token = strtok(NULL, "\n\r")) != NULL);
 
-	createCat("created.cat", "USB\\VID_ABCD&pid_1234&MI_01", ".", szFileList, nb_entries);
+	CreateCat("created.cat", "USB\\VID_ABCD&pid_1234&MI_01", ".", szFileList, nb_entries);
 
 out:
 	if (wszFileListName != NULL) free(wszFileListName);

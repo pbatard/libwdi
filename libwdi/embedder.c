@@ -431,7 +431,7 @@ main (int argc, char *argv[])
 		fclose(fd);
 
 		sprintf(internal_name, "file_%03X", (unsigned char)i);
-		fprintf(header_fd, "unsigned char %s[] = {", internal_name);
+		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
 		dump_buffer_hex(header_fd, buffer, size);
 		fprintf(header_fd, "};\n\n");
 		safe_free(buffer);
@@ -441,7 +441,7 @@ main (int argc, char *argv[])
 		"\tchar* name;\n" \
 		"\tsize_t size;\n" \
 		"\tint64_t creation_time;\n" \
-		"\tunsigned char* data;\n" \
+		"\tconst unsigned char* data;\n" \
 		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");

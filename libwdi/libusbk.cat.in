@@ -4,5 +4,8 @@
 WdfCoInstaller01009.dll
 libusbk.sys
 libusbk.dll
+libusbk_x86.dll
 libusb0.dll
+libusb0_x86.dll
 libusb-1.0.dll
+libusb-1.0_x86.dll
