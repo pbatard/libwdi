@@ -58,7 +58,7 @@ int __cdecl main(int argc, char *argv[])
 	int c;
 	struct wdi_device_info *device, *list;
 	char* path = DEFAULT_DIR;
-	static struct wdi_options_create_list cl_options = {false, false, true};
+	static struct wdi_options_create_list cl_options = { 0 };
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;
@@ -66,6 +66,8 @@ int __cdecl main(int argc, char *argv[])
 	static int verbose_flag = 3;
 	static int use_supplied_inf_flag = 0;
 	int r, option_index = 0;
+
+	cl_options.trim_whitespaces = true;
 
 	// Parse command-line options
 	while(1)

@@ -80,9 +80,9 @@ HWND GetConsoleHwnd(void)
 int __cdecl main(int argc, char** argv)
 {
 	struct wdi_device_info *ldev, dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
-	struct wdi_options_create_list ocl = {true, true, true};
-	struct wdi_options_prepare_driver opd = {WDI_WINUSB, NULL, NULL};
-	struct wdi_options_install_driver oid = {NULL};
+	struct wdi_options_create_list ocl = { 0 };
+	struct wdi_options_prepare_driver opd = { 0 };
+	struct wdi_options_install_driver oid = { 0 };
 	int c, r;
 	int opt_silent = 0, opt_extract = 0, log_level = WDI_LOG_LEVEL_WARNING;
 	char *inf_name = INF_NAME;
@@ -105,6 +105,11 @@ int __cdecl main(int argc, char** argv)
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
+
+	ocl.list_all = true;
+	ocl.list_hubs = true;
+	ocl.trim_whitespaces = true;
+	opd.driver_type = WDI_WINUSB;
 
 	while(1)
 	{

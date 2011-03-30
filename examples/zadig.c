@@ -64,9 +64,9 @@ WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
-struct wdi_options_create_list cl_options = {false, false, true};
-struct wdi_options_prepare_driver pd_options = {WDI_WINUSB, NULL, NULL};
-struct wdi_options_install_cert ic_options= {NULL, false};
+struct wdi_options_create_list cl_options = { 0 };
+struct wdi_options_prepare_driver pd_options = { 0 };
+struct wdi_options_install_cert ic_options= { 0 };
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -854,6 +854,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return (INT_PTR)TRUE;
 
 	case WM_INITDIALOG:
+		// Setup options
+		cl_options.trim_whitespaces = true;
+		pd_options.driver_type = WDI_WINUSB;
+
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
 		green_brush = CreateSolidBrush(GREEN);
