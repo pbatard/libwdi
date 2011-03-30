@@ -1,5 +1,15 @@
-For the latest changes, visit: http://git.libusb.org/?p=libwdi.git;a=shortlog
+For the latest changes, please visit:
+  http://libwdi.git.sourceforge.net/git/gitweb.cgi?p=libwdi/libwdi;a=summary
 
+o v1.1.0 (2011.03.30)
+  Improvements:
+  - libsubK support
+  - autogenration and self-signing of a .cat file, to prevent further security
+    prompts during driver installation on Vista and later.
+    for more information, see http://libwdi-cps.akeo.ie
+  - disable restore point creation during installation
+  - Visual Studio 2010 support and overall MS file cleanup
+  - use of the Kerberos/e2fsprogs parser in Zadig instead of libconfig
 o v1.0.4 (2011.01.22)
   Bugfixes:
   - improper title for progress bar
