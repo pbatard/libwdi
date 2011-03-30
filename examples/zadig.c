@@ -1088,7 +1088,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_ABOUTBOX), hMain, about_callback);
 			break;
 		case IDM_ONLINEHELP:
-			ShellExecuteA(hDlg, "open", "http://zadig.akeo.ie", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecuteA(hDlg, "open", ZADIG_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_EXTRACT:
 			toggle_extract();
