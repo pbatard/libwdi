@@ -614,7 +614,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	CERT_POLICY_QUALIFIER_INFO_REDEF certPolicyQualifier;
 	CERT_POLICY_INFO_REDEF certPolicyInfo = { "1.3.6.1.5.5.7.2.1", 1, &certPolicyQualifier };
 	CERT_POLICIES_INFO_ARRAY certPolicyInfoArray = { 1, &certPolicyInfo };
-	CHAR szCPSName[] = "http://libwdi-csp.akeo.ie";
+	CHAR szCPSName[] = "http://libwdi-cps.akeo.ie";
 	CERT_NAME_VALUE certCPSValue;
 
 	PF_INIT_OR_OUT(CryptEncodeObject, crypt32);
