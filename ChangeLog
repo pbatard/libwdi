@@ -4,7 +4,7 @@ For the latest changes, please visit:
 o v1.1.0 (2011.03.30)
   Improvements:
   - libsubK support
-  - autogenration and self-signing of a .cat file, to prevent further security
+  - autogeneration and self-signing of a .cat file, to prevent further security
     prompts during driver installation on Vista and later.
     for more information, see http://libwdi-cps.akeo.ie
   - disable restore point creation during installation

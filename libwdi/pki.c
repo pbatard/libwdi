@@ -158,6 +158,15 @@ typedef BOOL (WINAPI *CryptAcquireCertificatePrivateKey_t)(
 	BOOL *pfCallerFreeProvOrNCryptKey
 );
 
+typedef BOOL (WINAPI *CertAddEncodedCertificateToStore_t)(
+	HCERTSTORE hCertStore,
+	DWORD dwCertEncodingType,
+	const BYTE *pbCertEncoded,
+	DWORD cbCertEncoded,
+	DWORD dwAddDisposition,
+	PCCERT_CONTEXT *ppCertContext
+);
+
 // MiNGW32 doesn't know CERT_EXTENSIONS => redef
 typedef struct _CERT_EXTENSIONS_ARRAY {
 	DWORD cExtension;
@@ -524,8 +533,8 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 	PF_INIT_OR_OUT(CertGetNameStringA, crypt32);
 	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 
-	hSystemStore = pfCertOpenStore((LPCSTR)CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING,
-		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"TrustedPublisher");
+	hSystemStore = pfCertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING,
+		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, "TrustedPublisher");
 
 	if (hSystemStore == NULL) {
 		wdi_warn("unable to open system store: %s", windows_error_str(0));
@@ -745,30 +754,54 @@ out:
 BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 {
 	PF_DECL(CryptAcquireCertificatePrivateKey);
+	PF_DECL(CertOpenStore);
+	PF_DECL(CertCloseStore);
+	PF_DECL(CertAddEncodedCertificateToStore);
 
 	LPWSTR wszKeyContainer = KEY_CONTAINER;
 	HCRYPTPROV hCSP = 0;
 	DWORD dwKeySpec;
-	BOOL bFreeCSP, retval = FALSE;
+	BOOL bFreeCSP, r = FALSE;
+	HCERTSTORE hSystemStore;
+	LPCSTR szStoresToUpdate[2] = { "Root", "TrustedPublisher" };
+	int i;
 
 	PF_INIT_OR_OUT(CryptAcquireCertificatePrivateKey, crypt32);
+	PF_INIT_OR_OUT(CertOpenStore, crypt32);
+	PF_INIT_OR_OUT(CertCloseStore, crypt32);
+	PF_INIT_OR_OUT(CertAddEncodedCertificateToStore, crypt32);
 
-	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, 0, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
+	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_SILENT_FLAG, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
 		wdi_warn("error getting CSP: %s", windows_error_str(0));
 		goto out;
 	}
 
-	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_DELETEKEYSET)) {
-		retval = TRUE;
-	} else {
+	if (!CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT|CRYPT_DELETEKEYSET)) {
 		wdi_warn("failed to delete private key: %s", windows_error_str(0));
 	}
+
+	// This is optional, but unless we don't reimport the cert data after having deleted the key
+	// end users will still see a "You have a private key that corresponds to this certificate" message.
+	for (i=0; i<ARRAYSIZE(szStoresToUpdate); i++)
+	{
+		hSystemStore = pfCertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING,
+			0, CERT_SYSTEM_STORE_LOCAL_MACHINE, szStoresToUpdate[i]);
+		if (hSystemStore == NULL) continue;
+
+		if (!pfCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING, pCertContext->pbCertEncoded, 
+			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
+			wdi_warn("failed to update '%s': %s", szStoresToUpdate[i], windows_error_str(0));
+		}
+		pfCertCloseStore(hSystemStore, 0);
+	}
+
+	r= TRUE;
 
 out:
 	if ((bFreeCSP) && (hCSP)) {
 		CryptReleaseContext(hCSP, 0);
 	}
-	return retval;
+	return r;
 }
 
 /*
@@ -891,7 +924,7 @@ out:
 	 * by an attacker to self sign a malicious applications.
 	 */
 	if ((pCertContext != NULL) && (DeletePrivateKey(pCertContext))) {
-		wdi_dbg("successfully deleted private key");
+		wdi_info("successfully deleted private key");
 	}
 	if (wszFileName != NULL) free((void*)wszFileName);
 	if (pSignerContext != NULL) pfSignerFreeSignerContext(pSignerContext);
