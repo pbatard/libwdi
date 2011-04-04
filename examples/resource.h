@@ -32,8 +32,11 @@
 #define IDC_NOTIFICATION_TEXT           1057
 #define IDC_NOTIFICATION_CLOSE          1059
 #define IDC_NOTIFICATION_LINE           1060
+#define IDC_FOLDER                      1061
 #define IDC_NEXT                        1062
-#define IDC_FOLDER                      1148
+#define IDC_DRIVERGROUP                 1063
+#define IDC_DEVICEGROUP                 1064
+#define IDC_DETAILSGROUP                1065
 #define IDM_ABOUT                       40001
 #define IDM_BASICMODE                   40002
 #define IDM_ADVANCEDMODE                40003
@@ -48,15 +51,18 @@
 #define IDM_LOGLEVEL_INFO               40012
 #define IDM_LOGLEVEL_WARNING            40013
 #define IDM_LOGLEVEL_ERROR              40014
+#define IDM_CREATECAT                   40015
+#define IDM_SIGNCAT                     40016
+#define IDM_CERTMGR                     40018
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        105
-#define _APS_NEXT_COMMAND_VALUE         40015
-#define _APS_NEXT_CONTROL_VALUE         1063
+#define _APS_NEXT_RESOURCE_VALUE        106
+#define _APS_NEXT_COMMAND_VALUE         40019
+#define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

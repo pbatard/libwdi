@@ -356,14 +356,7 @@ bool select_next_driver(int increment)
 	return found;
 }
 
-// Hide or Show the MI/Driver fields
-void display_driver(bool show)
-{
-	int cmd = show?SW_SHOW:SW_HIDE;
-	ShowWindow(GetDlgItem(hMain, IDC_DRIVER), cmd);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_DRIVER), cmd);
-}
-
+// Hide/Show the MI field
 void display_mi(bool show)
 {
 	int cmd = show?SW_SHOW:SW_HIDE;
@@ -426,9 +419,6 @@ void toggle_advanced(void)
 	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_FOLDER), toggle);
 	ShowWindow(GetDlgItem(hMain, IDC_STATIC_FOLDER), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_TARGET), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_TARGETSPIN), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_TARGET), toggle);
 
 	// Toggle the menu checkmark
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
@@ -482,7 +472,6 @@ void toggle_create(bool refresh)
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		display_mi(true);
-		display_driver(false);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
 		combo_breaker(false);
@@ -785,6 +774,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	const char* vid_string;
 	int nb_devices, tmp, r;
 	DWORD delay, read_size, log_size;
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
@@ -908,7 +899,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			tmp = ComboBox_ResetContent(hDeviceList);
 			SetDlgItemTextA(hMain, IDC_VID, "");
 			SetDlgItemTextA(hMain, IDC_PID, "");
-			display_driver(false);
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 		}
@@ -950,11 +940,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if ( ((HWND)lParam == hVid)
 		  || ((HWND)lParam == hPid)
 		  || ((HWND)lParam == hMi) ) {
-			return (INT_PTR)white_brush;
+			return (INT_PTR)grey_brush;
 		} else if ((HWND)lParam == hDriver) {
 			return (INT_PTR)driver_background[get_driver_type(device)];
 		} else if ((HWND)lParam == hTarget) {
-			return (INT_PTR)grey_brush;
+			return (INT_PTR)white_brush;
 		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
@@ -991,12 +981,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						}
 					}
 					// Display the current driver info
-					if (device->driver != NULL) {
-						SetDlgItemTextU(hMain, IDC_DRIVER, device->driver);
-						display_driver(true);
-					} else {
-						display_driver(false);
-					}
+					SetDlgItemTextU(hMain, IDC_DRIVER, (device->driver==NULL)?"(NONE)":device->driver);
 					pd_options.driver_type = default_driver_type;
 					if ((!select_next_driver(0)) && (!select_next_driver(1))) {
 						dprintf("no driver is selectable in libwdi!");
@@ -1091,6 +1076,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDM_ABOUT:
 			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_ABOUTBOX), hMain, about_callback);
 			break;
+		case IDM_CERTMGR:
+			memset(&si, 0, sizeof(si));
+			si.cb = sizeof(si);
+			memset(&pi, 0, sizeof(pi));
+			if (!CreateProcessU(NULL, "mmc certmgr.msc", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+				dsprintf("Unable to launch the Certificate Manager");
+			}
+			break;
 		case IDM_ONLINEHELP:
 			ShellExecuteA(hDlg, "open", ZADIG_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
@@ -1105,6 +1098,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDM_IGNOREHUBS:
 			toggle_hubs(true);
+			break;
+		case IDM_CREATECAT:
+			pd_options.disable_cat = GetMenuState(hMenuOptions, IDM_CREATECAT, MF_CHECKED) & MF_CHECKED;
+			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
+			CheckMenuItem(hMenuOptions, IDM_CREATECAT, pd_options.disable_cat?MF_UNCHECKED:MF_CHECKED);
+			break;
+		case IDM_SIGNCAT:
+			pd_options.disable_signing = GetMenuState(hMenuOptions, IDM_SIGNCAT, MF_CHECKED) & MF_CHECKED;
+			CheckMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_signing?MF_UNCHECKED:MF_CHECKED);
 			break;
 		case IDM_LOGLEVEL_ERROR:
 		case IDM_LOGLEVEL_WARNING:

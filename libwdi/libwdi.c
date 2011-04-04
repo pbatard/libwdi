@@ -450,7 +450,7 @@ static FILE *fcreate(const char *filename, const char *mode)
 }
 
 /*
- * Retrieve the version info from the WinUSB or libusb0.sys drivers
+ * Retrieve the version info from the WinUSB, libusbK or libusb0 drivers
  */
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
