@@ -1193,6 +1193,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			} else {
 				dsprintf("Could not remove the libusb-1.0 system32 DLLs");
 			}
+			continue;
 		}
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
