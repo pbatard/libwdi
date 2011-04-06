@@ -16,5 +16,5 @@ automake -a -c || exit 1
 make -j2
 target_dir=e:/dailies/libwdi/$date
 mkdir -p $target_dir
-cp -v examples/zadig.exe $target_dir
-md5sum $target_dir/zadig.exe
+lzma -kv examples/zadig.exe
+mv -v examples/zadig.exe.lzma $target_dir/zadig_v1.1.0.135.7z

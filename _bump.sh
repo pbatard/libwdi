@@ -32,6 +32,7 @@ s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "FileVersion", "\2, \3, \4, @@TAGVER@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "ProductVersion", "\2, \3, \4, @@TAGVER@@"/
 s/^\(.*\)"Zadig, Version \(.*\)\.\(.*\)"\(.*\)/\1"Zadig, Version \2.@@TAGVER@@"\4/
+s/^\(.*\)target_dir\/zadig_v\(.*\)\.\(.*\)\.7z/\1target_dir\/zadig_v\2.@@TAGVER@@.7z/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
@@ -47,6 +48,8 @@ sed -f cmd.sed examples/zadig.rc > examples/zadig.rc~
 mv examples/zadig.rc~ examples/zadig.rc
 sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple.rc~
 mv examples/wdi-simple.rc~ examples/wdi-simple.rc
+sed -f cmd.sed _bm.sh > _bm.sh~
+mv _bm.sh~ _bm.sh
 
 rm cmd.sed
 
