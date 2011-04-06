@@ -556,7 +556,7 @@ void init_dialog(HWND hDlg)
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
-	hMenuLogLevel = GetSubMenu(hMenuOptions, 4);
+	hMenuLogLevel = GetSubMenu(hMenuOptions, 8);
 
 	// Create the status line
 	create_status_bar();
