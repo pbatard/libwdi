@@ -1119,6 +1119,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		return (INT_PTR)TRUE;
 
+	case WM_CLOSE:
+		PostQuitMessage(0);
+		break;
+
 	default:
 		return (INT_PTR)FALSE;
 
@@ -1129,9 +1133,19 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 /*
  * Application Entrypoint
  */
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	HANDLE mutex = NULL;
+	HWND hDlg = NULL;
+	MSG msg;
+	/* Deletion of libusb-1.0 DLLs magic command
+	 * Remember that a 32 bit app running on a 64 bit system has to use "Sysnative"
+	 * to access the actual "System32" as "SysWOW64" gets remapped to "System32"
+	 */
+	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
+	char* libusb_path;
+	int i;
+	bool r;
 
 	// Prevent 2 applications from running at the same time
 	mutex = CreateMutexA(NULL, TRUE, "Global/Zadig");
@@ -1153,8 +1167,35 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 
 	// Create the main Window
-	if (DialogBoxA(hInstance, "MAIN_DIALOG", NULL, main_callback) == -1) {
+	if ( (hDlg = CreateDialogA(hInstance, "MAIN_DIALOG", NULL, main_callback)) == NULL ) {
 		MessageBoxA(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
+	}
+	ShowWindow(hDlg, SW_SHOWNORMAL);
+	UpdateWindow(hDlg);
+
+	// Do our own event processing, in order to process "magic" commands
+	while(GetMessage(&msg, NULL, 0, 0)) {
+		// Alt-Z => Delete libusb-1.0 DLLs
+		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
+			libusb_path = malloc(MAX_PATH);
+			for (r = true, i = 0; i<ARRAYSIZE(system_dir); i++) {
+				safe_strcpy(libusb_path, MAX_PATH, getenv("WINDIR"));
+				safe_strcat(libusb_path, MAX_PATH, "\\");
+				safe_strcat(libusb_path, MAX_PATH, system_dir[i]);
+				safe_strcat(libusb_path, MAX_PATH, "\\libusb-1.0.dll");
+				DeleteFileA(libusb_path);
+				if (GetFileAttributesA(libusb_path) != INVALID_FILE_ATTRIBUTES) {
+					r = false;
+				}
+			}
+			if (r) {
+				dsprintf("Successfully deleted the libusb-1.0 system DLLs");
+			} else {
+				dsprintf("Could not remove the libusb-1.0 system32 DLLs");
+			}
+		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
 	CloseHandle(mutex);
