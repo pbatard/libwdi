@@ -757,6 +757,8 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertCloseStore);
 	PF_DECL(CertAddEncodedCertificateToStore);
+	PF_DECL(CertSetCertificateContextProperty);
+	PF_DECL(CertFreeCertificateContext);
 
 	LPWSTR wszKeyContainer = KEY_CONTAINER;
 	HCRYPTPROV hCSP = 0;
@@ -764,12 +766,16 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	BOOL bFreeCSP, r = FALSE;
 	HCERTSTORE hSystemStore;
 	LPCSTR szStoresToUpdate[2] = { "Root", "TrustedPublisher" };
+	CRYPT_DATA_BLOB libwdiNameBlob = {14, (BYTE*)L"libwdi"};
+	PCCERT_CONTEXT pCertContextUpdate = NULL;
 	int i;
 
 	PF_INIT_OR_OUT(CryptAcquireCertificatePrivateKey, crypt32);
 	PF_INIT_OR_OUT(CertOpenStore, crypt32);
 	PF_INIT_OR_OUT(CertCloseStore, crypt32);
 	PF_INIT_OR_OUT(CertAddEncodedCertificateToStore, crypt32);
+	PF_INIT_OR_OUT(CertSetCertificateContextProperty, crypt32);
+	PF_INIT_OR_OUT(CertFreeCertificateContext, crypt32);
 
 	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_SILENT_FLAG, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
 		wdi_warn("error getting CSP: %s", windows_error_str(0));
@@ -789,9 +795,17 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 		if (hSystemStore == NULL) continue;
 
 		if (!pfCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING, pCertContext->pbCertEncoded, 
-			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
+			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, &pCertContextUpdate)) {
 			wdi_warn("failed to update '%s': %s", szStoresToUpdate[i], windows_error_str(0));
 		}
+
+		// The friendly name is lost in this operation - restore it
+		if (!pfCertSetCertificateContextProperty(pCertContextUpdate, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
+			wdi_warn("coud not set friendly name: %s", windows_error_str(0));
+		}
+
+		pfCertFreeCertificateContext(pCertContextUpdate);
+
 		pfCertCloseStore(hSystemStore, 0);
 	}
 
