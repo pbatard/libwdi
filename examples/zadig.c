@@ -345,10 +345,18 @@ bool select_next_driver(int increment)
 		break;
 	}
 	if (found) {
-		wdi_is_driver_supported(pd_options.driver_type, &file_info);
-		safe_sprintf(driver_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
-			(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
-			(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
+		if (pd_options.driver_type != WDI_USER) {
+			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
+			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
+			wdi_is_driver_supported(pd_options.driver_type, &file_info);
+			safe_sprintf(driver_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
+				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
+		} else {
+			safe_sprintf(driver_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
+			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
+		}
 	} else {
 		safe_sprintf(driver_text, 64, "(NONE)");
 	}

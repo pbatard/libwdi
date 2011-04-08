@@ -520,6 +520,7 @@ static __inline int process_error(DWORD r, char* path) {
 	// r = 0xE0000203 ERROR_NO_DRIVER_SELECTED if the driver provided is not compatible with the target platform
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xE000022F ERROR_NO_CATALOG_FOR_OEM_INF => "reject unsigned driver" policy is enforced
+	// r = 0xE0000243 ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED => user doesn't trust the cert that signed the cat
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
 	switch(r) {
 	case ERROR_NO_MORE_ITEMS:
@@ -553,6 +554,7 @@ static __inline int process_error(DWORD r, char* path) {
 		return WDI_ERROR_CAT_MISSING;
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
+	case ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED:
 		plog("operation cancelled by the user");
 		return WDI_ERROR_USER_CANCEL;
 	case ERROR_NO_DRIVER_SELECTED:

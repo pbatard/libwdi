@@ -1091,7 +1091,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
 	if (driver_type == WDI_USER) {
-		wdi_warn("custom driver - extracting binaries only (no inf/cat creation)");
+		wdi_info("custom driver - extracting binaries only (no inf/cat creation)");
 		MUTEX_RETURN extract_binaries(path);
 	}
 
@@ -1662,7 +1662,7 @@ int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
 		}
 
 		if (!AddCertToTrustedPublisher((BYTE*)resource[i].data, (DWORD)resource[i].size, disable_warning, hWnd)) {
-			wdi_warn("coulf not add certificate '%s' as Trusted Publisher", cert_name);
+			wdi_warn("could not add certificate '%s' as Trusted Publisher", cert_name);
 			return WDI_ERROR_RESOURCE;
 		}
 		wdi_info("certificate '%s' successfully added as Trusted Publisher", cert_name);

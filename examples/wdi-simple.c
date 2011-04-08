@@ -50,9 +50,12 @@ void usage(void)
 	printf("-p, --pid <id>             set the product ID (PID)\n");
 	printf("-i, --iid <id>             set the interface ID (MI)\n");
 	printf("-t, --type <driver_type>   set the driver to install\n");
-	printf("                           (0=WinUSB, 1=libusb0.sys, 2=custom)\n");
+	printf("                           (0=WinUSB, 1=libusb0, 2=libusbK, 3=custom)\n");
 	printf("-d, --dest <dir>           set the extraction directory\n");
 	printf("-x, --extract              extract files only (don't install)\n");
+	printf("-c, --cert <certname>      install certificate <certname> from the\n");
+	printf("                           embedded user files as a trusted publisher\n");
+	printf("    --stealth-cert         installs certificate above without prompting\n");
 	printf("-s, --silent               silent mode\n");
 	printf("-b, --progressbar=[HWND]   display a progress bar during install\n");
 	printf("                           an optional HWND can be specified\n");
@@ -79,15 +82,17 @@ HWND GetConsoleHwnd(void)
 
 int __cdecl main(int argc, char** argv)
 {
-	struct wdi_device_info *ldev, dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
-	struct wdi_options_create_list ocl = { 0 };
-	struct wdi_options_prepare_driver opd = { 0 };
-	struct wdi_options_install_driver oid = { 0 };
+	static struct wdi_device_info *ldev, dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
+	static struct wdi_options_create_list ocl = { 0 };
+	static struct wdi_options_prepare_driver opd = { 0 };
+	static struct wdi_options_install_driver oid = { 0 };
+	static struct wdi_options_install_cert oic = { 0 };
+	static int opt_silent = 0, opt_extract = 0, log_level = WDI_LOG_LEVEL_WARNING;
+	static bool matching_device_found;
 	int c, r;
-	int opt_silent = 0, opt_extract = 0, log_level = WDI_LOG_LEVEL_WARNING;
 	char *inf_name = INF_NAME;
 	char *ext_dir = DEFAULT_DIR;
-	bool matching_device_found;
+	char *cert_name = NULL;
 
 	static struct option long_options[] = {
 		{"name", required_argument, 0, 'n'},
@@ -98,8 +103,10 @@ int __cdecl main(int argc, char** argv)
 		{"iid", required_argument, 0, 'i'},
 		{"type", required_argument, 0, 't'},
 		{"dest", required_argument, 0, 'd'},
+		{"cert", required_argument, 0, 'c'},
 		{"extract", no_argument, 0, 'x'},
 		{"silent", no_argument, 0, 's'},
+		{"stealth-cert", no_argument, 0, 1},
 		{"progressbar", optional_argument, 0, 'b'},
 		{"log", required_argument, 0, 'l'},
 		{"help", no_argument, 0, 'h'},
@@ -113,10 +120,13 @@ int __cdecl main(int argc, char** argv)
 
 	while(1)
 	{
-		c = getopt_long(argc, argv, "n:f:m:d:v:p:i:l:t:hxsb", long_options, NULL);
+		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:hxsb", long_options, NULL);
 		if (c == -1)
 			break;
 		switch(c) {
+		case 1: // --stealth-cert
+			oic.disable_warning = true;
+			break;
 		case 'n':
 			dev.desc = optarg;
 			break;
@@ -128,6 +138,9 @@ int __cdecl main(int argc, char** argv)
 			break;
 		case 'd':
 			ext_dir = optarg;
+			break;
+		case 'c':
+			cert_name = optarg;
 			break;
 		case 'v':
 			dev.vid = (unsigned short)strtol(optarg, NULL, 0);
@@ -155,6 +168,7 @@ int __cdecl main(int argc, char** argv)
 			break;
 		case 'b':
 			oid.hWnd = (optarg)?(HWND)strtol(optarg, NULL, 0):GetConsoleHwnd();
+			oic.hWnd = oid.hWnd;
 			break;
 		case 'l':
 			log_level = (int)strtol(optarg, NULL, 0);
@@ -172,6 +186,12 @@ int __cdecl main(int argc, char** argv)
 	oprintf("  %s\n", wdi_strerror(r));
 	if ((r != WDI_SUCCESS) || (opt_extract))
 		return r;
+
+	if (cert_name != NULL) {
+		oprintf("Installing certificate '%s' as a Trusted Publisher...\n", cert_name);
+		r = wdi_install_trusted_certificate(cert_name, &oic);
+		oprintf("  %s\n", wdi_strerror(r));
+	}
 
 	oprintf("Installing driver(s)...\n");
 

@@ -47,8 +47,8 @@ if test "x$USER_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([USER_DIR], ["${USER_DIR}"], [embed user defined driver files from the following location])
 fi
 
-if test "x$USER_DIR" == "x" -a "x$DDK_DIR" == "x" -a "x$LIBUSB0_DIR" == "x"; then
-	AC_MSG_ERROR([One of --with-ddkdir, --with-libusb0 or --with-userdir options MUST be provided.])
+if test "x$USER_DIR" == "x" -a "x$DDK_DIR" == "x" -a "x$LIBUSB0_DIR" == "x" -a "x$LIBUSBK_DIR" == "x"; then
+	AC_MSG_ERROR([One of --with-ddkdir, --with-libusb0, --with-libusbk or --with-userdir options MUST be provided.])
 fi
 
 AC_MSG_CHECKING([development environment])

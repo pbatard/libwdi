@@ -1,14 +1,13 @@
 ; This examples demonstrates how libwdi can be used in an installer script
-; to automatically intall usb drviers along with your application.
+; to automatically intall USB drivers along with your application.
 ;
 ; Requirements: Inno Setup (http://www.jrsoftware.org/isdl.php)
 ;
 ; To use this script, do the following:
 ; - configure libwdi (see config.h)
 ; - compile wdi-simple.exe
-; - customize other settings (strings)
+; - customize this script (application strings, wdi-simple.exe parameters, etc.)
 ; - open this script with Inno Setup
-; - modify the run section at the bottom for your device hardware id
 ; - compile and run
 
 [Setup]
@@ -24,9 +23,8 @@ SolidCompression = yes
 ; Win2000 or higher
 MinVersion = 5,5
 
-; This installation requires admin priveledges.  This is needed to install
-; drivers on windows vista and later.  This is not strictly required with
-; libwdi; it can detect and elevate privileges when needed.
+; This installation requires admin priviledges. This is needed to install
+; drivers on windows vista and later.
 PrivilegesRequired = admin
 
 [Files]
@@ -38,7 +36,7 @@ Source: "wdi-simple.exe"; DestDir: "{app}"; Flags: replacesameversion promptifol
 Name: "{group}\Uninstall YourApplication"; Filename: "{uninstallexe}"
 
 [Run]
-; run the 32bit wdi installer
+; call wdi-simple
 ;
 ; -n, --name <name>          set the device name
 ; -f, --inf <name>           set the inf name
@@ -47,9 +45,12 @@ Name: "{group}\Uninstall YourApplication"; Filename: "{uninstallexe}"
 ; -p, --pid <id>             set the product ID (PID)
 ; -i, --iid <id>             set the interface ID (MI)
 ; -t, --type <driver_type>   set the driver to install
-;                            (0=WinUSB, 1=libusb0.sys, 2=custom)
+;                            (0=WinUSB, 1=libusb0, 2=libusbK, 3=custom)
 ; -d, --dest <dir>           set the extraction directory
 ; -x, --extract              extract files only (don't install)
+; -c, --cert <certname>      install certificate <certname> from the
+;                            embedded user files as a trusted publisher
+;     --stealth-cert         installs certificate above without prompting
 ; -s, --silent               silent mode
 ; -b, --progressbar=[HWND]   display a progress bar during install
 ;                            an optional HWND can be specified
