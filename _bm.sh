@@ -1,10 +1,13 @@
 #!/bin/sh
-# Create a Zadig release
+# Create and upload a Zadig release
 # !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
-date=`date +%Y.%m.%d`
+zadig_version=1.1.1.137
+target_dir=e:/dailies/libwdi
 
-# standard Zadig
+type -P git &>/dev/null || { echo "Git not found. Aborting." >&2; exit 1; }
+type -P 7zr &>/dev/null || { echo "7-zip (7zr) executable not found. Aborting." >&2; exit 1; }
+
 git clean -fdx
 (glibtoolize --version) < /dev/null > /dev/null 2>&1 && LIBTOOLIZE=glibtoolize || LIBTOOLIZE=libtoolize
 $LIBTOOLIZE --copy --force || exit 1
@@ -13,8 +16,12 @@ autoheader || exit 1
 autoconf || exit 1
 automake -a -c || exit 1
 ./configure --disable-shared --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/fre"
+
+cd libwdi
 make -j2
-target_dir=e:/dailies/libwdi/$date
-mkdir -p $target_dir
-lzma -kv examples/zadig.exe
-scp examples/zadig.exe.lzma pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig/zadig_v1.1.1.137.7z
+cd ../examples
+make zadig.exe
+7zr a $target_dir/zadig_v$zadig_version.7z zadig.exe
+cd ..
+
+scp $target_dir/zadig_v$zadig_version.7z pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig
