@@ -17,4 +17,4 @@ make -j2
 target_dir=e:/dailies/libwdi/$date
 mkdir -p $target_dir
 lzma -kv examples/zadig.exe
-scp examples/zadig.exe.lzma pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig/zadig_v1.1.0.136.7z
+scp examples/zadig.exe.lzma pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig/zadig_v1.1.1.137.7z
