@@ -4,6 +4,8 @@
 *.sln           eol=crlf
 *.vcproj        eol=crlf
 *.vcxproj*      eol=crlf
+*.inf.in        eol=crlf
 *.sh            export-ignore
 .gitattributes  export-ignore
 .gitignore      export-ignore
+*.creole        export-ignore
