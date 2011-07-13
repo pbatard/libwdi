@@ -248,7 +248,7 @@ int enumerate_device(char* device_id)
 
 /*
  * Flag phantom/removed devices for reinstallation. See:
- * http://msdn.microsoft.com/en-us/library/aa906206.aspx
+ * http://msdn.microsoft.com/en-us/library/ff541091.aspx
  */
 void check_removed(char* device_hardware_id)
 {

@@ -163,7 +163,7 @@ struct wdi_device_info {
 	bool is_composite;
 	/** (Optional) Composite USB interface number */
 	unsigned char mi;
-	/** USB Device description, usually provided by the device irself */
+	/** USB Device description, usually provided by the device itself */
 	char* desc;
 	/** Windows' driver (service) name */
 	char* driver;
