@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(InputDir)\..\"
-			IntermediateDirectory="$(SolutionDir)$(Platform)\$(Configuration)\helper\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			BuildLogFile="$(IntDir)\$(ProjectName).htm"
@@ -90,7 +90,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(InputDir)\..\"
-			IntermediateDirectory="$(SolutionDir)$(Platform)\$(Configuration)\helper\$(ProjectName)"
+			IntermediateDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)\helper\$(ProjectName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"

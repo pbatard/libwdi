@@ -28,8 +28,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="cd $(ProjectDir)\..
-embedder embedded.h"
+				CommandLine="cd $(ProjectDir)\..&#x0D;&#x0A;if exist embedded.no_is ren embedded.no_is embedded.h&#x0D;&#x0A;embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -93,8 +92,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="cd $(ProjectDir)\..
-embedder embedded.h"
+				CommandLine="cd $(ProjectDir)\.. embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -158,8 +156,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="cd $(ProjectDir)\..
-embedder embedded.h"
+				CommandLine="cd $(ProjectDir)\..&#x0D;&#x0A;if exist embedded.no_is ren embedded.no_is embedded.h&#x0D;&#x0A;embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -221,8 +218,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Embedding binary resources"
-				CommandLine="cd $(ProjectDir)\..
-embedder embedded.h"
+				CommandLine="cd $(ProjectDir)\.. embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -354,13 +350,13 @@ embedder embedded.h"
 				>
 			</File>
 			<File
-				RelativePath="..\winusb.inf.in"
+				RelativePath="..\libusbk.inf.in"
 				>
 			</File>
 			<File
-				RelativePath="..\libusbk.inf.in"
+				RelativePath="..\winusb.inf.in"
 				>
-			</File>			
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
