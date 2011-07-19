@@ -33,6 +33,6 @@ aclocal || exit 1
 autoheader || exit 1
 autoconf || exit 1
 automake -a -c || exit 1
-./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/fre" $*
+./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin" $*
 # rebuild .def, if sed is available
 type -P sed &>/dev/null && create_def

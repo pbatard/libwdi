@@ -17,7 +17,7 @@
 
 /* embed libusbK driver files from the following location */
 #ifndef LIBUSBK_DIR
-#define LIBUSBK_DIR "D:/libusbK/fre"
+#define LIBUSBK_DIR "D:/libusbK/bin"
 #endif
 
 /* embed user defined driver files from the following location */
