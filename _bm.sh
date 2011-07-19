@@ -3,7 +3,7 @@
 # !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
 zadig_version=1.1.1.139
-target_dir=e:/dailies/libwdi
+target_dir=/e/dailies/libwdi
 
 type -P git &>/dev/null || { echo "Git not found. Aborting." >&2; exit 1; }
 type -P 7zr &>/dev/null || { echo "7-zip (7zr) executable not found. Aborting." >&2; exit 1; }
