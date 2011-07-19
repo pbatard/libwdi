@@ -46,8 +46,8 @@ void usage(void)
 	printf("-n, --name <name>          set the device name\n");
 	printf("-f, --inf <name>           set the inf name\n");
 	printf("-m, --manufacturer <name>  set the manufacturer name\n");
-	printf("-v, --vid <id>             set the vendor ID (VID)\n");
-	printf("-p, --pid <id>             set the product ID (PID)\n");
+	printf("-v, --vid <id>             set the vendor ID (VID, use 0x prefix for hex)\n");
+	printf("-p, --pid <id>             set the product ID (PID, use 0x prefix for hex)\n");
 	printf("-i, --iid <id>             set the interface ID (MI)\n");
 	printf("-t, --type <driver_type>   set the driver to install\n");
 	printf("                           (0=WinUSB, 1=libusb0, 2=libusbK, 3=custom)\n");
