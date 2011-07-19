@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2011.03.07
+ * Version: 2011.06.19
  */
 struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -39,7 +39,6 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0079, "DragonRise Inc." },
 	{ 0x0105, "Trust International B.V." },
 	{ 0x0145, "Unknown" },
-	{ 0x0154, "LW154 Wireless 150N Adapter" },
 	{ 0x0204, "Chipsbank Microelectronics Co., Ltd" },
 	{ 0x0218, "Hangzhou Worlde" },
 	{ 0x02ad, "HUMAX Co., Ltd." },
@@ -629,7 +628,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0661, "Hamamatsu Photonics K.K." },
 	{ 0x0662, "Kansai Electric Co., Ltd" },
 	{ 0x0663, "Topmax Electronic Co., Ltd" },
-	{ 0x0664, "Groovy Technology Corp." },
+	{ 0x0664, "ET&T Technology Co., Ltd." },
 	{ 0x0665, "Cypress Semiconductor" },
 	{ 0x0667, "Aiwa Co., Ltd" },
 	{ 0x0668, "WordWand" },
@@ -668,7 +667,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x069a, "Askey Computer Corp." },
 	{ 0x069b, "Thomson, Inc." },
 	{ 0x069d, "Hughes Network Systems (HNS)" },
-	{ 0x069e, "Marx" },
+	{ 0x069e, "Welcat Inc." },
 	{ 0x069f, "Allied Data Technologies BV" },
 	{ 0x06a2, "Topro Technology, Inc." },
 	{ 0x06a3, "Saitek PLC" },
@@ -1411,6 +1410,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0bf6, "Addonics Technologies, Inc." },
 	{ 0x0bf7, "Sunny Giken, Inc." },
 	{ 0x0bf8, "Fujitsu Siemens Computers" },
+	{ 0x0bfd, "Kvaser AB" },
 	{ 0x0c04, "MOTO Development Group, Inc." },
 	{ 0x0c05, "Appian Graphics" },
 	{ 0x0c06, "Hasbro Games, Inc." },
@@ -1467,6 +1467,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0c66, "Rexon Electronics Corp." },
 	{ 0x0c67, "Concept Telecom, Ltd" },
 	{ 0x0c70, "MCT Elektronikladen" },
+	{ 0x0c72, "PEAK System" },
 	{ 0x0c74, "Optronic Laboratories Inc." },
 	{ 0x0c76, "JMTek, LLC." },
 	{ 0x0c77, "Sipix Group, Ltd" },
@@ -1653,7 +1654,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x0db7, "ELCON Systemtechnik" },
 	{ 0x0dbc, "A&D Medical" },
 	{ 0x0dbe, "Jiuh Shiuh Precision Industry Co., Ltd" },
-	{ 0x0dbf, "Quik Tech Solutions" },
+	{ 0x0dbf, "Jess-Link International" },
 	{ 0x0dc0, "G7 Solutions (formerly Great Notions)" },
 	{ 0x0dc1, "Tamagawa Seiki Co., Ltd" },
 	{ 0x0dc3, "Athena Smartcard Solutions, Inc." },
@@ -2170,6 +2171,7 @@ struct vendor_name usb_vendor[] = {
 	{ 0x13e5, "Rane" },
 	{ 0x13e6, "TechnoScope Co., Ltd." },
 	{ 0x13ec, "Zydacron" },
+	{ 0x13ee, "MosArt" },
 	{ 0x13fd, "Initio Corporation" },
 	{ 0x13fe, "Kingston Technology Company Inc." },
 	{ 0x1400, "Axxion Group Corp." },
