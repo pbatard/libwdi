@@ -62,7 +62,7 @@ typedef DEVINSTID_A DEVINSTID;
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
+DLL_DECLARE(CDECL, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
 
 /*
  * Globals
