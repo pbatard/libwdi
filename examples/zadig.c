@@ -223,7 +223,10 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
-	if ((dev == NULL) && (!extract_only)) return WDI_ERROR_NO_DEVICE;
+	if ( (dev == NULL) && (!extract_only)
+	  && (!(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)) ) {
+		return WDI_ERROR_NO_DEVICE;
+	}
 
 	installation_running = true;
 	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
