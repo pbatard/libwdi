@@ -1,7 +1,8 @@
 all-local: embedded.h libwdi.la
 if CREATE_IMPORT_LIB
 # Rebuild the import lib from the .def so that MS and MinGW DLLs can be interchanged
-	$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
+	@echo "  CCLD   libwdi.dll.a"
+	@$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
 endif
 
 INCLUDES = -I$(top_srcdir)
@@ -32,12 +33,14 @@ endif
 
 # call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
-	$(CC_FOR_BUILD) -I.. embedder.c -o $@
+	@echo "  CC     embedder"
+	@$(CC_FOR_BUILD) -I.. embedder.c -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 
 libwdi_rc.lo: libwdi.rc
-	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
+	@echo "  WINRES $<"
+	@$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --silent --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
 
 libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(NO_CYGWIN) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
@@ -45,7 +48,7 @@ libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
 
 embedded.h: embedder $(noinst_PROGRAMS)
-	./embedder embedded.h
+	@./embedder embedded.h
 
 clean-local:
 	-rm -rf embedded.h embedder embedder.exe
