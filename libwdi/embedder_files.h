@@ -98,7 +98,7 @@ struct emb embeddable_fixed[] = {
 				{ 1, "libusb0_x86.dll", "amd64" },	// reuse
 #			endif	// OPT_M64
 #		endif	// LIBUSB0_DIR
-		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
+//		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
 #		if defined(OPT_M64)
 			{ 1, "libusb-1.0_x86.dll", "amd64" },	// reuse
 #		endif	// OPT_M64
@@ -110,7 +110,7 @@ struct emb embeddable_fixed[] = {
 #		endif	// DDK_DIR
 		{ 0, LIBUSBK_DIR "\\sys\\amd64\\libusbK.sys", "amd64" },
 		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusbK.dll", "amd64" },
-		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb-1.0.dll", "amd64" },
+//		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb-1.0.dll", "amd64" },
 #		if !defined(LIBUSB0_DIR)
 			{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb0.dll", "amd64" },
 #		endif	// LIBUSB0_DIR
@@ -118,8 +118,8 @@ struct emb embeddable_fixed[] = {
 			// The x86/ DLLs will not be used, but they are required for rename to _x86
 			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusbK.dll", "x86" },
 			{ 1, "libusbK_x86.dll", "amd64" },
-			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
-			{ 1, "libusb-1.0_x86.dll", "amd64" },
+//			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
+//			{ 1, "libusb-1.0_x86.dll", "amd64" },
 #			if !defined(LIBUSB0_DIR)
 				{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb0.dll", "x86" }
 				{ 1, "libusb0_x86.dll", "amd64" },

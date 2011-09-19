@@ -84,7 +84,7 @@ HKR,"Parameters","DebugLevel",0x10001,4
 libusbK.sys		= 1,x86
 libusbK.dll		= 1,x86
 libusb0.dll		= 1,x86
-libusb-1.0.dll	= 1,x86
+;libusb-1.0.dll	= 1,x86
 WdfCoInstaller01009.dll = 1,x86
 
 [SourceDisksFiles.amd64]
@@ -93,8 +93,8 @@ libusbK.dll			= 1,amd64
 libusbK_x86.dll		= 1,amd64
 libusb0.dll			= 1,amd64
 libusb0_x86.dll		= 1,amd64
-libusb-1.0.dll		= 1,amd64
-libusb-1.0_x86.dll	= 1,amd64
+;libusb-1.0.dll		= 1,amd64
+;libusb-1.0_x86.dll	= 1,amd64
 WdfCoInstaller01009.dll	= 1,amd64
 
 [DestinationDirs]
@@ -115,13 +115,13 @@ libusbK.sys
 
 [libusb_files_dll]
 libusbK.dll
-libusb-1.0.dll,,,0x00000040
+;libusb-1.0.dll,,,0x00000040
 libusb0.dll,,,0x00000040
 
 [libusb_files_dll_syswow64]
 libusbK.dll, libusbK_x86.dll
 libusb0.dll, libusb0_x86.dll,,0x00000040
-libusb-1.0.dll, libusb-1.0_x86.dll,,0x00000040
+;libusb-1.0.dll, libusb-1.0_x86.dll,,0x00000040
 
 [LUsbK_Device.NT]
 CopyFiles = libusb_files_sys, libusb_files_dll
