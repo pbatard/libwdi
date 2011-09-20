@@ -733,7 +733,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	char strbuf[STR_BUFFER_SIZE];
 	wchar_t desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
-	const char usbhub_name[] = "usbhub";
+	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3"};
 	const char usbccgp_name[] = "usbccgp";
 	bool is_hub, is_composite_parent, has_vid;
 
@@ -787,16 +787,19 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 			device_info->driver = safe_strdup(strbuf);
 		}
 		is_hub = false;
-		if (safe_strcmp(strbuf, usbhub_name) == 0) {
-			if (!options->list_hubs) {
-				continue;
+		for (j=0; j<ARRAYSIZE(usbhub_name); j++) {
+			if (safe_stricmp(strbuf, usbhub_name[j]) == 0) {
+				is_hub = true;
+				break;
 			}
-			is_hub = true;
+		}
+		if (is_hub && (!options->list_hubs)) {
+			continue;
 		}
 		// Also eliminate composite devices parent drivers, as replacing these drivers
 		// is a bad idea
 		is_composite_parent = false;
-		if (safe_strcmp(strbuf, usbccgp_name) == 0) {
+		if (safe_stricmp(strbuf, usbccgp_name) == 0) {
 			if (!options->list_hubs) {
 				continue;
 			}
