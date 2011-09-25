@@ -9,8 +9,8 @@ DeviceGUID = "#DEVICE_INTERFACE_GUID#"
 
 [Version]
 Signature   = "$Windows NT$"
-Class       = "libusb (WinUSB) devices"
-ClassGuid   = {78a1c341-4539-11d3-b88d-00c04fad5171}
+Class       = "Universal Serial Bus devices"
+ClassGuid   = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
 Provider    = "libusb.org"
 CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
@@ -19,7 +19,7 @@ DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
 Addreg = WinUSBDeviceClassReg
 
 [WinUSBDeviceClassReg]
-HKR,,,0,"libusb (WinUSB) devices"
+HKR,,,0,"Universal Serial Bus devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
