@@ -47,12 +47,15 @@ HKR,,Icon,,-20
 %DeviceName%=LUsbK_Device, USB\%DeviceID%
 
 [LUsbK_Device.NT.HW]
-AddReg=LUsbK_Device_HW_AddReg
+AddReg=#USE_DEVICE_INTERFACE_GUID#
 
 [LUsbK_Device.NTAMD64.HW]
-AddReg=LUsbK_Device_HW_AddReg
+AddReg=#USE_DEVICE_INTERFACE_GUID#
 
-[LUsbK_Device_HW_AddReg]
+[NoDeviceInterfaceGUID]
+; Avoids adding a DeviceInterfaceGUID for generic driver
+
+[AddDeviceInterfaceGUID]
 HKR,,DeviceInterfaceGUIDs, 0x10000,%DeviceGUID%
 
 ; ========== Driver/Servce section ==============

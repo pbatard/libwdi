@@ -56,9 +56,12 @@ KmdfService = WINUSB, WinUsb_Install
 KmdfLibraryVersion = 1.9
 
 [USB_Install.HW]
-AddReg = Dev_AddReg
+AddReg = #USE_DEVICE_INTERFACE_GUID#
 
-[Dev_AddReg]
+[NoDeviceInterfaceGUID]
+; Avoids adding a DeviceInterfaceGUID for generic driver
+
+[AddDeviceInterfaceGUID]
 HKR,,DeviceInterfaceGUIDs,0x10000,%DeviceGUID%
 
 [USB_Install.CoInstallers]
