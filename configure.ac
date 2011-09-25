@@ -1,13 +1,17 @@
 AC_INIT([libwdi], [1.1.1], [libwdi-devel@lists.sourceforge.net], [libwdi], [http://libwdi.akeo.ie])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wno-portability])
 AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])
 AM_CONFIG_HEADER([config.h])
-m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+# Enable silent build rules by default (Automake v1.11 or later).
+# Disable by either passing --disable-silent-rules to configure or passing V=1 to make
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
+         [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
 AC_PREREQ([2.50])
 AC_PROG_CC
 AC_PROG_LIBTOOL
+LT_LANG([Windows Resource])
 AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
@@ -61,7 +65,6 @@ case $host in
 	LIBCONFIG_CFLAGS=""
 	AM_CFLAGS="-Wshadow"
 	AM_LDFLAGS="-Wl,--add-stdcall-alias"
-	AC_CHECK_TOOL(DLLTOOL, dlltool, false)	
 	;;
 *-cygwin*)
 	AC_MSG_RESULT([cygwin])
@@ -92,7 +95,6 @@ esac
 
 AM_CFLAGS="${AM_CFLAGS} -DWINVER=0x500"
 AM_LDFLAGS="${AM_LDFLAGS} -no-undefined -avoid-version"
-AC_CHECK_TOOL([RC], [windres], [no])
 AM_CONDITIONAL([CREATE_IMPORT_LIB], [test "x$create_import_lib" = "xyes"])
 
 # cross compiling support

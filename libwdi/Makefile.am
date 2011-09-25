@@ -31,16 +31,21 @@ installer_x64_LDFLAGS = -m64 $(NO_CYGWIN) $(AM_LDFLAGS) -static
 installer_x64_LDADD = -lsetupapi -lnewdev -lole32
 endif
 
+pkg_v_rc = $(pkg_v_rc_$(V))
+pkg_v_rc_ = $(pkg_v_rc_$(AM_DEFAULT_VERBOSITY))
+pkg_v_rc_0 = @echo "  RC     $@";
+pkg_v_lcc = $(pkg_v_lcc_$(V))
+pkg_v_lcc_ = $(pkg_v_lcc_$(AM_DEFAULT_VERBOSITY))
+pkg_v_lcc_0 = @echo "  CC     $@";
+
 # call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
-	@echo "  CC     embedder"
-	@$(CC_FOR_BUILD) -I.. embedder.c -o $@
+	$(pkg_v_lcc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=CC --mode=link $(CC_FOR_BUILD) -I.. embedder.c -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 
 libwdi_rc.lo: libwdi.rc
-	@echo "  WINRES $<"
-	@$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --silent --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
+	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
 
 libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(NO_CYGWIN) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(NO_CYGWIN) $(AM_LDFLAGS)
