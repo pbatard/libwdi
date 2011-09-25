@@ -64,6 +64,7 @@ WNDPROC original_wndproc;
 char app_dir[MAX_PATH];
 char extraction_path[MAX_PATH];
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
+char* generic_device_id[WDI_NB_DRIVERS] = { "MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
 struct wdi_options_install_cert ic_options= { 0 };
@@ -223,13 +224,14 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
-	if ( (dev == NULL) && (!extract_only)
+	if ( (dev == NULL) && (!extract_only) && (!pd_options.generic_driver)
 	  && (!(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)) ) {
 		return WDI_ERROR_NO_DEVICE;
 	}
 
 	installation_running = true;
-	if (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED) {
+	if ( (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)
+	  || (pd_options.generic_driver) ) {
 		// If the device is created from scratch, override the existing device
 		dev = calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
@@ -238,32 +240,39 @@ int install_driver(void)
 		}
 		need_dealloc = true;
 
-		// Retrieve the various device parameters
-		if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
-			notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
-			r = WDI_ERROR_INVALID_PARAM; goto out;
-		}
-		dev->desc = safe_strdup(str_buf);
-		GetDlgItemTextA(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
-		if (sscanf(str_buf, "%4x", &tmp) != 1) {
-			dprintf("could not convert VID string - aborting");
-			r = WDI_ERROR_INVALID_PARAM; goto out;
-		}
-		dev->vid = (unsigned short)tmp;
-		GetDlgItemTextA(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
-		if (sscanf(str_buf, "%4x", &tmp) != 1) {
-			dprintf("could not convert PID string - aborting");
-			r = WDI_ERROR_INVALID_PARAM; goto out;
-		}
-		dev->pid = (unsigned short)tmp;
-		GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
-		if ( (safe_strlen(str_buf) != 0)
-		  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-			dev->is_composite = true;
-			dev->mi = (unsigned char)tmp;
+		if (!pd_options.generic_driver) {
+			// Retrieve the various device parameters
+			if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
+				notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
+				r = WDI_ERROR_INVALID_PARAM; goto out;
+			}
+			dev->desc = safe_strdup(str_buf);
+			GetDlgItemTextA(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
+			if (sscanf(str_buf, "%4x", &tmp) != 1) {
+				dprintf("could not convert VID string - aborting");
+				r = WDI_ERROR_INVALID_PARAM; goto out;
+			}
+			dev->vid = (unsigned short)tmp;
+			GetDlgItemTextA(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
+			if (sscanf(str_buf, "%4x", &tmp) != 1) {
+				dprintf("could not convert PID string - aborting");
+				r = WDI_ERROR_INVALID_PARAM; goto out;
+			}
+			dev->pid = (unsigned short)tmp;
+			GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
+			if ( (safe_strlen(str_buf) != 0)
+			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
+				dev->is_composite = true;
+				dev->mi = (unsigned char)tmp;
+			} else {
+				dev->is_composite = false;
+				dev->mi = 0;
+			}
 		} else {
+			dev->desc = (char*)malloc(128);
+			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 			dev->is_composite = false;
-			dev->mi = 0;
+			dev->device_id = generic_device_id[pd_options.driver_type];
 		}
 	}
 
@@ -567,7 +576,7 @@ void init_dialog(HWND hDlg)
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
-	hMenuLogLevel = GetSubMenu(hMenuOptions, 8);
+	hMenuLogLevel = GetSubMenu(hMenuOptions, 9);
 
 	// Create the status line
 	create_status_bar();
@@ -1100,6 +1109,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDM_EXTRACT:
 			toggle_extract();
+			break;
+		case IDM_GENERICDRIVER:
+			pd_options.generic_driver = ~GetMenuState(hMenuOptions, IDM_GENERICDRIVER, MF_CHECKED) & MF_CHECKED;
+			CheckMenuItem(hMenuOptions, IDM_GENERICDRIVER, pd_options.generic_driver?MF_CHECKED:MF_UNCHECKED);
 			break;
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
