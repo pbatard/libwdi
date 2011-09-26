@@ -169,8 +169,10 @@ struct wdi_device_info {
 	char* driver;
 	/** (Optional) Microsoft's device URI string. NULL if unused */
 	char* device_id;
-	/** (Optional) Microsoft's hardware ID string. NULL if unused */
+	/** (Optional) Microsoft's Hardware ID string. NULL if unused */
 	char* hardware_id;
+	/** (Optional) Microsoft's Compatible ID string. NULL if unused */
+	char* compatible_id;
 };
 
 /*
