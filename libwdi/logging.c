@@ -29,19 +29,19 @@
 #include "libwdi.h"
 #include "logging.h"
 
-HANDLE logger_rd_handle = INVALID_HANDLE_VALUE;
-HANDLE logger_wr_handle = INVALID_HANDLE_VALUE;
+static HANDLE logger_rd_handle = INVALID_HANDLE_VALUE;
+static HANDLE logger_wr_handle = INVALID_HANDLE_VALUE;
 // Handle and Message for the destination Window when registered
-HWND logger_dest = NULL;
-UINT logger_msg = 0;
+static HWND logger_dest = NULL;
+static UINT logger_msg = 0;
 // Detect spurious log readouts
-unsigned log_messages_pending = 0;
+static unsigned log_messages_pending = 0;
 // Global debug level
 static int global_log_level = WDI_LOG_LEVEL_INFO;
 
 extern char *windows_error_str(uint32_t retval);
 
-void pipe_wdi_log_v(enum wdi_log_level level,
+static void pipe_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
 	char buffer[LOGBUF_SIZE];
@@ -115,7 +115,7 @@ void pipe_wdi_log_v(enum wdi_log_level level,
 
 }
 
-void console_wdi_log_v(enum wdi_log_level level,
+static void console_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
 	FILE *stream;
@@ -173,7 +173,7 @@ void wdi_log(enum wdi_log_level level,
 }
 
 // Create a synchronous pipe for messaging
-int create_logger(DWORD buffsize)
+static int create_logger(DWORD buffsize)
 {
 	if (buffsize == 0) {
 		buffsize = LOGGER_PIPE_SIZE;
@@ -209,7 +209,7 @@ int create_logger(DWORD buffsize)
 }
 
 // Destroy the logging pipe
-void destroy_logger(void)
+static void destroy_logger(void)
 {
 	if (logger_wr_handle != INVALID_HANDLE_VALUE) {
 		CloseHandle(logger_wr_handle);

@@ -118,19 +118,19 @@ token_entity_t inf_entities[]=
 /*
  * Global variables
  */
-struct wdi_device_info *current_device = NULL;
-bool dlls_available = false;
-bool installer_completed = false;
-DWORD timeout = DEFAULT_TIMEOUT;
-HANDLE pipe_handle = INVALID_HANDLE_VALUE;
+static struct wdi_device_info *current_device = NULL;
+static bool dlls_available = false;
+static bool installer_completed = false;
+static DWORD timeout = DEFAULT_TIMEOUT;
+static HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
-const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys"};
-const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb-win32.inf.in", "libusbk.inf.in"};
-const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb-win32.cat.in", "libusbk.cat.in"};
-const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK"};
+static const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys"};
+static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb-win32.inf.in", "libusbk.inf.in"};
+static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb-win32.cat.in", "libusbk.cat.in"};
+static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK"};
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
-enum windows_version windows_version = WINDOWS_UNDEFINED;
+static enum windows_version windows_version = WINDOWS_UNDEFINED;
 
 /*
  * For the retrieval of the device description on Windows 7

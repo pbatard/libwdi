@@ -36,7 +36,7 @@ s¦^#.*List of USB.*¦/*\
 #include <stdlib.h>\
 #include "libwdi.h"\
 \
-struct vendor_name \{\
+static struct vendor_name \{\
 	unsigned short vid;\
 	const char* name;\
 \};\

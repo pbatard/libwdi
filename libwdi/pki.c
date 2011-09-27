@@ -951,7 +951,7 @@ out:
 /*
  * Opens a file and computes the SHA1 Authenticode Hash
  */
-BOOL CalcHash(BYTE* pbHash, LPCSTR szfilePath)
+static BOOL CalcHash(BYTE* pbHash, LPCSTR szfilePath)
 {
 	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
 	BOOL r = FALSE;
@@ -977,7 +977,7 @@ out:
 /*
  * Add a new member to a cat file, containing the hash for the relevant file
  */
-BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
+static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 {
 	const GUID inf_guid = {0xDE351A42, 0x8E59, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
 	const GUID pe_guid = {0xC689AAB8, 0x8E78, 0x11D0, {0x8C, 0x47, 0x00, 0xC0, 0x4F, 0xC2, 0x95, 0xEE}};
@@ -1093,7 +1093,7 @@ out:
 /*
  * Path and directory manipulation
  */
-void __inline HandleSeparators(LPSTR szPath)
+static void __inline HandleSeparators(LPSTR szPath)
 {
 	size_t i;
 	if (szPath == NULL) return;
@@ -1104,7 +1104,7 @@ void __inline HandleSeparators(LPSTR szPath)
 	}
 }
 
-BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
+static BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 {
 	DWORD r;
 	LPSTR szSrcCopy = NULL;
@@ -1126,7 +1126,7 @@ BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 
 // Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
 static CHAR szInitialDir[MAX_PATH];		// We need a global variable
-void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFileList)
+static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWORD cFileList)
 {
 	CHAR szDir[MAX_PATH+1];
 	CHAR szSubDir[MAX_PATH+1];

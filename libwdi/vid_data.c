@@ -30,7 +30,7 @@ struct vendor_name {
  * http://www.linux-usb.org/usb.ids
  * Version: 2011.09.04
  */
-struct vendor_name usb_vendor[] = {
+static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
 	{ 0x0002, "Ingram" },
 	{ 0x0003, "Club Mac" },

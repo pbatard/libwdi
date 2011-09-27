@@ -39,7 +39,7 @@ enum stdlg_user_message_type {
 };
 
 // Messages that appear in our progress bar as time passes
-const char* progress_message[] = {
+static const char* progress_message[] = {
 	"Installation can take some time...",
 	"The installation process can take up to 5 minutes...",
 	"The reason it can be so long...",
@@ -104,7 +104,7 @@ extern char *windows_error_str(uint32_t retval);
  * Detect if a Windows Security prompt is active, by enumerating the
  * whole Windows tree and looking for a security popup
  */
-BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
+static BOOL CALLBACK security_prompt_callback(HWND hWnd, LPARAM lParam)
 {
 	char str_buf[STR_BUFFER_SIZE];
 	HWND *hFound = (HWND*)lParam;
@@ -131,7 +131,7 @@ HWND find_security_prompt(void) {
 /*
  * Thread executed by the run_with_progress_bar() function
  */
-void __cdecl progress_thread(void* param)
+static void __cdecl progress_thread(void* param)
 {
 	int r;
 
@@ -225,7 +225,7 @@ static void init_children(HWND hDlg) {
 /*
  * Callback for the run_with_progress_bar() function
  */
-LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT loc;
 	HANDLE handle;
