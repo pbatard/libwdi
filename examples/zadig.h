@@ -33,7 +33,7 @@
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
-#define LIBWDI_URL                  "http://libwdi.akeo.ie"
+#define LIBWDI_URL                  "http://libwdi.sf.net"
 #define ZADIG_URL                   "http://zadig.akeo.ie"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
@@ -66,6 +66,17 @@ enum user_message_type {
 	UM_LOGGER_EVENT
 };
 
+// Windows versions
+enum windows_version {
+	WINDOWS_UNDEFINED,
+	WINDOWS_UNSUPPORTED,
+	WINDOWS_2K,
+	WINDOWS_XP,
+	WINDOWS_2003_XP64,
+	WINDOWS_VISTA,
+	WINDOWS_7
+};
+
 #define safe_free(p) do {if ((void*)p != NULL) {free((void*)p); p = NULL;}} while(0)
 #define safe_min(a, b) min((size_t)(a), (size_t)(b))
 #define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, src, safe_min(count, dst_max)); \
@@ -74,11 +85,13 @@ enum user_message_type {
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, safe_min(count, dst_max - safe_strlen(dst) - 1))
 #define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, safe_strlen(src)+1)
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
+#define safe_stricmp(str1, str2) _stricmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf _snprintf
 #define safe_strlen(str) ((((char*)str)==NULL)?0:strlen(str))
 #define safe_strdup _strdup
+#define MF_CHECK(cond) ((cond)?MF_CHECKED:MF_UNCHECKED)
 
 #if defined(_MSC_VER)
 #define safe_vsnprintf(buf, size, format, arg) _vsnprintf_s(buf, size, _TRUNCATE, format, arg)
@@ -91,6 +104,7 @@ enum user_message_type {
  */
 #define dprintf(...) w_printf(false, __VA_ARGS__)
 #define dsprintf(...) w_printf(true, __VA_ARGS__)
+void detect_windows_version(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc);
@@ -111,3 +125,34 @@ extern HWND hMain;
 extern HWND hInfo;
 extern HWND hStatus;
 extern char extraction_path[MAX_PATH];
+
+/*
+ * Redefs
+ */
+#if (_WIN32_WINNT < 0x0600)
+typedef struct
+{
+	NMHDR	hdr;
+	RECT	rcButton;
+} NMBCDROPDOWN, *LPNMBCDROPDOWN;
+#endif
+#if !defined(BCN_DROPDOWN)
+#define BCN_DROPDOWN (0U-1248U)
+#endif
+#if !defined(BCM_SETIMAGELIST)
+#define BCM_SETIMAGELIST        (0x1602)
+#endif
+
+typedef HIMAGELIST (WINAPI *ImageList_Create_t)(
+	int cx,
+	int cy,
+	UINT flags,
+	int cInitial,
+	int cGrow
+);
+
+typedef int (WINAPI *ImageList_ReplaceIcon_t)(
+	HIMAGELIST himl,
+	int i,
+	HICON hicon
+);

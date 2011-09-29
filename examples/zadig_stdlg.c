@@ -50,9 +50,10 @@ static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID,
 /*
  * Globals
  */
-static HICON hMessageIcon = INVALID_HANDLE_VALUE;
+static HICON hMessageIcon = (HICON)INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
+enum windows_version windows_version;
 
 /*
  * Converts a name + ext UTF-8 pair to a valid MS filename.
@@ -147,6 +148,33 @@ static char err_string[ERR_BUFFER_SIZE];
 }
 
 /*
+ * Detect Windows version
+ */
+void detect_windows_version(void)
+{
+	OSVERSIONINFO os_version;
+
+	memset(&os_version, 0, sizeof(OSVERSIONINFO));
+	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	windows_version = WINDOWS_UNSUPPORTED;
+	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
+		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
+			windows_version = WINDOWS_2K;
+		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
+			windows_version = WINDOWS_XP;
+		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
+			windows_version = WINDOWS_2003_XP64;
+		} else if (os_version.dwMajorVersion >= 6) {
+			if (os_version.dwBuildNumber < 7000) {
+				windows_version = WINDOWS_VISTA;
+			} else {
+				windows_version = WINDOWS_7;
+			}
+		}
+	}
+}
+
+/*
  * Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
  */
 static PSID get_sid(void) {
@@ -221,7 +249,7 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 
 /*
  * Browse for a folder and update the folder edit box
- * Will use the newer IFileOpenDialog if running on Vista and later
+ * Will use the newer IFileOpenDialog if *compiled* for Vista or later
  */
 void browse_for_folder(void) {
 
@@ -400,7 +428,7 @@ out:
 
 /*
  * Return the UTF8 path of a file selected through a load or save dialog
- * Will use the newer IFileOpenDialog if running on Vista and later
+ * Will use the newer IFileOpenDialog if *compiled* for Vista or later
  * All string parameters are UTF-8
  */
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc)

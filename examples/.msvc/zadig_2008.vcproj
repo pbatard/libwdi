@@ -361,6 +361,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\split.ico"
+				>
+			</File>			
+			<File
 				RelativePath="..\zadig.ico"
 				>
 			</File>

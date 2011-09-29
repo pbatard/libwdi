@@ -171,6 +171,7 @@
     <Manifest Include="..\common_controls_and_elevation.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\split.ico" />
     <None Include="..\zadig.ico" />
   </ItemGroup>
   <ItemGroup>
