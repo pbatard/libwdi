@@ -228,14 +228,14 @@ int install_driver(void)
 	bool need_dealloc = false;
 	int tmp, r = WDI_ERROR_OTHER;
 
-	if ( (dev == NULL) && (!extract_only) && (!pd_options.generic_driver)
+	if ( (dev == NULL) && (!extract_only) && (!pd_options.use_wcid_driver)
 	  && (!(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)) ) {
 		return WDI_ERROR_NO_DEVICE;
 	}
 
 	installation_running = true;
 	if ( (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)
-	  || (pd_options.generic_driver) ) {
+	  || (pd_options.use_wcid_driver) ) {
 		// If the device is created from scratch, override the existing device
 		dev = (struct wdi_device_info*)calloc(1, sizeof(struct wdi_device_info));
 		if (dev == NULL) {
@@ -244,7 +244,7 @@ int install_driver(void)
 		}
 		need_dealloc = true;
 
-		if (pd_options.generic_driver) {
+		if (pd_options.use_wcid_driver) {
 			dev->desc = (char*)malloc(128);
 			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 		} else {
@@ -304,7 +304,7 @@ int install_driver(void)
 			r = wdi_install_driver(dev, extraction_path, inf_name, &options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
-			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.generic_driver)) {
+			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.use_wcid_driver)) {
 				toggle_driverless(false);
 			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
@@ -502,7 +502,7 @@ void toggle_create(bool refresh)
 		}
 	}
 	CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
-	pd_options.generic_driver = false;
+	pd_options.use_wcid_driver = false;
 	replace_driver = false;
 	set_install_button();
 }
@@ -554,13 +554,13 @@ void set_install_button(void)
 	char *l1, *l2, *l3, *l4;
 
 	EnableMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, ((device==NULL)&&(!create_device))?MF_GRAYED:MF_ENABLED);
-	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.generic_driver) && (!extract_only)));
-	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.generic_driver && (!extract_only)));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only)));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only));
-	l1 = (pd_options.generic_driver && (!extract_only))?"pre-":"";
-	l2 = extract_only?"Extract":((replace_driver && (!pd_options.generic_driver))?"Replace":"Install");
+	l1 = (pd_options.use_wcid_driver && (!extract_only))?"pre-":"";
+	l2 = extract_only?"Extract":((replace_driver && (!pd_options.use_wcid_driver))?"Replace":"Install");
 	l3 = extract_only?"Files":"Driver";
-	l4 = pd_options.generic_driver?"\n(WCID devices)":"";
+	l4 = pd_options.use_wcid_driver?"\n(WCID devices)":"";
 	safe_sprintf(label, 64, "%s%s %s%s", l1, l2, l3, l4);
 	SetDlgItemTextA(hMain, IDC_INSTALL, label);
 }
@@ -966,7 +966,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 		}
-		pd_options.generic_driver = (nb_devices < 0);
+		pd_options.use_wcid_driver = (nb_devices < 0);
 		set_install_button();
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
@@ -1215,7 +1215,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDM_SPLIT_INSTALL:
 		case IDM_SPLIT_WCID:
 		case IDM_SPLIT_EXTRACT:
-			pd_options.generic_driver = ( (LOWORD(wParam) == IDM_SPLIT_WCID)
+			pd_options.use_wcid_driver = ( (LOWORD(wParam) == IDM_SPLIT_WCID)
 				|| ((device == NULL) && (!create_device)) );
 			extract_only = (LOWORD(wParam) == IDM_SPLIT_EXTRACT);
 			set_install_button();
