@@ -121,7 +121,7 @@ struct emb embeddable_fixed[] = {
 //			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
 //			{ 1, "libusb-1.0_x86.dll", "amd64" },
 #			if !defined(LIBUSB0_DIR)
-				{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb0.dll", "x86" }
+				{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb0.dll", "x86" },
 				{ 1, "libusb0_x86.dll", "amd64" },
 #			endif	// LIBUSB0_DIR
 #		endif	// OPT_M32
