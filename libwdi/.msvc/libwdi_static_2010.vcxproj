@@ -206,7 +206,7 @@ ren embedded.h embedded.no_is</Command>
     <ClInclude Include="..\tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\libusb-win32.inf.in" />
+    <None Include="..\libusb0.inf.in" />
     <None Include="..\winusb.inf.in" />
     <None Include="..\libusbk.inf.in" />
   </ItemGroup>

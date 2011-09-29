@@ -147,10 +147,10 @@ struct emb embeddable_fixed[] = {
 #endif
 // inf templates for the tokenizer ("" directory means no extraction)
 	{ 0, "winusb.inf.in", "" },
-	{ 0, "libusb-win32.inf.in", "" },
+	{ 0, "libusb0.inf.in", "" },
 	{ 0, "libusbk.inf.in", "" },
 // cat file lists for self signing
 	{ 0, "winusb.cat.in", "" },
-	{ 0, "libusb-win32.cat.in", "" },
+	{ 0, "libusb0.cat.in", "" },
 	{ 0, "libusbk.cat.in", "" },
 };

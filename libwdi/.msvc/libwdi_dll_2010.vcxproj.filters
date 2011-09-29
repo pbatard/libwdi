@@ -63,7 +63,7 @@
     <None Include="..\libwdi.def">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="..\libusb-win32.inf.in">
+    <None Include="..\libusb0.inf.in">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\libusbk.inf.in">

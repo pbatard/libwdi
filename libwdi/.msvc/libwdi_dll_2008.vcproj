@@ -377,7 +377,7 @@ embedder embedded.h"
 			Name="Resource Files"
 			>
 			<File
-				RelativePath="..\libusb-win32.inf.in"
+				RelativePath="..\libusb0.inf.in"
 				>
 			</File>
 			<File

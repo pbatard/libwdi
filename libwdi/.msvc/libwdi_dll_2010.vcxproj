@@ -177,7 +177,7 @@ embedder embedded.h</Command>
     <ClInclude Include="..\tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\libusb-win32.inf.in" />
+    <None Include="..\libusb0.inf.in" />
     <None Include="..\libwdi.def" />
     <None Include="..\winusb.inf.in" />
     <None Include="..\libusbk.inf.in" />
