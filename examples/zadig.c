@@ -58,6 +58,7 @@ HWND hDeviceList;
 HWND hMain;
 HWND hInfo;
 HWND hStatus;
+HWND hWCIDToolTip;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 HMENU hMenuLogLevel;
@@ -65,7 +66,7 @@ HMENU hMenuSplit;
 WNDPROC original_wndproc;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH];
-char extraction_path[MAX_PATH];
+char extraction_path[MAX_PATH] = DEFAULT_DIR;
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
@@ -84,6 +85,7 @@ bool replace_driver = false;
 bool extract_only = false;
 bool from_install = false;
 bool installation_running = false;
+enum wcid_state is_wcid = WCID_NONE;
 
 /*
  * On screen logging and status
@@ -287,7 +289,6 @@ int install_driver(void)
 	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
-	GetDlgItemTextU(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
 	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files.");
@@ -380,7 +381,6 @@ void display_mi(bool show)
 {
 	int cmd = show?SW_SHOW:SW_HIDE;
 	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_MI), cmd);
 }
 
 
@@ -391,21 +391,23 @@ void display_mi(bool show)
 // Toggle "advanced" mode
 void toggle_advanced(void)
 {
-	// How much in y should we move/reduce our controls around
-	int install_shift = 62;
-	int dialog_shift = 385;
+	int dialog_shift = 315;
+	int install_widen = 16;
 	RECT rect;
-	POINT point;
+	POINT point, origin;
 	int toggle;
-	HDC hdc;
 
 	advanced_mode = !(GetMenuState(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED) & MF_CHECKED);
 
-	// Adjust the shifts according to the DPI
-	hdc = GetDC(hMain);
-	install_shift = install_shift * GetDeviceCaps(hdc, LOGPIXELSX) / 96;
-	dialog_shift = dialog_shift * GetDeviceCaps(hdc, LOGPIXELSX) / 96;
-	ReleaseDC(hMain, hdc);
+	// Increase or decrease the Install button size
+	GetWindowRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
+	origin.x = rect.left; origin.y = rect.top;
+	ScreenToClient(hMain, &origin);
+	point.x = (rect.right - rect.left);
+	point.y = (rect.bottom - rect.top);
+	MoveWindow(GetDlgItem(hMain, IDC_INSTALL), origin.x, origin.y, 
+		point.x + (advanced_mode?-install_widen:+install_widen),
+		point.y, TRUE);
 
 	// Increase or decrease the Window size
 	GetWindowRect(hMain, &rect);
@@ -413,16 +415,6 @@ void toggle_advanced(void)
 	point.y = (rect.bottom - rect.top);
 	MoveWindow(hMain, rect.left, rect.top, point.x,
 		point.y + (advanced_mode?dialog_shift:-dialog_shift) , TRUE);
-
-	// Move the install button up or down
-	GetWindowRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
-	point.x = rect.left;
-	point.y = rect.top;
-	ScreenToClient(hMain, &point);
-	GetClientRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
-	MoveWindow(GetDlgItem(hMain, IDC_INSTALL), point.x,
-		point.y + (advanced_mode?install_shift:-install_shift),
-		rect.right, rect.bottom, TRUE);
 
 	// Move the status bar up or down
 	GetWindowRect(hStatus, &rect);
@@ -436,8 +428,8 @@ void toggle_advanced(void)
 	// Hide or show the various advanced options
 	toggle = advanced_mode?SW_SHOW:SW_HIDE;
 	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_FOLDER), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_STATIC_FOLDER), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_GROUPLOG), toggle);
+	ShowWindow(GetDlgItem(hMain, IDC_INFO), toggle);
 
 	// Toggle the menu checkmark
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
@@ -471,6 +463,28 @@ void toggle_edit(void)
 	}
 }
 
+// Toggle the WCID status
+void set_wcid(void)
+{
+	switch (is_wcid) {
+	case WCID_TRUE:
+		ShowWindow(GetDlgItem(hMain, IDC_WCID), TRUE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), TRUE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), FALSE);
+		break;
+	case WCID_FALSE:
+		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), FALSE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), TRUE);
+		break;
+	case WCID_NONE:
+		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), FALSE);
+		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), FALSE);
+		break;
+	}
+}
+
 // Toggle device creation mode
 void toggle_create(bool refresh)
 {
@@ -482,6 +496,8 @@ void toggle_create(bool refresh)
 			toggle_edit();
 		}
 		combo_breaker(true);
+		is_wcid = WCID_NONE;
+		set_wcid();
 		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 		SetDlgItemTextA(hMain, IDC_VID, "");
 		SetDlgItemTextA(hMain, IDC_PID, "");
@@ -546,22 +562,20 @@ void toggle_driverless(bool refresh)
 	}
 }
 
-
 // Change the Install button label
 void set_install_button(void)
 {
 	char label[64];
-	char *l1, *l2, *l3, *l4;
+	char *l1, *l2, *l3;
 
 	EnableMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, ((device==NULL)&&(!create_device))?MF_GRAYED:MF_ENABLED);
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only));
-	l1 = (pd_options.use_wcid_driver && (!extract_only))?"pre-":"";
-	l2 = extract_only?"Extract":((replace_driver && (!pd_options.use_wcid_driver))?"Replace":"Install");
+	l1 = extract_only?"Extract":((replace_driver && (!pd_options.use_wcid_driver))?"Replace":"Install");
+	l2 = pd_options.use_wcid_driver?"WCID ":"";
 	l3 = extract_only?"Files":"Driver";
-	l4 = pd_options.use_wcid_driver?"\n(WCID devices)":"";
-	safe_sprintf(label, 64, "%s%s %s%s", l1, l2, l3, l4);
+	safe_sprintf(label, 64, "%s %s%s", l1, l2, l3);
 	SetDlgItemTextA(hMain, IDC_INSTALL, label);
 }
 
@@ -587,6 +601,10 @@ void init_dialog(HWND hDlg)
 {
 	int err;
 	HICON hIcon;
+	HFONT hf;
+	HDC hdc;
+	long lfHeight;
+
 	struct {
 		HIMAGELIST himl;
 		RECT margin;
@@ -607,6 +625,18 @@ void init_dialog(HWND hDlg)
 
 	// Create the status line
 	create_status_bar();
+
+	// Create various tooltips
+	hWCIDToolTip = create_tooltip(GetDlgItem(hMain, IDC_WCID_HELP), 
+		"Windows Compatible ID - Click for more info", -1);
+
+	// Set the arrow
+	hdc = GetDC(NULL);
+	lfHeight = -MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+	ReleaseDC(NULL, hdc);
+	hf = CreateFontA(lfHeight, 0, 0, 0, FW_REGULAR, FALSE, FALSE, FALSE, 
+		SYMBOL_CHARSET, 0, 0, 0, 0, "Wingdings");
+	SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
 
 	// Setup the Install split button
 	if (windows_version < WINDOWS_VISTA) {
@@ -639,9 +669,6 @@ void init_dialog(HWND hDlg)
 	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
-
-	// Set the extraction directory
-	SetDlgItemTextU(hMain, IDC_FOLDER, DEFAULT_DIR);
 
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
@@ -700,13 +727,12 @@ bool parse_ini(void) {
 
 	// Set the default extraction dir
 	if (profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) {
-		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
+		safe_strcpy(extraction_path, sizeof(extraction_path), tmp);
 	}
 
 	// Set the certificate name to install, if any
 	if ( (profile_get_string(profile, "security", "install_cert", NULL, NULL, &tmp) == 0)
 	  && (tmp != NULL) ) {
-		SetDlgItemTextA(hMain, IDC_FOLDER, tmp);
 		if (wdi_is_file_embedded(NULL, (char*)tmp)) {
 			ic_options.hWnd = hMain;
 			wdi_install_trusted_certificate((char*)tmp, &ic_options);
@@ -812,7 +838,8 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 	{
 	case WM_SETCURSOR:
 		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_DRIVER))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_TARGET)) ) {
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_TARGET))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_TICK)) ) {
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			return (INT_PTR)TRUE;
 		}
@@ -842,8 +869,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
-	static HWND hVid, hPid, hMi;
-	static HWND hFolder, hDriver, hTarget;
+	static HWND hVid, hPid, hMi, hWcid, hWcidTick;
+	static HWND hDriver, hTarget;
 	static HWND hToolTip = NULL;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH green_brush = (HBRUSH)FALSE;
@@ -927,9 +954,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		hVid = GetDlgItem(hDlg, IDC_VID);
 		hPid = GetDlgItem(hDlg, IDC_PID);
 		hMi = GetDlgItem(hDlg, IDC_MI);
+		hWcid =  GetDlgItem(hDlg, IDC_WCID);
+		hWcidTick =  GetDlgItem(hDlg, IDC_WCID_TICK);
 		hDriver = GetDlgItem(hDlg, IDC_DRIVER);
 		hTarget = GetDlgItem(hDlg, IDC_TARGET);
-		hFolder = GetDlgItem(hDlg, IDC_FOLDER);
 
 		// Subclass the callback so that we can change the cursor
 		original_wndproc = (WNDPROC)SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)subclass_callback);
@@ -965,6 +993,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetDlgItemTextA(hMain, IDC_DRIVER, "");
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
+			is_wcid = WCID_NONE;
+			set_wcid();
 		}
 		pd_options.use_wcid_driver = (nb_devices < 0);
 		set_install_button();
@@ -992,8 +1022,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if ( ((HWND)lParam == hDeviceEdit)
 		  || ((HWND)lParam == hVid)
 		  || ((HWND)lParam == hPid)
-		  || ((HWND)lParam == hMi)
-		  || ((HWND)lParam == hFolder) ) {
+		  || ((HWND)lParam == hMi) ) {
 			SetTextColor((HDC)wParam, DARK_BLUE);
 			return (INT_PTR)white_brush;
 		}
@@ -1003,9 +1032,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CTLCOLORSTATIC:
 		// Must be transparent for XP and non Aero Vista/7
 		SetBkMode((HDC)wParam, TRANSPARENT);
-		if ( ((HWND)lParam == hVid)
-		  || ((HWND)lParam == hPid)
-		  || ((HWND)lParam == hMi) ) {
+		if ( ((HWND)lParam == hVid) || ((HWND)lParam == hPid)
+		  || ((HWND)lParam == hMi) || ((HWND)lParam == hWcid) ) {
 			return (INT_PTR)grey_brush;
 		} else if ((HWND)lParam == hDriver) {
 			return (INT_PTR)driver_background[get_driver_type(device)];
@@ -1027,6 +1055,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				pt.y = pDropDown->rcButton.bottom;
 				ClientToScreen(pDropDown->hdr.hwndFrom, &pt);
 				TrackPopupMenuEx(hMenuSplit, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, hMain, NULL);
+				break;
+			}
+			break;
+		case IDC_WCID_HELP:
+			switch (((LPNMHDR)lParam)->code) {
+			case NM_CLICK:
+				ShellExecuteA(hDlg, "open", WCID_URL, NULL, NULL, SW_SHOWNORMAL);
 				break;
 			}
 			break;
@@ -1090,11 +1125,18 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						display_mi(false);
 					}
 					// Display the WCID status
-					if (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0) {
-						dprintf("WCID = %s", device->compatible_id + safe_strlen(ms_comp_hdr));
+					SendMessage(GetDlgItem(hMain, IDC_WCID_TICK), (WPARAM)WM_SETREDRAW, FALSE, 0);
+					pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
+					is_wcid = (pd_options.use_wcid_driver)?WCID_TRUE:WCID_FALSE;
+					is_wcid = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0)?WCID_TRUE:WCID_FALSE;
+					if (is_wcid == WCID_TRUE) {
+						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
 					}
 					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
+				} else {
+					is_wcid = WCID_NONE;
 				}
+				set_wcid();
 				set_install_button();
 				break;
 			default:
@@ -1135,7 +1177,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_SAVE:		// button: "Save Log"
 			log_size = GetWindowTextLengthU(hInfo);
-			log_buffer = malloc(log_size);
+			log_buffer = (char*)malloc(log_size);
 			if (log_buffer != NULL) {
 				log_size = GetDlgItemTextU(hMain, IDC_INFO, log_buffer, log_size);
 				if (log_size == 0) {
@@ -1155,6 +1197,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_TARGET:	// prevent focus
 		case IDC_DRIVER:
+		case IDC_WCID:
+		case IDC_WCID_TICK:
 			if (HIWORD(wParam) == EN_SETFOCUS) {
 				SetFocus(hMain);
 				return (INT_PTR)TRUE;
@@ -1286,7 +1330,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while(GetMessage(&msg, NULL, 0, 0)) {
 		// Alt-Z => Delete libusb-1.0 DLLs
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
-			libusb_path = malloc(MAX_PATH);
+			libusb_path = (char*)malloc(MAX_PATH);
 			for (r = true, i = 0; i<ARRAYSIZE(system_dir); i++) {
 				safe_strcpy(libusb_path, MAX_PATH, getenv("WINDIR"));
 				safe_strcat(libusb_path, MAX_PATH, "\\");

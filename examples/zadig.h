@@ -33,8 +33,9 @@
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
-#define LIBWDI_URL                  "http://libwdi.sf.net"
-#define ZADIG_URL                   "http://zadig.akeo.ie"
+#define LIBWDI_URL                  "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page"
+#define ZADIG_URL                   "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Zadig"
+#define WCID_URL                    "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define LIGHT_GREY                  RGB(248,248,248)
@@ -75,6 +76,13 @@ enum windows_version {
 	WINDOWS_2003_XP64,
 	WINDOWS_VISTA,
 	WINDOWS_7
+};
+
+// WCID states
+enum wcid_state {
+	WCID_NONE,
+	WCID_FALSE,
+	WCID_TRUE,
 };
 
 #define safe_free(p) do {if ((void*)p != NULL) {free((void*)p); p = NULL;}} while(0)

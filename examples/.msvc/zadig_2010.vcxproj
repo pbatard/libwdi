@@ -172,6 +172,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\split.ico" />
+    <None Include="..\tick_nok.ico" />
+    <None Include="..\tick_ok.ico" />
+    <None Include="..\wdi.bmp" />
     <None Include="..\zadig.ico" />
   </ItemGroup>
   <ItemGroup>

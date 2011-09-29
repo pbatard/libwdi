@@ -46,6 +46,12 @@ static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID,
 			GetProcAddress(GetModuleHandleA("SHELL32"), "SHCreateItemFromParsingName");		\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
+// And this one is simply not available in MinGW32
+static LPITEMIDLIST (WINAPI *pSHSimpleIDListFromPath)(PCWSTR pszPath) = NULL;
+#define INIT_XP_SHELL32 if (pSHSimpleIDListFromPath == NULL) {								\
+	pSHSimpleIDListFromPath = (LPITEMIDLIST (WINAPI *)(PCWSTR))								\
+			GetProcAddress(GetModuleHandleA("SHELL32"), "SHSimpleIDListFromPath");			\
+	}
 
 /*
  * Globals
@@ -84,7 +90,7 @@ char* to_valid_filename(char* name, char* ext)
 	}
 
 	// The returned UTF-8 string will never be larger than the sum of its parts
-	wret = calloc(2*(wcslen(wname) + wcslen(wext) + 2), 1);
+	wret = (wchar_t*)calloc(2*(wcslen(wname) + wcslen(wext) + 2), 1);
 	if (wret == NULL) {
 		safe_free(wname); safe_free(wext); return NULL;
 	}
@@ -255,21 +261,17 @@ void browse_for_folder(void) {
 
 	BROWSEINFOW bi;
 	LPITEMIDLIST pidl;
+	WCHAR *wpath;
+	size_t i;
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
-	size_t i;
 	HRESULT hr;
 	IShellItem *psi = NULL;
 	IShellItem *si_path = NULL;	// Automatically freed
 	IFileOpenDialog *pfod = NULL;
-	WCHAR *wpath, *fname;
+	WCHAR *fname;
 	char* tmp_path = NULL;
-#endif
 
-	// Retrieve the path to use as the starting folder
-	GetDlgItemTextU(hMain, IDC_FOLDER, extraction_path, MAX_PATH);
-
-#if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	// Even if we have Vista support with the compiler,
 	// it does not mean we have the Vista API available
 	INIT_VISTA_SHELL32;
@@ -321,7 +323,7 @@ void browse_for_folder(void) {
 				if (tmp_path == NULL) {
 					dprintf("Could not convert path");
 				} else {
-					SetDlgItemTextU(hMain, IDC_FOLDER, tmp_path);
+					safe_strcpy(extraction_path, MAX_PATH, tmp_path);
 					safe_free(tmp_path);
 				}
 			} else {
@@ -340,19 +342,27 @@ fallback:
 		pfod->lpVtbl->Release(pfod);
 	}
 #endif
+	INIT_XP_SHELL32;
 	memset(&bi, 0, sizeof(BROWSEINFOW));
 	bi.hwndOwner = hMain;
 	bi.lpszTitle = L"Please select directory";
-	bi.pidlRoot = NULL;
+	for (i=strlen(extraction_path); i>0; i--) {
+		if (extraction_path[i] == '\\') {
+			extraction_path[i] = 0;
+			break;
+		}
+	}
+	wpath = utf8_to_wchar(extraction_path);
+	if (i>0) extraction_path[i] = '\\';
+	bi.pidlRoot = (*pSHSimpleIDListFromPath)(wpath);
+	safe_free(wpath);
 	bi.lpfn = BrowseCallbackProc;
 	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
 		BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
 	pidl = SHBrowseForFolderW(&bi);
 	if (pidl != NULL) {
 		// get the name of the folder
-		if (SHGetPathFromIDListU(pidl, extraction_path)) {
-			SetDlgItemTextU(hMain, IDC_FOLDER, extraction_path);
-		}
+		SHGetPathFromIDListU(pidl, extraction_path);
 		CoTaskMemFree(pidl);
 	}
 }
@@ -398,7 +408,7 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size)
 		r = WriteFile(handle, *buffer, *size, size, NULL);
 	} else {
 		*size = GetFileSize(handle, NULL);
-		*buffer = malloc(*size);
+		*buffer = (char*)malloc(*size);
 		if (*buffer == NULL) {
 			dprintf("Could not allocate buffer for reading file");
 			goto out;
@@ -453,7 +463,7 @@ char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_de
 	INIT_VISTA_SHELL32;
 	if (IS_VISTA_SHELL32_AVAILABLE) {
 		// Setup the file extension filter table
-		ext_filter = malloc(strlen(ext)+3);
+		ext_filter = (char*)malloc(strlen(ext)+3);
 		if (ext_filter != NULL) {
 			safe_sprintf(ext_filter, strlen(ext)+3, "*.%s", ext);
 			filter_spec[0].pszSpec = utf8_to_wchar(ext_filter);
@@ -532,7 +542,7 @@ fallback:
 	ofn.nMaxFile = STR_BUFFER_SIZE;
 	// Set the file extension filters
 	ext_strlen = strlen(ext_desc) + 2*strlen(ext) + sizeof(" (*.)\0*.\0All Files (*.*)\0*.*\0\0");
-	ext_string = malloc(ext_strlen);
+	ext_string = (char*)malloc(ext_strlen);
 	safe_sprintf(ext_string, ext_strlen, "%s (*.%s)\r*.%s\rAll Files (*.*)\r*.*\r\0", ext_desc, ext, ext);
 	// Microsoft could really have picked a better delimiter!
 	for (i=0; i<ext_strlen; i++) {
