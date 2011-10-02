@@ -18,9 +18,10 @@
 #define IDC_INSTALLXP                   1009
 #define IDC_INSTALLVISTA                1010
 #define IDC_TARGET                      1011
-#define IDC_WCID                        1012
 #define IDC_GROUPLOG                    1013
-#define IDC_WCID_TICK                   1014
+#define IDC_WCID_BOX                    1014
+#define IDC_WCID_ICON                   1015
+#define IDC_WCID                        1016
 #define IDC_BROWSE                      1019
 #define IDC_URL                         1034
 #define IDC_CLEAR                       1036
@@ -38,7 +39,6 @@
 #define IDC_WCID_HELP                   1069
 #define IDC_THIS_SPACE_FOR_RENT         1070
 #define IDC_VIDPID                      1071
-#define IDC_TICK                        1072
 #define IDM_ABOUT                       40001
 #define IDM_ADVANCEDMODE                40003
 #define IDM_LISTALL                     40004
@@ -64,7 +64,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40022
-#define _APS_NEXT_CONTROL_VALUE         1073
+#define _APS_NEXT_CONTROL_VALUE         1072
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
