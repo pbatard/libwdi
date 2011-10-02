@@ -63,6 +63,7 @@ HMENU hMenuDevice;
 HMENU hMenuOptions;
 HMENU hMenuLogLevel;
 HMENU hMenuSplit;
+HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder;
 WNDPROC original_wndproc;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH];
@@ -469,18 +470,15 @@ void set_wcid(void)
 	switch (is_wcid) {
 	case WCID_TRUE:
 		ShowWindow(GetDlgItem(hMain, IDC_WCID), TRUE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), TRUE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), FALSE);
+		SendMessage(GetDlgItem(hMain, IDC_TICK), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickOK); 
 		break;
 	case WCID_FALSE:
 		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), FALSE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), TRUE);
+		SendMessage(GetDlgItem(hMain, IDC_TICK), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickNOK); 
 		break;
 	case WCID_NONE:
 		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_OK), FALSE);
-		ShowWindow(GetDlgItem(hMain, IDC_TICK_NOK), FALSE);
+		SendMessage(GetDlgItem(hMain, IDC_TICK), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)NULL); 
 		break;
 	}
 }
@@ -600,6 +598,7 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 void init_dialog(HWND hDlg)
 {
 	int err;
+	HINSTANCE hDllInst;
 	HICON hIcon;
 	HFONT hf;
 	HDC hdc;
@@ -653,6 +652,13 @@ void init_dialog(HWND hDlg)
 		bi.uAlign = 1; // BUTTON_IMAGELIST_ALIGN_RIGHT
 		SendMessage(GetDlgItem(hDlg, IDC_INSTALLXP), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 	}
+
+	// Load system icons for tick marks and folder
+	hDllInst = LoadLibraryA("shell32.dll");
+	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hDllInst = LoadLibraryA("urlmon.dll");
+	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 
 	// The application always starts in advanced mode
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);

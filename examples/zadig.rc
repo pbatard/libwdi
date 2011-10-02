@@ -65,8 +65,6 @@ END
 // remains consistent on all systems.
 IDI_ZADIG               ICON                    "zadig.ico"
 IDI_SPLIT               ICON                    "split.ico"
-IDI_TICK_OK             ICON                    "tick_ok.ico"
-IDI_TICK_NOK            ICON                    "tick_nok.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -154,8 +152,7 @@ BEGIN
     GROUPBOX        "",IDC_GROUPLOG,5,99,368,199
     PUSHBUTTON      "Clear Log",IDC_CLEAR,136,276,50,14
     PUSHBUTTON      "Save Log",IDC_SAVE,191,276,50,14
-    ICON            IDI_TICK_NOK,IDC_TICK_NOK,41,83,20,20,SS_REALSIZEIMAGE
-    ICON            IDI_TICK_OK,IDC_TICK_OK,41,83,20,20,SS_REALSIZEIMAGE | NOT WS_VISIBLE
+    ICON            "",IDC_TICK,41,83,20,20,SS_REALSIZEIMAGE
     CONTROL         "<a>?</a>",IDC_WCID_HELP,"SysLink",WS_TABSTOP,33,81,6,14
 END
 
@@ -244,6 +241,10 @@ BEGIN
     BEGIN
         RIGHTMARGIN, 217
         BOTTOMMARGIN, 62
+    END
+
+    IDD_NOTIFICATION, DIALOG
+    BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED

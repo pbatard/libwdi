@@ -49,12 +49,6 @@
     <None Include="..\wdi.bmp">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\tick_ok.ico">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\tick_nok.ico">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\zadig.rc">

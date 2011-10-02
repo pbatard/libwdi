@@ -7,8 +7,6 @@
 #define IDD_ABOUTBOX                    104
 #define IDD_NOTIFICATION                105
 #define IDB_WDI                         106
-#define IDI_TICK_OK                     107
-#define IDI_TICK_NOK                    108
 #define IDC_DEVICELIST                  1001
 #define IDC_VID                         1002
 #define IDC_PID                         1003
@@ -40,8 +38,7 @@
 #define IDC_WCID_HELP                   1069
 #define IDC_THIS_SPACE_FOR_RENT         1070
 #define IDC_VIDPID                      1071
-#define IDC_TICK_OK                     1072
-#define IDC_TICK_NOK                    1073
+#define IDC_TICK                        1072
 #define IDM_ABOUT                       40001
 #define IDM_ADVANCEDMODE                40003
 #define IDM_LISTALL                     40004
@@ -65,9 +62,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        109
+#define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40022
-#define _APS_NEXT_CONTROL_VALUE         1074
+#define _APS_NEXT_CONTROL_VALUE         1073
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
