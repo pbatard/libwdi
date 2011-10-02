@@ -242,6 +242,8 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 	case BFFM_INITIALIZED:
 		// Invalid path will just be ignored
 		SendMessageLU(hwnd, BFFM_SETSELECTION, TRUE, extraction_path);
+		// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
+		// for details as to why the selection doesn't scroll to the folder on Windows 7
 		break;
 	case BFFM_SELCHANGED:
 	  // Update the status
@@ -261,10 +263,10 @@ void browse_for_folder(void) {
 
 	BROWSEINFOW bi;
 	LPITEMIDLIST pidl;
-	WCHAR *wpath;
-	size_t i;
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
+	WCHAR *wpath;
+	size_t i;
 	HRESULT hr;
 	IShellItem *psi = NULL;
 	IShellItem *si_path = NULL;	// Automatically freed
@@ -346,16 +348,6 @@ fallback:
 	memset(&bi, 0, sizeof(BROWSEINFOW));
 	bi.hwndOwner = hMain;
 	bi.lpszTitle = L"Please select directory";
-	for (i=strlen(extraction_path); i>0; i--) {
-		if (extraction_path[i] == '\\') {
-			extraction_path[i] = 0;
-			break;
-		}
-	}
-	wpath = utf8_to_wchar(extraction_path);
-	if (i>0) extraction_path[i] = '\\';
-	bi.pidlRoot = (*pSHSimpleIDListFromPath)(wpath);
-	safe_free(wpath);
 	bi.lpfn = BrowseCallbackProc;
 	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
 		BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
