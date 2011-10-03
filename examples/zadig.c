@@ -78,6 +78,7 @@ char* editable_desc = NULL;
 int default_driver_type = WDI_WINUSB;
 int log_level = WDI_LOG_LEVEL_INFO;
 int IDC_INSTALL = IDC_INSTALLVISTA;
+int nb_devices = -1;
 // Application states
 bool advanced_mode = false;
 bool create_device = false;
@@ -86,6 +87,7 @@ bool extract_only = false;
 bool from_install = false;
 bool installation_running = false;
 enum wcid_state has_wcid = WCID_NONE;
+int wcid_type = WDI_USER;
 
 /*
  * On screen logging and status
@@ -364,6 +366,9 @@ bool select_next_driver(int increment)
 			safe_sprintf(driver_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
 				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
 				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
+			pd_options.use_wcid_driver = (nb_devices < 0) || 
+				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
+			set_install_button();
 		} else {
 			safe_sprintf(driver_text, 64, "%s", driver_display_name[pd_options.driver_type]);
 			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
@@ -889,7 +894,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[2*STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
 	const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
-	int nb_devices, i, j, tmp, r;
+	int i, tmp, r;
 	DWORD delay, read_size, log_size;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
@@ -1160,14 +1165,18 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					has_wcid = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0)?WCID_TRUE:WCID_FALSE;
 					if (has_wcid == WCID_TRUE) {
 						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
-						// Select the driver according to the WCID
-						for (i=WDI_WINUSB; i<WDI_LIBUSBK; i++) {
-							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_display_name[i]) == 0) {
-								for (j=WDI_WINUSB; j<WDI_NB_DRIVERS; j++) {
-									select_next_driver(1);
-									if (pd_options.driver_type == i) break;
-								}
+						// Select the driver according to the WCID (will be set to WDI_USER = unsupported if no match)
+						for (wcid_type=WDI_WINUSB; wcid_type<WDI_LIBUSBK; wcid_type++) {
+							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_display_name[wcid_type]) == 0) {
 								break;
+							}
+						}
+						if (wcid_type < WDI_USER) {
+							for (i=WDI_WINUSB; i<WDI_NB_DRIVERS; i++) {
+								select_next_driver(1);
+								if (pd_options.driver_type == wcid_type) {
+									break;
+								}
 							}
 						}
 					}
