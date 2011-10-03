@@ -237,20 +237,33 @@ static PSID get_sid(void) {
 INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 {
 	char dir[MAX_PATH];
+	wchar_t* wpath;
+	LPITEMIDLIST pidl;
 
 	switch(uMsg) {
 	case BFFM_INITIALIZED:
-		// Invalid path will just be ignored
-		SendMessageLU(hwnd, BFFM_SETSELECTION, TRUE, extraction_path);
-		// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
-		// for details as to why the selection doesn't scroll to the folder on Windows 7
+		// On XP, BFFM_SETSELECTION can't be used with a Unicode Path in SendMessageW
+		// or a pidl (at least with MinGW) => must use SendMessageA
+		if (windows_version <= WINDOWS_XP) {
+			SendMessageA(hwnd, BFFM_SETSELECTION, (WPARAM)TRUE, (LPARAM)extraction_path);
+		} else {
+			// On Windows 7, MinGW only properly selects the specified folder when using a pidl
+			wpath = utf8_to_wchar(extraction_path);
+			pidl = (*pSHSimpleIDListFromPath)(wpath);
+			safe_free(wpath);
+			// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
+			// for details as to why we send BFFM_SETSELECTION twice.
+			SendMessageW(hwnd, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
+			Sleep(100);
+			PostMessageW(hwnd, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
+		}
 		break;
 	case BFFM_SELCHANGED:
-	  // Update the status
-	  if (SHGetPathFromIDListU((LPITEMIDLIST)lp, dir)) {
-		SendMessageLU(hwnd, BFFM_SETSTATUSTEXT, 0, dir);
-	  }
-	  break;
+		// Update the status
+		if (SHGetPathFromIDListU((LPITEMIDLIST)lp, dir)) {
+			SendMessageLU(hwnd, BFFM_SETSTATUSTEXT, 0, dir);
+		}
+		break;
 	}
 	return 0;
 }

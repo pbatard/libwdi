@@ -1200,6 +1200,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
 			browse_for_folder();
+			dprintf("Will use '%s' as extraction directory.", extraction_path);
 			break;
 		case IDC_CLEAR:		// button: "Clear Log"
 			SetWindowTextA(hInfo, "");
