@@ -1,0 +1,15 @@
+= Zadig - Changelog =
+=== v1.2.0_beta: ===
+* **New GUI**
+* full WCID driver support ([[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|more]])
+* fixed extraction directory selection
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0 (Beta)
+
+=== v1.1.1.144 ===
+* WCID driver support ([[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|more]])
+* changed WinUSB installation category to match Windows 8's ("libusb (WinUSB) devices" -> "Universal Serial Bus Devices")
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.3.0
+
+=== v1.1.1.143 ===
+* improved USB 3.0 HUB detection
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.3.0
