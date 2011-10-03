@@ -889,7 +889,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[2*STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
 	const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
-	int nb_devices, tmp, r;
+	int nb_devices, i, j, tmp, r;
 	DWORD delay, read_size, log_size;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
@@ -1160,6 +1160,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					has_wcid = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0)?WCID_TRUE:WCID_FALSE;
 					if (has_wcid == WCID_TRUE) {
 						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
+						// Select the driver according to the WCID
+						for (i=WDI_WINUSB; i<WDI_LIBUSBK; i++) {
+							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_display_name[i]) == 0) {
+								for (j=WDI_WINUSB; j<WDI_NB_DRIVERS; j++) {
+									select_next_driver(1);
+									if (pd_options.driver_type == i) break;
+								}
+								break;
+							}
+						}
 					}
 					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
 				} else {
