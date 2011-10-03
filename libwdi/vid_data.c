@@ -28,7 +28,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2011.09.04
+ * Version: 2011.09.28
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -1451,6 +1451,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0c46, "WaveRider Communications, Inc." },
 	{ 0x0c4a, "ALGE-TIMING GmbH" },
 	{ 0x0c4b, "Reiner SCT Kartensysteme GmbH" },
+	{ 0x0c4c, "Needham's Electronics" },
 	{ 0x0c52, "Sealevel Systems, Inc." },
 	{ 0x0c53, "ViewPLUS, Inc." },
 	{ 0x0c54, "Glory, Ltd" },
@@ -1485,6 +1486,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0c8d, "Tempo" },
 	{ 0x0c8e, "Cesscom Co., Ltd" },
 	{ 0x0c8f, "Applied Microsystems" },
+	{ 0x0c94, "Cryptera" },
 	{ 0x0c98, "Berkshire Products, Inc." },
 	{ 0x0c99, "Innochips Co., Ltd" },
 	{ 0x0c9a, "Hanwool Robotics Corp." },
@@ -1867,6 +1869,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0fb0, "Haurtian Wire & Cable Co., Ltd" },
 	{ 0x0fb1, "Inclose Design, Inc." },
 	{ 0x0fb2, "Juan-Chern Industrial Co., Ltd" },
+	{ 0x0fb6, "Heber Ltd" },
 	{ 0x0fb8, "Wistron Corp." },
 	{ 0x0fb9, "AACom Corp." },
 	{ 0x0fba, "San Shing Electronics Co., Ltd" },
@@ -1884,6 +1887,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0fd5, "Direct Access Technology, Inc." },
 	{ 0x0fd9, "Elgato Systems GmbH" },
 	{ 0x0fdc, "Micro Plus" },
+	{ 0x0fe0, "Osterhout Design Group" },
 	{ 0x0fe4, "IN-Tech Electronics, Ltd" },
 	{ 0x0fe5, "Greenconn (U.S.A.), Inc." },
 	{ 0x0fe6, "Kontron (Industrial Computer Source / ICS Advent)" },
@@ -2460,7 +2464,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x19b9, "Data Robotics" },
 	{ 0x19ca, "Mindtribe" },
 	{ 0x19cf, "Parrot SA" },
-	{ 0x19d2, "ONDA Communication S.p.A." },
+	{ 0x19d2, "ZTE WCDMA Technologies MSM" },
 	{ 0x19e1, "WeiDuan Electronic Accessory (S.Z.) Co., Ltd." },
 	{ 0x19e8, "Industrial Technology Research Institute" },
 	{ 0x19ef, "Pak Heng Technology (Shenzhen) Co., Ltd." },
@@ -2628,6 +2632,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x1e7d, "ROCCAT" },
 	{ 0x1ebb, "NuCORE Technology, Inc." },
 	{ 0x1eda, "AirTies Wireless Networks" },
+	{ 0x1ee8, "ONDA COMMUNICATION S.p.a." },
 	{ 0x1ef6, "EADS Deutschland GmbH" },
 	{ 0x1f28, "Cal-Comp" },
 	{ 0x1f4d, "G-Tek Electronics Group" },

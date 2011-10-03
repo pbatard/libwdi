@@ -36,7 +36,7 @@ s¦^#.*List of USB.*¦/*\
 #include <stdlib.h>\
 #include "libwdi.h"\
 \
-static struct vendor_name \{\
+struct vendor_name \{\
 	unsigned short vid;\
 	const char* name;\
 \};\
@@ -50,7 +50,7 @@ s|# Version:| * Version:|
 
 # Header Part 3
 s|^#.*Date:.*| \*/\
-struct vendor_name usb_vendor[] = \{|p
+static struct vendor_name usb_vendor[] = \{|p
 
 # Footer
 $a\
