@@ -36,7 +36,7 @@ pkg_v_rc_ = $(pkg_v_rc_$(AM_DEFAULT_VERBOSITY))
 pkg_v_rc_0 = @echo "  RC     $@";
 pkg_v_lcc = $(pkg_v_lcc_$(V))
 pkg_v_lcc_ = $(pkg_v_lcc_$(AM_DEFAULT_VERBOSITY))
-pkg_v_lcc_0 = @echo "  CC     $@";
+pkg_v_lcc_0 = @echo "  CCLD   $@";
 
 # call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
