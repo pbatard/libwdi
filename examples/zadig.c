@@ -65,7 +65,7 @@ HMENU hMenuSplit;
 HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder;
 WNDPROC original_wndproc;
 extern enum windows_version windows_version;
-char app_dir[MAX_PATH];
+char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH] = DEFAULT_DIR;
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = { 0 };
@@ -348,7 +348,7 @@ bool select_next_driver(int increment)
 	int i;
 	bool found = false;
 	VS_FIXEDFILEINFO file_info;
-	char driver_text[64];
+	char target_text[64];
 
 	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
 		pd_options.driver_type = (WDI_NB_DRIVERS + pd_options.driver_type + increment)%WDI_NB_DRIVERS;
@@ -363,21 +363,21 @@ bool select_next_driver(int increment)
 			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
 			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
 			wdi_is_driver_supported(pd_options.driver_type, &file_info);
-			safe_sprintf(driver_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
 				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
 				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
 			pd_options.use_wcid_driver = (nb_devices < 0) || 
 				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
 			set_install_button();
 		} else {
-			safe_sprintf(driver_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
 			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
 			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
 		}
 	} else {
-		safe_sprintf(driver_text, 64, "(NONE)");
+		safe_sprintf(target_text, 64, "(NONE)");
 	}
-	SetDlgItemTextA(hMain, IDC_TARGET, driver_text);
+	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
 	return found;
 }
 
@@ -1133,8 +1133,19 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						}
 					}
 					// Display the current driver info
-					replace_driver = (device->driver!=NULL);
-					SetDlgItemTextU(hMain, IDC_DRIVER, replace_driver?device->driver:"(NONE)");
+					replace_driver = (device->driver != NULL);
+					if (replace_driver) {
+						if (device->driver_version == 0) {
+							safe_strcpy(driver_text, sizeof(driver_text), device->driver);
+						} else {
+							safe_sprintf(driver_text, sizeof(driver_text), "%s (v%d.%d.%d.%d)", device->driver,
+								(device->driver_version>>48)&0xffff, (device->driver_version>>32)&0xffff,
+								(device->driver_version>>16)&0xffff, device->driver_version&0xffff);
+						}
+					} else {
+						safe_strcpy(driver_text, sizeof(driver_text), "(NONE)");
+					}
+					SetDlgItemTextU(hMain, IDC_DRIVER, driver_text);
 					pd_options.driver_type = default_driver_type;
 					if ((!select_next_driver(0)) && (!select_next_driver(1))) {
 						dprintf("no driver is selectable in libwdi!");
