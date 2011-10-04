@@ -34,13 +34,13 @@ endif
 pkg_v_rc = $(pkg_v_rc_$(V))
 pkg_v_rc_ = $(pkg_v_rc_$(AM_DEFAULT_VERBOSITY))
 pkg_v_rc_0 = @echo "  RC     $@";
-pkg_v_lcc = $(pkg_v_lcc_$(V))
-pkg_v_lcc_ = $(pkg_v_lcc_$(AM_DEFAULT_VERBOSITY))
-pkg_v_lcc_0 = @echo "  CCLD   $@";
+pkg_v_localcc = $(pkg_v_localcc_$(V))
+pkg_v_localcc_ = $(pkg_v_localcc_$(AM_DEFAULT_VERBOSITY))
+pkg_v_localcc_0 = @echo "  CCLD   $@";
 
 # call host's CC to allow for cross compilation
 embedder: embedder.h embedder_files.h embedder.c
-	$(pkg_v_lcc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=CC --mode=link $(CC_FOR_BUILD) -I.. embedder.c -o $@
+	$(pkg_v_localcc)$(CC_FOR_BUILD) -I.. embedder.c -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 
