@@ -584,7 +584,7 @@ void set_install_button(void)
 		object = "Files";
 	} else {
 		object = "Driver";
-		if (replace_driver) {
+		if ((device != NULL) && (replace_driver)) {
 			if ((has_wcid != WCID_TRUE) && pd_options.use_wcid_driver) {
 				action = "Install";
 			} else if ((has_wcid == WCID_TRUE) && (!pd_options.use_wcid_driver)) {
@@ -699,7 +699,7 @@ void init_dialog(HWND hDlg)
 	bi.himl = pImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	pImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
 	SetRect(&bi.margin, 0, 0, 0, 0);
-	bi.uAlign = BUTTON_IMAGELIST_ALIGN_CENTER;
+	bi.uAlign = 4; //BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_BROWSE), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 
 	// Setup the Install split button
@@ -1258,7 +1258,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
 			browse_for_folder();
-			dprintf("Will use '%s' as extraction directory.", extraction_path);
+			dprintf("Using '%s' as extraction directory.", extraction_path);
 			break;
 		case IDC_CLEAR:		// button: "Clear Log"
 			SetWindowTextA(hInfo, "");
