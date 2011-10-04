@@ -60,34 +60,10 @@ case $host in
 *-mingw*)
 	AC_MSG_RESULT([MinGW])
 	create_import_lib="yes"
-	NO_CYGWIN=""
 	LIBCONFIG_LIBADD=""
 	LIBCONFIG_CFLAGS=""
 	AM_CFLAGS="-Wshadow"
 	AM_LDFLAGS="-Wl,--add-stdcall-alias"
-	;;
-*-cygwin*)
-	AC_MSG_RESULT([cygwin])
-	saved_CFLAGS="${CFLAGS}"
-	CFLAGS="${CFLAGS} -mno-cygwin"
-	AC_MSG_CHECKING([if -mno-cygwin is supported])
-	AC_TRY_COMPILE([], [;],
-		has_mno_cygwin=yes,
-		has_mno_cygwin=no)
-	if test "x$has_mno_cygwin" == "xyes"; then
-		AC_MSG_RESULT([yes])
-	else
-		AC_MSG_RESULT([no])
-		AC_MSG_ERROR([you must ensure that -mno-cygwin is supported on cygwin])
-	fi
-	CFLAGS="${saved_CFLAGS}"
-	# if you try to redefine CC to "gcc -mno-cygwin", all kind of bad things happen
-	# => use a variable instead
-	NO_CYGWIN="-mno-cygwin"
-	LIBCONFIG_LIBADD="-L/lib/mingw -lcrtdll -lmingwex"
-	LIBCONFIG_CFLAGS="-static -I/usr/include/mingw -D__MINGW_FEATURES__"
-	AM_CFLAGS=""
-	AM_LDFLAGS=""
 	;;
 *)
 	AC_MSG_ERROR([unsupported development environment])
@@ -245,7 +221,6 @@ then
 	if test "x$DDK_DIR" != "x"; then
 		# check that the required WinUSB DDK files are available
 		if test "x$enable_64bit" != "xno"; then
-		# NB: I found the hard way that cygwin doesn't like multiple files to be provided on multiple lines - YOU HAVE BEEN WARNED!
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
 		fi
@@ -347,7 +322,6 @@ AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Wer
 AC_SUBST([VISIBILITY_CFLAGS])
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
-AC_SUBST([NO_CYGWIN])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
 

@@ -20,8 +20,8 @@
 
 /*
  * WARNING: if any part of the resulting executable name contains "setup" or "instal(l)"
- * it will require UAC elevation on Vista and later, and, when run from a cygwin/MSYS
- * shell, will produce a "sh: Bad file number" message.
+ * it will require UAC elevation on Vista and later, and, when run from a MSYS shell,
+ * will produce a "sh: Bad file number" message.
  * See the paragraph on Automatic Elevation at http://helpware.net/VistaCompat.htm
  */
 
