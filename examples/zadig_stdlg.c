@@ -738,6 +738,40 @@ void notification(int type, char* text, char* title)
 	message_text = NULL;
 }
 
+struct {
+	HWND hTip;
+	WNDPROC original_proc;
+	LPWSTR wstring;
+} ttlist[MAX_TOOLTIPS] = { {0} };
+
+INT_PTR CALLBACK tooltip_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	LPNMTTDISPINFOW lpnmtdi;
+	int i = MAX_TOOLTIPS;
+
+	// Make sure we have an original proc
+	for (i=0; i<MAX_TOOLTIPS; i++) {
+		if (ttlist[i].hTip == hDlg) break;
+	}
+	if (i == MAX_TOOLTIPS) {
+		return (INT_PTR)FALSE;
+	}
+
+	switch (message)
+	{
+	case WM_NOTIFY:
+		switch (((LPNMHDR)lParam)->code) {
+		case TTN_GETDISPINFOW:
+			lpnmtdi = (LPNMTTDISPINFOW)lParam;
+			lpnmtdi->lpszText = ttlist[i].wstring;
+			SendMessage(hDlg, TTM_SETMAXTIPWIDTH, 0, 300);
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return CallWindowProc(ttlist[i].original_proc, hDlg, message, wParam, lParam);
+}
+
 /*
  * Create a tooltip for the control passed as first parameter
  * duration sets the duration in ms. Use -1 for default
@@ -745,33 +779,61 @@ void notification(int type, char* text, char* title)
  */
 HWND create_tooltip(HWND hControl, char* message, int duration)
 {
-	HWND hTip;
 	TOOLINFOW toolInfo = {0};
+	int i;
 
 	if ( (hControl == NULL) || (message == NULL) ) {
 		return (HWND)NULL;
 	}
 
+	// Find an empty slot
+	for (i=0; i<MAX_TOOLTIPS; i++) {
+		if (ttlist[i].hTip == NULL) break;
+	}
+	if (i == MAX_TOOLTIPS) {
+		return (HWND)NULL; // No more space
+	}
+
 	// Create the tooltip window
-	hTip = CreateWindowExW(0, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+	ttlist[i].hTip = CreateWindowExW(0, TOOLTIPS_CLASSW, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hMain, NULL,
 		main_instance, NULL);
 
-	// Set tooltip duration (ms)
-	PostMessage(hTip, TTM_SETDELAYTIME, (WPARAM)TTDT_AUTOPOP, (LPARAM)duration);
-
-	if (hTip == NULL) {
+	if (ttlist[i].hTip == NULL) {
 		return (HWND)NULL;
 	}
 
+	// Subclass the tooltip to handle multiline
+	ttlist[i].original_proc = (WNDPROC)SetWindowLongPtr(ttlist[i].hTip, GWLP_WNDPROC, (LONG_PTR)tooltip_callback);
+
+	// Set the string to display (can be multiline)
+	ttlist[i].wstring = utf8_to_wchar(message);
+
+	// Set tooltip duration (ms)
+	PostMessage(ttlist[i].hTip, TTM_SETDELAYTIME, (WPARAM)TTDT_AUTOPOP, (LPARAM)duration);
+
 	// Associate the tooltip to the control
 	toolInfo.cbSize = sizeof(toolInfo);
-	toolInfo.hwnd = hMain;
+	toolInfo.hwnd = ttlist[i].hTip;	// Set to the tooltip itself to ease up subclassing
 	toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
 	toolInfo.uId = (UINT_PTR)hControl;
-	toolInfo.lpszText = utf8_to_wchar(message);
-	SendMessageW(hTip, TTM_ADDTOOLW, 0, (LPARAM)&toolInfo);
-	safe_free(toolInfo.lpszText);
+	toolInfo.lpszText = LPSTR_TEXTCALLBACKW;
+	SendMessageW(ttlist[i].hTip, TTM_ADDTOOLW, 0, (LPARAM)&toolInfo);
 
-	return hTip;
+	return ttlist[i].hTip;
+}
+
+void destroy_tooltip(HWND hWnd)
+{
+	int i;
+
+	if (hWnd == NULL) return;
+	for (i=0; i<MAX_TOOLTIPS; i++) {
+		if (ttlist[i].hTip == hWnd) break;
+	}
+	if (i == MAX_TOOLTIPS) return;
+	DestroyWindow(hWnd);
+	safe_free(ttlist[i].wstring);
+	ttlist[i].original_proc = NULL;
+	ttlist[i].hTip = NULL;
 }

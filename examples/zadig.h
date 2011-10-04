@@ -30,12 +30,14 @@
 
 #define STR_BUFFER_SIZE             512
 #define NOTIFICATION_DELAY          1000
+#define MAX_TOOLTIPS                16
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
 #define LIBWDI_URL                  "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page"
 #define ZADIG_URL                   "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Zadig"
 #define WCID_URL                    "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices"
+#define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define LIGHT_GREY                  RGB(248,248,248)
@@ -123,6 +125,7 @@ void notification(int type, char* text, char* title);
 int run_with_progress_bar(int(*function)(void));
 char* to_valid_filename(char* name, char* ext);
 HWND create_tooltip(HWND hWnd, char* message, int duration);
+void destroy_tooltip(HWND hWnd);
 
 /*
  * Globals
