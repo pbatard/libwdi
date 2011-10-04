@@ -173,6 +173,8 @@ struct wdi_device_info {
 	char* hardware_id;
 	/** (Optional) Microsoft's Compatible ID string. NULL if unused */
 	char* compatible_id;
+	/** (Optional) Driver version (four WORDS). 0 if unused */
+	UINT64 driver_version;
 };
 
 /*

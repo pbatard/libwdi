@@ -732,9 +732,10 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	CONFIGRET r;
 	HDEVINFO dev_info;
 	SP_DEVINFO_DATA dev_info_data;
+	HKEY key;
 	char *prefix[3] = {"VID_", "PID_", "MI_"};
 	char *token, *end;
-	char strbuf[STR_BUFFER_SIZE];
+	char strbuf[STR_BUFFER_SIZE], drv_version[] = "xxxxx.xxxxx.xxxxx.xxxxx";
 	wchar_t desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3"};
@@ -766,7 +767,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		}
 
 		// Allocate a driver_info struct to store our data
-		device_info = calloc(1, sizeof(struct wdi_device_info));
+		device_info = (struct wdi_device_info*)calloc(1, sizeof(struct wdi_device_info));
 		if (device_info == NULL) {
 			wdi_destroy_list(start);
 			*list = NULL;
@@ -775,10 +776,17 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
 		// SPDRP_INSTALL_STATE
+		drv_version[0] = 0;
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_DRIVER,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
 			if ((options == NULL) || (!options->list_all)) {
 				continue;
+			}
+			// While we have the driver key, pick up the driver version
+			key = SetupDiOpenDevRegKey(dev_info, &dev_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DRV, KEY_READ);
+			size = sizeof(drv_version);
+			if (key != INVALID_HANDLE_VALUE) {
+				RegQueryValueExA(key, "DriverVersion", NULL, &reg_type, (BYTE*)drv_version, &size);
 			}
 		}
 
@@ -824,13 +832,28 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		// Retreive the first Compatible ID 
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_COMPATIBLEIDS,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			wdi_dbg("got Compatible ID: %s", strbuf);
+			wdi_dbg("got compatible ID: %s", strbuf);
 		} else {
 			wdi_err("could not get Compatible ID");
 			strbuf[0] = 0;
 		}
 		// We assume that the first one (REG_MULTI_SZ) is the one we are interested in
 		device_info->compatible_id = safe_strdup(strbuf);
+
+		// Convert driver version string to integer
+		device_info->driver_version = 0;
+		if (drv_version[0] != 0) {
+			wdi_dbg("got driver version: %s", drv_version);
+			token = strtok(drv_version, ".");
+			while (token != NULL) {
+				device_info->driver_version <<= 16;
+				device_info->driver_version += atoi(token);
+				token = strtok(NULL, ".");
+			}
+		} else if (device_info->driver != NULL) {
+			// Only produce a warning for non-driverless devices
+			wdi_warn("could not read driver version");
+		}
 
 		// Retrieve device ID. This is needed to re-enumerate our device and force
 		// the final driver installation
