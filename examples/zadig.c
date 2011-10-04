@@ -88,6 +88,7 @@ bool from_install = false;
 bool installation_running = false;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
+UINT64 target_driver_version = 0;
 
 /*
  * On screen logging and status
@@ -363,6 +364,9 @@ bool select_next_driver(int increment)
 			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
 			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
 			wdi_is_driver_supported(pd_options.driver_type, &file_info);
+			target_driver_version = file_info.dwFileVersionMS;
+			target_driver_version <<= 32;
+			target_driver_version += file_info.dwFileVersionLS;
 			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
 				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
 				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
@@ -375,6 +379,7 @@ bool select_next_driver(int increment)
 			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
 		}
 	} else {
+		target_driver_version = 0;
 		safe_sprintf(target_text, 64, "(NONE)");
 	}
 	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
@@ -568,16 +573,39 @@ void toggle_driverless(bool refresh)
 void set_install_button(void)
 {
 	char label[64];
-	char *l1, *l2, *l3;
+	char *action, *opt_wcid, *object;
 
 	EnableMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, ((device==NULL)&&(!create_device))?MF_GRAYED:MF_ENABLED);
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only));
-	l1 = extract_only?"Extract":((replace_driver && (!pd_options.use_wcid_driver))?"Replace":"Install");
-	l2 = pd_options.use_wcid_driver?"WCID ":"";
-	l3 = extract_only?"Files":"Driver";
-	safe_sprintf(label, 64, "%s %s%s", l1, l2, l3);
+	if (extract_only) {
+		action = "Extract";
+		object = "Files";
+	} else {
+		object = "Driver";
+		if (replace_driver) {
+			if ((has_wcid != WCID_TRUE) && pd_options.use_wcid_driver) {
+				action = "Install";
+			} else if ((has_wcid == WCID_TRUE) && (!pd_options.use_wcid_driver)) {
+				action = "Replace";
+			} else if (safe_stricmp(device->driver, driver_display_name[pd_options.driver_type]) == 0) {
+				if (target_driver_version == device->driver_version) {
+					action = "Reinstall";
+				} else if (target_driver_version > device->driver_version) {
+					action = "Upgrade";
+				} else {
+					action = "Downgrade";
+				}
+			} else {
+				action = pd_options.use_wcid_driver?"Install":"Replace";
+			}
+		} else {
+			action = "Install";
+		}
+	}
+	opt_wcid = pd_options.use_wcid_driver?"WCID ":"";
+	safe_sprintf(label, 64, "%s %s%s", action, opt_wcid, object);
 	SetDlgItemTextA(hMain, IDC_INSTALL, label);
 }
 
