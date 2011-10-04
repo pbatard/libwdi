@@ -58,11 +58,12 @@ HWND hDeviceList;
 HWND hMain;
 HWND hInfo;
 HWND hStatus;
+HWND hToolTip = NULL;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 HMENU hMenuLogLevel;
 HMENU hMenuSplit;
-HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder;
+HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
 WNDPROC original_wndproc;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH], driver_text[64];
@@ -86,6 +87,7 @@ bool replace_driver = false;
 bool extract_only = false;
 bool from_install = false;
 bool installation_running = false;
+bool unknown_vid = false;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
@@ -390,7 +392,22 @@ bool select_next_driver(int increment)
 void display_mi(bool show)
 {
 	int cmd = show?SW_SHOW:SW_HIDE;
+	static bool mi_shown = true;
+	const int report_shift = 27;
+	RECT rect;
+	POINT point, origin;
+
+	if (show == mi_shown) return;
 	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
+	// Move the VID report button if MI is not shown
+	GetWindowRect(GetDlgItem(hMain, IDC_VID_REPORT), &rect);
+	origin.x = rect.left; origin.y = rect.top;
+	ScreenToClient(hMain, &origin);
+	point.x = (rect.right - rect.left);
+	point.y = (rect.bottom - rect.top);
+	MoveWindow(GetDlgItem(hMain, IDC_VID_REPORT), origin.x  - (show?-report_shift:+report_shift),
+		origin.y, point.x, point.y, TRUE);
+	mi_shown = show;
 }
 
 
@@ -401,8 +418,8 @@ void display_mi(bool show)
 // Toggle "advanced" mode
 void toggle_advanced(void)
 {
-	int dialog_shift = 315;
-	int install_widen = 6;
+	const int dialog_shift = 315;
+	const int install_widen = 6;
 	RECT rect;
 	POINT point, origin;
 	int toggle;
@@ -513,6 +530,9 @@ void toggle_create(bool refresh)
 		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		destroy_tooltip(hToolTip);
+		hToolTip = NULL;
+		unknown_vid = false;
 		display_mi(true);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
@@ -676,6 +696,8 @@ void init_dialog(HWND hDlg)
 		"Windows Compatible ID - Click '?' for more info", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_BROWSE),
 		"Directory to extract/install files to", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
+		"Submit Vendor to the USB ID Repository", -1);
 
 	// Set the arrow
 	hdc = GetDC(NULL);
@@ -686,9 +708,11 @@ void init_dialog(HWND hDlg)
 	SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
 
 	// Load system icons for tick marks and folder
+	// (Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
 	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hDllInst = LoadLibraryA("urlmon.dll");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 
@@ -696,11 +720,18 @@ void init_dialog(HWND hDlg)
 	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_Create");
 	pImageList_ReplaceIcon = (ImageList_ReplaceIcon_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_ReplaceIcon");
 
+	// TODO: should we destroy these image lists?
 	bi.himl = pImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	pImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
 	SetRect(&bi.margin, 0, 0, 0, 0);
-	bi.uAlign = 4; //BUTTON_IMAGELIST_ALIGN_CENTER
+	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_BROWSE), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
+
+	bi.himl = pImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 1, 0);
+	pImageList_ReplaceIcon(bi.himl, -1, hIconReport);
+	SetRect(&bi.margin, 0, 1, 0, 0);
+	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
+	SendMessage(GetDlgItem(hDlg, IDC_VID_REPORT), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 
 	// Setup the Install split button
 	if (windows_version < WINDOWS_VISTA) {
@@ -712,7 +743,7 @@ void init_dialog(HWND hDlg)
 		bi.himl = pImageList_Create(16, 40, ILC_COLOR32 | ILC_MASK, 1, 0);
 		pImageList_ReplaceIcon(bi.himl, -1, hIcon);
 		SetRect(&bi.margin, 0, 1, 0, 0);
-		bi.uAlign = 1; // BUTTON_IMAGELIST_ALIGN_RIGHT
+		bi.uAlign = 1;	// BUTTON_IMAGELIST_ALIGN_RIGHT
 		SendMessage(GetDlgItem(hDlg, IDC_INSTALLXP), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 	}
 
@@ -934,7 +965,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HWND hDeviceEdit;
 	static HWND hVid, hPid, hMi, hWcid;
 	static HWND hDriver, hTarget;
-	static HWND hToolTip = NULL;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH green_brush = (HBRUSH)FALSE;
 	static HBRUSH red_brush = (HBRUSH)FALSE;
@@ -1132,6 +1162,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
+		case IDC_VID_REPORT:
+			ShellExecuteA(hDlg, "open", USB_IDS_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
 		case IDC_EDITNAME:			// checkbox: "Edit Desc."
 			toggle_edit();
 			break;
@@ -1182,12 +1215,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
-					DestroyWindow(hToolTip);
+					destroy_tooltip(hToolTip);
 					vid_string = wdi_get_vendor_name(device->vid);
-					if (vid_string == NULL) {
-						vid_string = "Unknown Vendor";
-					}
-					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, -1);
+					unknown_vid = (vid_string == NULL);
+					if (unknown_vid) {
+						vid_string = "Vendor name could not be resolved.\nIf you know "
+							"the name of this vendor, please consider submitting it to "
+							"the USB ID Repository, by clicking the button on the right.";
+					};
+					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
+					ShowWindow(GetDlgItem(hMain, IDC_VID_REPORT), unknown_vid?SW_SHOW:SW_HIDE);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemTextA(hMain, IDC_PID, str_tmp);
 					if (device->is_composite) {

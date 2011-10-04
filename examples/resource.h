@@ -18,6 +18,7 @@
 #define IDC_INSTALLXP                   1009
 #define IDC_INSTALLVISTA                1010
 #define IDC_TARGET                      1011
+#define IDC_VID_REPORT                  1012
 #define IDC_GROUPLOG                    1013
 #define IDC_WCID_BOX                    1014
 #define IDC_WCID_ICON                   1015
