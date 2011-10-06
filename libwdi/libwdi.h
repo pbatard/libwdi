@@ -173,6 +173,8 @@ struct wdi_device_info {
 	char* hardware_id;
 	/** (Optional) Microsoft's Compatible ID string. NULL if unused */
 	char* compatible_id;
+	/** (Optional) Upper filter. NULL if unused */
+	char* upper_filter;
 	/** (Optional) Driver version (four WORDS). 0 if unused */
 	UINT64 driver_version;
 };
@@ -214,6 +216,8 @@ struct wdi_options_prepare_driver {
 struct wdi_options_install_driver {
 	/** Handle to a Window application that should receive a modal progress dialog */
 	HWND hWnd;
+	/** Install a filter driver instead of a regular driver (libusb0 only) */
+	bool install_filter_driver;
 };
 
 // wdi_install_trusted_certificate options:

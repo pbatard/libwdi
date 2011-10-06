@@ -41,8 +41,6 @@
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
-// Check if we unexpectedly lose communication with the installer process
-#define CHECK_COMPLETION (installer_completed?WDI_SUCCESS:WDI_ERROR_TIMEOUT)
 
 // These warnings are taken care of in configure for other platforms
 #if defined(_MSC_VER)
@@ -120,7 +118,7 @@ token_entity_t inf_entities[]=
  */
 static struct wdi_device_info *current_device = NULL;
 static bool dlls_available = false;
-static bool installer_completed = false;
+static bool filter_driver = false;
 static DWORD timeout = DEFAULT_TIMEOUT;
 static HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
@@ -184,8 +182,15 @@ DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG)
 // This call is only available on XP and later
 DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 
+// Check the status of the installer process
+static int __inline check_completion(HANDLE process_handle) {
+	DWORD exit_code;
+	GetExitCodeProcess(process_handle, &exit_code);
+	return (exit_code==0)?WDI_SUCCESS:((exit_code==STILL_ACTIVE)?WDI_ERROR_TIMEOUT:WDI_ERROR_OTHER);
+}
+
 // Convert a UNIX timestamp to a MS FileTime one
-int64_t __inline unixtime_to_msfiletime(time_t t)
+static int64_t __inline unixtime_to_msfiletime(time_t t)
 {
 	int64_t ret = (int64_t)t;
 	ret *= INT64_C(10000000);
@@ -366,7 +371,7 @@ static int check_dir(char* path, bool create)
 	r = SHCreateDirectoryExU(NULL, path, ps);
 	if (r == ERROR_BAD_PATHNAME) {
 		// A relative path was used => Convert to full
-		full_path = malloc(MAX_PATH);
+		full_path = (char*)malloc(MAX_PATH);
 		if (full_path == NULL) {
 			wdi_err("could not allocate buffer to convert relative path");
 			if (sid != NULL) LocalFree(sid);
@@ -821,7 +826,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		// Retrieve the first hardware ID
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_HARDWAREID,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			wdi_dbg("got hardware ID: %s", strbuf);
+			wdi_dbg("Hardware ID: %s", strbuf);
 		} else {
 			wdi_err("could not get hardware ID");
 			strbuf[0] = 0;
@@ -829,21 +834,29 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		// We assume that the first one (REG_MULTI_SZ) is the one we are interested in
 		device_info->hardware_id = safe_strdup(strbuf);
 
-		// Retreive the first Compatible ID 
+		// Retreive the first Compatible ID
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_COMPATIBLEIDS,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
-			wdi_dbg("got compatible ID: %s", strbuf);
+			wdi_dbg("Compatible ID: %s", strbuf);
 		} else {
-			wdi_err("could not get Compatible ID");
 			strbuf[0] = 0;
 		}
 		// We assume that the first one (REG_MULTI_SZ) is the one we are interested in
 		device_info->compatible_id = safe_strdup(strbuf);
 
+		// Lookup the upper filter
+		if (!SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_UPPERFILTERS,
+			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
+			device_info->upper_filter = NULL;
+		} else {
+			wdi_dbg("Upper filter: %s", strbuf);
+			device_info->upper_filter = safe_strdup(strbuf);
+		}
+
 		// Convert driver version string to integer
 		device_info->driver_version = 0;
 		if (drv_version[0] != 0) {
-			wdi_dbg("got driver version: %s", drv_version);
+			wdi_dbg("Driver version: %s", drv_version);
 			token = strtok(drv_version, ".");
 			while (token != NULL) {
 				device_info->driver_version <<= 16;
@@ -1143,7 +1156,6 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
-	// At this stage, driver_type 
 	if (device_info->desc == NULL) {
 		wdi_err("no device ID was given for the device - aborting");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
@@ -1290,7 +1302,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 
 		// Build the filename list
 		nb_entries = 0;
-		cat_in_copy = malloc(resource[cat_in].size+1);
+		cat_in_copy = (char*)malloc(resource[cat_in].size+1);
 		if (cat_in_copy == NULL) { wdi_warn("WTF"); MUTEX_RETURN WDI_ERROR_RESOURCE; }
 		memcpy(cat_in_copy, resource[cat_in].data, resource[cat_in].size);
 		cat_in_copy[resource[cat_in].size] = 0;
@@ -1320,7 +1332,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		// Failures on the following aren't fatal errors
 		if (!CreateCat(cat_path, hw_id, path, cat_list, nb_entries)) {
 			wdi_warn("could not create cat file");
-		} else if ((!options->disable_signing) && (!SelfSignFile(cat_path, 
+		} else if ((!options->disable_signing) && (!SelfSignFile(cat_path,
 			(options->cert_subject != NULL)?options->cert_subject:cert_subject))) {
 			wdi_warn("could not sign cat file");
 		}
@@ -1343,6 +1355,15 @@ static int process_message(char* buffer, DWORD size)
 	if (current_device == NULL) {
 		wdi_err("program assertion failed - no current device");
 		return WDI_ERROR_NOT_FOUND;
+	}
+
+	if (filter_driver) {
+		// In filter driver mode, we just do I/O redirection
+		if (size > 0) {
+			buffer[size] = 0;
+			wdi_log(WDI_LOG_LEVEL_INFO, "install-filter", "%s", buffer);
+		}
+		return WDI_SUCCESS;
 	}
 
 	// Note: this is a message pipe, so we don't need to care about
@@ -1398,7 +1419,6 @@ static int process_message(char* buffer, DWORD size)
 		break;
 	case IC_INSTALLER_COMPLETED:
 		wdi_dbg("installer process completed");
-		installer_completed = true;
 		break;
 	case IC_GET_USER_SID:
 		if (ConvertSidToStringSidA(get_sid(), &sid_str)) {
@@ -1420,20 +1440,19 @@ static int process_message(char* buffer, DWORD size)
 static int install_driver_internal(void* arglist)
 {
 	struct install_driver_params* params = (struct install_driver_params*)arglist;
-	struct wdi_device_info* device_info = params->device_info;
-	char* path = params->path;
-	char* inf_name = params->inf_name;
-
 	SHELLEXECUTEINFOA shExecInfo;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
-	char exename[MAX_PATH];
+	SECURITY_ATTRIBUTES sa;
+	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
+	HANDLE stdout_w = INVALID_HANDLE_VALUE;
 	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
 	BOOL is_x64 = false;
 	char *buffer = NULL, *new_buffer;
+	const char* filter_name = "libusb0";
 
 	MUTEX_START;
 
@@ -1441,20 +1460,18 @@ static int install_driver_internal(void* arglist)
 		init_dlls();
 	}
 
-	current_device = device_info;
+	current_device = params->device_info;
+	filter_driver = params->options->install_filter_driver;
 
 	// Try to use the user's temp dir if no path is provided
-	if ((path == NULL) || (path[0] == 0)) {
-		path = getenv("TEMP");
-		if (path == NULL) {
-			wdi_err("no path provided and unable to use TEMP");
-			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
-		} else {
-			wdi_info("no path provided - installing from '%s'", path);
-		}
+	if ((params->path == NULL) || (params->path[0] == 0)) {
+		static_strcpy(path, getenv("TEMP"));
+		wdi_info("no path provided - installing from '%s'", path);
+	} else {
+		static_strcpy(path, params->path);
 	}
 
-	if ((device_info == NULL) || (inf_name == NULL)) {
+	if ((params->device_info == NULL) || (params->inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
 		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
@@ -1499,13 +1516,34 @@ static int install_driver_internal(void* arglist)
 	}
 	overlapped.hEvent = handle[0];
 
-	safe_strcpy(exename, sizeof(exename), path);
-	// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
-	// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
-	if (is_x64) {
-		safe_strcat(exename, sizeof(exename), "\\installer_x64.exe");
+	if (!filter_driver) {
+		safe_strcpy(exename, sizeof(exename), path);
+		// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
+		// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
+		static_strcat(exename, is_x64?"\\installer_x64.exe":"\\installer_x86.exe");
+		static_strcpy(exeargs, params->inf_name);
 	} else {
-		safe_strcat(exename, sizeof(exename), "\\installer_x86.exe");
+		// Use libusb-win32's filter driver installer
+		static_strcat(path, is_x64?"\\amd64":"\\x86");
+		safe_strcpy(exename, sizeof(exename), path);
+		safe_strcat(exename, sizeof(exename), "\\install-filter.exe");
+		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
+			// Device already has the libusb-win32 filter => remove
+			static_strcpy(exeargs, "uninstall -d=");
+		} else {
+			static_strcpy(exeargs, "install -d=");
+		}
+		static_strcat(exeargs, params->device_info->hardware_id);
+		// We need to get a handle to the other end of the pipe for redirection
+		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle = TRUE;		// REQUIRED for STDIO redirection
+		sa.lpSecurityDescriptor = NULL;
+		stdout_w = CreateFileA(INSTALLER_PIPE_NAME, GENERIC_WRITE, FILE_SHARE_WRITE,
+			&sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
+		if (stdout_w == INVALID_HANDLE_VALUE) {
+			wdi_err("could not create stdout endpoint: %s", windows_error_str(0));
+			r = WDI_ERROR_RESOURCE; goto out;
+		}
 	}
 	// At this stage, if either the 32 or 64 bit installer version is missing,
 	// it is the application developer's fault...
@@ -1515,7 +1553,6 @@ static int install_driver_internal(void* arglist)
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
-	installer_completed = false;
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
 	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (!pIsUserAnAdmin()) )  {
@@ -1524,8 +1561,8 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
-		shExecInfo.lpFile = (is_x64)?"installer_x64.exe":"installer_x86.exe";
-		shExecInfo.lpParameters = inf_name;
+		shExecInfo.lpFile = filter_driver?"install-filter.exe":(is_x64?"installer_x64.exe":"installer_x86.exe");
+		shExecInfo.lpParameters = exeargs;
 		shExecInfo.lpDirectory = path;
 		shExecInfo.lpClass = NULL;
 		shExecInfo.nShow = SW_HIDE;
@@ -1555,11 +1592,18 @@ static int install_driver_internal(void* arglist)
 		// On XP and earlier, or if app is already elevated, simply use CreateProcess
 		memset(&si, 0, sizeof(si));
 		si.cb = sizeof(si);
+		if (filter_driver) {
+			si.dwFlags = STARTF_USESTDHANDLES;
+			si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+			si.hStdOutput = stdout_w;
+			si.hStdError = stdout_w;
+		}
+
 		memset(&pi, 0, sizeof(pi));
 
-		safe_strcat(exename, sizeof(exename), " ");
-		safe_strcat(exename, sizeof(exename), inf_name);
-		if (!CreateProcessU(NULL, exename, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, path, &si, &pi)) {
+		static_strcat(exename, " ");
+		static_strcat(exename, exeargs);
+		if (!CreateProcessU(NULL, exename, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, path, &si, &pi)) {
 			wdi_err("CreateProcess failed: %s", windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
@@ -1568,7 +1612,7 @@ static int install_driver_internal(void* arglist)
 
 	r = WDI_SUCCESS;
 	offset = 0;
-	buffer = malloc(bufsize);
+	buffer = (char*)malloc(bufsize);
 	if (buffer == NULL) {
 		wdi_err("unable to alloc buffer: aborting");
 		r = WDI_ERROR_RESOURCE; goto out;
@@ -1587,7 +1631,7 @@ static int install_driver_internal(void* arglist)
 				if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 					TerminateProcess(handle[1], 0);
 				}
-				r = CHECK_COMPLETION; goto out;
+				r = check_completion(handle[1]); goto out;
 			case ERROR_PIPE_LISTENING:
 				// Wait for installer to open the pipe
 				Sleep(100);
@@ -1606,11 +1650,11 @@ static int install_driver_internal(void* arglist)
 							if ((WaitForSingleObject(handle[1], timeout) == WAIT_TIMEOUT)) {
 								TerminateProcess(handle[1], 0);
 							}
-							r = CHECK_COMPLETION; goto out;
+							r = check_completion(handle[1]); goto out;
 						case ERROR_MORE_DATA:
 							bufsize *= 2;
 							wdi_dbg("message overflow (async) - increasing buffer size to %d bytes", bufsize);
-							new_buffer = realloc(buffer, bufsize);
+							new_buffer = (char*)realloc(buffer, bufsize);
 							if (new_buffer == NULL) {
 								wdi_err("unable to realloc buffer: aborting");
 								r = WDI_ERROR_RESOURCE;
@@ -1632,7 +1676,7 @@ static int install_driver_internal(void* arglist)
 					r = WDI_ERROR_TIMEOUT; goto out;
 				case WAIT_OBJECT_0+1:
 					// installer process terminated
-					r = CHECK_COMPLETION; goto out;
+					r = check_completion(handle[1]); goto out;
 				default:
 					wdi_err("could not read from pipe (wait): %s", windows_error_str(0));
 					break;
@@ -1641,7 +1685,7 @@ static int install_driver_internal(void* arglist)
 			case ERROR_MORE_DATA:
 				bufsize *= 2;
 				wdi_dbg("message overflow (sync) - increasing buffer size to %d bytes", bufsize);
-				new_buffer = realloc(buffer, bufsize);
+				new_buffer = (char*)realloc(buffer, bufsize);
 				if (new_buffer == NULL) {
 					wdi_err("unable to realloc buffer: aborting");
 					r = WDI_ERROR_RESOURCE;

@@ -52,12 +52,13 @@ struct emb embeddable_fixed[] = {
 		{ 0, DDK_DIR "\\redist\\wdf\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
 		{ 0, DDK_DIR "\\redist\\winusb\\ia64\\winusbcoinstaller2.dll", "ia64" },
 #	endif	// OPT_IA64
-		{ 0, DDK_DIR "\\license.rtf", "license\\WinUSB" },	// WinUSB License file
+		{ 0, DDK_DIR "\\license.rtf", "license\\WinUSB" },
 #endif	// DDK_DIR
 
 // libusb0
 #if defined(LIBUSB0_DIR)
 	{ 0, LIBUSB0_DIR "\\bin\\x86\\libusb0_x86.dll", "x86" },
+	{ 0, LIBUSB0_DIR "\\bin\\x86\\install-filter.exe", "x86" },
 #	if defined(LIBUSBK_DIR)
 #		if defined(OPT_M32)
 			{ 1, "libusb0.dll", "x86" },	// reuse
@@ -72,10 +73,12 @@ struct emb embeddable_fixed[] = {
 #	if defined(OPT_M64)
 		{ 0, LIBUSB0_DIR "\\bin\\amd64\\libusb0.dll", "amd64" },
 		{ 0, LIBUSB0_DIR "\\bin\\amd64\\libusb0.sys", "amd64" },
+		{ 0, LIBUSB0_DIR "\\bin\\amd64\\install-filter.exe", "amd64" },
 #	endif	// OPT_M64
 #	if defined(OPT_IA64)
 		{ 0, LIBUSB0_DIR "\\bin\\ia64\\libusb0.dll", "ia64" },
 		{ 0, LIBUSB0_DIR "\\bin\\ia64\\libusb0.sys", "ia64" },
+		{ 0, LIBUSB0_DIR "\\bin\\ia64\\install-filter.exe", "ia64" },
 #	endif	// OPT_IA64
 	{ 0, LIBUSB0_DIR "\\installer_license.txt", "license\\libusb0" },
 #endif	// LIBUSB0_DIR
