@@ -109,6 +109,7 @@ BEGIN
     BEGIN
         MENUITEM "Install Driver",              IDM_SPLIT_INSTALL, CHECKED
         MENUITEM "Install WCID Driver",         IDM_SPLIT_WCID
+        MENUITEM "Install Filter Driver",       IDM_SPLIT_FILTER
         MENUITEM "Extract Files (Don't Install)", IDM_SPLIT_EXTRACT
     END
 END

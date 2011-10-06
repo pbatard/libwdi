@@ -71,7 +71,8 @@ char extraction_path[MAX_PATH] = DEFAULT_DIR;
 char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
-struct wdi_options_install_cert ic_options= { 0 };
+struct wdi_options_install_cert ic_options = { 0 };
+struct wdi_options_install_driver id_options = { 0 };
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
@@ -88,6 +89,7 @@ bool extract_only = false;
 bool from_install = false;
 bool installation_running = false;
 bool unknown_vid = false;
+bool has_filter_driver = false;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
@@ -229,7 +231,6 @@ int get_driver_type(struct wdi_device_info* dev)
 int install_driver(void)
 {
 	struct wdi_device_info* dev = device;
-	struct wdi_options_install_driver options;
 	char str_buf[STR_BUFFER_SIZE];
 	char* inf_name = NULL;
 	bool need_dealloc = false;
@@ -294,7 +295,20 @@ int install_driver(void)
 	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
-	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
+	if (id_options.install_filter_driver) {
+		if ((!has_filter_driver) && (MessageBoxA(hMain, "WARNING:\n"
+			"Improper use of the filter driver can cause devices to malfunction\n"
+			"and, in some cases, complete system failure.\n\n"
+			"THE AUTHOR(S) OF THIS SOFTWARE ACCEPT NO LIABILITY FOR\n"
+			"ANY DAMAGE RESULTING FROM THE USE OF THE FILTER DRIVER.\n\n"
+			"Are you sure you want to install this driver?", "Warning - Filter Driver",
+			MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO)) {
+			r = WDI_ERROR_USER_CANCEL; goto out;
+		}
+		r = WDI_SUCCESS;
+	} else {
+		r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
+	}
 	if (r == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files.");
 		// Perform the install if not extracting the files only
@@ -306,8 +320,8 @@ int install_driver(void)
 				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
 			dsprintf("Installing driver. Please wait...");
-			options.hWnd = hMain;
-			r = wdi_install_driver(dev, extraction_path, inf_name, &options);
+			id_options.hWnd = hMain;
+			r = wdi_install_driver(dev, extraction_path, inf_name, &id_options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = safe_strdup(dev->hardware_id);
 			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.use_wcid_driver)) {
@@ -343,6 +357,36 @@ void combo_breaker(bool edit)
 }
 
 /*
+ * Display or hide the "Install Filter Driver" menu item
+ */
+void set_filter_menu(bool display)
+{
+	char* itemddesc[2] = {"Install Filter Driver", "Delete Filter Driver"};
+	static MENUITEMINFOA mi_filter = { sizeof(MENUITEMINFOA), MIIM_FTYPE|MIIM_ID|MIIM_STRING|MIIM_STATE, MFT_STRING, MFS_ENABLED,
+		IDM_SPLIT_FILTER, NULL, NULL, NULL, 0, NULL, 0, NULL };
+	static bool filter_is_displayed = true;
+
+	// Find if a filter driver is in use
+	has_filter_driver = (device != NULL) && (safe_stricmp(driver_display_name[WDI_LIBUSB0], device->upper_filter) == 0);
+
+	mi_filter.dwTypeData = itemddesc[has_filter_driver?1:0];
+	mi_filter.cch = (UINT)strlen(itemddesc[has_filter_driver?1:0]);
+
+	if (filter_is_displayed) {
+		if (display)
+			return;
+		DeleteMenu(hMenuSplit, IDM_SPLIT_FILTER, MF_BYCOMMAND);
+		filter_is_displayed = false;
+	} else {
+		if (!display)
+			return;
+		InsertMenuItemA(hMenuSplit, IDM_SPLIT_EXTRACT, FALSE, &mi_filter);
+		filter_is_displayed = true;
+	}
+}
+
+
+/*
  * Select the next available target driver
  * increment: go through the list up or down
  */
@@ -353,7 +397,7 @@ bool select_next_driver(int increment)
 	VS_FIXEDFILEINFO file_info;
 	char target_text[64];
 
-	for (i=0; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
+	for (i=WDI_WINUSB; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
 		pd_options.driver_type = (WDI_NB_DRIVERS + pd_options.driver_type + increment)%WDI_NB_DRIVERS;
 		if (!wdi_is_driver_supported(pd_options.driver_type, NULL)) {
 			continue;
@@ -372,9 +416,8 @@ bool select_next_driver(int increment)
 			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
 				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
 				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
-			pd_options.use_wcid_driver = (nb_devices < 0) || 
+			pd_options.use_wcid_driver = (nb_devices < 0) ||
 				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
-			set_install_button();
 		} else {
 			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
 			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
@@ -384,6 +427,11 @@ bool select_next_driver(int increment)
 		target_driver_version = 0;
 		safe_sprintf(target_text, 64, "(NONE)");
 	}
+	if (pd_options.driver_type != WDI_LIBUSB0) {
+		id_options.install_filter_driver = false;
+	}
+	set_filter_menu((pd_options.driver_type == WDI_LIBUSB0) && (nb_devices>=0));
+	set_install_button();
 	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
 	return found;
 }
@@ -593,18 +641,19 @@ void toggle_driverless(bool refresh)
 void set_install_button(void)
 {
 	char label[64];
-	char *action, *opt_wcid, *object;
+	char *action, *qualifier, *object;
 
 	EnableMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, ((device==NULL)&&(!create_device))?MF_GRAYED:MF_ENABLED);
-	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only)));
-	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only)));
-	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only) && (!id_options.install_filter_driver)));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only) && (!id_options.install_filter_driver)));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only && (!id_options.install_filter_driver)));
+	CheckMenuItem(hMenuSplit, IDM_SPLIT_FILTER, MF_CHECK(id_options.install_filter_driver));
 	if (extract_only) {
 		action = "Extract";
 		object = "Files";
 	} else {
 		object = "Driver";
-		if ((device != NULL) && (replace_driver)) {
+		if ((device != NULL) && (replace_driver) && (!id_options.install_filter_driver)) {
 			if ((has_wcid != WCID_TRUE) && pd_options.use_wcid_driver) {
 				action = "Install";
 			} else if ((has_wcid == WCID_TRUE) && (!pd_options.use_wcid_driver)) {
@@ -621,11 +670,11 @@ void set_install_button(void)
 				action = pd_options.use_wcid_driver?"Install":"Replace";
 			}
 		} else {
-			action = "Install";
+			action = has_filter_driver?"Delete":"Install";
 		}
 	}
-	opt_wcid = pd_options.use_wcid_driver?"WCID ":"";
-	safe_sprintf(label, 64, "%s %s%s", action, opt_wcid, object);
+	qualifier = pd_options.use_wcid_driver?"WCID ":(id_options.install_filter_driver?"Filter ":"");
+	safe_sprintf(label, 64, "%s %s%s", action, qualifier, object);
 	SetDlgItemTextA(hMain, IDC_INSTALL, label);
 }
 
@@ -1065,6 +1114,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			combo_breaker(false);
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
+		id_options.install_filter_driver = false;
+		set_filter_menu(false);
 		if (list != NULL) wdi_destroy_list(list);
 		if (!from_install) {
 			current_device_index = 0;
@@ -1280,6 +1331,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			// else, fall through
 		case IDC_INSTALLVISTA:
 			r = install_driver();
+			if (id_options.install_filter_driver) {
+				dsprintf("Driver Installation: %s", (r==WDI_SUCCESS)?"SUCCESS":"FAILED");
+				break;
+			}
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
@@ -1383,7 +1438,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// Split button menu
 		case IDM_SPLIT_INSTALL:
 		case IDM_SPLIT_WCID:
+		case IDM_SPLIT_FILTER:
 		case IDM_SPLIT_EXTRACT:
+			id_options.install_filter_driver = (LOWORD(wParam)==IDM_SPLIT_FILTER);
 			pd_options.use_wcid_driver = ( (LOWORD(wParam) == IDM_SPLIT_WCID)
 				|| ((device == NULL) && (!create_device)) );
 			extract_only = (LOWORD(wParam) == IDM_SPLIT_EXTRACT);
