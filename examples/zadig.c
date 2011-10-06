@@ -891,13 +891,13 @@ bool parse_ini(void) {
 	}
 	if (!wdi_is_driver_supported(default_driver_type, NULL)) {
 		dprintf("'%s' driver is not available", driver_display_name[default_driver_type]);
-		for (i=(default_driver_type+1)%WDI_NB_DRIVERS; i!=default_driver_type; i++) {
+		for (i=0; i<WDI_NB_DRIVERS; i++) {
 			if (wdi_is_driver_supported(i, NULL)) {
 				default_driver_type = i;
 				break;
 			}
 		}
-		if (i!=default_driver_type) {
+		if (i==WDI_NB_DRIVERS) {
 			notification(MSG_ERROR, "No driver is available for installation with this application.\n"
 				"The application will close", "No Driver Available");
 			EndDialog(hMain, 0);
