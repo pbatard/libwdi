@@ -683,6 +683,7 @@ void set_install_button(void)
 	char *action, *qualifier, *object;
 
 	EnableMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, ((device==NULL)&&(!create_device))?MF_GRAYED:MF_ENABLED);
+	EnableMenuItem(hMenuSplit, IDM_SPLIT_WCID, (create_device)?MF_GRAYED:MF_ENABLED);
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_INSTALL, MF_CHECK((!pd_options.use_wcid_driver) && (!extract_only) && (!id_options.install_filter_driver)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_WCID, MF_CHECK(pd_options.use_wcid_driver && (!extract_only) && (!id_options.install_filter_driver)));
 	CheckMenuItem(hMenuSplit, IDM_SPLIT_EXTRACT, MF_CHECK(extract_only && (!id_options.install_filter_driver)));
@@ -1336,7 +1337,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, FALSE, 0);
 					pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
 					has_wcid = (pd_options.use_wcid_driver)?WCID_TRUE:WCID_FALSE;
-					has_wcid = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0)?WCID_TRUE:WCID_FALSE;
 					if (has_wcid == WCID_TRUE) {
 						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
 						// Select the driver according to the WCID (will be set to WDI_USER = unsupported if no match)
@@ -1353,6 +1353,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							if (i < WDI_USER) {
 								pd_options.driver_type = i;
 								set_driver();
+							} else {
+								pd_options.use_wcid_driver = false;
 							}
 						}
 					}
