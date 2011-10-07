@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib"
+				AdditionalDependencies="setupapi.lib comctl32.lib"
 				UACExecutionLevel="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -132,7 +132,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib"
+				AdditionalDependencies="setupapi.lib comctl32.lib"
 				UACExecutionLevel="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -203,7 +203,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib"
+				AdditionalDependencies="setupapi.lib comctl32.lib"
 				UACExecutionLevel="1"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -276,7 +276,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="setupapi.lib newdev.lib comctl32.lib"
+				AdditionalDependencies="setupapi.lib comctl32.lib"
 				AdditionalLibraryDirectories="D:\libwdi\x64\Release\lib"
 				UACExecutionLevel="1"
 				GenerateDebugInformation="false"
