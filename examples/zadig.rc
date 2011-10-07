@@ -169,7 +169,7 @@ CAPTION "About Zadig"
 FONT 8, "Microsoft Sans Serif", 400, 0, 0x0
 BEGIN
     ICON            IDI_ZADIG,IDC_ABOUT_ICON,10,21,20,20
-    LTEXT           "Zadig v2.0.0.146",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Zadig v2.0.0.147",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright (c) 2010-2011 Pete Batard",IDC_STATIC,41,40,139,8
     DEFPUSHBUTTON   "OK",IDOK,167,72,50,14,WS_GROUP
     LTEXT           "Part of the libwdi project:",IDC_STATIC,41,27,77,8,SS_NOPREFIX
@@ -196,8 +196,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,0,146
- PRODUCTVERSION 2,0,0,146
+ FILEVERSION 2,0,0,147
+ PRODUCTVERSION 2,0,0,147
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -215,13 +215,13 @@ BEGIN
             VALUE "Comments", "http://libwdi.sf.net"
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig Application"
-            VALUE "FileVersion", "2.0.0.146"
+            VALUE "FileVersion", "2, 0, 0, 147"
             VALUE "InternalName", "zadig"
             VALUE "LegalCopyright", "GNU LGPL v3 or later"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "zadig"
-            VALUE "ProductVersion", "2.0.0.146"
+            VALUE "ProductVersion", "2, 0, 0, 147"
         END
     END
     BLOCK "VarFileInfo"
