@@ -65,6 +65,7 @@ HMENU hMenuLogLevel;
 HMENU hMenuSplit;
 HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
 WNDPROC original_wndproc;
+COLORREF arrow_color = ARROW_GREEN;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH] = DEFAULT_DIR;
@@ -207,7 +208,7 @@ int get_driver_type(struct wdi_device_info* dev)
 {
 	int i;
 	const char* libusb_name[] = { "WinUSB", "libusb0", "libusbK" };
-	const char* system_name[] = { "usbhub", "usbhub3", "usbccgp", "USBSTOR", "HidUsb"};
+	const char* system_name[] = { "usbhub", "usbhub3", "nusb3hub", "usbccgp", "USBSTOR", "HidUsb"};
 
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
@@ -385,6 +386,53 @@ void set_filter_menu(bool display)
 	}
 }
 
+void set_default_driver(void) {
+	int i;
+
+	if (!wdi_is_driver_supported(default_driver_type, NULL)) {
+		dprintf("'%s' driver is not available", driver_display_name[default_driver_type]);
+		for (i=0; i<WDI_NB_DRIVERS; i++) {
+			if (wdi_is_driver_supported(i, NULL)) {
+				default_driver_type = i;
+				break;
+			}
+		}
+		if (i==WDI_NB_DRIVERS) {
+			notification(MSG_ERROR, "No driver is available for installation with this application.\n"
+				"The application will close", "No Driver Available");
+			EndDialog(hMain, 0);
+		}
+		dprintf("falling back to '%s' for default driver", driver_display_name[default_driver_type]);
+	} else {
+		dprintf("default driver set to '%s'", driver_display_name[default_driver_type]);
+	}
+}
+
+void set_driver(void)
+{
+	VS_FIXEDFILEINFO file_info;
+	char target_text[64];
+
+	if (pd_options.driver_type != WDI_USER) {
+		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
+		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
+		wdi_is_driver_supported(pd_options.driver_type, &file_info);
+		target_driver_version = file_info.dwFileVersionMS;
+		target_driver_version <<= 32;
+		target_driver_version += file_info.dwFileVersionLS;
+		safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+			(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
+			(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
+		pd_options.use_wcid_driver = (nb_devices < 0) ||
+			((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
+	} else {
+		safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
+		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
+	}
+	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
+}
+
 
 /*
  * Select the next available target driver
@@ -393,47 +441,17 @@ void set_filter_menu(bool display)
 bool select_next_driver(int increment)
 {
 	int i;
-	bool found = false;
-	VS_FIXEDFILEINFO file_info;
-	char target_text[64];
 
 	for (i=WDI_WINUSB; i<WDI_NB_DRIVERS; i++) {	// don't loop forever
 		pd_options.driver_type = (WDI_NB_DRIVERS + pd_options.driver_type + increment)%WDI_NB_DRIVERS;
-		if (!wdi_is_driver_supported(pd_options.driver_type, NULL)) {
-			continue;
-		}
-		found = true;
-		break;
+		if (wdi_is_driver_supported(pd_options.driver_type, NULL))
+			break;
 	}
-	if (found) {
-		if (pd_options.driver_type != WDI_USER) {
-			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
-			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
-			wdi_is_driver_supported(pd_options.driver_type, &file_info);
-			target_driver_version = file_info.dwFileVersionMS;
-			target_driver_version <<= 32;
-			target_driver_version += file_info.dwFileVersionLS;
-			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
-				(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
-				(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
-			pd_options.use_wcid_driver = (nb_devices < 0) ||
-				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
-		} else {
-			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
-			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
-			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
-		}
-	} else {
-		target_driver_version = 0;
-		safe_sprintf(target_text, 64, "(NONE)");
+	if (i == WDI_NB_DRIVERS) {
+		return false;
 	}
-	if (pd_options.driver_type != WDI_LIBUSB0) {
-		id_options.install_filter_driver = false;
-	}
-	set_filter_menu((pd_options.driver_type == WDI_LIBUSB0) && (nb_devices>=0));
-	set_install_button();
-	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
-	return found;
+	set_driver();
+	return true;
 }
 
 // Hide/Show the MI field
@@ -538,9 +556,12 @@ void toggle_edit(void)
 	}
 }
 
-// Toggle the WCID status
-void set_wcid(void)
+// Update WCID, filter and coloured arrow
+void update_ui(void)
 {
+	bool same_driver;
+	bool warn;
+
 	switch (has_wcid) {
 	case WCID_TRUE:
 		ShowWindow(GetDlgItem(hMain, IDC_WCID), TRUE);
@@ -555,6 +576,22 @@ void set_wcid(void)
 		SendMessage(GetDlgItem(hMain, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)NULL);
 		break;
 	}
+
+	if (pd_options.driver_type != WDI_LIBUSB0) {
+		id_options.install_filter_driver = false;
+	}
+	set_filter_menu((pd_options.driver_type == WDI_LIBUSB0) && (nb_devices>=0));
+	same_driver = device && (safe_stricmp(device->driver, driver_display_name[pd_options.driver_type]) == 0);
+	warn = (get_driver_type(device) == DT_SYSTEM) || (same_driver && (target_driver_version < device->driver_version)) ;
+
+	if (windows_version < WINDOWS_7) {
+		arrow_color = warn?ARROW_ORANGE:ARROW_GREEN;
+		InvalidateRect(GetDlgItem(hMain, IDC_RARR), NULL, TRUE);
+		UpdateWindow(GetDlgItem(hMain, IDC_RARR));
+	} else {
+		ShowWindow(GetDlgItem(hMain, IDC_GRARR_ICON), warn?FALSE:TRUE);
+		ShowWindow(GetDlgItem(hMain, IDC_ORARR_ICON), warn?TRUE:FALSE);
+	}
 }
 
 // Toggle device creation mode
@@ -562,6 +599,7 @@ void toggle_create(bool refresh)
 {
 	create_device = !(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED);
 	if (create_device) {
+		device = NULL;
 		// Disable Edit Desc. if selected
 		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
@@ -569,11 +607,12 @@ void toggle_create(bool refresh)
 		}
 		combo_breaker(true);
 		has_wcid = WCID_NONE;
-		set_wcid();
+		update_ui();
 		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 		SetDlgItemTextA(hMain, IDC_VID, "");
 		SetDlgItemTextA(hMain, IDC_PID, "");
 		SetDlgItemTextA(hMain, IDC_MI, "");
+		SetDlgItemTextA(hMain, IDC_DRIVER, "");
 		SetDlgItemTextA(hMain, IDC_DEVICEEDIT, "");
 		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
@@ -727,10 +766,8 @@ void init_dialog(HWND hDlg)
 	create_status_bar();
 
 	// Create various tooltips
-	create_tooltip(GetDlgItem(hMain, IDC_DEVICELIST),
-		"USB device name", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_EDITNAME),
-		"Click to edit the device name", -1);
+		"Change the device name", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_VIDPID),
 		"VID:PID[:MI]", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_DRIVER),
@@ -738,23 +775,28 @@ void init_dialog(HWND hDlg)
 	create_tooltip(GetDlgItem(hMain, IDC_TARGET),
 		"Target Driver", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_STATIC_WCID),
-		"Windows Compatible ID - Click '?' for more info", -1);
+		"Windows Compatible ID\nClick '?' for more info.", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_WCID_BOX),
-		"Windows Compatible ID - Click '?' for more info", -1);
+		"Windows Compatible ID\nClick '?' for more info.", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_WCID_ICON),
-		"Windows Compatible ID - Click '?' for more info", -1);
+		"Windows Compatible ID\nClick '?' for more info.", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_BROWSE),
 		"Directory to extract/install files to", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_WCID_HELP),
+		"Online information about WCID", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
 		"Submit Vendor to the USB ID Repository", -1);
 
-	// Set the arrow
-	hdc = GetDC(NULL);
-	lfHeight = -MulDiv(16, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-	ReleaseDC(NULL, hdc);
-	hf = CreateFontA(lfHeight, 0, 0, 0, FW_REGULAR, FALSE, FALSE, FALSE,
-		SYMBOL_CHARSET, 0, 0, 0, 0, "Wingdings");
-	SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
+	// Set the text mode arrow (Vista or earlier)
+	if (windows_version < WINDOWS_7) {
+		hdc = GetDC(NULL);
+		lfHeight = -MulDiv(20, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+		ReleaseDC(NULL, hdc);
+		hf = CreateFontA(lfHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			SYMBOL_CHARSET, 0, 0, PROOF_QUALITY, 0, "Wingdings");
+		SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
+		ShowWindow(GetDlgItem(hMain, IDC_RARR), TRUE);
+	}
 
 	// Load system icons for tick marks and folder
 	// (Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
@@ -764,6 +806,15 @@ void init_dialog(HWND hDlg)
 	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hDllInst = LoadLibraryA("urlmon.dll");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	if (windows_version >= WINDOWS_7) {
+		hDllInst = LoadLibraryA("ieframe.dll");		// Green right arrow
+		hIcon = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		SendMessage(GetDlgItem(hMain, IDC_GRARR_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIcon);
+		ShowWindow(GetDlgItem(hMain, IDC_GRARR_ICON), TRUE);
+		hDllInst = LoadLibraryA("netshell.dll");	// Orange right arrow
+		hIcon = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		SendMessage(GetDlgItem(hMain, IDC_ORARR_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIcon);
+	}
 
 	// Set a folder icon on the select folder button
 	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_Create");
@@ -815,6 +866,7 @@ void init_dialog(HWND hDlg)
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
 	set_loglevel(log_level+IDM_LOGLEVEL_DEBUG);
+	set_default_driver();
 
 	if (!advanced_mode) {
 		toggle_advanced();	// We start in advanced mode
@@ -835,7 +887,6 @@ void init_dialog(HWND hDlg)
 bool parse_ini(void) {
 	profile_t profile;
 	char* tmp = NULL;
-	int i;
 	long r;
 
 	// Check if the ini file exists
@@ -888,23 +939,6 @@ bool parse_ini(void) {
 	if ((default_driver_type < WDI_WINUSB) || (default_driver_type >= WDI_NB_DRIVERS)) {
 		dprintf("invalid value '%d' for ini option 'default_driver'", default_driver_type);
 		default_driver_type = WDI_WINUSB;
-	}
-	if (!wdi_is_driver_supported(default_driver_type, NULL)) {
-		dprintf("'%s' driver is not available", driver_display_name[default_driver_type]);
-		for (i=0; i<WDI_NB_DRIVERS; i++) {
-			if (wdi_is_driver_supported(i, NULL)) {
-				default_driver_type = i;
-				break;
-			}
-		}
-		if (i==WDI_NB_DRIVERS) {
-			notification(MSG_ERROR, "No driver is available for installation with this application.\n"
-				"The application will close", "No Driver Available");
-			EndDialog(hMain, 0);
-		}
-		dprintf("falling back to '%s' for default driver", driver_display_name[default_driver_type]);
-	} else {
-		dprintf("default driver set to '%s'", driver_display_name[default_driver_type]);
 	}
 
 	profile_close(profile);
@@ -979,10 +1013,7 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 	switch (message)
 	{
 	case WM_SETCURSOR:
-		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_DRIVER))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_TARGET))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_BOX))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID)) ) {
+		if ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_BOX)) {
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			return (INT_PTR)TRUE;
 		}
@@ -1016,7 +1047,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HWND hDriver, hTarget;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH green_brush = (HBRUSH)FALSE;
-	static HBRUSH red_brush = (HBRUSH)FALSE;
+	static HBRUSH orange_brush = (HBRUSH)FALSE;
 	static HBRUSH grey_brush = (HBRUSH)FALSE;
 	static HBRUSH driver_background[NB_DRIVER_TYPES];
 
@@ -1083,12 +1114,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
-		green_brush = CreateSolidBrush(GREEN);
-		red_brush = CreateSolidBrush(RED);
-		grey_brush = CreateSolidBrush(LIGHT_GREY);
+		green_brush = CreateSolidBrush(FIELD_GREEN);
+		orange_brush = CreateSolidBrush(FIELD_ORANGE);
 		driver_background[DT_NONE] = grey_brush;
 		driver_background[DT_LIBUSB] = green_brush;
-		driver_background[DT_SYSTEM] = red_brush;
+		driver_background[DT_SYSTEM] = orange_brush;
 		driver_background[DT_UNKNOWN] = (HBRUSH)FALSE;
 
 		// Speedup checks for WM_CTLCOLOR
@@ -1115,7 +1145,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		id_options.install_filter_driver = false;
-		set_filter_menu(false);
+//		set_filter_menu(false);
 		if (list != NULL) wdi_destroy_list(list);
 		if (!from_install) {
 			current_device_index = 0;
@@ -1137,10 +1167,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			display_mi(false);
 			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
 			has_wcid = WCID_NONE;
-			set_wcid();
+			pd_options.use_wcid_driver = true;
+			update_ui();
+			set_install_button();
 		}
-		pd_options.use_wcid_driver = (nb_devices < 0);
-		set_install_button();
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
 			dsprintf("%d device%s found.", nb_devices+1, (nb_devices!=0)?"s":"");
@@ -1171,7 +1201,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		return (INT_PTR)FALSE;
 
-	// Set background colour of read only fields
+	// Set background colour of read only fields as well as the colour of the text arrow
 	case WM_CTLCOLORSTATIC:
 		// Must be transparent for XP and non Aero Vista/7
 		SetBkMode((HDC)wParam, TRANSPARENT);
@@ -1179,9 +1209,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		  || ((HWND)lParam == hMi) || ((HWND)lParam == hWcid) ) {
 			return (INT_PTR)grey_brush;
 		} else if ((HWND)lParam == hDriver) {
+#if defined(COLOURED_FIELDS)
 			return (INT_PTR)driver_background[get_driver_type(device)];
+#endif
+			return (INT_PTR)grey_brush;
 		} else if ((HWND)lParam == hTarget) {
 			return (INT_PTR)white_brush;
+		} else if ((HWND)lParam == GetDlgItem(hMain, IDC_RARR)) {
+			SetTextColor((HDC)wParam, arrow_color);
+			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_MENU));
 		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
@@ -1259,9 +1295,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					SetDlgItemTextU(hMain, IDC_DRIVER, driver_text);
 					pd_options.driver_type = default_driver_type;
-					if ((!select_next_driver(0)) && (!select_next_driver(1))) {
-						dprintf("no driver is selectable in libwdi!");
-					}
 					// Display the VID,PID,MI
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
@@ -1299,11 +1332,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							}
 						}
 						if (wcid_type < WDI_USER) {
-							for (i=WDI_WINUSB; i<WDI_NB_DRIVERS; i++) {
-								select_next_driver(1);
-								if (pd_options.driver_type == wcid_type) {
+							for (i=WDI_WINUSB; i<WDI_USER; i++) {
+								if ((i == wcid_type) && (wdi_is_driver_supported(i, NULL)))
 									break;
-								}
+							}
+							if (i < WDI_USER) {
+								pd_options.driver_type = i;
+								set_driver();
 							}
 						}
 					}
@@ -1311,7 +1346,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				} else {
 					has_wcid = WCID_NONE;
 				}
-				set_wcid();
+				update_ui();
 				set_install_button();
 				break;
 			default:
@@ -1375,10 +1410,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				dprintf("could not allocate buffer to save log");
 			}
 			break;
-		case IDC_TARGET:	// prevent focus
-		case IDC_DRIVER:
-		case IDC_WCID:
-		case IDC_WCID_BOX:
+		case IDC_WCID_BOX:	// prevent focus
 			if (HIWORD(wParam) == EN_SETFOCUS) {
 				SetFocus(hMain);
 				return (INT_PTR)TRUE;
@@ -1490,6 +1522,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	// Set the Windows version
+//	windows_version = WINDOWS_XP;
 	detect_windows_version();
 
 	// Save instance of the application for further reference

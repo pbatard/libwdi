@@ -40,11 +40,13 @@
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
+#define WHITE                       RGB(255,255,255)
 #define LIGHT_GREY                  RGB(248,248,248)
 #define SEPARATOR_GREY              RGB(223,223,223)
-#define WHITE                       RGB(255,255,255)
-#define GREEN                       RGB(232,255,232)
-#define RED                         RGB(255,207,207)
+#define FIELD_GREEN                 RGB(232,255,232)
+#define FIELD_ORANGE                RGB(255,240,200)
+#define ARROW_GREEN                 RGB(92,228,65)
+#define ARROW_ORANGE                RGB(253,143,56)
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
