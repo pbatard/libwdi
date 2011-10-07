@@ -374,9 +374,12 @@ void set_filter_menu(bool display)
 	mi_filter.cch = (UINT)strlen(itemddesc[has_filter_driver?1:0]);
 
 	if (filter_is_displayed) {
-		if (display)
-			return;
+		// Always perform delete + display for Delete <-> Install toggle after successfull install/delete
 		DeleteMenu(hMenuSplit, IDM_SPLIT_FILTER, MF_BYCOMMAND);
+		if (display) {
+			InsertMenuItemA(hMenuSplit, IDM_SPLIT_EXTRACT, FALSE, &mi_filter);
+			return;
+		}
 		filter_is_displayed = false;
 	} else {
 		if (!display)
@@ -1122,7 +1125,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_INITDIALOG:
 		// Setup options
 		cl_options.trim_whitespaces = true;
-		pd_options.driver_type = WDI_WINUSB;
 
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
@@ -1157,7 +1159,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		id_options.install_filter_driver = false;
-//		set_filter_menu(false);
 		if (list != NULL) wdi_destroy_list(list);
 		if (!from_install) {
 			current_device_index = 0;
@@ -1194,9 +1195,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_VSCROLL:
 		if (LOWORD(wParam) == 4) {
-			if (!select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1)) {
-				dprintf("no driver is selectable in libwdi!");
-			}
+			select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1);
+			update_ui();
+			set_install_button();
 			last_scroll = HIWORD(wParam);
 			return (INT_PTR)TRUE;
 		}
@@ -1316,7 +1317,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						safe_strcpy(driver_text, sizeof(driver_text), "(NONE)");
 					}
 					SetDlgItemTextU(hMain, IDC_DRIVER, driver_text);
-					pd_options.driver_type = default_driver_type;
 					// Display the VID,PID,MI
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
