@@ -1,6 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
+#include "zadig_resource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 
 1 TEXTINCLUDE 
 BEGIN
-    "resource.h\0"
+    "zadig_resource.h\0"
 END
 
 2 TEXTINCLUDE 
@@ -145,8 +145,8 @@ BEGIN
     LTEXT           "WCID",IDC_STATIC_WCID,14,84,21,9,SS_NOTIFY
     EDITTEXT        IDC_WCID_BOX,40,82,14,14,ES_READONLY | NOT WS_TABSTOP
     EDITTEXT        IDC_WCID,55,82,44,14,ES_READONLY | NOT WS_VISIBLE | NOT WS_TABSTOP,WS_EX_TRANSPARENT
-    ICON            "",IDC_GRARR_ICON,139,40,24,24,SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE
-    ICON            "",IDC_ORARR_ICON,139,38,24,26,SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE
+    CTEXT           "",IDC_GRARR_ICON,139,40,24,24,SS_ICON | SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE
+    CTEXT           "",IDC_ORARR_ICON,139,38,24,26,SS_ICON | SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE
     LTEXT           "ð",IDC_RARR,142,43,17,15,NOT WS_VISIBLE
     EDITTEXT        IDC_TARGET,162,44,98,14,ES_READONLY | NOT WS_TABSTOP
     CONTROL         "",IDC_TARGETSPIN,"msctls_updown32",UDS_ARROWKEYS,260,44,11,14,WS_EX_TRANSPARENT
@@ -166,7 +166,7 @@ CAPTION "About Zadig"
 FONT 8, "Microsoft Sans Serif", 400, 0, 0x0
 BEGIN
     ICON            IDI_ZADIG,IDC_ABOUT_ICON,10,21,20,20
-    LTEXT           "Zadig, Version 1.2.0.146",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Zadig v2.0.0.146",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright (c) 2010-2011 Pete Batard",IDC_STATIC,41,40,139,8
     DEFPUSHBUTTON   "OK",IDOK,167,72,50,14,WS_GROUP
     LTEXT           "Part of the libwdi project:",IDC_STATIC,41,27,77,8,SS_NOPREFIX
@@ -193,8 +193,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,146
- PRODUCTVERSION 1,2,0,146
+ FILEVERSION 2,0,0,146
+ PRODUCTVERSION 2,0,0,146
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -212,13 +212,13 @@ BEGIN
             VALUE "Comments", "http://libwdi.sf.net"
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig Application"
-            VALUE "FileVersion", "1.2.0.144"
+            VALUE "FileVersion", "2.0.0.146"
             VALUE "InternalName", "zadig"
             VALUE "LegalCopyright", "GNU LGPL v3 or later"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "zadig"
-            VALUE "ProductVersion", "1.2.0.144"
+            VALUE "ProductVersion", "2.0.0.146"
         END
     END
     BLOCK "VarFileInfo"

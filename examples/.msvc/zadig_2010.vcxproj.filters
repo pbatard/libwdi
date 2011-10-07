@@ -32,7 +32,7 @@
     <ClInclude Include="..\profile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\resource.h">
+    <ClInclude Include="..\zadig_resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\zadig.h">

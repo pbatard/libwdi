@@ -37,7 +37,7 @@
 
 #include "libwdi.h"
 #include "msapi_utf8.h"
-#include "resource.h"
+#include "zadig_resource.h"
 #include "zadig.h"
 #include "profile.h"
 
@@ -847,6 +847,9 @@ void init_dialog(HWND hDlg)
 		SendMessage(GetDlgItem(hDlg, IDC_INSTALLXP), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 	}
 
+	// Display the version in the right area of the status bar
+	SendMessageA(GetDlgItem(hDlg, IDC_STATUS), SB_SETTEXTA, SBT_OWNERDRAW | 1, (LPARAM)APP_VERSION);
+
 	// The application always starts in advanced mode
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
 
@@ -1040,6 +1043,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	NMBCDROPDOWN* pDropDown;
 	POINT pt;
 	RECT rect;
+	DRAWITEMSTRUCT* di;
 
 	// The following local variables are used to change the visual aspect of the fields
 	static HWND hDeviceEdit;
@@ -1222,6 +1226,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
 		return (INT_PTR)FALSE;
+
+	// Change the colour of the version text in the status bar
+	case WM_DRAWITEM:
+		di = (DRAWITEMSTRUCT*)lParam;
+		SetBkMode(di->hDC, TRANSPARENT);
+		SetTextColor(di->hDC, GetSysColor(COLOR_3DSHADOW));
+		di->rcItem.top += 2;
+		di->rcItem.left += 4;
+		DrawTextExA(di->hDC, APP_VERSION, -1, &di->rcItem, DT_LEFT, NULL);
+		return (INT_PTR)TRUE;
 
 	// Display the Install button split menu (Vista or later)
 	case WM_NOTIFY:

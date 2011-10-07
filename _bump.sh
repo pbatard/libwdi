@@ -31,7 +31,7 @@ s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ FILEVERSION \1,\2,\3,@@TAGVER
 s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@TAGVER@@/
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "FileVersion", "\2, \3, \4, @@TAGVER@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\),[ \t]*\(.*\),[ \t]*\(.*\),.*"/\1VALUE "ProductVersion", "\2, \3, \4, @@TAGVER@@"/
-s/^\(.*\)"Zadig, Version \(.*\)\.\(.*\)"\(.*\)/\1"Zadig, Version \2.@@TAGVER@@"\4/
+s/^\(.*\)adig v\(.*\)\.\(.*\)"\(.*\)/\1adig v\2.@@TAGVER@@"\4/
 s/^zadig_version=\(.*\)\..*/zadig_version=\1.@@TAGVER@@/
 _EOF
 
@@ -46,6 +46,8 @@ sed -f cmd.sed examples/zadic.rc > examples/zadic.rc~
 mv examples/zadic.rc~ examples/zadic.rc
 sed -f cmd.sed examples/zadig.rc > examples/zadig.rc~
 mv examples/zadig.rc~ examples/zadig.rc
+sed -f cmd.sed examples/zadig.h > examples/zadig.h~
+mv examples/zadig.h~ examples/zadig.h
 sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple.rc~
 mv examples/wdi-simple.rc~ examples/wdi-simple.rc
 sed -f cmd.sed _bm.sh > _bm.sh~

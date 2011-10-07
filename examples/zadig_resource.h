@@ -23,6 +23,7 @@
 #define IDC_WCID_BOX                    1014
 #define IDC_WCID_ICON                   1015
 #define IDC_WCID                        1016
+#define IDC_STATUS_RIGHT                1017
 #define IDC_BROWSE                      1019
 #define IDC_URL                         1034
 #define IDC_CLEAR                       1036

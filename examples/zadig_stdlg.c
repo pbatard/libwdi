@@ -33,7 +33,7 @@
 #include <sddl.h>
 
 #include "libwdi.h"
-#include "resource.h"
+#include "zadig_resource.h"
 #include "zadig.h"
 #include "../libwdi/msapi_utf8.h"
 
@@ -59,7 +59,7 @@ static LPITEMIDLIST (WINAPI *pSHSimpleIDListFromPath)(PCWSTR pszPath) = NULL;
 static HICON hMessageIcon = (HICON)INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
-enum windows_version windows_version;
+enum windows_version windows_version = WINDOWS_UNSUPPORTED;
 
 /*
  * Converts a name + ext UTF-8 pair to a valid MS filename.
@@ -170,12 +170,14 @@ void detect_windows_version(void)
 			windows_version = WINDOWS_XP;
 		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
 			windows_version = WINDOWS_2003_XP64;
-		} else if (os_version.dwMajorVersion >= 6) {
+		} else if (os_version.dwMajorVersion == 6) {
 			if (os_version.dwBuildNumber < 7000) {
 				windows_version = WINDOWS_VISTA;
 			} else {
 				windows_version = WINDOWS_7;
 			}
+		} else if (os_version.dwMajorVersion >= 8) {
+			windows_version = WINDOWS_8;
 		}
 	}
 }

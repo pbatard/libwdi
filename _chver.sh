@@ -33,8 +33,6 @@ s/^[ \t]*FILEVERSION[ \t]*.*,.*,.*,\(.*\)/ FILEVERSION @@MAJOR@@,@@MINOR@@,@@MIC
 s/^[ \t]*PRODUCTVERSION[ \t]*.*,.*,.*,\(.*\)/ PRODUCTVERSION @@MAJOR@@,@@MINOR@@,@@MICRO@@,\1/
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*".*,[ \t]*.*,[ \t]*.*,\(.*\)"/\1VALUE "FileVersion", "@@MAJOR@@, @@MINOR@@, @@MICRO@@,\2"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*".*,[ \t]*.*,[ \t]*.*,\(.*\)"/\1VALUE "ProductVersion", "@@MAJOR@@, @@MINOR@@, @@MICRO@@,\2"/
-s/^\(.*\)"Zadig, Version \(.*\)\.\(.*\)"\(.*\)/\1"Zadig, Version @@MAJOR@@.@@MINOR@@.@@MICRO@@.\3"\4/
-s/^zadig_version=.*\.\(.*\)/zadig_version=@@MAJOR@@.@@MINOR@@.@@MICRO@@.\1/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
@@ -45,8 +43,6 @@ sed -f cmd.sed libwdi/libwdi.rc > libwdi/libwdi.rc~
 mv libwdi/libwdi.rc~ libwdi/libwdi.rc
 sed -f cmd.sed examples/zadic.rc > examples/zadic.rc~
 mv examples/zadic.rc~ examples/zadic.rc
-sed -f cmd.sed examples/zadig.rc > examples/zadig.rc~
-mv examples/zadig.rc~ examples/zadig.rc
 sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple.rc~
 mv examples/wdi-simple.rc~ examples/wdi-simple.rc
 sed -f cmd.sed _bm.sh > _bm.sh~

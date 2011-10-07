@@ -164,7 +164,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\libwdi\msapi_utf8.h" />
     <ClInclude Include="..\profile.h" />
-    <ClInclude Include="..\resource.h" />
+    <ClInclude Include="..\zadig_resource.h" />
     <ClInclude Include="..\zadig.h" />
   </ItemGroup>
   <ItemGroup>
