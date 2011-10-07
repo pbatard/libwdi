@@ -707,12 +707,12 @@ static void free_di(struct wdi_device_info *di)
 	if (di == NULL) {
 		return;
 	}
-	safe_free(di->device_id);
-	safe_free(di->compatible_id);
-	safe_free(di->hardware_id);
 	safe_free(di->desc);
 	safe_free(di->driver);
-	free(di);
+	safe_free(di->device_id);
+	safe_free(di->hardware_id);
+	safe_free(di->compatible_id);
+	safe_free(di->upper_filter);
 }
 
 // Setup the Cfgmgr32 and SetupApi DLLs
