@@ -58,7 +58,7 @@ HWND hDeviceList;
 HWND hMain;
 HWND hInfo;
 HWND hStatus;
-HWND hToolTip = NULL;
+HWND hVIDToolTip = NULL, hArrowToolTip = NULL;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 HMENU hMenuLogLevel;
@@ -561,6 +561,7 @@ void update_ui(void)
 {
 	bool same_driver;
 	bool warn;
+	HWND arrow;
 
 	switch (has_wcid) {
 	case WCID_TRUE:
@@ -586,12 +587,18 @@ void update_ui(void)
 
 	if (windows_version < WINDOWS_7) {
 		arrow_color = warn?ARROW_ORANGE:ARROW_GREEN;
-		InvalidateRect(GetDlgItem(hMain, IDC_RARR), NULL, TRUE);
-		UpdateWindow(GetDlgItem(hMain, IDC_RARR));
+		arrow = GetDlgItem(hMain, IDC_RARR);
+		InvalidateRect(arrow, NULL, TRUE);
+		UpdateWindow(arrow);
 	} else {
 		ShowWindow(GetDlgItem(hMain, IDC_GRARR_ICON), warn?FALSE:TRUE);
 		ShowWindow(GetDlgItem(hMain, IDC_ORARR_ICON), warn?TRUE:FALSE);
+		arrow = GetDlgItem(hMain, warn?IDC_ORARR_ICON:IDC_GRARR_ICON);
 	}
+	destroy_tooltip(hArrowToolTip);
+	hArrowToolTip = create_tooltip(arrow, warn?
+		"Driver operation may be unsafe":
+		"Driver operation should be safe", -1);
 }
 
 // Toggle device creation mode
@@ -617,8 +624,8 @@ void toggle_create(bool refresh)
 		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
-		destroy_tooltip(hToolTip);
-		hToolTip = NULL;
+		destroy_tooltip(hVIDToolTip);
+		hVIDToolTip = NULL;
 		unknown_vid = false;
 		display_mi(true);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
@@ -1314,7 +1321,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
 					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
-					destroy_tooltip(hToolTip);
+					destroy_tooltip(hVIDToolTip);
 					vid_string = wdi_get_vendor_name(device->vid);
 					unknown_vid = (vid_string == NULL);
 					if (unknown_vid) {
@@ -1322,7 +1329,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							"the name of this vendor, please consider submitting it to "
 							"the USB ID Repository, by clicking the button on the right.";
 					};
-					hToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
+					hVIDToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
 					ShowWindow(GetDlgItem(hMain, IDC_VID_REPORT), unknown_vid?SW_SHOW:SW_HIDE);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
 					SetDlgItemTextA(hMain, IDC_PID, str_tmp);
@@ -1538,7 +1545,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	// Set the Windows version
-//	windows_version = WINDOWS_XP;
 	detect_windows_version();
 
 	// Save instance of the application for further reference
