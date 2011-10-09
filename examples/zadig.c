@@ -842,9 +842,9 @@ void init_dialog(HWND hDlg)
 		// On newer OSes, recreate the control so that it uses icons
 		GetWindowRect(hArrow, &rect);
 		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
-		arrow_width = rect.right - rect.left; arrow_height = 24; //rect.bottom - rect.top + 2 -10;
+		arrow_width = rect.right - rect.left; arrow_height = 24;
 		ScreenToClient(hMain, &arrow_origin);
-		arrow_origin.x -= 1; arrow_origin.y += 6;	// Some fixup is needed
+		arrow_origin.x += 1;	// Some fixup is needed
 		DestroyWindow(hArrow);
 		// We need SS_CENTERIMAGE to be able to increase the control height by two and achieve pixel positioning
 		hArrow = CreateWindowExA(0, "STATIC", NULL,
@@ -1266,7 +1266,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			return (INT_PTR)white_brush;
 		} else if ((HWND)lParam == GetDlgItem(hMain, IDC_RARR)) {
 			SetTextColor((HDC)wParam, arrow_color);
-			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_MENU));
+			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
 		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
