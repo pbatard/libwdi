@@ -312,16 +312,14 @@ int install_driver(void)
 			MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO)) {
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
-		r = WDI_SUCCESS;
-	} else {
-		r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	}
+	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
 		dsprintf("Succesfully extracted driver files.");
 		// Perform the install if not extracting the files only
 		if ((pd_options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
-			  && (MessageBoxA(hMain, "You are about to replace a system driver.\n"
+			  && (MessageBoxA(hMain, "You are about to modify a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
 				r = WDI_ERROR_USER_CANCEL; goto out;
