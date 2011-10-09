@@ -37,8 +37,6 @@
 #define IDC_NOTIFICATION_TEXT           1057
 #define IDC_NOTIFICATION_CLOSE          1059
 #define IDC_NOTIFICATION_LINE           1060
-#define IDC_GRARR_ICON                  1066
-#define IDC_ORARR_ICON                  1067
 #define IDC_RARR                        1068
 #define IDC_WCID_HELP                   1069
 #define IDC_THIS_SPACE_FOR_RENT         1070

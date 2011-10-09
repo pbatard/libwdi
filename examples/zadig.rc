@@ -145,12 +145,7 @@ BEGIN
     LTEXT           "WCID",IDC_STATIC_WCID,14,84,21,9,SS_NOTIFY
     EDITTEXT        IDC_WCID_BOX,40,82,14,14,ES_READONLY | NOT WS_TABSTOP
     EDITTEXT        IDC_WCID,55,82,44,14,ES_READONLY | NOT WS_VISIBLE | NOT WS_TABSTOP,WS_EX_TRANSPARENT
-    // NOTE: MinGW DOES not display ICONS with SS_CENTERIMAGE amd we need this attribute to get exact positioning
-    // of the green and orange icons on Win7 or later => use LTEXT. However, as soon as Visual Studio edits this
-    // file, LTEXT will be reverted to ICON and icons will no longer display... You have been warned!
-    LTEXT           "",IDC_GRARR_ICON,139,40,24,24,SS_ICON | SS_NOTIFY | SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE | WS_GROUP
-    LTEXT           "",IDC_ORARR_ICON,139,38,24,26,SS_ICON | SS_NOTIFY | SS_CENTERIMAGE | SS_REALSIZEIMAGE | NOT WS_VISIBLE | WS_GROUP
-    LTEXT           "ð",IDC_RARR,142,43,17,15,SS_NOTIFY | NOT WS_VISIBLE
+    LTEXT           "ð",IDC_RARR,142,40,20,24,SS_NOTIFY | SS_CENTERIMAGE | NOT WS_VISIBLE
     EDITTEXT        IDC_TARGET,162,44,98,14,ES_READONLY | NOT WS_TABSTOP
     CONTROL         "",IDC_TARGETSPIN,"msctls_updown32",UDS_ARROWKEYS,260,44,11,14,WS_EX_TRANSPARENT
     GROUPBOX        "",IDC_STATIC,278,32,97,72

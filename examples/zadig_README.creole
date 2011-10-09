@@ -1,5 +1,5 @@
 = Zadig - Changelog =
-=== v2.0.0_beta3: ===
+=== v2.0.0.beta3: ===
 * **New GUI**
 * full WCID driver support ([[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|more]])
 * facilitate the reporting of unresolved VIDs to the [[http://www.linux-usb.org/usb-ids.html|USB ID Repository]]

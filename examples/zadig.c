@@ -59,11 +59,15 @@ HWND hMain;
 HWND hInfo;
 HWND hStatus;
 HWND hVIDToolTip = NULL, hArrowToolTip = NULL;
+HWND hArrow;
 HMENU hMenuDevice;
 HMENU hMenuOptions;
 HMENU hMenuLogLevel;
 HMENU hMenuSplit;
 HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
+HICON hIconArrowGreen, hIconArrowOrange;
+POINT arrow_origin;
+LONG arrow_width, arrow_height;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 extern enum windows_version windows_version;
@@ -91,6 +95,7 @@ bool from_install = false;
 bool installation_running = false;
 bool unknown_vid = false;
 bool has_filter_driver = false;
+bool use_arrow_icons = false;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
@@ -564,7 +569,6 @@ void update_ui(void)
 {
 	bool same_driver;
 	bool warn;
-	HWND arrow;
 
 	switch (has_wcid) {
 	case WCID_TRUE:
@@ -588,18 +592,17 @@ void update_ui(void)
 	same_driver = device && (safe_stricmp(device->driver, driver_display_name[pd_options.driver_type]) == 0);
 	warn = (get_driver_type(device) == DT_SYSTEM) || (same_driver && (target_driver_version < device->driver_version)) ;
 
-	if (windows_version < WINDOWS_7) {
-		arrow_color = warn?ARROW_ORANGE:ARROW_GREEN;
-		arrow = GetDlgItem(hMain, IDC_RARR);
-		InvalidateRect(arrow, NULL, TRUE);
-		UpdateWindow(arrow);
-	} else {
-		ShowWindow(GetDlgItem(hMain, IDC_GRARR_ICON), warn?FALSE:TRUE);
-		ShowWindow(GetDlgItem(hMain, IDC_ORARR_ICON), warn?TRUE:FALSE);
-		arrow = GetDlgItem(hMain, warn?IDC_ORARR_ICON:IDC_GRARR_ICON);
+	if (use_arrow_icons) {
+		MoveWindow(hArrow, arrow_origin.x, arrow_origin.y, arrow_width, arrow_height+(warn?-2:0), TRUE);
+		SendMessage(hArrow, STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)(warn?hIconArrowOrange:hIconArrowGreen));
 	}
+	else {
+		arrow_color = warn?ARROW_ORANGE:ARROW_GREEN;
+		InvalidateRect(hArrow, NULL, TRUE);
+		UpdateWindow(hArrow);
+	} 
 	destroy_tooltip(hArrowToolTip);
-	hArrowToolTip = create_tooltip(arrow, warn?
+	hArrowToolTip = create_tooltip(hArrow, warn?
 		"Driver operation may be unsafe":
 		"Driver operation should be safe", -1);
 }
@@ -754,6 +757,7 @@ void init_dialog(HWND hDlg)
 	HFONT hf;
 	HDC hdc;
 	long lfHeight;
+	RECT rect;
 
 	struct {
 		HIMAGELIST himl;
@@ -768,6 +772,7 @@ void init_dialog(HWND hDlg)
 	hMain = hDlg;
 	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
+	hArrow = GetDlgItem(hMain, IDC_RARR);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
 	hMenuLogLevel = GetSubMenu(hMenuOptions, 7);
@@ -798,17 +803,6 @@ void init_dialog(HWND hDlg)
 	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
 		"Submit Vendor to the USB ID Repository", -1);
 
-	// Set the text mode arrow (Vista or earlier)
-	if (windows_version < WINDOWS_7) {
-		hdc = GetDC(NULL);
-		lfHeight = -MulDiv(20, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-		ReleaseDC(NULL, hdc);
-		hf = CreateFontA(lfHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-			SYMBOL_CHARSET, 0, 0, PROOF_QUALITY, 0, "Wingdings");
-		SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
-		ShowWindow(GetDlgItem(hMain, IDC_RARR), TRUE);
-	}
-
 	// Load system icons for tick marks and folder
 	// (Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
@@ -817,14 +811,35 @@ void init_dialog(HWND hDlg)
 	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hDllInst = LoadLibraryA("urlmon.dll");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
-	if (windows_version >= WINDOWS_7) {
-		hDllInst = LoadLibraryA("ieframe.dll");		// Green right arrow
-		hIcon = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
-		SendMessage(GetDlgItem(hMain, IDC_GRARR_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIcon);
-		ShowWindow(GetDlgItem(hMain, IDC_GRARR_ICON), TRUE);
-		hDllInst = LoadLibraryA("netshell.dll");	// Orange right arrow
-		hIcon = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
-		SendMessage(GetDlgItem(hMain, IDC_ORARR_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIcon);
+	do {
+		if ((hDllInst = LoadLibraryA("ieframe.dll")) == NULL) break;	// Green right arrow
+		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		if ((hDllInst = LoadLibraryA("netshell.dll")) == NULL) break;	// Orange right arrow
+		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		if ( (hIconArrowGreen == NULL) || (hIconArrowOrange == NULL) ) break;
+		use_arrow_icons = true;
+		// On newer OSes, recreate the control so that it uses icons
+		GetWindowRect(hArrow, &rect);
+		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
+		arrow_width = rect.right - rect.left; arrow_height = rect.bottom - rect.top + 2;
+		ScreenToClient(hMain, &arrow_origin);
+		arrow_origin.x -= 1; arrow_origin.y -= 1;	// Some fixup is needed
+		DestroyWindow(hArrow);
+		// We need SS_CENTERIMAGE to be able to increase the control height by two and achieve pixel positioning
+		hArrow = CreateWindowExA(0, "STATIC", NULL,
+			SS_ICON | SS_NOTIFY | SS_CENTERIMAGE | SS_REALSIZEIMAGE | WS_GROUP | WS_CHILD | WS_VISIBLE,
+			arrow_origin.x, arrow_origin.y, arrow_width, arrow_height, hMain, NULL, main_instance, NULL);
+		SendMessage(hArrow, STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconArrowGreen);
+	} while (0);
+	if (!use_arrow_icons) {
+		// Fallback to text arrow if icons can't be used, but first change the font
+		hdc = GetDC(NULL);
+		lfHeight = -MulDiv(20, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+		ReleaseDC(NULL, hdc);
+		hf = CreateFontA(lfHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			SYMBOL_CHARSET, 0, 0, PROOF_QUALITY, 0, "Wingdings");
+		SendDlgItemMessageA(hDlg, IDC_RARR, WM_SETFONT, (WPARAM)hf, TRUE);
+		ShowWindow(hArrow, TRUE);
 	}
 
 	// Set a folder icon on the select folder button
