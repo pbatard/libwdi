@@ -65,7 +65,7 @@ HMENU hMenuOptions;
 HMENU hMenuLogLevel;
 HMENU hMenuSplit;
 HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
-HICON hIconArrowGreen, hIconArrowOrange;
+HICON hIconArrowGreen, hIconArrowOrange, hIconFilter;
 POINT arrow_origin;
 LONG arrow_width, arrow_height;
 WNDPROC original_wndproc;
@@ -73,7 +73,8 @@ COLORREF arrow_color = ARROW_GREEN;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH] = DEFAULT_DIR;
-char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "Custom (extract only)" };
+const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "Custom (extract only)" };
+const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
 struct wdi_options_install_cert ic_options = { 0 };
@@ -373,7 +374,8 @@ void set_filter_menu(bool display)
 	static bool filter_is_displayed = true;
 
 	// Find if a filter driver is in use
-	has_filter_driver = (device != NULL) && (safe_stricmp(driver_display_name[WDI_LIBUSB0], device->upper_filter) == 0);
+	has_filter_driver = (device != NULL) && (safe_stricmp(driver_name[WDI_LIBUSB0], device->upper_filter) == 0);
+	ShowWindow(GetDlgItem(hMain, IDC_FILTER_ICON), has_filter_driver?TRUE:FALSE);
 
 	mi_filter.dwTypeData = itemddesc[has_filter_driver?1:0];
 	mi_filter.cch = (UINT)strlen(itemddesc[has_filter_driver?1:0]);
@@ -589,7 +591,7 @@ void update_ui(void)
 		id_options.install_filter_driver = false;
 	}
 	set_filter_menu((pd_options.driver_type == WDI_LIBUSB0) && (nb_devices>=0));
-	same_driver = device && (safe_stricmp(device->driver, driver_display_name[pd_options.driver_type]) == 0);
+	same_driver = device && (safe_stricmp(device->driver, driver_name[pd_options.driver_type]) == 0);
 	warn = (get_driver_type(device) == DT_SYSTEM) || (same_driver && (target_driver_version < device->driver_version)) ;
 
 	if (use_arrow_icons) {
@@ -711,7 +713,7 @@ void set_install_button(void)
 				action = "Install";
 			} else if ((has_wcid == WCID_TRUE) && (!pd_options.use_wcid_driver)) {
 				action = "Replace";
-			} else if (safe_stricmp(device->driver, driver_display_name[pd_options.driver_type]) == 0) {
+			} else if (safe_stricmp(device->driver, driver_name[pd_options.driver_type]) == 0) {
 				if (target_driver_version == device->driver_version) {
 					action = "Reinstall";
 				} else if (target_driver_version > device->driver_version) {
@@ -802,15 +804,36 @@ void init_dialog(HWND hDlg)
 		"Online information about WCID", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
 		"Submit Vendor to the USB ID Repository", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
+		"This device also has the\nlibusb-win32 filter driver", -1);
 
-	// Load system icons for tick marks and folder
-	// (Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
+	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
+	// These shell32 icons should be available on any Windows system
 	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	// Try to locate a green checkmark icon
 	hDllInst = LoadLibraryA("urlmon.dll");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	if ((hDllInst == NULL) || (hIconTickOK == NULL)) {
+		// No luck, fallback to next best thing in shell32
+		hDllInst = LoadLibraryA("shell32.dll");
+		hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(246), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	}
+	// Try to locate a funnel icon
+	hDllInst = LoadLibraryA("admtmpl.dll");
+	hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(6), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
+		hDllInst = LoadLibraryA("wmploc.dll");
+		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(475), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	}
+	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
+		// No luck, fallback to next best thing in shell32
+		hDllInst = LoadLibraryA("shell32.dll");
+		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(278), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	}
+	SendMessage(GetDlgItem(hDlg, IDC_FILTER_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconFilter);
 	do {
 		if ((hDllInst = LoadLibraryA("ieframe.dll")) == NULL) break;	// Green right arrow
 		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
@@ -821,9 +844,9 @@ void init_dialog(HWND hDlg)
 		// On newer OSes, recreate the control so that it uses icons
 		GetWindowRect(hArrow, &rect);
 		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
-		arrow_width = rect.right - rect.left; arrow_height = rect.bottom - rect.top + 2;
+		arrow_width = rect.right - rect.left; arrow_height = 24; //rect.bottom - rect.top + 2 -10;
 		ScreenToClient(hMain, &arrow_origin);
-		arrow_origin.x -= 1; arrow_origin.y -= 1;	// Some fixup is needed
+		arrow_origin.x -= 1; arrow_origin.y += 6;	// Some fixup is needed
 		DestroyWindow(hArrow);
 		// We need SS_CENTERIMAGE to be able to increase the control height by two and achieve pixel positioning
 		hArrow = CreateWindowExA(0, "STATIC", NULL,
@@ -1363,7 +1386,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
 						// Select the driver according to the WCID (will be set to WDI_USER = unsupported if no match)
 						for (wcid_type=WDI_WINUSB; wcid_type<WDI_LIBUSBK; wcid_type++) {
-							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_display_name[wcid_type]) == 0) {
+							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_name[wcid_type]) == 0) {
 								break;
 							}
 						}
