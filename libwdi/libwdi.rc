@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (Neutral) resources
+// English resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -61,7 +59,7 @@ VS_VERSION_INFO VERSIONINFO
  FILEFLAGS 0x0L
 #endif
  FILEOS 0x40004L
- FILETYPE 0x1L
+ FILETYPE 0x2L
  FILESUBTYPE 0x0L
 BEGIN
     BLOCK "StringFileInfo"
@@ -69,15 +67,16 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "Comments", "http://libusb.org/wiki/libwdi"
-            VALUE "CompanyName", "libusb.org"
-            VALUE "FileDescription", "libwdi"
-            VALUE "FileVersion", "1, 1, 1, 147"
+            VALUE "CompanyName", "akeo.ie"
+            VALUE "FileDescription", "libwdi: Windows Driver Installer Library"
+            VALUE "FileVersion", "1.1.1.147"
             VALUE "InternalName", "libwdi"
-            VALUE "LegalCopyright", "See individual source files, GNU LGPL v2.1 or later."
-            VALUE "LegalTrademarks", "http://www.gnu.org/licenses/lgpl-2.1.html"
+            VALUE "LegalCopyright", "(c) 2010-2011 Pete Batard (GNU LGPL v3)"
+            VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "libwdi"
             VALUE "ProductName", "libwdi"
-            VALUE "ProductVersion", "1, 1, 1, 147"
+            VALUE "ProductVersion", "1.1.1.147"
+            VALUE "WWW", "http://libwdi.sf.net"
         END
     END
     BLOCK "VarFileInfo"
@@ -86,7 +85,7 @@ BEGIN
     END
 END
 
-#endif    // English (Neutral) resources
+#endif    // English resources
 /////////////////////////////////////////////////////////////////////////////
 
 

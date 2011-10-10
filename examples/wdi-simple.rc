@@ -23,16 +23,16 @@ BEGIN
     BEGIN
         BLOCK "000904b0"
         BEGIN
-            VALUE "Comments", "http://libusb.org/wiki/libwdi"
             VALUE "CompanyName", "libusb.org"
-            VALUE "FileDescription", "Zadic Application"
-            VALUE "FileVersion", "1, 1, 1, 147"
+            VALUE "FileDescription", "WDI-Simple: Simple libwdi-based Installer"
+            VALUE "FileVersion", "1.1.1.147"
             VALUE "InternalName", "wdi-simple"
-            VALUE "LegalCopyright", "See individual source files, GNU LGPL v2.1 or later."
-            VALUE "LegalTrademarks", "http://www.gnu.org/licenses/lgpl-2.1.html"
+            VALUE "LegalCopyright", "(c) 2010-2011 Pete Batard (GNU LGPL v3)"
+            VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "wdi-simple.exe"
             VALUE "ProductName", "wdi-simple"
-            VALUE "ProductVersion", "1, 1, 1, 147"
+            VALUE "ProductVersion", "1.1.1.147"
+            VALUE "WWW", "http://libwdi.sf.net"
         END
     END
     BLOCK "VarFileInfo"
