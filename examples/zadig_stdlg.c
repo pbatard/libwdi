@@ -1,21 +1,20 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Standard Dialog Routines (Browse for folder, About, etc)
- * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <windows.h>
@@ -35,6 +34,7 @@
 #include "libwdi.h"
 #include "zadig_resource.h"
 #include "zadig.h"
+#include "zadig_license.h"
 #include "../libwdi/msapi_utf8.h"
 
 // The following is only available on Vista and later
@@ -60,6 +60,7 @@ static HICON hMessageIcon = (HICON)INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
 enum windows_version windows_version = WINDOWS_UNSUPPORTED;
+extern HFONT bold_font;
 
 /*
  * Converts a name + ext UTF-8 pair to a valid MS filename.
@@ -631,6 +632,28 @@ void center_dialog(HWND dialog)
 }
 
 /*
+ * License callback
+ */
+INT_PTR CALLBACK license_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message) {
+	case WM_INITDIALOG:
+		center_dialog(hDlg);
+		SetDlgItemTextA(hDlg, IDC_LICENSE_TEXT, gplv3);
+		break;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+		case IDCANCEL:
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+	}
+	return (INT_PTR)FALSE;
+}
+
+
+/*
  * About dialog callback
  */
 INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -638,12 +661,27 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 	switch (message) {
 	case WM_INITDIALOG:
 		center_dialog(hDlg);
+		SetDlgItemTextA(hDlg, IDC_ABOUT_COPYRIGHTS, additional_copyrights);
+		break;
+	case WM_CTLCOLORSTATIC:
+		if ((HWND)lParam == GetDlgItem(hDlg, IDC_ZADIG_BOLD)) {
+			SetBkMode((HDC)wParam, TRANSPARENT);
+			SelectObject((HDC)wParam, bold_font);
+			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+		}
 		break;
 	case WM_NOTIFY:
 		switch (((LPNMHDR)lParam)->code) {
 		case NM_CLICK:
 		case NM_RETURN:
-			ShellExecuteA(hDlg, "open", LIBWDI_URL, NULL, NULL, SW_SHOWNORMAL);
+			switch (LOWORD(wParam)) {
+			case IDC_ABOUT_LIBWDI_URL:
+				ShellExecuteA(hDlg, "open", LIBWDI_URL, NULL, NULL, SW_SHOWNORMAL);
+				break;
+			case IDC_ABOUT_BUG_URL:
+				ShellExecuteA(hDlg, "open", BUG_URL, NULL, NULL, SW_SHOWNORMAL);
+				break;
+			}
 			break;
 		}
 		break;
@@ -653,6 +691,9 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		case IDCANCEL:
 			EndDialog(hDlg, LOWORD(wParam));
 			return (INT_PTR)TRUE;
+		case IDC_ABOUT_LICENSE:
+			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_LICENSE), hDlg, license_callback);
+			break;
 		}
 		break;
 	}

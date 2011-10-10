@@ -343,6 +343,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\zadig_license.h"
+				>
+			</File>
+			<File
 				RelativePath="..\zadig_resource.h"
 				>
 			</File>

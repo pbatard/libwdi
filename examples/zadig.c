@@ -1,21 +1,20 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
- * For more info, please visit http://libwdi.akeo.ie
+ * Copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
+ * For more info, please visit http://libwdi.sf.net
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -68,7 +67,7 @@ HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
 HICON hIconArrowGreen, hIconArrowOrange, hIconFilter;
 POINT arrow_origin;
 LONG arrow_width, arrow_height;
-HFONT hyperlink_font;
+HFONT hyperlink_font, bold_font;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 extern enum windows_version windows_version;
@@ -1089,6 +1088,33 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
 }
 
+void create_static_fonts(HDC dc) {
+	TEXTMETRIC tm;
+	LOGFONT lf;
+
+	if (hyperlink_font != NULL)
+		return;
+	GetTextMetrics(dc, &tm);
+	lf.lfHeight = tm.tmHeight;
+	lf.lfWidth = 0;
+	lf.lfEscapement = 0;
+	lf.lfOrientation = 0;
+	lf.lfWeight = tm.tmWeight;
+	lf.lfItalic = tm.tmItalic;
+	lf.lfUnderline = TRUE;
+	lf.lfStrikeOut = tm.tmStruckOut;
+	lf.lfCharSet = tm.tmCharSet;
+	lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+	lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+	lf.lfQuality = DEFAULT_QUALITY;
+	lf.lfPitchAndFamily = tm.tmPitchAndFamily;
+	GetTextFace(dc, LF_FACESIZE, lf.lfFaceName);
+	hyperlink_font = CreateFontIndirect(&lf);
+	lf.lfWeight = FW_BOLD;
+	lf.lfUnderline = FALSE;
+	bold_font = CreateFontIndirect(&lf);
+}
+
 /*
  * Main dialog callback
  */
@@ -1108,8 +1134,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	NMBCDROPDOWN* pDropDown;
 	POINT pt;
 	RECT rect;
-	TEXTMETRIC tm;
-	LOGFONT lf;
 	DRAWITEMSTRUCT* di;
 
 	// The following local variables are used to change the visual aspect of the fields
@@ -1295,28 +1319,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBK_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_LIBWDI_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_WCID_URL)) ) {
-			// This is what you havwe to do to get an underline
-			// (and of course, you can't a DC with proper text metrics during init)
-			if (hyperlink_font == NULL) {
-				GetTextMetrics((HDC)wParam, &tm);
-				lf.lfHeight = tm.tmHeight;
-				lf.lfWidth = 0;
-				lf.lfEscapement = 0;
-				lf.lfOrientation = 0;
-				lf.lfWeight = tm.tmWeight;
-				lf.lfItalic = tm.tmItalic;
-				lf.lfUnderline = TRUE;
-				lf.lfStrikeOut = tm.tmStruckOut;
-				lf.lfCharSet = tm.tmCharSet;
-				lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
-				lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-				lf.lfQuality = DEFAULT_QUALITY;
-				lf.lfPitchAndFamily = tm.tmPitchAndFamily;
-				GetTextFace((HDC)wParam, LF_FACESIZE, lf.lfFaceName);
-				hyperlink_font = CreateFontIndirect(&lf);
-			}
+			create_static_fonts((HDC)wParam);
 			SelectObject((HDC)wParam, hyperlink_font);
 			SetTextColor((HDC)wParam, DARK_BLUE);
+			return (INT_PTR)GetStockObject(NULL_BRUSH);
+		}
+		if (hCtrl == GetDlgItem(hMain, IDC_LINKS)) {
+			create_static_fonts((HDC)wParam);
+			SelectObject((HDC)wParam, bold_font);
+			SetTextColor((HDC)wParam, GetSysColor(COLOR_3DDKSHADOW));
 			return (INT_PTR)GetStockObject(NULL_BRUSH);
 		}
 		// Restore transparency if we don't change the background

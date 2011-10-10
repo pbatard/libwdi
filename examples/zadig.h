@@ -1,21 +1,21 @@
 /*
- * List and install driver for USB devices (GUI version)
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Zadig: Automated Driver Installer for USB devices (GUI version)
+ * Copyright (c) 2010 Pete Batard <pete@akeo.ie>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
 #if !defined(bool)
@@ -41,6 +41,7 @@
 #define ZADIG_URL                   "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Zadig"
 #define WCID_URL                    "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices"
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
+#define BUG_URL                     "http://sourceforge.net/apps/trac/libwdi/newticket"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define WHITE                       RGB(255,255,255)
@@ -50,7 +51,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "zadig v2.0.0.147"
+#define APP_VERSION                 "Zadig v2.0.0.147"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
