@@ -172,7 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\split.ico" />
-    <None Include="..\wdi.bmp" />
+    <None Include="..\zadig.bmp" />
     <None Include="..\zadig.ico" />
   </ItemGroup>
   <ItemGroup>

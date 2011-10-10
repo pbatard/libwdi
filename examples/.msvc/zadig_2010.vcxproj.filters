@@ -46,7 +46,7 @@
     <None Include="..\split.ico">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\wdi.bmp">
+    <None Include="..\zadig.bmp">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

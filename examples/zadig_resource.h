@@ -6,7 +6,7 @@
 #define IDI_SPLIT                       103
 #define IDD_ABOUTBOX                    104
 #define IDD_NOTIFICATION                105
-#define IDB_WDI                         106
+#define IDB_ZADIG                       106
 #define IDC_DEVICELIST                  1001
 #define IDC_VID                         1002
 #define IDC_PID                         1003
@@ -38,8 +38,12 @@
 #define IDC_NOTIFICATION_CLOSE          1059
 #define IDC_NOTIFICATION_LINE           1060
 #define IDC_FILTER_ICON                 1061
+#define IDC_LIBUSB1_URL                 1062
+#define IDC_LIBUSB0_URL                 1063
+#define IDC_LIBUSBK_URL                 1064
+#define IDC_LIBWDI_URL                  1065
 #define IDC_RARR                        1068
-#define IDC_WCID_HELP                   1069
+#define IDC_WCID_URL                    1069
 #define IDC_THIS_SPACE_FOR_RENT         1070
 #define IDC_VIDPID                      1071
 #define IDM_ABOUT                       40001

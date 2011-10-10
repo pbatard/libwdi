@@ -68,6 +68,7 @@ HICON hIconTickOK, hIconTickNOK, hIconTickOKU, hIconFolder, hIconReport;
 HICON hIconArrowGreen, hIconArrowOrange, hIconFilter;
 POINT arrow_origin;
 LONG arrow_width, arrow_height;
+HFONT hyperlink_font;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 extern enum windows_version windows_version;
@@ -798,12 +799,20 @@ void init_dialog(HWND hDlg)
 		"Windows Compatible ID\nClick '?' for more info.", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_BROWSE),
 		"Directory to extract/install files to", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_WCID_HELP),
+	create_tooltip(GetDlgItem(hMain, IDC_WCID_URL),
 		"Online information about WCID", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
 		"Submit Vendor to the USB ID Repository", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
 		"This device also has the\nlibusb-win32 filter driver", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_LIBWDI_URL),
+		"Find out more about libwdi online", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB1_URL),
+		"Find out more about libusb-1.0 online", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB0_URL),
+		"Find out more about libusb-win32 online", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_LIBUSBK_URL),
+		"Find out more about libusbK online", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
@@ -1067,6 +1076,14 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			return (INT_PTR)TRUE;
 		}
+		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB0_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB1_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSBK_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBWDI_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_URL)) ) {
+			SetCursor(LoadCursor(NULL, IDC_HAND));
+			return (INT_PTR)TRUE;
+		}
 		break;
 	}
 	return CallWindowProc(original_wndproc, hDlg, message, wParam, lParam);
@@ -1084,12 +1101,15 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char *log_buffer, *filepath;
 	const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
 	int i, tmp, r;
+	HWND hCtrl;
 	DWORD delay, read_size, log_size;
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
 	NMBCDROPDOWN* pDropDown;
 	POINT pt;
 	RECT rect;
+	TEXTMETRIC tm;
+	LOGFONT lf;
 	DRAWITEMSTRUCT* di;
 
 	// The following local variables are used to change the visual aspect of the fields
@@ -1241,10 +1261,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	// Change the font colour of editable fields to dark blue
 	case WM_CTLCOLOREDIT:
-		if ( ((HWND)lParam == hDeviceEdit)
-		  || ((HWND)lParam == hVid)
-		  || ((HWND)lParam == hPid)
-		  || ((HWND)lParam == hMi) ) {
+		hCtrl = (HWND)lParam;
+		if ( (hCtrl == hDeviceEdit) || ((HWND)lParam == hVid)
+		  || (hCtrl == hPid) || (hCtrl == hMi) ) {
 			SetTextColor((HDC)wParam, DARK_BLUE);
 			return (INT_PTR)white_brush;
 		}
@@ -1252,21 +1271,53 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	// Set background colour of read only fields as well as the colour of the text arrow
 	case WM_CTLCOLORSTATIC:
+		hCtrl = (HWND)lParam;
 		// Must be transparent for XP and non Aero Vista/7
 		SetBkMode((HDC)wParam, TRANSPARENT);
-		if ( ((HWND)lParam == hVid) || ((HWND)lParam == hPid)
-		  || ((HWND)lParam == hMi) || ((HWND)lParam == hWcid) ) {
+		if ( (hCtrl == hVid) || (hCtrl == hPid) || (hCtrl == hMi) || (hCtrl == hWcid) ) {
 			return (INT_PTR)grey_brush;
-		} else if ((HWND)lParam == hDriver) {
+		}
+		if (hCtrl == hDriver) {
 #if defined(COLOURED_FIELDS)
 			return (INT_PTR)driver_background[get_driver_type(device)];
 #endif
 			return (INT_PTR)grey_brush;
-		} else if ((HWND)lParam == hTarget) {
+		}
+		if (hCtrl == hTarget) {
 			return (INT_PTR)white_brush;
-		} else if ((HWND)lParam == GetDlgItem(hMain, IDC_RARR)) {
+		}
+		if (hCtrl == hArrow) {
 			SetTextColor((HDC)wParam, arrow_color);
 			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+		}
+		if ( (hCtrl == GetDlgItem(hMain, IDC_LIBUSB0_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSB1_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBK_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_LIBWDI_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_WCID_URL)) ) {
+			// This is what you havwe to do to get an underline
+			// (and of course, you can't a DC with proper text metrics during init)
+			if (hyperlink_font == NULL) {
+				GetTextMetrics((HDC)wParam, &tm);
+				lf.lfHeight = tm.tmHeight;
+				lf.lfWidth = 0;
+				lf.lfEscapement = 0;
+				lf.lfOrientation = 0;
+				lf.lfWeight = tm.tmWeight;
+				lf.lfItalic = tm.tmItalic;
+				lf.lfUnderline = TRUE;
+				lf.lfStrikeOut = tm.tmStruckOut;
+				lf.lfCharSet = tm.tmCharSet;
+				lf.lfOutPrecision = OUT_DEFAULT_PRECIS;
+				lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+				lf.lfQuality = DEFAULT_QUALITY;
+				lf.lfPitchAndFamily = tm.tmPitchAndFamily;
+				GetTextFace((HDC)wParam, LF_FACESIZE, lf.lfFaceName);
+				hyperlink_font = CreateFontIndirect(&lf);
+			}
+			SelectObject((HDC)wParam, hyperlink_font);
+			SetTextColor((HDC)wParam, DARK_BLUE);
+			return (INT_PTR)GetStockObject(NULL_BRUSH);
 		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
@@ -1296,18 +1347,26 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				break;
 			}
 			break;
-		case IDC_WCID_HELP:
-			switch (((LPNMHDR)lParam)->code) {
-			case NM_CLICK:
-				ShellExecuteA(hDlg, "open", WCID_URL, NULL, NULL, SW_SHOWNORMAL);
-				break;
-			}
-			break;
 		}
 		break;
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
+		case IDC_LIBWDI_URL:
+			ShellExecuteA(hDlg, "open", LIBWDI_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDC_LIBUSB0_URL:
+			ShellExecuteA(hDlg, "open", LIBUSB0_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDC_LIBUSB1_URL:
+			ShellExecuteA(hDlg, "open", LIBUSB1_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDC_LIBUSBK_URL:
+			ShellExecuteA(hDlg, "open", LIBUSBK_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDC_WCID_URL:
+			ShellExecuteA(hDlg, "open", WCID_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
 		case IDC_VID_REPORT:
 			ShellExecuteA(hDlg, "open", USB_IDS_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
