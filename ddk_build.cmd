@@ -122,6 +122,11 @@ cd ..
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
+rem Work around MS's VC++ and DDK weird icompatibilities with regards to rc files
+echo #include ^<windows.h^> > afxres.h
+echo #ifndef IDC_STATIC >> afxres.h
+echo #define IDC_STATIC -1 >> afxres.h
+echo #endif >> afxres.h
 copy .msvc\zadic_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
@@ -129,11 +134,6 @@ build -cwgZ
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%cpudir%\zadic.exe . >NUL 2>&1
 
-rem Work around MS's VC++ and DDK weird icompatibilities with regards to rc files
-echo #include ^<windows.h^> > afxres.h
-echo #ifndef IDC_STATIC >> afxres.h
-echo #define IDC_STATIC -1 >> afxres.h
-echo #endif >> afxres.h
 copy .msvc\zadig_sources sources >NUL 2>&1
 @echo on
 build -cwgZ
