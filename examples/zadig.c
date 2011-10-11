@@ -1338,19 +1338,29 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetTextColor((HDC)wParam, GetSysColor(COLOR_3DDKSHADOW));
 			return (INT_PTR)GetStockObject(NULL_BRUSH);
 		}
+		if (hCtrl == GetDlgItem(hMain, IDC_WCID_ICON)) {
+			// Ensures that the WCID background field is not drawn on top of the WCID icon
+			SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, TRUE, 0);
+			InvalidateRect(GetDlgItem(hMain, IDC_WCID_BOX), NULL, TRUE);
+			UpdateWindow(GetDlgItem(hMain, IDC_WCID_BOX));
+			SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, FALSE, 0);
+		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
 		return (INT_PTR)FALSE;
 
 	// Change the colour of the version text in the status bar
 	case WM_DRAWITEM:
-		di = (DRAWITEMSTRUCT*)lParam;
-		SetBkMode(di->hDC, TRANSPARENT);
-		SetTextColor(di->hDC, GetSysColor(COLOR_3DSHADOW));
-		di->rcItem.top += 2;
-		di->rcItem.left += 4;
-		DrawTextExA(di->hDC, APP_VERSION, -1, &di->rcItem, DT_LEFT, NULL);
-		return (INT_PTR)TRUE;
+		if (wParam == IDC_STATUS) {
+			di = (DRAWITEMSTRUCT*)lParam;
+			SetBkMode(di->hDC, TRANSPARENT);
+			SetTextColor(di->hDC, GetSysColor(COLOR_3DSHADOW));
+			di->rcItem.top += (int)(2.0f * fScale);
+			di->rcItem.left += (int)(4.0f * fScale);
+			DrawTextExA(di->hDC, APP_VERSION, -1, &di->rcItem, DT_LEFT, NULL);
+			return (INT_PTR)TRUE;
+		}
+		break;
 
 	// Display the Install button split menu (Vista or later)
 	case WM_NOTIFY:
@@ -1455,7 +1465,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						display_mi(false);
 					}
 					// Display the WCID status
-					SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, FALSE, 0);
 					pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
 					has_wcid = (pd_options.use_wcid_driver)?WCID_TRUE:WCID_FALSE;
 					if (has_wcid == WCID_TRUE) {
