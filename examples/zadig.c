@@ -605,8 +605,8 @@ void update_ui(void)
 	} 
 	destroy_tooltip(hArrowToolTip);
 	hArrowToolTip = create_tooltip(hArrow, warn?
-		"Driver operation may be unsafe":
-		"Driver operation should be safe", -1);
+		"Driver installation may be unsafe":
+		"Driver installation should be safe", -1);
 }
 
 // Toggle device creation mode
@@ -1434,8 +1434,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							safe_strcpy(driver_text, sizeof(driver_text), device->driver);
 						} else {
 							safe_sprintf(driver_text, sizeof(driver_text), "%s (v%d.%d.%d.%d)", device->driver,
-								(device->driver_version>>48)&0xffff, (device->driver_version>>32)&0xffff,
-								(device->driver_version>>16)&0xffff, device->driver_version&0xffff);
+								(int)((device->driver_version>>48)&0xffff), (int)((device->driver_version>>32)&0xffff),
+								(int)((device->driver_version>>16)&0xffff), (int)(device->driver_version & 0xffff));
 						}
 					} else {
 						safe_strcpy(driver_text, sizeof(driver_text), "(NONE)");
