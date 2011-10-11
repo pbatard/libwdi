@@ -174,7 +174,7 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,231,174,50,16,WS_GROUP
     CONTROL         "<a href=""http://libwdi.sf.net"">http://libwdi.sf.net</a>",IDC_ABOUT_LIBWDI_URL,
                     "SysLink",WS_TABSTOP,46,47,62,9
-    LTEXT           "Version 2.0.0 (Build 148)",IDC_STATIC,46,19,78,8
+    LTEXT           "Version 2.0.0 (Build 149)",IDC_STATIC,46,19,78,8
     DEFPUSHBUTTON   "License...",IDC_ABOUT_LICENSE,46,174,50,16,WS_GROUP
     EDITTEXT        IDC_ABOUT_COPYRIGHTS,46,107,235,63,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     LTEXT           "Report bugs or request enhancements at:",IDC_STATIC,46,66,187,8
@@ -211,8 +211,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,0,148
- PRODUCTVERSION 2,0,0,148
+ FILEVERSION 2,0,0,149
+ PRODUCTVERSION 2,0,0,149
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -229,13 +229,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig Application"
-            VALUE "FileVersion", "2.0.0.148"
+            VALUE "FileVersion", "2.0.0.149"
             VALUE "InternalName", "zadig"
             VALUE "LegalCopyright", "(c) 2010-2011 Pete Batard (GNU LGPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "zadig"
-            VALUE "ProductVersion", "2.0.0.148"
+            VALUE "ProductVersion", "2.0.0.149"
             VALUE "WWW", "http://libwdi.sf.net"
         END
     END
