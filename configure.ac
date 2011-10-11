@@ -317,7 +317,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 	[nopointersign_cflags="-Wno-pointer-sign"], [nopointersign_cflags=""])
 CFLAGS="${saved_CFLAGS}"
 
-AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Werror-implicit-function-declaration $nopointersign_cflags"
+AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wundef -Wunused -Wstrict-prototypes -Werror-implicit-function-declaration $nopointersign_cflags -Wshadow"
 
 AC_SUBST([VISIBILITY_CFLAGS])
 AC_SUBST([AM_CFLAGS])
