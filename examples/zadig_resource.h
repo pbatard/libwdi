@@ -42,7 +42,7 @@
 #define IDC_LIBUSB1_URL                 1062
 #define IDC_LIBUSB0_URL                 1063
 #define IDC_LIBUSBK_URL                 1064
-#define IDC_LIBWDI_URL                  1065
+#define IDC_WINUSB_URL                  1065
 #define IDC_LINKS                       1066
 #define IDC_RARR                        1068
 #define IDC_WCID_URL                    1069

@@ -816,14 +816,14 @@ void init_dialog(HWND hDlg)
 		"Submit Vendor to the USB ID Repository", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
 		"This device also has the\nlibusb-win32 filter driver", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_LIBWDI_URL),
-		"Find out more about libwdi online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB1_URL),
 		"Find out more about libusb-1.0 online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB0_URL),
 		"Find out more about libusb-win32 online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSBK_URL),
 		"Find out more about libusbK online", -1);
+	create_tooltip(GetDlgItem(hMain, IDC_WINUSB_URL),
+		"Find out more about WinUSB online", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
@@ -1086,7 +1086,7 @@ INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARA
 		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB0_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB1_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSBK_URL))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBWDI_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WINUSB_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_URL)) ) {
 			SetCursor(LoadCursor(NULL, IDC_HAND));
 			return (INT_PTR)TRUE;
@@ -1325,7 +1325,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if ( (hCtrl == GetDlgItem(hMain, IDC_LIBUSB0_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSB1_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBK_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_LIBWDI_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_WINUSB_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_WCID_URL)) ) {
 			create_static_fonts((HDC)wParam);
 			SelectObject((HDC)wParam, hyperlink_font);
@@ -1371,9 +1371,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
-		case IDC_LIBWDI_URL:
-			ShellExecuteA(hDlg, "open", LIBWDI_URL, NULL, NULL, SW_SHOWNORMAL);
-			break;
 		case IDC_LIBUSB0_URL:
 			ShellExecuteA(hDlg, "open", LIBUSB0_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
@@ -1382,6 +1379,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_LIBUSBK_URL:
 			ShellExecuteA(hDlg, "open", LIBUSBK_URL, NULL, NULL, SW_SHOWNORMAL);
+			break;
+		case IDC_WINUSB_URL:
+			ShellExecuteA(hDlg, "open", WINUSB_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDC_WCID_URL:
 			ShellExecuteA(hDlg, "open", WCID_URL, NULL, NULL, SW_SHOWNORMAL);

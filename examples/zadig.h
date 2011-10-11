@@ -38,6 +38,7 @@
 #define LIBUSB1_URL                 "http://www.libusb.org/wiki/windows_backend"
 #define LIBUSB0_URL                 "http://sourceforge.net/apps/trac/libusb-win32/wiki"
 #define LIBUSBK_URL                 "http://code.google.com/p/usb-travis/"
+#define WINUSB_URL                  "http://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"
 #define ZADIG_URL                   "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Zadig"
 #define WCID_URL                    "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices"
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
