@@ -61,6 +61,7 @@ static char* message_text = NULL;
 static char* message_title = NULL;
 enum windows_version windows_version = WINDOWS_UNSUPPORTED;
 extern HFONT bold_font;
+extern float fScale;
 
 /*
  * Converts a name + ext UTF-8 pair to a valid MS filename.
@@ -594,7 +595,7 @@ void create_status_bar(void)
 
 	// Create 2 status areas
 	GetClientRect(hMain, &rect);
-	edge[0] = rect.right - 100;
+	edge[0] = rect.right - (int)(100.0f*fScale);
 	edge[1] = rect.right;
 	SendMessage(hStatus, SB_SETPARTS, (WPARAM) 2, (LPARAM)&edge);
 }

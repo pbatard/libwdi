@@ -70,6 +70,7 @@ LONG arrow_width, arrow_height;
 HFONT hyperlink_font, bold_font;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
+float fScale = 1.0f;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH] = DEFAULT_DIR;
@@ -170,6 +171,7 @@ int display_devices(void)
 			safe_free(current_device_hardware_id);
 		}
 	}
+	ReleaseDC(hDeviceList, hdc);
 
 	// Select current entry
 	if (current_device_index == CB_ERR) {
@@ -492,8 +494,8 @@ void display_mi(bool show)
 // Toggle "advanced" mode
 void toggle_advanced(void)
 {
-	const int dialog_shift = 315;
-	const int install_widen = 6;
+	float dialog_shift = 315.0f;
+	float install_widen = 6.0f;
 	RECT rect;
 	POINT point, origin;
 	int toggle;
@@ -507,7 +509,7 @@ void toggle_advanced(void)
 	point.x = (rect.right - rect.left);
 	point.y = (rect.bottom - rect.top);
 	MoveWindow(GetDlgItem(hMain, IDC_INSTALL), origin.x, origin.y,
-		point.x + (advanced_mode?-install_widen:+install_widen),
+		point.x + (int)(fScale*(advanced_mode?-install_widen:+install_widen)),
 		point.y, TRUE);
 
 	// Increase or decrease the Window size
@@ -515,7 +517,7 @@ void toggle_advanced(void)
 	point.x = (rect.right - rect.left);
 	point.y = (rect.bottom - rect.top);
 	MoveWindow(hMain, rect.left, rect.top, point.x,
-		point.y + (advanced_mode?dialog_shift:-dialog_shift) , TRUE);
+		point.y + (int)(fScale*(advanced_mode?dialog_shift:-dialog_shift)), TRUE);
 
 	// Move the status bar up or down
 	GetWindowRect(hStatus, &rect);
@@ -523,7 +525,7 @@ void toggle_advanced(void)
 	point.y = rect.top;
 	ScreenToClient(hMain, &point);
 	GetClientRect(hStatus, &rect);
-	MoveWindow(hStatus, point.x, point.y + (advanced_mode?dialog_shift:-dialog_shift),
+	MoveWindow(hStatus, point.x, point.y + (int)(fScale*(advanced_mode?dialog_shift:-dialog_shift)),
 		(rect.right - rect.left), (rect.bottom - rect.top), TRUE);
 
 	// Hide or show the various advanced options
@@ -758,6 +760,7 @@ void init_dialog(HWND hDlg)
 	HDC hdc;
 	long lfHeight;
 	RECT rect;
+	int i16, i24;
 
 	struct {
 		HIMAGELIST himl;
@@ -778,8 +781,17 @@ void init_dialog(HWND hDlg)
 	hMenuLogLevel = GetSubMenu(hMenuOptions, 7);
 	hMenuSplit = GetSubMenu(LoadMenuA(main_instance, "IDR_INSTALLSPLIT"), 0);
 
+	// High DPI scaling
+	i16 = GetSystemMetrics(SM_CXSMICON);
+	hdc = GetDC(hDlg);
+	fScale = GetDeviceCaps(hdc, LOGPIXELSX) / 96.0f;
+	ReleaseDC(hDlg, hdc);
+	i24 = (int)(24.0f*fScale);
+
 	// Create the status line
 	create_status_bar();
+	// Display the version in the right area of the status bar
+	SendMessageA(GetDlgItem(hDlg, IDC_STATUS), SB_SETTEXTA, SBT_OWNERDRAW | 1, (LPARAM)APP_VERSION);
 
 	// Create various tooltips
 	create_tooltip(GetDlgItem(hMain, IDC_EDITNAME),
@@ -816,41 +828,41 @@ void init_dialog(HWND hDlg)
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
 	// These shell32 icons should be available on any Windows system
-	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
-	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
-	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	// Try to locate a green checkmark icon
 	hDllInst = LoadLibraryA("urlmon.dll");
-	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconTickOK == NULL)) {
 		// No luck, fallback to next best thing in shell32
 		hDllInst = LoadLibraryA("shell32.dll");
-		hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(246), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+		hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(246), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	// Try to locate a funnel icon
 	hDllInst = LoadLibraryA("admtmpl.dll");
-	hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(6), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+	hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(6), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
 		hDllInst = LoadLibraryA("wmploc.dll");
-		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(475), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(475), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
 		// No luck, fallback to next best thing in shell32
 		hDllInst = LoadLibraryA("shell32.dll");
-		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(278), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR|LR_SHARED);
+		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(278), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	SendMessage(GetDlgItem(hDlg, IDC_FILTER_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconFilter);
 	do {
 		if ((hDllInst = LoadLibraryA("ieframe.dll")) == NULL) break;	// Green right arrow
-		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
 		if ((hDllInst = LoadLibraryA("netshell.dll")) == NULL) break;	// Orange right arrow
-		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR|LR_SHARED);
+		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
 		if ( (hIconArrowGreen == NULL) || (hIconArrowOrange == NULL) ) break;
 		use_arrow_icons = true;
 		// On newer OSes, recreate the control so that it uses icons
 		GetWindowRect(hArrow, &rect);
 		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
-		arrow_width = rect.right - rect.left; arrow_height = 24;
+		arrow_width = rect.right - rect.left; arrow_height = i24;
 		ScreenToClient(hMain, &arrow_origin);
 		arrow_origin.x += 1;	// Some fixup is needed
 		DestroyWindow(hArrow);
@@ -875,14 +887,13 @@ void init_dialog(HWND hDlg)
 	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_Create");
 	pImageList_ReplaceIcon = (ImageList_ReplaceIcon_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_ReplaceIcon");
 
-	// TODO: should we destroy these image lists?
-	bi.himl = pImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 1, 0);
+	bi.himl = pImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	pImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
 	SetRect(&bi.margin, 0, 0, 0, 0);
 	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_BROWSE), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 
-	bi.himl = pImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 1, 0);
+	bi.himl = pImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	pImageList_ReplaceIcon(bi.himl, -1, hIconReport);
 	SetRect(&bi.margin, 0, 1, 0, 0);
 	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
@@ -901,9 +912,6 @@ void init_dialog(HWND hDlg)
 		bi.uAlign = 1;	// BUTTON_IMAGELIST_ALIGN_RIGHT
 		SendMessage(GetDlgItem(hDlg, IDC_INSTALLXP), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 	}
-
-	// Display the version in the right area of the status bar
-	SendMessageA(GetDlgItem(hDlg, IDC_STATUS), SB_SETTEXTA, SBT_OWNERDRAW | 1, (LPARAM)APP_VERSION);
 
 	// The application always starts in advanced mode
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
