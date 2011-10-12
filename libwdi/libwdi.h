@@ -216,7 +216,7 @@ struct wdi_options_prepare_driver {
 struct wdi_options_install_driver {
 	/** Handle to a Window application that should receive a modal progress dialog */
 	HWND hWnd;
-	/** Install a filter driver instead of a regular driver (libusb0 only) */
+	/** Install a filter driver instead of a regular driver (libusb-win32 only) */
 	bool install_filter_driver;
 };
 

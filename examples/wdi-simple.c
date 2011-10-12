@@ -50,7 +50,10 @@ void usage(void)
 	printf("-p, --pid <id>             set the product ID (PID, use 0x prefix for hex)\n");
 	printf("-i, --iid <id>             set the interface ID (MI)\n");
 	printf("-t, --type <driver_type>   set the driver to install\n");
-	printf("                           (0=WinUSB, 1=libusb0, 2=libusbK, 3=custom)\n");
+	printf("                           (0=WinUSB, 1=libusb-win32, 2=libusbK, 3=custom)\n");
+	printf("-w, --wcid                 use a WCID driver instead of a device-specific\n");
+	printf("                           one (WinUSB, libusb-win32 or libusbK only)\n");
+	printf("    --filter               use the libusb-win32 filter driver (requires -t1)\n");
 	printf("-d, --dest <dir>           set the extraction directory\n");
 	printf("-x, --extract              extract files only (don't install)\n");
 	printf("-c, --cert <certname>      install certificate <certname> from the\n");
@@ -102,6 +105,8 @@ int __cdecl main(int argc, char** argv)
 		{"pid", required_argument, 0, 'p'},
 		{"iid", required_argument, 0, 'i'},
 		{"type", required_argument, 0, 't'},
+		{"filter", no_argument, 0, 2},
+		{"wcid", required_argument, 0, 'w'},
 		{"dest", required_argument, 0, 'd'},
 		{"cert", required_argument, 0, 'c'},
 		{"extract", no_argument, 0, 'x'},
@@ -126,6 +131,9 @@ int __cdecl main(int argc, char** argv)
 		switch(c) {
 		case 1: // --stealth-cert
 			oic.disable_warning = true;
+			break;
+		case 2: // --filter
+			oid.install_filter_driver = true;
 			break;
 		case 'n':
 			dev.desc = optarg;
@@ -154,6 +162,9 @@ int __cdecl main(int argc, char** argv)
 			break;
 		case 't':
 			opd.driver_type = (int)strtol(optarg, NULL, 0);
+			break;
+		case 'w':
+			opd.use_wcid_driver = true;
 			break;
 		case 'h':
 			usage();
