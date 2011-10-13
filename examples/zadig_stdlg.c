@@ -62,6 +62,8 @@ static char* message_title = NULL;
 enum windows_version windows_version = WINDOWS_UNSUPPORTED;
 extern HFONT bold_font;
 extern float fScale;
+static HWND browse_edit;
+static WNDPROC org_browse_wndproc;
 
 /*
  * Converts a name + ext UTF-8 pair to a valid MS filename.
@@ -236,20 +238,41 @@ static PSID get_sid(void) {
 }
 
 /*
- * We need a callback to set the initial directory
+ * We need a sub-callback to read the content of the edit box on exit and update
+ * our path, else if what the user typed does match the selection, it is discarded.
+ * Talk about a convoluted way of producing an intuitive folder selection dialog
  */
-INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
+INT CALLBACK browsedlg_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch(message) {
+	case WM_DESTROY:
+		GetWindowTextU(browse_edit, extraction_path, sizeof(extraction_path));
+		break;
+	}
+	return CallWindowProc(org_browse_wndproc, hDlg, message, wParam, lParam);
+}
+
+/*
+ * Main browseinfo callback to set the initial directory and populate the edit control
+ */
+INT CALLBACK browseinfo_callback(HWND hDlg, UINT message, LPARAM lParam, LPARAM pData)
 {
 	char dir[MAX_PATH];
 	wchar_t* wpath;
 	LPITEMIDLIST pidl;
 
-	switch(uMsg) {
+	switch(message) {
 	case BFFM_INITIALIZED:
+		org_browse_wndproc = (WNDPROC)SetWindowLongPtr(hDlg, GWLP_WNDPROC, (LONG_PTR)browsedlg_callback);
+		// Windows hides the full path in the edit box by default, which is bull.
+		// Get a handle to the edit control to fix that
+		browse_edit = FindWindowExA(hDlg, NULL, "Edit", NULL);
+		SetWindowTextU(browse_edit, extraction_path);
+		SetFocus(browse_edit);
 		// On XP, BFFM_SETSELECTION can't be used with a Unicode Path in SendMessageW
 		// or a pidl (at least with MinGW) => must use SendMessageA
 		if (windows_version <= WINDOWS_XP) {
-			SendMessageA(hwnd, BFFM_SETSELECTION, (WPARAM)TRUE, (LPARAM)extraction_path);
+			SendMessageLU(hDlg, BFFM_SETSELECTION, (WPARAM)TRUE, extraction_path);
 		} else {
 			// On Windows 7, MinGW only properly selects the specified folder when using a pidl
 			wpath = utf8_to_wchar(extraction_path);
@@ -257,15 +280,16 @@ INT CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM pData)
 			safe_free(wpath);
 			// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
 			// for details as to why we send BFFM_SETSELECTION twice.
-			SendMessageW(hwnd, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
+			SendMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
 			Sleep(100);
-			PostMessageW(hwnd, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
+			PostMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
 		}
 		break;
 	case BFFM_SELCHANGED:
 		// Update the status
-		if (SHGetPathFromIDListU((LPITEMIDLIST)lp, dir)) {
-			SendMessageLU(hwnd, BFFM_SETSTATUSTEXT, 0, dir);
+		if (SHGetPathFromIDListU((LPITEMIDLIST)lParam, dir)) {
+			SendMessageLU(hDlg, BFFM_SETSTATUSTEXT, 0, dir);
+			SetWindowTextU(browse_edit, dir);
 		}
 		break;
 	}
@@ -364,14 +388,13 @@ fallback:
 	INIT_XP_SHELL32;
 	memset(&bi, 0, sizeof(BROWSEINFOW));
 	bi.hwndOwner = hMain;
-	bi.lpszTitle = L"Please select directory";
-	bi.lpfn = BrowseCallbackProc;
+	bi.lpszTitle = L"Please select the installation folder:";
+	bi.lpfn = browseinfo_callback;
+	// BIF_NONEWFOLDERBUTTON = 0x00000200 is unknown on MinGW
 	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
-		BIF_DONTGOBELOWDOMAIN | BIF_USENEWUI;
+		BIF_DONTGOBELOWDOMAIN | BIF_EDITBOX | 0x00000200;
 	pidl = SHBrowseForFolderW(&bi);
 	if (pidl != NULL) {
-		// get the name of the folder
-		SHGetPathFromIDListU(pidl, extraction_path);
 		CoTaskMemFree(pidl);
 	}
 }
