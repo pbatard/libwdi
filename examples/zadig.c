@@ -605,8 +605,8 @@ void update_ui(void)
 	} 
 	destroy_tooltip(hArrowToolTip);
 	hArrowToolTip = create_tooltip(hArrow, warn?
-		"Driver installation may be unsafe":
-		"Driver installation should be safe", -1);
+		"Driver installation may produce unwanted results":
+		"Driver installation is deemed safe", -1);
 }
 
 // Toggle device creation mode
@@ -824,6 +824,7 @@ void init_dialog(HWND hDlg)
 		"Find out more about libusbK online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_WINUSB_URL),
 		"Find out more about WinUSB online", -1);
+	hVIDToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), "", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
 	hDllInst = LoadLibraryA("shell32.dll");
