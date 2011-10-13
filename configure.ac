@@ -1,4 +1,4 @@
-AC_INIT([libwdi], [1.1.1], [libwdi-devel@lists.sourceforge.net], [libwdi], [http://libwdi.akeo.ie])
+AC_INIT([libwdi], [1.2.0], [libwdi-devel@lists.sourceforge.net], [libwdi], [http://libwdi.sf.net])
 AM_INIT_AUTOMAKE([-Wno-portability])
 AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])

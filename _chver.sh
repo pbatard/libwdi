@@ -31,8 +31,8 @@ mv configure.ac~ configure.ac
 cat > cmd.sed <<\_EOF
 s/^[ \t]*FILEVERSION[ \t]*.*,.*,.*,\(.*\)/ FILEVERSION @@MAJOR@@,@@MINOR@@,@@MICRO@@,\1/
 s/^[ \t]*PRODUCTVERSION[ \t]*.*,.*,.*,\(.*\)/ PRODUCTVERSION @@MAJOR@@,@@MINOR@@,@@MICRO@@,\1/
-s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*".*,[ \t]*.*,[ \t]*.*,\(.*\)"/\1VALUE "FileVersion", "@@MAJOR@@, @@MINOR@@, @@MICRO@@,\2"/
-s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*".*,[ \t]*.*,[ \t]*.*,\(.*\)"/\1VALUE "ProductVersion", "@@MAJOR@@, @@MINOR@@, @@MICRO@@,\2"/
+s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*".*\..*\..*\.\(.*\)"/\1VALUE "FileVersion", "@@MAJOR@@.@@MINOR@@.@@MICRO@@.\2"/
+s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*".*\..*\..*\.\(.*\)"/\1VALUE "ProductVersion", "@@MAJOR@@.@@MINOR@@.@@MICRO@@.\2"/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
