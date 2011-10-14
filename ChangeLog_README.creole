@@ -1,14 +1,12 @@
-= libwdi - Changelog =
-For the latest changes, please visit:\\
-[[http://libwdi.git.sourceforge.net/git/gitweb.cgi?p=libwdi/libwdi;a=summary]]
-
+For more details, please visit: [[http://libwdi.git.sourceforge.net/git/gitweb.cgi?p=libwdi/libwdi;a=shortlog]]
+= Changelog: =
 === v1.2.0 (2011.10.14) ===
 * Improvements: 
 ** [[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|WCID device]] driver installation support
 ** [[http://sourceforge.net/apps/trac/libusb-win32/wiki|libusb-win32]] filter driver installation/uninstallation
 ** Zadig UI redesign and other improvements
 ** Windows 8 and USB 3.0 support improvements
-** removal of cygwin's no longer available '-mno-cygwin' support
+** removal of cygwin's obsolete {{{-mno-cygwin}}} support
 
 === v1.1.1 (2011.04.13) ===
 * Bugfixes:

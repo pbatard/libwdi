@@ -1,5 +1,5 @@
-Note: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
-= Zadig - Changelog =
+**Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
+= Screenshot:\\{{https://sourceforge.net/apps/mediawiki/libwdi/nfs/project/l/li/libwdi/5/56/Zadig.png|Zadig screenshot}}\\Changelog: =
 === v2.0.0.150: ===
 * **New GUI**
 * full WCID driver support ([[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|more]])
