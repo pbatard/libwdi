@@ -30,7 +30,7 @@
 
 #define STR_BUFFER_SIZE             512
 #define NOTIFICATION_DELAY          1000
-#define MAX_TOOLTIPS                16
+#define MAX_TOOLTIPS                32
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
