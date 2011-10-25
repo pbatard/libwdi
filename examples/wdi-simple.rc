@@ -7,8 +7,8 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,150
- PRODUCTVERSION 1,2,0,150
+ FILEVERSION 1,2,0,151
+ PRODUCTVERSION 1,2,0,151
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -25,13 +25,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "libusb.org"
             VALUE "FileDescription", "WDI-Simple: Simple libwdi-based Installer"
-            VALUE "FileVersion", "1.2.0.150"
+            VALUE "FileVersion", "1.2.0.151"
             VALUE "InternalName", "wdi-simple"
             VALUE "LegalCopyright", "(c) 2010-2011 Pete Batard (GNU LGPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "wdi-simple.exe"
             VALUE "ProductName", "wdi-simple"
-            VALUE "ProductVersion", "1.2.0.150"
+            VALUE "ProductVersion", "1.2.0.151"
             VALUE "WWW", "http://libwdi.sf.net"
         END
     END

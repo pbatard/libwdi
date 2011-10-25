@@ -2,7 +2,7 @@
 # Create and upload a Zadig release
 # !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
-zadig_version=2.0.0.150
+zadig_version=2.0.0.151
 target_dir=/e/dailies/libwdi
 
 type -P git &>/dev/null || { echo "Git not found. Aborting." >&2; exit 1; }
@@ -24,4 +24,4 @@ make zadig.exe
 7zr a $target_dir/zadig_v$zadig_version.7z zadig.exe
 cd ..
 
-scp $target_dir/zadig_v$zadig_version.7z pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig
+scp \{$target_dir/zadig_v$zadig_version.7z,examples/zadig_README.creole\} pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig
