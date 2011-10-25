@@ -371,8 +371,6 @@ static void parse_quoted_string(char *str)
 {
 	char *to, *from;
 
-	to = from = str;
-
 	for (to = from = str; *from && *from != '"'; to++, from++) {
 		if (*from == '\\') {
 			from++;
@@ -1035,7 +1033,6 @@ get_new_file:
 			/* XXX memory leak? */
 			iter->file = iter->file->next;
 			skip_num = 0;
-			retval = 0;
 			goto get_new_file;
 		    } else {
 			profile_iterator_free(iter_p);
@@ -1092,13 +1089,13 @@ get_new_file:
 	}
 	iter->num++;
 	if (!p) {
-		iter->file = iter->file->next;
+		iter->file = (iter->file)?iter->file->next:NULL;
 		iter->node = 0;
 		skip_num = 0;
 		goto get_new_file;
 	}
 	if ((iter->node = p->next) == NULL)
-		iter->file = iter->file->next;
+		iter->file = (iter->file)?iter->file->next:NULL;
 	if (ret_node)
 		*ret_node = p;
 	if (ret_name)

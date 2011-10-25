@@ -285,9 +285,9 @@ static PSID get_sid(void) {
 			return NULL;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
-		if (tu == NULL) {
-			return NULL;
-		}
+	}
+	if (tu == NULL) {
+		return NULL;
 	}
 
 	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
@@ -969,7 +969,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		device_info->desc = wchar_to_utf8(desc);
 
 		// Remove trailing whitespaces
-		if ((options != NULL) && (options->trim_whitespaces)) {
+		if ((device_info->desc != NULL) && (options != NULL) && (options->trim_whitespaces)) {
 			end = device_info->desc + safe_strlen(device_info->desc);
 			while ((end != device_info->desc) && isspace(*(end-1))) {
 				--end;

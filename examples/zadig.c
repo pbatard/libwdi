@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <objbase.h>
 #include <process.h>
 #include <shellapi.h>
@@ -145,13 +146,15 @@ void w_printf(bool update_status, const char *format, ...)
 int display_devices(void)
 {
 	struct wdi_device_info *dev;
-	int junk, index = -1;
+	int index = -1;
 	HDC hdc;
 	SIZE size;
 	LONG max_width = 0;
 
 	hdc = GetDC(hDeviceList);
-	junk = ComboBox_ResetContent(hDeviceList);
+	if (ComboBox_ResetContent(hDeviceList) != CB_OKAY) {
+		dprintf("could not reset device list");
+	}
 
 	for (dev = list; dev != NULL; dev = dev->next) {
 		// Compute the width needed to accomodate our text
@@ -160,7 +163,9 @@ int display_devices(void)
 
 		index = ComboBox_AddStringU(hDeviceList, dev->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
-			junk = ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev);
+			if (ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev) == CB_ERR) {
+				dprintf("could not set device list item");
+			}
 		} else {
 			dprintf("could not populate dropdown list past device #%d", index);
 		}
@@ -177,7 +182,9 @@ int display_devices(void)
 	if (current_device_index == CB_ERR) {
 		current_device_index = 0;
 	}
-	junk = ComboBox_SetCurSel(hDeviceList, current_device_index);
+	if (ComboBox_SetCurSel(hDeviceList, current_device_index) == CB_ERR) {
+		dprintf("could not set device list selection");
+	}
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
@@ -295,13 +302,15 @@ int install_driver(void)
 		}
 	}
 
-	inf_name = to_valid_filename(dev->desc, ".inf");
-	if (inf_name == NULL) {
-		dsprintf("'%s' is %s for a device name",
-			dev->desc, (strlen(dev->desc)>WDI_MAX_STRLEN)?"too long":"invalid");
-		r = WDI_ERROR_INVALID_PARAM; goto out;
+	if (dev != NULL) {
+		inf_name = to_valid_filename(dev->desc, ".inf");
+		if (inf_name == NULL) {
+			dsprintf("'%s' is %s for a device name",
+				dev->desc, (strlen(dev->desc)>WDI_MAX_STRLEN)?"too long":"invalid");
+			r = WDI_ERROR_INVALID_PARAM; goto out;
+		}
+		dprintf("Using inf name: %s", inf_name);
 	}
-	dprintf("Using inf name: %s", inf_name);
 
 	// Perform extraction/installation
 	if (id_options.install_filter_driver) {
@@ -330,7 +339,7 @@ int install_driver(void)
 			id_options.hWnd = hMain;
 			r = wdi_install_driver(dev, extraction_path, inf_name, &id_options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
-			current_device_hardware_id = safe_strdup(dev->hardware_id);
+			current_device_hardware_id = (dev != NULL)?safe_strdup(dev->hardware_id):NULL;
 			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.use_wcid_driver)) {
 				toggle_driverless(false);
 			}
@@ -1135,7 +1144,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[2*STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
 	const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
-	int i, tmp, r;
+	int i, r;
 	HWND hCtrl;
 	DWORD delay, read_size, log_size;
 	STARTUPINFOA si;
@@ -1150,10 +1159,12 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HWND hVid, hPid, hMi, hWcid;
 	static HWND hDriver, hTarget;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
+	static HBRUSH grey_brush = (HBRUSH)FALSE;
+#if defined(COLOURED_FIELDS)	
 	static HBRUSH green_brush = (HBRUSH)FALSE;
 	static HBRUSH orange_brush = (HBRUSH)FALSE;
-	static HBRUSH grey_brush = (HBRUSH)FALSE;
 	static HBRUSH driver_background[NB_DRIVER_TYPES];
+#endif
 
 	switch (message) {
 
@@ -1217,12 +1228,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
+#if defined(COLOURED_FIELDS)
 		green_brush = CreateSolidBrush(FIELD_GREEN);
 		orange_brush = CreateSolidBrush(FIELD_ORANGE);
 		driver_background[DT_NONE] = grey_brush;
 		driver_background[DT_LIBUSB] = green_brush;
 		driver_background[DT_SYSTEM] = orange_brush;
 		driver_background[DT_UNKNOWN] = (HBRUSH)FALSE;
+#endif
 
 		// Speedup checks for WM_CTLCOLOR
 		hDeviceEdit = GetDlgItem(hDlg, IDC_DEVICEEDIT);
@@ -1262,7 +1275,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				(LPARAM)hDeviceList);
 		} else {
 			nb_devices = -1;
-			tmp = ComboBox_ResetContent(hDeviceList);
+			if (ComboBox_ResetContent(hDeviceList) != CB_OKAY) {
+				dprintf("could not reset device list");
+			}
 			SetDlgItemTextA(hMain, IDC_VID, "");
 			SetDlgItemTextA(hMain, IDC_PID, "");
 			SetDlgItemTextA(hMain, IDC_DRIVER, "");

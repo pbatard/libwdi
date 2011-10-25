@@ -207,9 +207,9 @@ static PSID get_sid(void) {
 			return NULL;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
-		if (tu == NULL) {
-			return NULL;
-		}
+	}
+	if (tu == NULL) {
+		return NULL;
 	}
 
 	if (GetTokenInformation(token, TokenUser, tu, len, &len)) {
@@ -731,7 +731,6 @@ INT_PTR CALLBACK notification_callback(HWND hDlg, UINT message, WPARAM wParam, L
 {
 	LRESULT loc;
 	int i;
-	HICON junk;
 	// Prevent resising
 	static LRESULT disabled[9] = { HTLEFT, HTRIGHT, HTTOP, HTBOTTOM, HTSIZE,
 		HTTOPLEFT, HTTOPRIGHT, HTBOTTOMLEFT, HTBOTTOMRIGHT };
@@ -743,7 +742,9 @@ INT_PTR CALLBACK notification_callback(HWND hDlg, UINT message, WPARAM wParam, L
 		separator_brush = CreateSolidBrush(SEPARATOR_GREY);
 		center_dialog(hDlg);
 		// Change the default icon
-		junk = Static_SetIcon(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), hMessageIcon);
+		if (Static_SetIcon(GetDlgItem(hDlg, IDC_NOTIFICATION_ICON), hMessageIcon) == 0) {
+			dprintf("could not set dialog icon");
+		}
 		// Set the dialog title
 		if (message_title != NULL) {
 			SetWindowTextA(hDlg, message_title);

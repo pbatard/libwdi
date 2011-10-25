@@ -28,6 +28,7 @@
 #include <setupapi.h>
 #include <process.h>
 #include <sddl.h>
+#include <stdint.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -362,7 +363,7 @@ static __inline char* xlocale_to_utf8(const char* str)
  */
 DWORD process_syslog(char* buffer, DWORD size)
 {
-	DWORD i, write_size, junk, start = 0;
+	DWORD i, junk, start = 0;
 	char* xbuffer;
 	char* ins_string = "<ins>";
 	char conversion_error[] = " ERROR: Unable to convert log entry to UTF-8";
@@ -372,7 +373,6 @@ DWORD process_syslog(char* buffer, DWORD size)
 	// CR/LF breakdown
 	for (i=0; i<size; i++) {
 		if ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) {
-			write_size = i-start + 1;
 			do {
 				buffer[i++] = 0;
 			} while ( ((buffer[i] == 0x0D) || (buffer[i] == 0x0A)) && (i <= size) );
@@ -584,7 +584,7 @@ bool disable_system_restore(bool enabled)
 	HRESULT hr;
 	IGroupPolicyObject* pLGPO;
 	static DWORD original_val = -1;		// -1 = key doesn't exist
-	HKEY machine_key, dsrkey;
+	HKEY machine_key = NULL, disable_system_restore_key = NULL;
 	// MSVC is finicky about these ones => redefine them
 	const IID my_IID_IGroupPolicyObject = 
 		{ 0xea502723, 0xa23d, 0x11d1, { 0xa7, 0xd3, 0x0, 0x0, 0xf8, 0x75, 0x71, 0xe3 } };
@@ -624,7 +624,7 @@ bool disable_system_restore(bool enabled)
 
 	// The DisableSystemRestore is set in Software\Policies\Microsoft\Windows\DeviceInstall\Settings
 	r = RegCreateKeyExA(machine_key, "Software\\Policies\\Microsoft\\Windows\\DeviceInstall\\Settings",
-		0, NULL, 0, KEY_SET_VALUE | KEY_QUERY_VALUE, NULL, &dsrkey, &disp);
+		0, NULL, 0, KEY_SET_VALUE | KEY_QUERY_VALUE, NULL, &disable_system_restore_key, &disp);
 	if (r != ERROR_SUCCESS) {
 		plog("RegCreateKeyEx failed - error %x", hr);
 		goto error;
@@ -633,7 +633,7 @@ bool disable_system_restore(bool enabled)
 	if ((disp == REG_OPENED_EXISTING_KEY) && (enabled) && (original_val == -1)) {
 		// backup existing value for restore
 		regtype = REG_DWORD;
-		r = RegQueryValueExA(dsrkey, "DisableSystemRestore", NULL, &regtype, (LPBYTE)&original_val, &val_size);
+		r = RegQueryValueExA(disable_system_restore_key, "DisableSystemRestore", NULL, &regtype, (LPBYTE)&original_val, &val_size);
 		if (r == ERROR_FILE_NOT_FOUND) {
 			// The Key exists but not its value, which is OK
 			original_val = -1;
@@ -644,14 +644,15 @@ bool disable_system_restore(bool enabled)
 
 	if ((enabled) || (original_val != -1)) {
 		val = (enabled)?1:original_val;
-		r = RegSetValueExA(dsrkey, "DisableSystemRestore", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+		r = RegSetValueExA(disable_system_restore_key, "DisableSystemRestore", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
 	} else {
-		r = RegDeleteValueA(dsrkey, "DisableSystemRestore");
+		r = RegDeleteValueA(disable_system_restore_key, "DisableSystemRestore");
 	}
 	if (r != ERROR_SUCCESS) {
 		plog("RegSetValueEx / RegDeleteValue failed - error %x", r);
 	}
-	RegCloseKey(dsrkey);
+	RegCloseKey(disable_system_restore_key);
+	disable_system_restore_key = NULL;
 
 	// Apply policy
 	hr = pLGPO->lpVtbl->Save(pLGPO, TRUE, (enabled)?TRUE:FALSE, &ext_guid, &snap_guid);
@@ -668,6 +669,7 @@ bool disable_system_restore(bool enabled)
 
 error:
 	if (machine_key != NULL) RegCloseKey(machine_key);
+	if (disable_system_restore_key != NULL) RegCloseKey(disable_system_restore_key);
 	if (pLGPO != NULL) pLGPO->lpVtbl->Release(pLGPO);
 	return false;
 }

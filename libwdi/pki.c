@@ -451,7 +451,7 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 	r = TRUE;
 
 out:
-	pfCertCloseStore(hSystemStore, 0);
+	if (hSystemStore != NULL) pfCertCloseStore(hSystemStore, 0);
 	return r;
 }
 
@@ -763,7 +763,7 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	LPWSTR wszKeyContainer = KEY_CONTAINER;
 	HCRYPTPROV hCSP = 0;
 	DWORD dwKeySpec;
-	BOOL bFreeCSP, r = FALSE;
+	BOOL bFreeCSP = FALSE, r = FALSE;
 	HCERTSTORE hSystemStore;
 	LPCSTR szStoresToUpdate[2] = { "Root", "TrustedPublisher" };
 	CRYPT_DATA_BLOB libwdiNameBlob = {14, (BYTE*)L"libwdi"};

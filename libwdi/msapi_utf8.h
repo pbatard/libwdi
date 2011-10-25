@@ -212,6 +212,7 @@ static __inline int GetWindowTextLengthU(HWND hWnd)
 out:
 	sfree(wbuf);
 	sfree(buf);
+	SetLastError(err);
 	return ret;
 }
 
@@ -406,6 +407,7 @@ out:
 	wfree(lpApplicationName);
 	wfree(lpCommandLine);
 	wfree(lpCurrentDirectory);
+	SetLastError(err);
 	return ret;
 }
 

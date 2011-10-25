@@ -445,7 +445,7 @@ main (int argc, char *argv[])
 		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
-	for (i=0; i<nb_embeddables; i++) {
+	for (last=0,i=0; i<nb_embeddables; i++) {
 		if (!embeddable[i].reuse_last) {
 			last = (unsigned char)i;
 		}
