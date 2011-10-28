@@ -21,7 +21,8 @@ cd libwdi
 make -j2
 cd ../examples
 make zadig.exe
+cmd.exe /c zadig_sign.bat
 7zr a $target_dir/zadig_v$zadig_version.7z zadig.exe
 cd ..
 
-scp \{$target_dir/zadig_v$zadig_version.7z,examples/zadig_README.creole\} pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig
+scp {$target_dir/zadig_v$zadig_version.7z,examples/zadig_README.creole} pbatard,libwdi@frs.sf.net:/home/pfs/project/l/li/libwdi/zadig
