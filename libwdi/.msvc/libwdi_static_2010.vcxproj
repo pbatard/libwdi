@@ -80,13 +80,13 @@ if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
-      <Optimization>MinSpace</Optimization>
       <AdditionalIncludeDirectories>..\..\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -110,12 +110,12 @@ if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
-      <Optimization>MinSpace</Optimization>
       <AdditionalIncludeDirectories>..\..\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;_DEBUG;_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

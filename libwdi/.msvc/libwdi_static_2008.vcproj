@@ -44,9 +44,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="d"
 				AdditionalIncludeDirectories="..\..\msvc"
-				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="DEBUG;_DEBUG;_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
 				WarningLevel="3"
@@ -108,9 +108,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="d"
 				AdditionalIncludeDirectories="..\..\msvc"
-				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
+				PreprocessorDefinitions="DEBUG;_DEBUG;_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="3"

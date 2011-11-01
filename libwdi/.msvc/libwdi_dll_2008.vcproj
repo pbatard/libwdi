@@ -45,9 +45,9 @@ embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="d"
 				AdditionalIncludeDirectories="..\..\msvc"
-				PreprocessorDefinitions="_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
+				PreprocessorDefinitions="DEBUG;_DEBUG;_WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="3"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -116,9 +116,9 @@ embedder embedded.h"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="d"
 				AdditionalIncludeDirectories="..\..\msvc"
-				PreprocessorDefinitions="_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
+				PreprocessorDefinitions="DEBUG;_DEBUG;_WIN32;_WIN64;_LIB;_CRT_SECURE_NO_WARNINGS;DLL_EXPORT"
 				RuntimeLibrary="3"
 				WarningLevel="3"
 				DebugInformationFormat="3"
