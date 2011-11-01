@@ -21,6 +21,11 @@ cd libwdi
 make -j2
 cd ../examples
 make zadig.exe
+# For the app icon to show during UAC, the app needs to have SYSTEM access which MinGW may not grant by default
+# (NB this only matters for local apps - an app extracted from a 7z will always have SYSTEM access)
+# SetACL can be downloaded from http://helgeklein.com/
+type -P SetACL &>/dev/null && { SetACL -on ./zadig.exe -ot file -actn ace -ace "n:S-1-5-18;p:read,read_ex;s:y"; }
+# Can't use WDK's Signtool directly from msys - must use cmd
 cmd.exe /c zadig_sign.bat
 7zr a $target_dir/zadig_v$zadig_version.7z zadig.exe
 cd ..
