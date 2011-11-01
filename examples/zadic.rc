@@ -73,15 +73,15 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "CompanyName", "akeo.ie"
-            VALUE "FileDescription", "Zadic Application"
+            VALUE "FileDescription", "Zadic"
             VALUE "FileVersion", "1.2.0.151"
-            VALUE "InternalName", "zadic"
-            VALUE "LegalCopyright", "(c) 2010-2011 Pete Batard (GNU LGPL v3)"
+            VALUE "InternalName", "Zadic"
+            VALUE "LegalCopyright", "© 2010-2011 Pete Batard (LGPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "zadic.exe"
-            VALUE "ProductName", "zadic"
+            VALUE "ProductName", "Zadic"
             VALUE "ProductVersion", "1.2.0.151"
-            VALUE "WWW", "http://libwdi.sf.net"
+            VALUE "Comments", "http://libwdi.sf.net"
         END
     END
     BLOCK "VarFileInfo"
