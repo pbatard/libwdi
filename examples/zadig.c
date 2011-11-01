@@ -146,15 +146,13 @@ void w_printf(bool update_status, const char *format, ...)
 int display_devices(void)
 {
 	struct wdi_device_info *dev;
-	int index = -1;
+	int ignore, index = -1;
 	HDC hdc;
 	SIZE size;
 	LONG max_width = 0;
 
 	hdc = GetDC(hDeviceList);
-	if (ComboBox_ResetContent(hDeviceList) != CB_OKAY) {
-		dprintf("could not reset device list");
-	}
+	ignore = ComboBox_ResetContent(hDeviceList);
 
 	for (dev = list; dev != NULL; dev = dev->next) {
 		// Compute the width needed to accomodate our text
@@ -163,9 +161,7 @@ int display_devices(void)
 
 		index = ComboBox_AddStringU(hDeviceList, dev->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
-			if (ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev) == CB_ERR) {
-				dprintf("could not set device list item");
-			}
+			ignore = ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev);
 		} else {
 			dprintf("could not populate dropdown list past device #%d", index);
 		}
@@ -182,9 +178,7 @@ int display_devices(void)
 	if (current_device_index == CB_ERR) {
 		current_device_index = 0;
 	}
-	if (ComboBox_SetCurSel(hDeviceList, current_device_index) == CB_ERR) {
-		dprintf("could not set device list selection");
-	}
+	ignore = ComboBox_SetCurSel(hDeviceList, current_device_index);
 	// Set the width to computed value
 	SendMessage(hDeviceList, CB_SETDROPPEDWIDTH, max_width, 0);
 
@@ -1143,7 +1137,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	char log_buf[2*STR_BUFFER_SIZE];
 	char *log_buffer, *filepath;
 	const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
-	int i, r;
+	int ignore, i, r;
 	HWND hCtrl;
 	DWORD delay, read_size, log_size;
 	STARTUPINFOA si;
@@ -1274,9 +1268,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				(LPARAM)hDeviceList);
 		} else {
 			nb_devices = -1;
-			if (ComboBox_ResetContent(hDeviceList) != CB_OKAY) {
-				dprintf("could not reset device list");
-			}
+			ignore = ComboBox_ResetContent(hDeviceList);
 			SetDlgItemTextA(hMain, IDC_VID, "");
 			SetDlgItemTextA(hMain, IDC_PID, "");
 			SetDlgItemTextA(hMain, IDC_DRIVER, "");
