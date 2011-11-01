@@ -65,6 +65,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
+				ModuleDefinitionFile="..\libwdi.def"
 				OutputFile="$(OutDir)\libwdi.dll"
 			/>
 			<Tool
@@ -136,6 +137,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
+				ModuleDefinitionFile="..\libwdi.def"
 				OutputFile="$(OutDir)\libwdi.dll"
 			/>
 			<Tool
@@ -207,6 +209,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
+				ModuleDefinitionFile="..\libwdi.def"
 				OutputFile="$(OutDir)\libwdi.dll"
 			/>
 			<Tool
@@ -277,6 +280,7 @@ embedder embedded.h"
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="setupapi.lib newdev.lib"
+				ModuleDefinitionFile="..\libwdi.def"
 				OutputFile="$(OutDir)\libwdi.dll"
 			/>
 			<Tool

@@ -92,6 +92,8 @@ embedder embedded.h</Command>
     <Link>
       <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
+      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
+      <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -114,6 +116,8 @@ embedder embedded.h</Command>
     <Link>
       <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
+      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
+      <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -135,6 +139,8 @@ embedder embedded.h</Command>
     <Link>
       <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
+      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
+      <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,6 +162,8 @@ embedder embedded.h</Command>
     <Link>
       <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
+      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
+      <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
