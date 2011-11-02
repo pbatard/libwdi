@@ -1,5 +1,12 @@
 **Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 = Screenshot:\\{{https://sourceforge.net/apps/mediawiki/libwdi/nfs/project/l/li/libwdi/5/56/Zadig.png|Zadig screenshot}}\\Changelog: =
+=== v2.0.1.152: ===
+* fixed memory leaks
+* fixed "could not reset device list" error message
+* updated file properties
+* updated for libwdi v1.2.1
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
+
 === v2.0.0.151: ===
 * **Zadig executable is now digitally signed**
 * fixed arrow tooltip not being displayed
