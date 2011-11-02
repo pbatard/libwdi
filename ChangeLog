@@ -1,6 +1,13 @@
 For the latest changes, please visit:
   http://libwdi.git.sourceforge.net/git/gitweb.cgi?p=libwdi/libwdi;a=summary
 
+o v1.2.1 (2011.11.02)
+  Bugfixes:
+  - Clang static-analyzer fixes
+  - memory leaks in libwdi_create_list() and Zadig
+  - MSVC project files settings
+  Improvements:
+  - updated executable/DLL file properties
 o v1.2.0 (2011.10.14)
   Improvements: 
   - WCID device driver installation support
