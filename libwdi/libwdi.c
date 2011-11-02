@@ -713,6 +713,7 @@ static void free_di(struct wdi_device_info *di)
 	safe_free(di->hardware_id);
 	safe_free(di->compatible_id);
 	safe_free(di->upper_filter);
+	safe_free(di);
 }
 
 // Setup the Cfgmgr32 and SetupApi DLLs
