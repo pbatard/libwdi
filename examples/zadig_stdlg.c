@@ -905,3 +905,14 @@ void destroy_tooltip(HWND hWnd)
 	ttlist[i].original_proc = NULL;
 	ttlist[i].hTip = NULL;
 }
+
+void destroy_all_tooltips(void)
+{
+	int i;
+
+	for (i=0; i<MAX_TOOLTIPS; i++) {
+		if (ttlist[i].hTip == NULL) continue;
+		DestroyWindow(ttlist[i].hTip);
+		safe_free(ttlist[i].wstring);
+	}
+}

@@ -343,6 +343,9 @@ int install_driver(void)
 		dsprintf("Could not extract files");
 	}
 out:
+	if (pd_options.use_wcid_driver) {
+		safe_free(dev->desc);
+	}
 	if (need_dealloc) {
 		free(dev);
 	}
@@ -1638,6 +1641,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_CLOSE:
 		PostQuitMessage(0);
+		destroy_all_tooltips();
 		break;
 
 	default:

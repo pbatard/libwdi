@@ -135,6 +135,7 @@ int run_with_progress_bar(int(*function)(void));
 char* to_valid_filename(char* name, char* ext);
 HWND create_tooltip(HWND hWnd, char* message, int duration);
 void destroy_tooltip(HWND hWnd);
+void destroy_all_tooltips(void);
 
 /*
  * Globals
