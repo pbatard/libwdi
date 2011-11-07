@@ -249,7 +249,7 @@ INT CALLBACK browsedlg_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		GetWindowTextU(browse_edit, extraction_path, sizeof(extraction_path));
 		break;
 	}
-	return CallWindowProc(org_browse_wndproc, hDlg, message, wParam, lParam);
+	return (INT)CallWindowProc(org_browse_wndproc, hDlg, message, wParam, lParam);
 }
 
 /*
