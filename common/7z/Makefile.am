@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = lib7z.la
 
-lib7z_la_CFLAGS = $(ARCH_CFLAGS) $(LIBCONFIG_CFLAGS) $(VISIBILITY_CFLAGS) -std=gnu99 -Wall -Wundef -Wunused -Werror-implicit-function-declaration
+lib7z_la_CFLAGS = $(ARCH_CFLAGS) $(LIBCONFIG_CFLAGS) $(VISIBILITY_CFLAGS) -std=gnu99 -Wall -Wundef -Wunused -Werror-implicit-function-declaration -Wno-unused-but-set-variable
 lib7z_la_CFLAGS += -D_7ZIP_ST
 lib7z_la_LDLAGS = $(AM_LDFLAGS)
 lib7z_la_LIBADD = $(LIBCONFIG_LIBADD)
