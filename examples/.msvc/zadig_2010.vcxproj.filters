@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common\profile\profile.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\zadig.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -157,7 +157,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common\profile\profile.c" />
     <ClCompile Include="..\zadig.c" />
     <ClCompile Include="..\zadig_stdlg.c" />
   </ItemGroup>
@@ -180,6 +179,9 @@
     <ResourceCompile Include="..\zadig.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\common\profile\.msvc\profile_2010.vcxproj">
+      <Project>{5e62a6b1-fd77-46b2-bd1c-4f358b1fb694}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\libwdi\.msvc\libwdi_static_2010.vcxproj">
       <Project>{9aa0e745-1a0a-4700-8ecb-6a6de9dbf8b9}</Project>
     </ProjectReference>
