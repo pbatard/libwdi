@@ -301,6 +301,7 @@ if test "x$debug_enabled" = "xyes" ; then
   CFLAGS="-g -O2"
 else
   CFLAGS="-O2"
+  LDFLAGS="-s"
 fi
 
 # Examples build
@@ -325,5 +326,5 @@ AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
 
-AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [common/7z/Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT

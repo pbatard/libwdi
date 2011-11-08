@@ -39,7 +39,6 @@ config.status
 config.sub
 configure
 depcomp
-embedded.h
 install-sh
 libtool
 ltmain.sh

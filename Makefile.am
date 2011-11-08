@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = dist-bzip2 no-dist-gzip
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = libwdi
+SUBDIRS = common/7z libwdi
 
 if BUILD_EXAMPLES
 SUBDIRS += examples
