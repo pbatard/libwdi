@@ -427,6 +427,10 @@ BOOL CALLBACK dialog_proc_1(HWND dialog, UINT message,
 		SendMessage(dialog,WM_SETICON,ICON_BIG,   (LPARAM)mIcon);
 
 		device = (device_context_t *)lParam;
+		if (!device) {
+			EndDialog(dialog, 0);
+			return TRUE;
+		}
 		if (device->user_allocated_wdi)
 		{
 			if (device->wdi)
@@ -444,7 +448,7 @@ BOOL CALLBACK dialog_proc_1(HWND dialog, UINT message,
 		device_list_wndproc_orig = (WNDPROC)SetWindowLongPtr(list, GWL_WNDPROC, (UINT_PTR)device_list_wndproc);
 #endif
 
-		memset(device, 0, sizeof(*device));
+		if (device != NULL) memset(device, 0, sizeof(*device));
 
 		SetWindowText(GetDlgItem(dialog, ID_LIST_HEADER_TEXT), list_header_text);
 		device_list_init(list);
@@ -481,51 +485,53 @@ BOOL CALLBACK dialog_proc_1(HWND dialog, UINT message,
 		switch (LOWORD(wParam))
 		{
 		case ID_BUTTON_NEXT:
-			if (notification_handle_hub)
-				UnregisterDeviceNotification(notification_handle_hub);
-			if (notification_handle_dev)
-				UnregisterDeviceNotification(notification_handle_dev);
-
-			memset(&item, 0, sizeof(item));
-			item.mask = LVIF_TEXT | LVIF_PARAM;
-			item.iItem = ListView_GetNextItem(list, -1, LVNI_SELECTED);
-
-			memset(device, 0, sizeof(*device));
-
-			if (item.iItem >= 0)
-			{
-				if (ListView_GetItem(list, &item))
+			if (device) {
+				if (notification_handle_hub)
+					UnregisterDeviceNotification(notification_handle_hub);
+				if (notification_handle_dev)
+					UnregisterDeviceNotification(notification_handle_dev);
+		
+				memset(&item, 0, sizeof(item));
+				item.mask = LVIF_TEXT | LVIF_PARAM;
+				item.iItem = ListView_GetNextItem(list, -1, LVNI_SELECTED);
+		
+				memset(device, 0, sizeof(*device));
+		
+				if (item.iItem >= 0)
 				{
-					if (item.lParam)
+					if (ListView_GetItem(list, &item))
 					{
-						memcpy(device, (void *)item.lParam, sizeof(*device));
+						if (item.lParam)
+						{
+							memcpy(device, (void *)item.lParam, sizeof(*device));
+						}
 					}
 				}
+		
+				if (!device->wdi)
+				{
+					device->user_allocated_wdi = TRUE;
+					device->wdi = malloc(sizeof(struct wdi_device_info));
+					memset(device->wdi,0,sizeof(struct wdi_device_info));
+		
+					device->wdi->vid = 0x12AB;
+					device->wdi->pid = 0x12AB;
+				}
+		
+				if (!device->manufacturer[0])
+					strcpy(device->manufacturer, "Insert manufacturer name");
+				if (!device->description[0])
+					strcpy(device->description,  "Insert device description");
+		
+				if (notification_handle_hub)
+					UnregisterDeviceNotification(notification_handle_hub);
+				if (notification_handle_dev)
+					UnregisterDeviceNotification(notification_handle_dev);
+		
+				device_list_clean(list);
+		
+				EndDialog(dialog, ID_DIALOG_2);
 			}
-
-			if (!device->wdi)
-			{
-				device->user_allocated_wdi = TRUE;
-				device->wdi = malloc(sizeof(struct wdi_device_info));
-				memset(device->wdi,0,sizeof(struct wdi_device_info));
-
-				device->wdi->vid = 0x12AB;
-				device->wdi->pid = 0x12AB;
-			}
-
-			if (!device->manufacturer[0])
-				strcpy(device->manufacturer, "Insert manufacturer name");
-			if (!device->description[0])
-				strcpy(device->description,  "Insert device description");
-
-			if (notification_handle_hub)
-				UnregisterDeviceNotification(notification_handle_hub);
-			if (notification_handle_dev)
-				UnregisterDeviceNotification(notification_handle_dev);
-
-			device_list_clean(list);
-
-			EndDialog(dialog, ID_DIALOG_2);
 			return TRUE;
 
 		case ID_BUTTON_BACK:
@@ -601,32 +607,34 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 		switch (LOWORD(wParam))
 		{
 		case ID_BUTTON_NEXT:
-			//memset(device, 0, sizeof(*device));
-			device->wdi->is_composite=false;
-
-			GetWindowTextU(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
-				device->manufacturer, sizeof(tmp));
-
-			GetWindowTextU(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
-				device->description, sizeof(tmp));
-
-			GetWindowText(GetDlgItem(dialog, ID_TEXT_VID), tmp, sizeof(tmp));
-			if(sscanf(tmp, "0x%04x", &val) == 1)
-				device->wdi->vid = (WORD)val;
-
-			GetWindowText(GetDlgItem(dialog, ID_TEXT_PID), tmp, sizeof(tmp));
-			if(sscanf(tmp, "0x%04x", &val) == 1)
-				device->wdi->pid = (WORD)val;
-
-			GetWindowText(GetDlgItem(dialog, ID_TEXT_MI), tmp, sizeof(tmp));
-
-			if (sscanf(tmp, "0x%02x", &val) == 1)
-			{
-				device->wdi->mi = (BYTE)val;
-				device->wdi->is_composite=true;
+			if (device) {
+				//memset(device, 0, sizeof(*device));
+				device->wdi->is_composite=false;
+	
+				GetWindowTextU(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
+					device->manufacturer, sizeof(tmp));
+	
+				GetWindowTextU(GetDlgItem(dialog, ID_TEXT_DEV_NAME),
+					device->description, sizeof(tmp));
+	
+				GetWindowText(GetDlgItem(dialog, ID_TEXT_VID), tmp, sizeof(tmp));
+				if(sscanf(tmp, "0x%04x", &val) == 1)
+					device->wdi->vid = (WORD)val;
+	
+				GetWindowText(GetDlgItem(dialog, ID_TEXT_PID), tmp, sizeof(tmp));
+				if(sscanf(tmp, "0x%04x", &val) == 1)
+					device->wdi->pid = (WORD)val;
+	
+				GetWindowText(GetDlgItem(dialog, ID_TEXT_MI), tmp, sizeof(tmp));
+	
+				if (sscanf(tmp, "0x%02x", &val) == 1)
+				{
+					device->wdi->mi = (BYTE)val;
+					device->wdi->is_composite=true;
+				}
+				if (save_file(dialog, device))
+					EndDialog(dialog, ID_DIALOG_3);
 			}
-			if (save_file(dialog, device))
-				EndDialog(dialog, ID_DIALOG_3);
 			return TRUE ;
 		case ID_BUTTON_BACK:
 			EndDialog(dialog, ID_DIALOG_1);
