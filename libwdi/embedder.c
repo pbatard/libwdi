@@ -47,11 +47,26 @@
 #include "embedder.h"
 #include "embedder_files.h"
 
+/*#include "7z.h"
+#include "7zAlloc.h"
+#include "7zCrc.h"
+#include "7zFile.h"
+*/
+//#include "7zBuffer.h"
+
+extern int Buffer_Extract(const unsigned char* buffer, size_t size);
+
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
+#define wchar_to_utf8_no_alloc(wsrc, dest, dest_size) \
+	WideCharToMultiByte(CP_UTF8, 0, wsrc, -1, dest, dest_size, NULL, NULL)
+
 
 const int nb_embeddables_fixed = sizeof(embeddable_fixed)/sizeof(struct emb);
 int nb_embeddables;
 struct emb* embeddable = embeddable_fixed;
+
+//extern const unsigned char compressed_data[];
+//extern const uint32_t compressed_data_size;
 
 #ifndef MAX_PATH
 #ifdef PATH_MAX
@@ -78,6 +93,31 @@ char initial_dir[MAX_PATH];
 #define NATIVE_SEPARATOR		'/'
 #define NON_NATIVE_SEPARATOR	'\\'
 #endif
+
+/*
+ * Converts an UTF-16 string to UTF8 (allocate returned string)
+ * Returns NULL on error
+ */
+static __inline char* wchar_to_utf8(const wchar_t* wstr)
+{
+	int size = 0;
+	char* str = NULL;
+
+	// Find out the size we need to allocate for our converted string
+	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+	if (size <= 1)	// An empty string would be size 1
+		return NULL;
+
+	if ((str = (char*)calloc(size, 1)) == NULL)
+		return NULL;
+
+	if (wchar_to_utf8_no_alloc(wstr, str, size) != size) {
+		free(str);
+		return NULL;
+	}
+
+	return str;
+}
 
 void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 {
@@ -306,6 +346,8 @@ void add_user_files(void) {
 }
 #endif
 
+
+
 int
 #ifdef DDKBUILD
 __cdecl
@@ -337,6 +379,9 @@ main (int argc, char *argv[])
 		fprintf(stderr, "You must supply a header name.\n");
 		return 1;
 	}
+
+//	Buffer_Extract(compressed_data, compressed_data_size);
+	exit(1);
 
 	nb_embeddables = nb_embeddables_fixed;
 #if defined(USER_DIR)

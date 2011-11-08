@@ -36,6 +36,7 @@
 #include "libwdi.h"
 #include "logging.h"
 #include "tokenizer.h"
+#include "7z.h"
 #include "embedded.h"	// auto-generated during compilation
 #include "../common/msapi_utf8.h"
 
@@ -72,6 +73,9 @@ extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist
 extern BOOL AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
 extern BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
 extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList);
+
+extern uint8_t wdi_data[];
+extern uint32_t wdi_data_size;
 
 /*
  * Structure used for the threaded call to install_driver_internal()
@@ -158,22 +162,9 @@ static BOOL (WINAPI *pSetupDiGetDevicePropertyW)(HDEVINFO, PSP_DEVINFO_DATA, con
 #define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
 #define IS_VISTA_GET_DEV_PROP_AVAILABLE (pSetupDiGetDevicePropertyW != NULL)
 
-// Version
-static BOOL (WINAPI *pVerQueryValueA)(LPCVOID, LPCSTR, LPVOID, PUINT) = NULL;
-static BOOL (WINAPI *pGetFileVersionInfoA)(LPCSTR, DWORD, DWORD, LPVOID) = NULL;
-static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
-#define INIT_VERSION_DLL(h) do {											\
-	pVerQueryValueA = (BOOL (WINAPI *)(LPCVOID, LPCSTR, LPVOID, PUINT))		\
-		GetProcAddress(h, "VerQueryValueA");								\
-	pGetFileVersionInfoA = (BOOL (WINAPI *)(LPCSTR, DWORD, DWORD, LPVOID))	\
-		GetProcAddress(h, "GetFileVersionInfoA");							\
-	pGetFileVersionInfoSizeA = (BOOL (WINAPI *)(LPCSTR, LPDWORD))			\
-		GetProcAddress(h, "GetFileVersionInfoSizeA");						\
-	} while (0)
-#define IS_VERSION_API_AVAILABLE ((pVerQueryValueA != NULL) && (pGetFileVersionInfoA != NULL) && (pGetFileVersionInfoSizeA != NULL))
-
 /*
  * Cfgmgr32.dll, SetupAPI.dll interfaces
+ * TODO: drop 2k and link against cfgmgr32
  */
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
@@ -463,7 +454,7 @@ static FILE *fcreate(const char *filename, const char *mode)
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	FILE *fd;
-	int res, r;
+	int r; // res;
 	char* tmpdir;
 	char filename[MAX_PATH];
 	int64_t t;
@@ -471,7 +462,9 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	void* version_buf;
 	UINT junk;
 	VS_FIXEDFILEINFO *file_info;
-	HMODULE h;
+	uint8_t* buf = NULL;
+	size_t buf_size = 0;
+	char id[] = "libusb0.sys";
 
 	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
 		return WDI_ERROR_INVALID_PARAM;
@@ -483,22 +476,19 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 		return WDI_SUCCESS;
 	}
 
-	// Avoid the need for end user apps to link against version.lib
-	h = GetModuleHandleA("Version.dll");
-	if (h == NULL) {
-		h = LoadLibraryA("Version.dll");
+	r = _7z_open(wdi_data, wdi_data_size);
+	if (r != WDI_SUCCESS) {
+		wdi_err("could not open WDI archive: %s", wdi_strerror(r));
+		return r;
 	}
-	if (h == NULL) {
-		wdi_warn("unable to open version.dll");
-		return WDI_ERROR_RESOURCE;
+	r = _7z_extract(id, &buf, &buf_size);
+	if (r != WDI_SUCCESS) {
+		wdi_err("could not extract file id '%s': %s", id, wdi_strerror(r));
+		_7z_close();
+		return r;
 	}
-
-	INIT_VERSION_DLL(h);
-	if (!IS_VERSION_API_AVAILABLE) {
-		wdi_warn("unable to access version.dll");
-		return WDI_ERROR_RESOURCE;
-	}
-
+	wdi_info("successfully extracted file '%s' to memory", id);
+/*
 	for (res=0; res<nb_resources; res++) {
 		// Identify the WinUSB and libusb0 files we'll pick the date & version of
 		if (strcmp(resource[res].name, driver_name[driver_type]) == 0) {
@@ -508,7 +498,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	if (res == nb_resources) {
 		return WDI_ERROR_NOT_FOUND;
 	}
-
+*/
 	// First, we need a physical file => extract it
 	tmpdir = getenv("TEMP");
 	if (tmpdir == NULL) {
@@ -522,7 +512,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 
 	safe_strcpy(filename, MAX_PATH, tmpdir);
 	safe_strcat(filename, MAX_PATH, "\\");
-	safe_strcat(filename, MAX_PATH, resource[res].name);
+	safe_strcat(filename, MAX_PATH, id); //resource[res].name);
 
 	fd = fcreate(filename, "w");
 	if (fd == NULL) {
@@ -530,18 +520,23 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 		return WDI_ERROR_RESOURCE;
 	}
 
-	fwrite(resource[res].data, 1, resource[res].size, fd);
+	fwrite(buf, 1, buf_size, fd);
+//	fwrite(resource[res].data, 1, resource[res].size, fd);
 	fclose(fd);
+	_7z_free(buf);
+	_7z_close();
 
 	// Read the version
-	version_size = pGetFileVersionInfoSizeA(filename, NULL);
+	version_size = GetFileVersionInfoSizeA(filename, NULL);
 	version_buf = malloc(version_size);
 	r = WDI_SUCCESS;
 	if ( (version_buf != NULL)
-	  && (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
-	  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+	  && (GetFileVersionInfoA(filename, 0, version_size, version_buf))
+	  && (VerQueryValueA(version_buf, "\\", (LPVOID*)&file_info, &junk)) ) {
 		// Fill the creation date of VS_FIXEDFILEINFO with the one from embedded.h
-		t = unixtime_to_msfiletime((time_t)resource[res].creation_time);
+//		t = unixtime_to_msfiletime((time_t)resource[res].creation_time);
+		// TODO
+		t = unixtime_to_msfiletime((time_t)resource[0].creation_time);
 		file_info->dwFileDateLS = (DWORD)t;
 		file_info->dwFileDateMS = t >> 32;
 		memcpy(&driver_version[driver_type], file_info, sizeof(VS_FIXEDFILEINFO));
