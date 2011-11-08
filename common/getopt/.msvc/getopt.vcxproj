@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <ProjectName>getopt</ProjectName>
     <ProjectGuid>{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}</ProjectGuid>
     <RootNamespace>getopt</RootNamespace>
   </PropertyGroup>

@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>wdi-simple</ProjectName>
     <ProjectGuid>{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}</ProjectGuid>
-    <RootNamespace>simple</RootNamespace>
+    <RootNamespace>wdi-simple</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

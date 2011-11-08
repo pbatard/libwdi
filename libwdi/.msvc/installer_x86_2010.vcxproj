@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>installer_x86</ProjectName>
     <ProjectGuid>{9B1C561E-F95B-4849-A7AA-A4350E227C20}</ProjectGuid>
-    <RootNamespace>installerx86</RootNamespace>
+    <RootNamespace>installer_x86</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

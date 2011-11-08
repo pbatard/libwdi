@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>installer_x64</ProjectName>
     <ProjectGuid>{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}</ProjectGuid>
-    <RootNamespace>installerx64</RootNamespace>
+    <RootNamespace>installer_x64</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
