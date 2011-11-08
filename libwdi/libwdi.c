@@ -37,7 +37,7 @@
 #include "logging.h"
 #include "tokenizer.h"
 #include "embedded.h"	// auto-generated during compilation
-#include "msapi_utf8.h"
+#include "../common/msapi_utf8.h"
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000

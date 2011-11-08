@@ -32,7 +32,7 @@
 
 #include "installer.h"
 #include "libwdi.h"
-#include "msapi_utf8.h"
+#include "../common/msapi_utf8.h"
 
 // DDK complains about checking a const string against NULL
 #if defined(DDKBUILD)
