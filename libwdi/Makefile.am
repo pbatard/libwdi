@@ -7,7 +7,7 @@ endif
 
 INCLUDES = -I$(top_srcdir)
 
-BUILT_SOURCES = embedded.h
+#BUILT_SOURCES = embedded.h
 noinst_PROGRAMS =
 noinst_EXES =
 bin2coff_OPTIONS =
@@ -66,7 +66,7 @@ wdi_data.lo: bin2coff
 
 libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(AM_LDFLAGS)
-libwdi_la_LIBADD = -L../common/7z/.libs libwdi_rc.lo wdi_data.lo -lsetupapi -lole32 -lversion -l7z 
+libwdi_la_LIBADD = -L../common/7z/.libs -L../common/profile/.libs libwdi_rc.lo wdi_data.lo -lsetupapi -lole32 -lversion -l7z -lprofile
 libwdi_la_SOURCES = $(LIB_SRC)
 
 #embedded.h: embedder $(noinst_PROGRAMS)
