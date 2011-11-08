@@ -1,7 +1,7 @@
 /*
  * mssign32.h: MSSign32 interface for code signing
  *
- * Copyright (c) 2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2011 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -167,7 +167,7 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 
 /*
  * typedefs for the function prototypes. Use the something like:
- *   PF_DELC(SignerSignEx);
+ *   PF_DECL(SignerSignEx);
  * which translates to:
  *  SignerSignEx_t pfSignerSignEx = NULL;
  * in your code, to declare the entrypoint and then use:

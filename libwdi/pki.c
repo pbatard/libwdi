@@ -1,7 +1,7 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011 Pete Batard <pbatard@gmail.com>
- * For more info, please visit http://libwdi.akeo.ie
+ * Copyright (c) 2011 Pete Batard <pete@akeo.ie>
+ * For more info, please visit http://libwdi.sf.net
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

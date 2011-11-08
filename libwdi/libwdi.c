@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *

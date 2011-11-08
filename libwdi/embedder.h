@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

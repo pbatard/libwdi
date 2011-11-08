@@ -1,7 +1,7 @@
 /*
  * libwdi logging functions
  * Copyright (c) Johannes Erdfelt, Daniel Drake et al.
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
