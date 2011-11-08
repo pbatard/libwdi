@@ -28,6 +28,8 @@
 #define false FALSE
 #endif
 
+#define _IGNORE(expr) do { (void)(expr); } while(0)
+
 #define STR_BUFFER_SIZE             512
 #define NOTIFICATION_DELAY          1000
 #define MAX_TOOLTIPS                32

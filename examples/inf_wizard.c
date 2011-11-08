@@ -65,6 +65,7 @@
 
 #define _STRINGIFY(x) #x
 #define STRINGIFY(x) _STRINGIFY(x)
+#define _IGNORE(expr) do { (void)(expr); } while(0)
 
 
 // Used for device notification
@@ -327,7 +328,6 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 	LVHITTESTINFO hitTestInfo;
 	LVITEM lvitem;
 	device_context_t* dev_context;
-	BOOL ignored;
 
 	switch(message)
 	{
@@ -383,7 +383,7 @@ INT_PTR CALLBACK device_list_wndproc(HWND hDlg, UINT message, WPARAM wParam, LPA
 
 				lvitem.iItem = hitTestInfo.iItem;
 				lvitem.mask =  LVIF_PARAM;
-				ignored = ListView_GetItem(hDlg,&lvitem);
+				_IGNORE(ListView_GetItem(hDlg,&lvitem));
 
 				dev_context = (device_context_t*)lvitem.lParam;
 				// Update the text.
@@ -556,7 +556,6 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 							WPARAM wParam, LPARAM lParam)
 {
 	static device_context_t *device = NULL;
-	static HWND hToolTip;
 	char tmp[MAX_TEXT_LENGTH];
 	int val;
 
@@ -574,7 +573,7 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 			wdi_is_driver_supported(WDI_LIBUSB0, &device->driver_info);
 
 			//g_hwndTrackingTT = CreateTrackingToolTip(dialog,TEXT(" "));
-			hToolTip = create_tooltip(dialog, g_hInst, 300, tooltips_dlg2);
+			create_tooltip(dialog, g_hInst, 300, tooltips_dlg2);
 
 			memset(tmp, 0, sizeof(tmp));
 			safe_sprintf(tmp,sizeof(tmp) - 1, "0x%04X", device->wdi->vid);
@@ -710,7 +709,6 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 	UINT LBL_WIDTH = 150;
 	UINT LBL_HEIGHT = 15;
 	UINT LBL_SEP = 5;
-	HWND hwnd;
 	static HBRUSH hBrushStatic = NULL;
 
 	RECT rect;
@@ -778,7 +776,7 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 			{
 				safe_sprintf(bufferLabel, MAX_TEXT_LENGTH, "%s", package_contents_fmt_1);
 			}
-			hwnd = create_labeled_text(NULL,bufferLabel,dialog,g_hInst,x,y,LBL_HEIGHT*2, 0, LBL_WIDTH+TXT_WIDTH, ID_TEXT_HIGHLIGHT_INFO, ID_TEXT_HIGHLIGHT_INFO);
+			create_labeled_text(NULL,bufferLabel,dialog,g_hInst,x,y,LBL_HEIGHT*2, 0, LBL_WIDTH+TXT_WIDTH, ID_TEXT_HIGHLIGHT_INFO, ID_TEXT_HIGHLIGHT_INFO);
 
 			free(bufferLabel);
 
@@ -859,9 +857,8 @@ BOOL CALLBACK dialog_proc_3(HWND dialog, UINT message,
 static void device_list_init(HWND list)
 {
 	LVCOLUMN lvc;
-	int ignored;
 
-	ignored = (int)ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT);
+	_IGNORE(ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT));
 
 	memset(&lvc, 0, sizeof(lvc));
 
@@ -871,22 +868,22 @@ static void device_list_init(HWND list)
 	lvc.cx = 70;
 	lvc.iSubItem = 0;
 	lvc.pszText = "Vendor ID";
-	ignored = ListView_InsertColumn(list, 1, &lvc);
+	_IGNORE(ListView_InsertColumn(list, 1, &lvc));
 
 	lvc.cx = 70;
 	lvc.iSubItem = 1;
 	lvc.pszText = "Product ID";
-	ignored = ListView_InsertColumn(list, 2, &lvc);
+	_IGNORE(ListView_InsertColumn(list, 2, &lvc));
 
 	lvc.cx = 260;
 	lvc.iSubItem = 2;
 	lvc.pszText = "Description";
-	ignored = ListView_InsertColumn(list, 3, &lvc);
+	_IGNORE(ListView_InsertColumn(list, 3, &lvc));
 
 	lvc.cx = 40;
 	lvc.iSubItem = 3;
 	lvc.pszText = "MI";
-	ignored = ListView_InsertColumn(list, 4, &lvc);
+	_IGNORE(ListView_InsertColumn(list, 4, &lvc));
 }
 
 static void device_list_refresh(HWND list)
@@ -933,7 +930,6 @@ static void device_list_add(HWND list, device_context_t *device)
 	char vid[32];
 	char pid[32];
 	char mi[32];
-	int ignored;
 
 	memset(&item, 0, sizeof(item));
 	memset(vid, 0, sizeof(vid));
@@ -950,7 +946,7 @@ static void device_list_add(HWND list, device_context_t *device)
 	item.mask = LVIF_TEXT | LVIF_PARAM;
 	item.lParam = (LPARAM)device;
 
-	ignored = ListView_InsertItem(list, &item);
+	_IGNORE(ListView_InsertItem(list, &item));
 
 	ListView_SetItemText(list, 0, 0, vid);
 	ListView_SetItemText(list, 0, 1, pid);
@@ -961,7 +957,6 @@ static void device_list_add(HWND list, device_context_t *device)
 static void device_list_clean(HWND list)
 {
 	LVITEM item;
-	BOOL ignored;
 
 	memset(&item, 0, sizeof(LVITEM));
 
@@ -970,7 +965,7 @@ static void device_list_clean(HWND list)
 		if (item.lParam)
 			free((void *)item.lParam);
 
-		ignored = ListView_DeleteItem(list, 0);
+		_IGNORE(ListView_DeleteItem(list, 0));
 		memset(&item, 0, sizeof(LVITEM));
 	}
 }
