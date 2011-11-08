@@ -228,7 +228,7 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\common\7z\.msvc\7z.vcxproj">
-      <Project>{86f6d9c9-c9f0-8308-17d9-997ba526cb0f}</Project>
+      <Project>{a89bc9e5-37d9-5be8-d704-3d0e1173fa43}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
