@@ -74,9 +74,10 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
-      <Message>Embedding binary resources</Message>
-      <Command>cd $(ProjectDir)\..
-embedder embedded.h</Command>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -90,17 +91,24 @@ embedder embedded.h</Command>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>version.lib;setupapi.lib;wdi_data.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
-      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
+    <PreLinkEvent>
+      <Message>Generating WDI data library</Message>
+      <Command>cd $(ProjectDir)..
+bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
-      <Message>Embedding binary resources</Message>
-      <Command>cd $(ProjectDir)\..
-embedder embedded.h</Command>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -114,17 +122,24 @@ embedder embedded.h</Command>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>version.lib;setupapi.lib;wdi_data.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
-      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
+    <PreLinkEvent>
+      <Message>Generating WDI data library</Message>
+      <Command>cd $(ProjectDir)..
+bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
-      <Message>Embedding binary resources</Message>
-      <Command>cd $(ProjectDir)\..
-embedder embedded.h</Command>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>MinSpace</Optimization>
@@ -137,17 +152,24 @@ embedder embedded.h</Command>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>version.lib;setupapi.lib;wdi_data.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
-      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
+    <PreLinkEvent>
+      <Message>Generating WDI data library</Message>
+      <Command>cd $(ProjectDir)..
+bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
-      <Message>Embedding binary resources</Message>
-      <Command>cd $(ProjectDir)\..
-embedder embedded.h</Command>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>MinSpace</Optimization>
@@ -160,13 +182,20 @@ embedder embedded.h</Command>
       <AdditionalIncludeDirectories>E:\WinDDK\7600.16385.0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>setupapi.lib;newdev.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>version.lib;setupapi.lib;wdi_data.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
-      <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
+    <PreLinkEvent>
+      <Message>Generating WDI data library</Message>
+      <Command>cd $(ProjectDir)..
+bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\7z.c" />
     <ClCompile Include="..\libwdi.c" />
     <ClCompile Include="..\libwdi_dlg.c" />
     <ClCompile Include="..\logging.c" />
@@ -176,17 +205,21 @@ embedder embedded.h</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\msvc\config.h" />
+    <ClInclude Include="..\7z.h" />
     <ClInclude Include="..\installer.h" />
     <ClInclude Include="..\libwdi.h" />
     <ClInclude Include="..\logging.h" />
-    <ClInclude Include="..\msapi_utf8.h" />
+    <ClInclude Include="..\..\common\msapi_utf8.h" />
     <ClInclude Include="..\mssign32.h" />
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\libusb0.cat.in" />
     <None Include="..\libusb0.inf.in" />
+    <None Include="..\libusbk.cat.in" />
     <None Include="..\libwdi.def" />
+    <None Include="..\winusb.cat.in" />
     <None Include="..\winusb.inf.in" />
     <None Include="..\libusbk.inf.in" />
   </ItemGroup>
@@ -194,17 +227,8 @@ embedder embedded.h</Command>
     <ResourceCompile Include="..\libwdi.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="embedder_2010.vcxproj">
-      <Project>{792d44d5-28a7-4eb3-b84b-8021fe3189f9}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="installer_x64_2010.vcxproj">
-      <Project>{e5a56ee0-182f-470f-8cdc-8c1b7b86ee26}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="installer_x86_2010.vcxproj">
-      <Project>{9b1c561e-f95b-4849-a7aa-a4350e227c20}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    <ProjectReference Include="..\..\common\7z\.msvc\7z.vcxproj">
+      <Project>{86f6d9c9-c9f0-8308-17d9-997ba526cb0f}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

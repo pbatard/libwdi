@@ -32,6 +32,9 @@
     <ClCompile Include="..\pki.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\7z.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\msvc\config.h">
@@ -46,7 +49,7 @@
     <ClInclude Include="..\logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\msapi_utf8.h">
+    <ClInclude Include="..\..\common\msapi_utf8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\resource.h">
@@ -56,6 +59,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mssign32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\7z.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -70,6 +76,15 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\winusb.inf.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\libusb0.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\libusbk.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\winusb.cat.in">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -326,7 +326,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\msapi_utf8.h"
+				RelativePath="..\..\common\msapi_utf8.h"
 				>
 			</File>
 			<File

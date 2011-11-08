@@ -317,7 +317,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\profile.c"
+				RelativePath="..\..\common\profile\profile.c"
 				>
 			</File>
 			<File
@@ -335,11 +335,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\profile.h"
+				RelativePath="..\..\common\profile\profile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\libwdi\msapi_utf8.h"
+				RelativePath="..\..\common\msapi_utf8.h"
 				>
 			</File>
 			<File

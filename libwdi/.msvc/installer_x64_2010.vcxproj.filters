@@ -19,7 +19,7 @@
     <ClInclude Include="..\installer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\msapi_utf8.h">
+    <ClInclude Include="..\..\common\msapi_utf8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

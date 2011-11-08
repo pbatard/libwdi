@@ -45,7 +45,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x86", "libwdi\.ms
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer_x64", "libwdi\.msvc\installer_x64_2008.vcproj", "{E5A56EE0-182F-470F-8CDC-8C1B7B86EE26}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "getopt", "examples\getopt\.msvc\getopt.vcproj", "{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "getopt", "common\getopt\.msvc\getopt.vcproj", "{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}"
 EndProject
