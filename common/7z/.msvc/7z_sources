@@ -1,0 +1,16 @@
+TARGETTYPE=LIBRARY
+TARGETNAME=7z
+
+!IFNDEF MSC_WARNING_LEVEL
+MSC_WARNING_LEVEL=/W3
+!ENDIF
+
+USE_MSVCRT=1
+
+C_DEFINES = /D_7ZIP_ST
+
+TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
+           $(SDK_LIB_PATH)\user32.lib
+
+SOURCES=7zAlloc.c 7zBuf.c 7zCrc.c 7zCrcOpt.c 7zDec.c 7zFile.c 7zIn.c 7zStream.c \
+  Bcj2.c Bra.c Bra86.c CpuArch.c LzFind.c Lzma2Dec.c Lzma2Enc.c LzmaDec.c LzmaEnc.c
