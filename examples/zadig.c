@@ -343,7 +343,7 @@ int install_driver(void)
 		dsprintf("Could not extract files");
 	}
 out:
-	if (pd_options.use_wcid_driver) {
+	if ((pd_options.use_wcid_driver) && (dev != NULL)) {
 		safe_free(dev->desc);
 	}
 	if (need_dealloc) {
