@@ -1,5 +1,6 @@
 TARGETNAME=embedder
 TARGETTYPE=PROGRAM
+UMTYPE=console
 
 !IFNDEF MSC_WARNING_LEVEL
 MSC_WARNING_LEVEL=/W3
@@ -7,13 +8,12 @@ MSC_WARNING_LEVEL=/W3
 
 USE_MSVCRT=1
 
-UMTYPE=console
-UMBASE=0x01000000
-
 INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
-           $(SDK_LIB_PATH)\user32.lib
+           $(SDK_LIB_PATH)\user32.lib \
+           ..\common\7z\7z.lib \
+           .\test.obj
 
 SOURCES=embedder.c

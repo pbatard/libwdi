@@ -12,17 +12,21 @@ INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD $(DLL_DEFINES)
 LINKER_FLAGS=/ignore:4006
 
-# naked calls to 'build' ignores SOURCELIBS => we can't create a static lib
-# that includes dependencies without calling the linker externally :(
+# SOURCELIBS totally doesn't work with a naked build command
+# thus we call the linker manually after this build
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(SDK_LIB_PATH)\advapi32.lib \
            $(SDK_LIB_PATH)\user32.lib \
            $(SDK_LIB_PATH)\shell32.lib \
            $(SDK_LIB_PATH)\setupapi.lib \
-           $(SDK_LIB_PATH)\ole32.lib
+           $(SDK_LIB_PATH)\ole32.lib \
+           $(SDK_LIB_PATH)\version.lib \
+           ..\common\7z\7z.lib \
+           wdi_data.lib
 
 SOURCES= \
+	7z.c \
 	logging.c \
 	libwdi.c \
 	libwdi_dlg.c \
