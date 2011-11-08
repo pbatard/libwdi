@@ -29,7 +29,7 @@
 #define INITGUID
 #include "libusb-win32_version.h"
 #include "libwdi.h"
-#include "msapi_utf8.h"
+#include "../common/msapi_utf8.h"
 
 #include <windows.h>
 #include <commdlg.h>

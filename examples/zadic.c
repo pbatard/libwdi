@@ -30,7 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #ifdef _MSC_VER
-#include "getopt/getopt.h"
+#include "../common/getopt/getopt.h"
 #else
 #include <getopt.h>
 #endif

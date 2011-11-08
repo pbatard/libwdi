@@ -35,11 +35,11 @@
 #include <shellapi.h>
 #include <commctrl.h>
 
+#include "../common/msapi_utf8.h"
+#include "../common/profile/profile.h"
 #include "libwdi.h"
-#include "msapi_utf8.h"
 #include "zadig_resource.h"
 #include "zadig.h"
-#include "profile.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
 #ifndef ARRAYSIZE

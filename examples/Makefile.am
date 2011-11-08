@@ -18,7 +18,7 @@ zadic_LDADD = zadic_rc.o -L../libwdi/.libs -lwdi
 zadig_rc.o: zadig.rc zadig_resource.h
 	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
 
-zadig_SOURCES = zadig.c zadig_stdlg.c profile.c
+zadig_SOURCES = zadig.c zadig_stdlg.c ../common/profile/profile.c
 zadig_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(AM_CFLAGS)
 zadig_LDFLAGS = -mwindows $(AM_LDFLAGS) -static
 zadig_LDADD = zadig_rc.o -L../libwdi/.libs -lwdi

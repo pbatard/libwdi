@@ -35,7 +35,7 @@
 #include "zadig_resource.h"
 #include "zadig.h"
 #include "zadig_license.h"
-#include "../libwdi/msapi_utf8.h"
+#include "../common/msapi_utf8.h"
 
 // The following is only available on Vista and later
 #if (_WIN32_WINNT >= 0x0600)
