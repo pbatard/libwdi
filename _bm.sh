@@ -26,7 +26,7 @@ make zadig.exe
 # SetACL can be downloaded from http://helgeklein.com/
 type -P SetACL &>/dev/null && { SetACL -on ./zadig.exe -ot file -actn ace -ace "n:S-1-5-18;p:read,read_ex;s:y"; }
 # Can't use WDK's Signtool directly from msys - must use cmd
-cmd.exe /c zadig_sign.bat
+cmd.exe /c sign.bat zadig.exe
 7zr a $target_dir/zadig_v$zadig_version.7z zadig.exe
 cd ..
 
