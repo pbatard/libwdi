@@ -1,0 +1,35 @@
+[driver]
+	name = libusb-win32
+	path = D:\libusb-win32\bin
+	file = {
+		path = amd64/install-filter.exe
+		# ultimately, sha1 should be computed by the embedder
+		# http://blog.didierstevens.com/2008/01/11/the-case-of-the-missing-digital-signatures-tab/
+		# http://hype-free.blogspot.com/2008/09/how-to-verify-executable-digital.html
+		# http://www.google.com/codesearch#XI-8HT7rxM8/trunk/src/maidsafe/cryptopp/test.cpp
+		sha1 = 8FE8E488891B31FC6E3A761F45A1A8AC065E7621
+		type = x86_64
+  }
+   file = {
+    path = amd64/install-filter.exe
+    sha1 = 1234ABCD...
+    type = x86_64
+  } 
+  file = {
+    path = x86/libusb0.dll
+    sha1 = A1B2C3D4...
+    type = x86
+  }
+  file = {
+    path = libusb0.inf.in
+    sha1 = AABBCCDD...
+    type = inf_template
+  }
+  ...
+[driver]
+  name = libusbK
+  version = 2.3.4.5
+  file = {
+    path = amd64/libusbK.sys
+    ...
+  }
