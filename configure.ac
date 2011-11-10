@@ -326,5 +326,5 @@ AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
 
-AC_CONFIG_FILES([Makefile] [common/7z/Makefile] [common/profile/Makefile] [libwdi/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([Makefile] [common/7z/Makefile] [common/profile/Makefile] [utilities/Makefile] [libwdi/Makefile] [examples/Makefile])
 AC_OUTPUT
