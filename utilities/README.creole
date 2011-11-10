@@ -1,0 +1,23 @@
+== Description: ==
+* **cathash:**\\
+multiplatform MS CAT/[[http://technet.microsoft.com/en-us/library/cc750035.aspx|Authenticode]] SHA-1 generation. Inspired by [[http://www.jensign.com/hash/index.html|the tool of the same name by Michel I. Gallant]].\\
+Can be used to compute the custom SHA-1 used by Microsoft and others for Authenticode and CAT file validation.\\
+Unlike its counterpart, this program will compile and run on any platform, including big endian UNIX. 
+
+* **bin2coff:**\\
+Convert binary data to linkable MS COFF object. Inspired by [[http://www.winasm.net/forum/index.php?showtopic=1198|the tool of the same name by Vortex]] but including source code, MinGW-w64 compatiblity and the provision of a size variable besides the binary.
+{{{
+Usage: bin2coff bin obj [label] [64bit]
+
+  bin  : source binary data
+  obj  : target object file, in MS COFF format.
+  label: identifier for the extern data. If not provided, the name of the
+         binary file without extension is used.
+  64bit: produce a 64 bit compatible object - symbols are generated without
+         leading underscores and machine type is set to x86_x64.
+
+With your linker set properly, typical access from a C source is:
+
+    extern uint8_t  label[]     /* binary data         */
+    extern uint32_t label_size  /* size of binary data */
+}}}
