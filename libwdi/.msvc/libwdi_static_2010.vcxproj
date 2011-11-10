@@ -96,7 +96,7 @@
     <PostBuildEvent />
     <PreLinkEvent>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
       <Message>Generating WDI data library</Message>
     </PreLinkEvent>
     <ProjectReference>
@@ -126,7 +126,7 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
     <PostBuildEvent />
     <PreLinkEvent>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
       <Message>Generating WDI data library</Message>
     </PreLinkEvent>
     <ProjectReference>
@@ -156,7 +156,7 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
     <PostBuildEvent />
     <PreLinkEvent>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
       <Message>Generating WDI data library</Message>
     </PreLinkEvent>
     <ProjectReference>
@@ -186,7 +186,7 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
     <PostBuildEvent />
     <PreLinkEvent>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
       <Message>Generating WDI data library</Message>
     </PreLinkEvent>
     <ProjectReference>

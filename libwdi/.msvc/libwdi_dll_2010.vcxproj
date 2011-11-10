@@ -100,7 +100,7 @@
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -131,7 +131,7 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -157,12 +157,11 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -188,12 +187,11 @@ bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

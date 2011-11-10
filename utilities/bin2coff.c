@@ -274,7 +274,7 @@ main (int argc, char *argv[])
 
 	/* Label setup */
 	if ( (argc < 4) || ((argc == 4) && (!x86_32)) ) {
-		for (i=strlen(argv[1])-1; i>=0; i--) {
+		for (i=(int)strlen(argv[1])-1; i>=0; i--) {
 			if (argv[1][i] == '.') {
 				argv[1][i] = 0;
 				break;
@@ -307,7 +307,7 @@ main (int argc, char *argv[])
 	/* Populate file header */
 	file_header->Machine = (x86_32)?IMAGE_FILE_MACHINE_I386:IMAGE_FILE_MACHINE_AMD64;
 	file_header->NumberOfSections = 1;
-	file_header->PointerToSymbolTable = sizeof(IMAGE_FILE_HEADER) + sizeof(IMAGE_SECTION_HEADER) + size+4;
+	file_header->PointerToSymbolTable = sizeof(IMAGE_FILE_HEADER) + sizeof(IMAGE_SECTION_HEADER) + (uint32_t)size+4;
 	file_header->NumberOfSymbols = 2;
 	file_header->Characteristics = IMAGE_FILE_LINE_NUMS_STRIPPED;
 
@@ -347,7 +347,7 @@ main (int argc, char *argv[])
 		strcpy(&symbol_table[1].N.ShortName[x86_32+strlen(label)], SIZE_LABEL_SUFFIX);
 	} else {
 		symbol_table[1].N.LongName.Zeroes = 0;
-		symbol_table[1].N.LongName.Offset = sizeof(IMAGE_STRINGS) + ((short_label)?0:(x86_32 + strlen(label) + 1));
+		symbol_table[1].N.LongName.Offset = sizeof(IMAGE_STRINGS) + ((short_label)?0:(x86_32 + (uint32_t)strlen(label) + 1));
 	}
 	symbol_table[1].Type = IMAGE_SYM_TYPE_NULL;
 	symbol_table[1].StorageClass = IMAGE_SYM_CLASS_EXTERNAL;
@@ -359,14 +359,14 @@ main (int argc, char *argv[])
 	if (!short_label) {
 		string_table->Strings[0] = '_';
 		strcpy(&string_table->Strings[0] + x86_32, label);
-		string_table->TotalSize += x86_32 + strlen(label) + 1;
+		string_table->TotalSize += x86_32 + (uint32_t)strlen(label) + 1;
 	}
 	if (!short_size) {
 		string_table->Strings[string_table->TotalSize - sizeof(IMAGE_STRINGS)] = '_';
 		strcpy(&string_table->Strings[string_table->TotalSize - sizeof(IMAGE_STRINGS)] + x86_32, label);
-		string_table->TotalSize += x86_32 + strlen(label);
+		string_table->TotalSize += x86_32 + (uint32_t)strlen(label);
 		strcpy(&string_table->Strings[string_table->TotalSize - sizeof(IMAGE_STRINGS)], SIZE_LABEL_SUFFIX);
-		string_table->TotalSize += strlen(SIZE_LABEL_SUFFIX) + 1;
+		string_table->TotalSize += (uint32_t)strlen(SIZE_LABEL_SUFFIX) + 1;
 	}
 
 	fd = fopen(argv[2], "wb");

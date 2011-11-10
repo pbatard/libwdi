@@ -12,6 +12,6 @@ INCLUDES=..\msvc;$(DDK_INC_PATH)
 C_DEFINES = $(C_DEFINES) /DDDKBUILD
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
-           $(SDK_LIB_PATH)\user32.lib \
+           $(SDK_LIB_PATH)\user32.lib
 
 SOURCES=bin2coff.c

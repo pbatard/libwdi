@@ -56,7 +56,7 @@ copy .msvc\7z_sources sources >NUL 2>&1
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%ARCH_DIR%\7z.lib . >NUL 2>&1
 
-cd ..\..\libwdi
+cd ..\..\utilities
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
@@ -68,6 +68,13 @@ copy .msvc\bin2coff_sources sources >NUL 2>&1
 if errorlevel 1 goto builderror
 copy obj%BUILD_ALT_DIR%\%CPU_DIR%\bin2coff.exe . >NUL 2>&1
 
+copy .msvc\cathash_sources sources >NUL 2>&1
+@echo on
+%BUILD_CMD% -%CPU%
+@echo off
+if errorlevel 1 goto builderror
+copy obj%BUILD_ALT_DIR%\%CPU_DIR%\cathash.exe . >NUL 2>&1
+
 ::# echo.
 ::# echo Creating binary resource
 ::# bin2coff.exe test.7z test.obj compressed_data
@@ -78,6 +85,11 @@ copy obj%BUILD_ALT_DIR%\%CPU_DIR%\bin2coff.exe . >NUL 2>&1
 ::# @echo off
 ::# if errorlevel 1 goto builderror
 ::# copy obj%BUILD_ALT_DIR%\i386\embedder.exe . >NUL 2>&1
+
+cd ..\libwdi
+
+del Makefile.hide >NUL 2>&1
+if EXIST Makefile ren Makefile Makefile.hide
 
 copy .msvc\installer_x86_sources sources >NUL 2>&1
 @echo on
@@ -98,7 +110,7 @@ echo.
 ::# embedder.exe embedded.h
 echo Generating WDI data library
 @echo on
-bin2coff wdi_data.7z wdi_data.lib %BIN2COFF_OPT%
+..\utilities\bin2coff wdi_data.7z wdi_data.lib %BIN2COFF_OPT%
 @echo off
 
 ::# DLL or static lib selection (must use concatenation)
