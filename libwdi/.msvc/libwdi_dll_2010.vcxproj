@@ -100,7 +100,7 @@
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff ..\..\libwdi-staging\wdi_data.7z "$(OutDir)wdi_data.lib" wdi_data</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -131,7 +131,7 @@
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff ..\..\libwdi-staging\wdi_data.7z "$(OutDir)wdi_data.lib" wdi_data 64bit</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -161,7 +161,7 @@
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib"</Command>
+..\utilities\bin2coff ..\..\libwdi-staging\wdi_data.7z "$(OutDir)wdi_data.lib" wdi_data</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -191,7 +191,7 @@
     <PreLinkEvent>
       <Message>Generating WDI data library</Message>
       <Command>cd $(ProjectDir)..
-..\utilities\bin2coff wdi_data.7z "$(OutDir)wdi_data.lib" 64bit</Command>
+..\utilities\bin2coff ..\..\libwdi-staging\wdi_data.7z "$(OutDir)wdi_data.lib" wdi_data 64bit</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

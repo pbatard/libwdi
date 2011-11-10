@@ -110,7 +110,7 @@ echo.
 ::# embedder.exe embedded.h
 echo Generating WDI data library
 @echo on
-..\utilities\bin2coff wdi_data.7z wdi_data.lib %BIN2COFF_OPT%
+..\utilities\bin2coff ..\..\libwdi-staging\wdi_data.7z wdi_data.lib wdi_data %BIN2COFF_OPT%
 @echo off
 
 ::# DLL or static lib selection (must use concatenation)
