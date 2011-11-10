@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* 
+/*
  * References:
  * http://www.vortex.masmcode.com/ (another bin2coff, without source)
  * http://msdn.microsoft.com/en-us/library/ms680198.aspx

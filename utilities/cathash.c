@@ -1,5 +1,5 @@
 /*
- * cathash v1.0: MS cat file compliant SHA-1 implementation, for PE and data files
+ * cathash v1.0: multiplatform MS CAT/Authenticode SHA-1 generation
  * Copyright (c) 2011 Pete Batard <pete@akeo.ie>
  *
  * based on PolarSSL/sha1.c - Copyright (c) 2006-2010, Brainspark B.V. (GPLv2+)
@@ -20,7 +20,9 @@
  */
 
 /*
- From http://msdn.microsoft.com/en-us/windows/hardware/gg463180.aspx:
+  From Windows Authenticode Portable Executable Signature Format:
+  http://msdn.microsoft.com/en-us/windows/hardware/gg463180.aspx
+
   1. Load the image header into memory.
   2. Initialize a hash algorithm context.
   3. Hash the image header from its base to immediately before the start of the checksum address,
@@ -411,7 +413,7 @@ static void sort(SORT_ITEM a[], size_t n)
 
     if ( b == NULL)
     {
-        if( ( b = (SORT_ITEM*) malloc( sizeof( SORT_ITEM ) * ( n/2 + 1 ) ) ) == NULL ) 
+        if( ( b = (SORT_ITEM*) malloc( sizeof( SORT_ITEM ) * ( n/2 + 1 ) ) ) == NULL )
         {
             fprintf( stderr, "error allocating sort memory - data will be left unsorted.\n");
             return;
@@ -422,7 +424,7 @@ static void sort(SORT_ITEM a[], size_t n)
     m = n >> 1;
 
     sort( a, m );
-    sort( &a[m], n - m ); 
+    sort( &a[m], n - m );
 
     for( i=0; i < m; i++ )
         SORT_COPY( &b[i], &a[i] );
@@ -612,7 +614,6 @@ main ( int argc, char** argv )
     GET_ULONG_LE( cert_table_size, buf, cert_table_entry + 4 );
 
     /* Compute header SHA-1, sans checksum and cert_table_entry */
-    p = 0;
     sha1_update( &ctx, buf, checksum_pos );
     p = checksum_pos + 4;
     sha1_update( &ctx, buf + p, cert_table_entry - p ) ;
