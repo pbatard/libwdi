@@ -4,8 +4,6 @@
  *
  * based on PolarSSL/sha1.c - Copyright (c) 2006-2010, Brainspark B.V. (GPLv2+)
  *   http://polarssl.org/trac/browser/trunk/library/sha1.c
- * based on crypto++/test.cpp - Copyright Wei Dai/MaidSafe (Public Domain)
- *   http://maidsafe-dht.googlecode.com/svn/trunk/src/maidsafe/cryptopp/test.cpp
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +17,46 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ From http://msdn.microsoft.com/en-us/windows/hardware/gg463180.aspx:
+  1. Load the image header into memory.
+  2. Initialize a hash algorithm context.
+  3. Hash the image header from its base to immediately before the start of the checksum address,
+     as specified in Optional Header Windows-Specific Fields.
+  4. Skip over the checksum, which is a 4-byte field.
+  5. Hash everything from the end of the checksum field to immediately before the start of the
+     Certificate Table entry, as specified in Optional Header Data Directories.
+  6. Get the Attribute Certificate Table address and size from the Certificate Table entry.
+     For details, see section 5.7 of the PE/COFF specification.
+  7. Exclude the Certificate Table entry from the calculation and hash everything from the end
+     of the Certificate Table entry to the end of image header, including Section Table (headers).
+     The Certificate Table entry is 8 bytes long, as specified in Optional Header Data Directories.
+  8. Create a counter called SUM_OF_BYTES_HASHED, which is not part of the signature. Set this
+     counter to the SizeOfHeaders field, as specified in Optional Header Windows-Specific Field.
+  9. Build a temporary table of pointers to all of the section headers in the image. The
+     NumberOfSections field of COFF File Header indicates how big the table should be. Do not
+     include any section headers in the table whose SizeOfRawData field is zero.
+ 10. Using the PointerToRawData field (offset 20) in the referenced SectionHeader structure as a
+     key, arrange the table's elements in ascending order. In other words, sort the section headers
+     in ascending order according to the disk-file offset of the sections.
+ 11. Walk through the sorted table, load the corresponding section into memory, and hash the entire
+     section. Use the SizeOfRawData field in the SectionHeader structure to determine the amount of
+     data to hash.
+ 12. Add the section’s SizeOfRawData value to SUM_OF_BYTES_HASHED.
+ 13. Repeat steps 11 and 12 for all of the sections in the sorted table.
+ 14. Create a value called FILE_SIZE, which is not part of the signature. Set this value to the
+     image’s file size, acquired from the underlying file system. If FILE_SIZE is greater than
+     SUM_OF_BYTES_HASHED, the file contains extra data that must be added to the hash.
+     This data begins at the SUM_OF_BYTES_HASHED file offset, and its length is:
+       (File Size) – ((Size of AttributeCertificateTable) + SUM_OF_BYTES_HASHED)
+     Note: The size of Attribute Certificate Table is specified in the second ULONG value in the
+     Certificate Table entry (32 bit: offset 132, 64 bit: offset 148) in Optional Header Data
+     Directories.
+     IMPORTANT NOTE: Microsoft's Wintrust.dll algorithm (CryptCATAdminCalcHashFromFileHandle) pads
+     this data using zeros to the next 8 bytes boundary.
+ 15. Finalize the hash algorithm context.
  */
 
 #include <string.h>
@@ -373,7 +411,11 @@ static void sort(SORT_ITEM a[], size_t n)
 
     if ( b == NULL)
     {
-        b = (SORT_ITEM*) malloc( sizeof( SORT_ITEM ) * ( n/2 + 1 ) );
+        if( ( b = (SORT_ITEM*) malloc( sizeof( SORT_ITEM ) * ( n/2 + 1 ) ) ) == NULL ) 
+        {
+            fprintf( stderr, "error allocating sort memory - data will be left unsorted.\n");
+            return;
+        }
         need_free = 1;
     }
 
@@ -393,36 +435,6 @@ static void sort(SORT_ITEM a[], size_t n)
 
     if( need_free )
         free( b );
-}
-
-/* requires the range table to be sorted by offset with no overlapping or contiguous ranges */
-static size_t skipranges( FILE* f, uint8_t buf[], size_t n, range_t range[], size_t nranges )
-{
-    size_t i, p, wtop, wpos, toread;
-    size_t r = n;
-
-    for( i = 0; i < nranges; i++ )
-    {
-        wtop = ftell(f);
-        wpos = wtop - r;
-        if( ( range[i].offset < wpos ) || ( range[i].offset > wtop ) )
-            continue;
-
-        p = range[i].offset - wpos;
-        if( p + range[i].size > r )
-        {
-            fseek( f, range[i].offset + range[i].size, SEEK_SET );
-            toread = r - p;
-        }
-        else
-        {
-            toread = range[i].size;
-            memmove( &buf[p], &buf[p + toread], r - p - toread );
-        }
-        r += fread( &buf[r - toread], 1, toread, f ) - toread;
-    }
-
-    return r;
 }
 
 /* If running on Windows, we can validate our computation against the native one */
@@ -505,6 +517,23 @@ out:
 }
 #endif
 
+static __inline int hash_range( sha1_context* ctx, FILE* f, uint8_t* buf, size_t bufsize, size_t start, size_t end )
+{
+    size_t n, p = start;
+
+    fseek( f, (long)p , SEEK_SET );
+
+    while( ( p < end) && ( ( n = fread( buf, 1, bufsize, f ) ) > 0 ) )
+    {
+        if( p + n >= end )
+            n = end - p;
+        sha1_update( ctx, buf, n );
+        p += n;
+    }
+
+    return( ferror( f ) != 0 );
+}
+
 /*
  * output = CAT SHA-1( file contents )
  */
@@ -514,15 +543,17 @@ __cdecl
 #endif
 main ( int argc, char** argv )
 {
+    const uint8_t zero_padding[8] = { 0 };
     FILE *f;
-    size_t i, n, nb_ranges = 0;
+    size_t i, p, n, file_size, sum_of_bytes_hashed, section_pos, pad_start;
     sha1_context ctx;
     uint8_t buf[0x400];
     uint8_t output[20];
-    uint16_t optional_header_magic;
-    uint32_t coff_pos, optional_header_pos, checksum_pos;
-    uint32_t cert_table_directory, cert_table_pos, cert_table_size;
-    range_t range[3];
+    uint16_t optional_header_magic, optional_header_size, num_sections, hash_num_sections;
+    uint32_t pe_pos, coff_pos, optional_header_pos, checksum_pos, pe_signature;
+    uint32_t header_size, cert_table_entry, cert_table_size;
+    uint32_t pointer_to_raw_data, size_of_raw_data;
+    range_t* section = NULL;
 
     if( argc < 2 )
     {
@@ -542,59 +573,112 @@ main ( int argc, char** argv )
         return( 1 );
     }
 
-    /* PE images have some data sections skipped from hash generation */
-    if( fread( buf, 1, 0x40, f ) == 0x40 )
-    {
-        if( ( buf[0] != 'M' ) || ( buf[1] != 'Z' ) )
-            goto sha1;
+    fseek( f, 0, SEEK_END );
+    file_size = (size_t) ftell( f );
+    fseek( f, 0, SEEK_SET );
 
-        GET_USHORT_LE( coff_pos, buf, 0x3c );
-        optional_header_pos = coff_pos + 0x18;
-        fseek( f, optional_header_pos, SEEK_SET );
-
-        if( fread( buf, 1, 0xa0, f ) != 0xa0 )
-            goto sha1;
-
-        GET_USHORT_LE( optional_header_magic, buf, 0 );
-        if( ( optional_header_magic != 0x10b ) && ( optional_header_magic != 0x20b ) )
-            goto sha1;
-
-        checksum_pos = optional_header_pos + 0x40;
-
-        cert_table_directory = optional_header_magic == 0x10b ? 0x80 : 0x90;
-        GET_ULONG_LE( cert_table_pos, buf, cert_table_directory );
-        GET_ULONG_LE( cert_table_size, buf, cert_table_directory + 4 );
-
-        range[nb_ranges].offset = optional_header_pos + cert_table_directory;
-        range[nb_ranges++].size = 8;
-        range[nb_ranges].offset = checksum_pos;
-        range[nb_ranges++].size = 4;
-        range[nb_ranges].offset = cert_table_pos;
-        range[nb_ranges++].size = cert_table_size;
-
-        sort(range, nb_ranges);
-    }
-
-sha1:
-    fseek(f, 0, SEEK_SET);
     sha1_starts( &ctx );
 
-    while( ( n = fread( buf, 1, sizeof( buf ), f ) ) > 0 )
+    n = fread( buf, 1, sizeof( buf ), f );
+    if( ferror( f ) != 0 )
+        goto out;
+
+    /* DOS stub */
+    if( n < 0x3c + 2 )
+        goto data_sha1;
+    GET_USHORT_LE( pe_pos, buf, 0x3c );
+
+    /* PE + COFF header */
+    if( n < pe_pos + 4 + 20 )
+        goto data_sha1;
+    GET_ULONG_BE( pe_signature, buf, pe_pos );
+    if ( pe_signature != 0x50450000 )       /* "PE\0\0" */
+        goto data_sha1;
+
+    coff_pos = pe_pos + 4;
+    GET_USHORT_LE( num_sections, buf, coff_pos + 2 );
+    GET_USHORT_LE( optional_header_size, buf, coff_pos + 16 );
+
+    /* Optional header */
+    optional_header_pos = coff_pos + 20;
+    if ( n < optional_header_pos + optional_header_size )
+        goto data_sha1;
+    GET_USHORT_LE( optional_header_magic, buf, optional_header_pos );
+    if( ( optional_header_magic != 0x10b ) && ( optional_header_magic != 0x20b ) )
+        goto data_sha1;
+    GET_ULONG_LE( header_size, buf, optional_header_pos + 60 );
+    checksum_pos = optional_header_pos + 64;
+    cert_table_entry = optional_header_pos + ( optional_header_magic == 0x10b ? 128 : 144 );
+    GET_ULONG_LE( cert_table_size, buf, cert_table_entry + 4 );
+
+    /* Compute header SHA-1, sans checksum and cert_table_entry */
+    p = 0;
+    sha1_update( &ctx, buf, checksum_pos );
+    p = checksum_pos + 4;
+    sha1_update( &ctx, buf + p, cert_table_entry - p ) ;
+    if( hash_range( &ctx, f, buf, sizeof(buf), cert_table_entry  + 8, header_size ) )
+        goto out;
+    sum_of_bytes_hashed = header_size;
+
+    /* Read COFF section headers */
+    section_pos = optional_header_pos + ( ( optional_header_magic == 0x10b ) ? 224 : 240 );
+    fseek( f, (long)section_pos, SEEK_SET );
+    section = (range_t*) malloc( sizeof(range_t) * num_sections );
+    if( section == NULL )
+        goto out;
+
+    hash_num_sections = 0;
+    for( i = 0; i < num_sections; i++ )
     {
-        n = skipranges( f, buf, n, range, nb_ranges);
-        if ( n > 0 )
-            sha1_update( &ctx, buf, n );
+        fread( buf, 1, 40, f );
+        if( ferror( f ) != 0 )
+            goto out;
+        GET_ULONG_LE( size_of_raw_data, buf, 16 );
+        GET_ULONG_LE( pointer_to_raw_data, buf, 20 );
+        if( size_of_raw_data == 0 )
+            continue;
+        section[hash_num_sections].offset = pointer_to_raw_data;
+        section[hash_num_sections++].size = size_of_raw_data;
     }
 
+    sort(section, hash_num_sections);
+
+    /* Hash each COFF section */
+    for( i = 0; i < hash_num_sections; i++ )
+    {
+        if( hash_range( &ctx, f, buf, sizeof(buf), section[i].offset, section[i].offset + section[i].size ) )
+            goto out;
+        sum_of_bytes_hashed += section[i].size;
+    }
+
+    /* Hash extra data (with 8 byte padding) */
+    if (file_size > sum_of_bytes_hashed + cert_table_size)
+    {
+        if( hash_range( &ctx, f, buf, sizeof(buf), sum_of_bytes_hashed, file_size - cert_table_size ) )
+            goto out;
+        pad_start = ( file_size - cert_table_size ) % 8;
+        if( pad_start != 0)
+            sha1_update( &ctx, zero_padding + pad_start, 8 - pad_start);
+    }
+
+    goto out;
+
+data_sha1:
+    /* Regular SHA-1 for non PE images */
+    fseek( f, 0, SEEK_SET );
+    while( ( n = fread( buf, 1, sizeof( buf ), f ) ) > 0 )
+         sha1_update( &ctx, buf, n );
+
+out:
+    free( section );
+    sha1_finish( &ctx, output );
     if( ferror( f ) != 0 )
     {
-        fclose( f );
         fprintf( stderr, "error reading '%s': %s\n", argv[1], strerror( errno ) );
+        fclose( f );
         return( 1 );
     }
-
     fclose( f );
-    sha1_finish( &ctx, output );
 
 #if defined( VALIDATE_HASH ) && defined( _WIN32 )
     if( !ValidateHash( output, argv[1] ) )
