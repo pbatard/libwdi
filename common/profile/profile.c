@@ -486,7 +486,7 @@ static long parse_line(char *line, struct parse_state *state)
 	if (!cp)
 		return PROF_RELATION_SYNTAX;
 	if (cp == tag)
-	    return PROF_RELATION_SYNTAX;
+		return PROF_RELATION_SYNTAX;
 	*cp = '\0';
 	if (*tag == '"') {
 		tag++;
@@ -559,7 +559,7 @@ static int need_double_quotes(char *str)
 	if (isspace((int) (*str)) ||isspace((int) (*(str + strlen(str) - 1))))
 		return 1;
 	if (strchr(str, '\n') || strchr(str, '\t') || strchr(str, '\b') ||
-	    strchr(str, ' ') || strchr(str, '#') || strchr(str, ';'))
+		strchr(str, ' ') || strchr(str, '#') || strchr(str, ';'))
 		return 1;
 	return 0;
 }
@@ -729,11 +729,11 @@ void profile_free_node(struct profile_node *node)
 #define strdup MYstrdup
 static char *MYstrdup (const char *s)
 {
-    size_t sz = strlen(s) + 1;
-    char *p = malloc(sz);
-    if (p != 0)
+	size_t sz = strlen(s) + 1;
+	char *p = malloc(sz);
+	if (p != 0)
 	memcpy(p, s, sz);
-    return p;
+	return p;
 }
 
 /*
@@ -742,27 +742,27 @@ static char *MYstrdup (const char *s)
 long profile_create_node(const char *name, const char *value,
 			      struct profile_node **ret_node)
 {
-	struct profile_node *new;
+	struct profile_node *node;
 
-	new = malloc(sizeof(struct profile_node));
-	if (!new)
+	node = malloc(sizeof(struct profile_node));
+	if (!node)
 		return ENOMEM;
-	memset(new, 0, sizeof(struct profile_node));
-	new->name = strdup(name);
-	if (new->name == 0) {
-	    profile_free_node(new);
-	    return ENOMEM;
+	memset(node, 0, sizeof(struct profile_node));
+	node->name = strdup(name);
+	if (node->name == 0) {
+		profile_free_node(node);
+		return ENOMEM;
 	}
 	if (value) {
-		new->value = strdup(value);
-		if (new->value == 0) {
-		    profile_free_node(new);
-		    return ENOMEM;
+		node->value = strdup(value);
+		if (node->value == 0) {
+			profile_free_node(node);
+			return ENOMEM;
 		}
 	}
-	new->magic = PROF_MAGIC_NODE;
+	node->magic = PROF_MAGIC_NODE;
 
-	*ret_node = new;
+	*ret_node = node;
 	return 0;
 }
 
@@ -807,7 +807,7 @@ long profile_add_node(struct profile_node *section, const char *name,
 			   const char *value, struct profile_node **ret_node)
 {
 	long retval;
-	struct profile_node *p, *last, *new;
+	struct profile_node *p, *last, *node;
 
 	CHECK_MAGIC(section);
 
@@ -825,22 +825,22 @@ long profile_add_node(struct profile_node *section, const char *name,
 		if (cmp > 0)
 			break;
 	}
-	retval = profile_create_node(name, value, &new);
+	retval = profile_create_node(name, value, &node);
 	if (retval)
 		return retval;
-	new->group_level = section->group_level+1;
-	new->deleted = 0;
-	new->parent = section;
-	new->prev = last;
-	new->next = p;
+	node->group_level = section->group_level+1;
+	node->deleted = 0;
+	node->parent = section;
+	node->prev = last;
+	node->next = p;
 	if (p)
-		p->prev = new;
+		p->prev = node;
 	if (last)
-		last->next = new;
+		last->next = node;
 	else
-		section->first_child = new;
+		section->first_child = node;
 	if (ret_node)
-		*ret_node = new;
+		*ret_node = node;
 	return 0;
 }
 
@@ -884,7 +884,7 @@ long profile_find_node(struct profile_node *section, const char *name,
 				continue;
 		}
 		if (p->deleted)
-		    continue;
+			continue;
 		/* A match! */
 		if (node)
 			*node = p;
@@ -1001,7 +1001,7 @@ long profile_node_iterator(void **iter_p, struct profile_node **ret_node,
 	if (!iter || iter->magic != PROF_MAGIC_ITERATOR)
 		return PROF_MAGIC_ITERATOR;
 	if (iter->file && iter->file->magic != PROF_MAGIC_FILE)
-	    return PROF_MAGIC_FILE;
+		return PROF_MAGIC_FILE;
 	/*
 	 * If the file has changed, then the node pointer is invalid,
 	 * so we'll have search the file again looking for it.
@@ -1013,31 +1013,31 @@ long profile_node_iterator(void **iter_p, struct profile_node **ret_node,
 		iter->node = 0;
 	}
 	if (iter->node && iter->node->magic != PROF_MAGIC_NODE) {
-	    return PROF_MAGIC_NODE;
+		return PROF_MAGIC_NODE;
 	}
 get_new_file:
 	if (iter->node == 0) {
 		if (iter->file == 0 ||
-		    (iter->flags & PROFILE_ITER_FINAL_SEEN)) {
-			profile_iterator_free(iter_p);
-			if (ret_node)
-				*ret_node = 0;
-			if (ret_name)
-				*ret_name = 0;
-			if (ret_value)
-				*ret_value =0;
-			return 0;
+			(iter->flags & PROFILE_ITER_FINAL_SEEN)) {
+				profile_iterator_free(iter_p);
+				if (ret_node)
+					*ret_node = 0;
+				if (ret_name)
+					*ret_name = 0;
+				if (ret_value)
+					*ret_value =0;
+				return 0;
 		}
 		if ((retval = profile_update_file(iter->file))) {
-		    if (retval == ENOENT || retval == EACCES) {
-			/* XXX memory leak? */
-			iter->file = iter->file->next;
-			skip_num = 0;
-			goto get_new_file;
-		    } else {
-			profile_iterator_free(iter_p);
-			return retval;
-		    }
+			if (retval == ENOENT || retval == EACCES) {
+				/* XXX memory leak? */
+				iter->file = iter->file->next;
+				skip_num = 0;
+				goto get_new_file;
+			} else {
+				profile_iterator_free(iter_p);
+				return retval;
+			}
 		}
 		iter->file_serial = iter->file->upd_serial;
 		/*
@@ -1074,10 +1074,10 @@ get_new_file:
 		if (iter->name && strcmp(p->name, iter->name))
 			continue;
 		if ((iter->flags & PROFILE_ITER_SECTIONS_ONLY) &&
-		    p->value)
+			p->value)
 			continue;
 		if ((iter->flags & PROFILE_ITER_RELATIONS_ONLY) &&
-		    !p->value)
+			!p->value)
 			continue;
 		if (skip_num > 0) {
 			skip_num--;
@@ -1197,20 +1197,20 @@ profile_get_integer(profile_t profile, const char *name, const char *subname,
 		return retval;
 
 	if (value[0] == 0)
-	    /* Empty string is no good.  */
-	    return PROF_BAD_INTEGER;
+		/* Empty string is no good.  */
+		return PROF_BAD_INTEGER;
 	errno = 0;
 	ret_long = strtol (value, &end_value, 10);
 
 	/* Overflow or underflow.  */
 	if ((ret_long == LONG_MIN || ret_long == LONG_MAX) && errno != 0)
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 	/* Value outside "int" range.  */
 	if ((long) (int) ret_long != ret_long)
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 	/* Garbage in string.  */
 	if (end_value != value + strlen (value))
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 
 
 	*ret_int = ret_long;
@@ -1239,8 +1239,8 @@ profile_get_uint(profile_t profile, const char *name, const char *subname,
 		return retval;
 
 	if (value[0] == 0)
-	    /* Empty string is no good.  */
-	    return PROF_BAD_INTEGER;
+		/* Empty string is no good.  */
+		return PROF_BAD_INTEGER;
 	errno = 0;
 	/* Hex support */
 	if ((value[0] == '0') && (value[1] == 'x')) {
@@ -1251,49 +1251,49 @@ profile_get_uint(profile_t profile, const char *name, const char *subname,
 
 	/* Overflow or underflow.  */
 	if ((ret_long == ULONG_MAX) && errno != 0)
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 	/* Value outside "int" range.  */
 	if ((unsigned long) (unsigned int) ret_long != ret_long)
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 	/* Garbage in string.  */
 	if (end_value != value + strlen (value))
-	    return PROF_BAD_INTEGER;
+		return PROF_BAD_INTEGER;
 
 	*ret_int = ret_long;
 	return 0;
 }
 
 static const char *const conf_yes[] = {
-    "y", "yes", "true", "t", "1", "on",
-    0,
+	"y", "yes", "true", "t", "1", "on",
+	0,
 };
 
 static const char *const conf_no[] = {
-    "n", "no", "false", "nil", "0", "off",
-    0,
+	"n", "no", "false", "nil", "0", "off",
+	0,
 };
 
 static long
 profile_parse_boolean(const char *s, int *ret_boolean)
 {
-    const char *const *p;
+	const char *const *p;
 
-    if (ret_boolean == NULL)
-    	return PROF_EINVAL;
+	if (ret_boolean == NULL)
+		return PROF_EINVAL;
 
-    for(p=conf_yes; *p; p++) {
+	for(p=conf_yes; *p; p++) {
 		if (!strcasecmp(*p,s)) {
 			*ret_boolean = 1;
-	    	return 0;
+			return 0;
 		}
-    }
+	}
 
-    for(p=conf_no; *p; p++) {
+	for(p=conf_no; *p; p++) {
 		if (!strcasecmp(*p,s)) {
 			*ret_boolean = 0;
 			return 0;
 		}
-    }
+	}
 
 	return PROF_BAD_BOOLEAN;
 }
@@ -1432,18 +1432,234 @@ const char* profile_errtostr(long error_code)
 
 
 #ifdef PROFILE_DEBUG
-
 /*
- * test_profile.c --- testing program for the profile routine
+ * These functions --- init_list(), end_list(), and add_to_list() are
+ * internal functions used to build up a null-terminated char ** list
+ * of strings to be returned by functions like profile_get_values.
+ *
+ * The profile_string_list structure is used for internal booking
+ * purposes to build up the list, which is returned in *ret_list by
+ * the end_list() function.
+ *
+ * The publicly exported interface for freeing char** list is
+ * profile_free_list().
  */
 
-#include "profile_helpers.h"
+struct profile_string_list {
+	char	**list;
+	int	num;
+	int	max;
+};
 
-const char *program_name = "test_profile";
+/*
+ * Initialize the string list abstraction.
+ */
+static long init_list(struct profile_string_list *list)
+{
+	list->num = 0;
+	list->max = 10;
+	list->list = malloc(list->max * sizeof(char *));
+	if (list->list == 0)
+		return ENOMEM;
+	list->list[0] = 0;
+	return 0;
+}
 
-#define PRINT_VALUE	1
+/*
+ * Free any memory left over in the string abstraction, returning the
+ * built up list in *ret_list if it is non-null.
+ */
+static void end_list(struct profile_string_list *list, char ***ret_list)
+{
+	char	**cp;
+
+	if (list == 0)
+		return;
+
+	if (ret_list) {
+		*ret_list = list->list;
+		return;
+	} else {
+		for (cp = list->list; *cp; cp++)
+			free(*cp);
+		free(list->list);
+	}
+	list->num = list->max = 0;
+	list->list = 0;
+}
+
+/*
+ * Add a string to the list.
+ */
+static long add_to_list(struct profile_string_list *list, char *str)
+{
+	char 	**newlist;
+	int	newmax;
+
+	if (list->num+1 >= list->max) {
+		newmax = list->max + 10;
+		newlist = realloc(list->list, newmax * sizeof(char *));
+		if (newlist == 0)
+			return ENOMEM;
+		list->max = newmax;
+		list->list = newlist;
+	}
+
+	list->list[list->num++] = str;
+	list->list[list->num] = 0;
+	return 0;
+}
+
+/*
+ * Return TRUE if the string is already a member of the list.
+ */
+static int is_list_member(struct profile_string_list *list, const char *str)
+{
+	char **cpp;
+
+	if (!list->list)
+		return 0;
+
+	for (cpp = list->list; *cpp; cpp++) {
+		if (!strcmp(*cpp, str))
+			return 1;
+	}
+	return 0;
+}
+
+/*
+ * This function frees a null-terminated list as returned by
+ * profile_get_values.
+ */
+void profile_free_list(char **list)
+{
+	char	**cp;
+
+	if (list == 0)
+		return;
+
+	for (cp = list; *cp; cp++)
+		free(*cp);
+	free(list);
+}
+
+long profile_get_values(profile_t profile, const char *const *names,
+						char ***ret_values)
+{
+	long		retval;
+	void			*state;
+	char			*value;
+	struct profile_string_list values;
+
+	if ((retval = profile_iterator_create(profile, names,
+		PROFILE_ITER_RELATIONS_ONLY,
+		&state)))
+		return retval;
+
+	if ((retval = init_list(&values)))
+		return retval;
+
+	do {
+		if ((retval = profile_iterator(&state, 0, &value)))
+			goto cleanup;
+		if (value)
+			add_to_list(&values, value);
+	} while (state);
+
+	if (values.num == 0) {
+		retval = PROF_NO_RELATION;
+		goto cleanup;
+	}
+
+	end_list(&values, ret_values);
+	return 0;
+
+cleanup:
+	end_list(&values, 0);
+	return retval;
+}
+
+/*
+ * This function will return the list of the names of subections in the
+ * under the specified section name.
+ */
+long profile_get_subsection_names(profile_t profile, const char **names,
+								  char ***ret_names)
+{
+	long		retval;
+	void			*state;
+	char			*name;
+	struct profile_string_list values;
+
+	if ((retval = profile_iterator_create(profile, names,
+		PROFILE_ITER_LIST_SECTION | PROFILE_ITER_SECTIONS_ONLY,
+		&state)))
+		return retval;
+
+	if ((retval = init_list(&values)))
+		return retval;
+
+	do {
+		if ((retval = profile_iterator(&state, &name, 0)))
+			goto cleanup;
+		if (name)
+			add_to_list(&values, name);
+	} while (state);
+
+	end_list(&values, ret_names);
+	return 0;
+
+cleanup:
+	end_list(&values, 0);
+	return retval;
+}
+
+/*
+ * This function will return the list of the names of relations in the
+ * under the specified section name.
+ */
+long profile_get_relation_names(profile_t profile, const char **names,
+								char ***ret_names)
+{
+	long	retval;
+	void	*state;
+	char	*name;
+	struct	profile_string_list values;
+
+	if ((retval = profile_iterator_create(profile, names,
+		PROFILE_ITER_LIST_SECTION | PROFILE_ITER_RELATIONS_ONLY,
+		&state)))
+		return retval;
+
+	if ((retval = init_list(&values)))
+		return retval;
+
+	do {
+		if ((retval = profile_iterator(&state, &name, 0)))
+			goto cleanup;
+		if (name) {
+			if (is_list_member(&values, name))
+				free(name);
+			else
+				add_to_list(&values, name);
+		}
+	} while (state);
+
+	end_list(&values, ret_names);
+	return 0;
+
+cleanup:
+	end_list(&values, 0);
+	return retval;
+}
+
+void profile_release_string(char *str)
+{
+	free(str);
+}
+
+#define PRINT_VALUE		1
 #define PRINT_VALUES	2
-
 void do_cmd(profile_t profile, char **argv)
 {
 	long	retval;
@@ -1490,32 +1706,14 @@ void do_cmd(profile_t profile, char **argv)
 	} else if (!strcmp(cmd, "dump")) {
 		retval = profile_write_tree_file
 			(profile->first_file->root, stdout);
-#if 0
-	} else if (!strcmp(cmd, "clear")) {
-		retval = profile_clear_relation(profile, names);
-	} else if (!strcmp(cmd, "update")) {
-		retval = profile_update_relation(profile, names+2,
-						 *names, *(names+1));
-#endif
 	} else if (!strcmp(cmd, "verify")) {
 		retval = profile_verify_node
 			(profile->first_file->root);
-#if 0
-	} else if (!strcmp(cmd, "rename_section")) {
-		retval = profile_rename_section(profile, names+1, *names);
-	} else if (!strcmp(cmd, "add")) {
-		value = *names;
-		if (strcmp(value, "NULL") == 0)
-			value = NULL;
-		retval = profile_add_relation(profile, names+1, value);
-	} else if (!strcmp(cmd, "flush")) {
-		retval = profile_flush(profile);
-#endif
 	} else {
 		printf("Invalid command.\n");
 	}
 	if (retval) {
-		fprintf(stderr, "error cmd='%s' error:%s\n", cmd, profile_errtostr(retval));
+		fprintf(stderr, "error cmd='%s': %s\n", cmd, profile_errtostr(retval));
 		print_status = 0;
 	}
 	switch (print_status) {
@@ -1537,44 +1735,113 @@ void syntax_err_report(const char *filename, long err, int line_num)
 	exit(1);
 }
 
-#if 0
 const char *default_str = "[foo]\n\tbar=quux\n\tsub = {\n\t\twin = true\n}\n";
+
+/*
+ * This function sets the value of the pseudo file "<default>".  If
+ * the file "<default>" had previously been passed to profile_init(),
+ * then def_string parameter will be parsed and used as the profile
+ * information for the "<default>" file.
+ */
+long profile_set_default(profile_t profile, const char *def_string)
+{
+	struct parse_state	state;
+	prf_file_t		prf;
+	long		retval;
+	const char		*in;
+	char			*line, *p, *end;
+	int			line_size, len;
+
+	if (!def_string || !profile || profile->magic != PROF_MAGIC_PROFILE)
+		return PROF_MAGIC_PROFILE;
+
+	for (prf = profile->first_file; prf; prf = prf->next) {
+		if (strcmp(prf->filespec, default_filename) == 0)
+			break;
+	}
+	if (!prf)
+		return 0;
+
+	if (prf->root) {
+		profile_free_node(prf->root);
+		prf->root = 0;
+	}
+
+	memset(&state, 0, sizeof(struct parse_state));
+	retval = profile_create_node("(root)", 0, &state.root_section);
+	if (retval)
+		return retval;
+
+	line = 0;
+	line_size = 0;
+	in = def_string;
+	while (*in) {
+		end = strchr(in, '\n');
+		len = end ? (end - in) : (int) strlen(in);
+		if (len >= line_size) {
+			line_size = len+1;
+			p = realloc(line, line_size);
+			if (!p) {
+				retval = ENOMEM;
+				goto errout;
+			}
+			line = p;
+		}
+		memcpy(line, in, len);
+		line[len] = 0;
+		retval = parse_line(line, &state);
+		if (retval) {
+		errout:
+			if (syntax_err_cb)
+				(syntax_err_cb)(prf->filespec, retval,
+						state.line_num);
+			free(line);
+			if (prf->root)
+				profile_free_node(prf->root);
+			return retval;
+		}
+		if (!end)
+			break;
+		in = end+1;
+	}
+	prf->root = state.root_section;
+	free(line);
+
+	return 0;
+}
 
 int main(int argc, char **argv)
 {
-    profile_t	profile;
-    long	retval;
-    char	*cmd;
+	profile_t	profile;
+	long	retval;
+	size_t	i;
 
-    if (argc < 2) {
-	    fprintf(stderr, "Usage: %s filename [cmd argset]\n", program_name);
-	    exit(1);
-    }
+	if (argc < 2) {
+		for (i=strlen(argv[0]); i; i--)
+			if ( (argv[0][i-1] == '\\') || (argv[0][i-1] == '/') )
+				break;
+		fprintf(stderr, "\nUsage: %s filename [cmd argset]\n", &argv[0][i]);
+		fprintf(stderr, "<cmd>: [query, query1, list_sections, list_relations, dump, verify]\n");
+		fprintf(stderr, "   eg: '%s config.ini section subsection parameter_name'\n", &argv[0][i]);
+		exit(1);
+	}
 
-    initialize_prof_error_table();
+	profile_set_syntax_err_cb(syntax_err_report);
 
-    profile_set_syntax_err_cb(syntax_err_report);
+	retval = profile_open(argv[1], &profile);
+	if (retval) {
+		fprintf(stderr, "error while initializing profile: %s\n", profile_errtostr(retval));
+		exit(1);
+	}
+	retval = profile_set_default(profile, default_str);
+	if (retval) {
+		fprintf(stderr, "error while setting default: %s\n", profile_errtostr(retval));
+		exit(1);
+	}
 
-    retval = profile_init_path(argv[1], &profile);
-    if (retval) {
-	com_err(program_name, retval, "while initializing profile");
-	exit(1);
-    }
-    retval = profile_set_default(profile, default_str);
-    if (retval) {
-	com_err(program_name, retval, "while setting default");
-	exit(1);
-    }
+	do_cmd(profile, argv+2);
+	profile_close(profile);
 
-    cmd = *(argv+2);
-    if (!cmd || !strcmp(cmd, "batch"))
-	    do_batchmode(profile);
-    else
-	    do_cmd(profile, argv+2);
-    profile_release(profile);
-
-    return 0;
+	return 0;
 }
-#endif
-
 #endif
