@@ -1574,7 +1574,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDOK:			// close application
 		case IDCANCEL:
+			PostQuitMessage(0);
 			wdi_destroy_list(list);
+			destroy_all_tooltips();
 			EndDialog(hDlg, 0);
 			break;
 		// Main Menus
@@ -1641,12 +1643,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_CLOSE:
 		PostQuitMessage(0);
-		destroy_all_tooltips();
 		break;
-
-	default:
-		return (INT_PTR)FALSE;
-
 	}
 	return (INT_PTR)FALSE;
 }
@@ -1693,6 +1690,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Create the main Window
 	if ( (hDlg = CreateDialogA(hInstance, "MAIN_DIALOG", NULL, main_callback)) == NULL ) {
 		MessageBoxA(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
+		goto out;
 	}
 	ShowWindow(hDlg, SW_SHOWNORMAL);
 	UpdateWindow(hDlg);
@@ -1723,6 +1721,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		DispatchMessage(&msg);
 	}
 
+out:
 	CloseHandle(mutex);
 
 	return 0;

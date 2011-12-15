@@ -506,6 +506,7 @@ out:
  * Convert various installation errors to their WDI counterpart
  */
 static __inline int process_error(DWORD r, char* path) {
+	// TODO: use facility and stuff for better handling of these errors
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL or hardware_id empty string
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf

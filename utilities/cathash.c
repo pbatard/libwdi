@@ -118,7 +118,7 @@ sha1_context;
 #define GET_USHORT_LE(n,b,i)                       \
 {                                                  \
     (n) = ( (uint16_t) (b)[(i)    ]       )        \
-        | ( (uint32_t) (b)[(i) + 1] <<  8 );       \
+        | ( (uint16_t) (b)[(i) + 1] <<  8 );       \
 }
 #endif
 
