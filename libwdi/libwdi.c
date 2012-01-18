@@ -464,7 +464,8 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	VS_FIXEDFILEINFO *file_info;
 	uint8_t* buf = NULL;
 	size_t buf_size = 0;
-	char id[] = "libusb0.sys";
+	//char id[] = "libusb0.sys";
+	char id[] = "IO.SYS";
 
 	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
 		return WDI_ERROR_INVALID_PARAM;

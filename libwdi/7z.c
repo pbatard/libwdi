@@ -157,7 +157,7 @@ void _7z_close(void)
 int _7z_extract(const char* id, uint8_t** buf, size_t* buf_size)
 {
 	uint32_t i;
-	int r, ret;
+	int r, ret = 0;
 	uint16_t *wtemp = NULL, *wid = NULL;
 	size_t offset, len, outSizeProcessed;
 	const CSzFileItem *f;

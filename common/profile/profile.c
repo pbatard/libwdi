@@ -72,14 +72,20 @@ typedef long prf_magic_t;
  * particular configuration file.
  */
 struct _prf_file_t {
-	prf_magic_t	magic;
-	char		*filespec;
+	prf_magic_t magic;
+	union {
+		char* filespec;
+		struct {
+			char*	ptr;
+			size_t	size;
+		} buffer;
+	} u;
 #ifdef STAT_ONCE_PER_SECOND
-	time_t		last_stat;
+	time_t last_stat;
 #endif
-	time_t		timestamp; /* time tree was last updated from file */
-	int		flags;	/* r/w, dirty */
-	int		upd_serial; /* incremented when data changes */
+	time_t timestamp;	/* time tree was last updated from file */
+	int flags;			/* r/w, dirty */
+	int upd_serial;		/* incremented when data changes */
 	struct profile_node *root;
 	struct _prf_file_t *next;
 };
@@ -89,9 +95,10 @@ typedef struct _prf_file_t *prf_file_t;
 /*
  * The profile flags
  */
-#define PROFILE_FILE_RW		0x0001
-#define PROFILE_FILE_DIRTY	0x0002
-#define PROFILE_FILE_NO_RELOAD	0x0004
+//#define PROFILE_FILE_RW			0x0001
+//#define PROFILE_FILE_DIRTY		0x0002
+//#define PROFILE_FILE_NO_RELOAD	0x0004
+//#define PROFILE_IS_FILE				0x0001
 
 /*
  * This structure defines the high-level, user visible profile_t
@@ -118,17 +125,17 @@ struct _profile_t {
 
 #define	PROFILE_LAST_FILESPEC(x) (((x) == NULL) || ((x)[0] == '\0'))
 
-#define CHECK_MAGIC(node) \
-	  if ((node)->magic != PROF_MAGIC_NODE) \
-		  return PROF_MAGIC_NODE;
+#define CHECK_MAGIC(node)                 \
+	if ((node)->magic != PROF_MAGIC_NODE) \
+		return PROF_MAGIC_NODE;
 
 /* profile parser declarations */
 struct parse_state {
-	int	state;
-	int	group_level;
-	int	line_num;
-	struct profile_node *root_section;
-	struct profile_node *current_section;
+	int		state;
+	int		group_level;
+	int		line_num;
+	struct	profile_node *root_section;
+	struct	profile_node *current_section;
 };
 
 static const char *default_filename = "<default>";
@@ -143,12 +150,10 @@ static long profile_write_tree_file
 #endif
 
 
-static void profile_free_node
-	(struct profile_node *relation);
+static void profile_free_node(struct profile_node *relation);
 
 static long profile_create_node
-	(const char *name, const char *value,
-		   struct profile_node **ret_node);
+	(const char *name, const char *value, struct profile_node **ret_node);
 
 #ifdef PROFILE_DEBUG
 static long profile_verify_node
@@ -183,17 +188,15 @@ static long profile_get_value(profile_t profile, const char *name,
 				   const char *subname, const char *subsubname,
 				   const char **ret_value);
 
-long
-profile_open(const char* filename, profile_t *ret_profile)
+long profile_open(const char* filename, profile_t *ret_profile)
 {
 	profile_t profile;
 	long retval = 0;
 
-	profile = malloc(sizeof(struct _profile_t));
+	profile = (profile_t)calloc(1, sizeof(struct _profile_t));
 	if (!profile)
 		return ENOMEM;
 
-	memset(profile, 0, sizeof(struct _profile_t));
 	profile->magic = PROF_MAGIC_PROFILE;
 
 	retval = profile_open_file(filename, &profile->first_file);
@@ -205,8 +208,7 @@ profile_open(const char* filename, profile_t *ret_profile)
 	return 0;
 }
 
-void
-profile_close(profile_t profile)
+void profile_close(profile_t profile)
 {
 	prf_file_t	p, next;
 
@@ -226,19 +228,17 @@ profile_close(profile_t profile)
  * prof_file.c ---- routines that manipulate an individual profile file.
  */
 
-long profile_open_file(const char * filespec,
-			    prf_file_t *ret_prof)
+long profile_open_file(const char * filespec, prf_file_t *ret_prof)
 {
-	prf_file_t	prf;
-	long	retval;
-	char		*home_env = 0;
+	prf_file_t		prf;
+	long			retval;
+	char			*home_env = 0;
 	unsigned int	len;
-	char		*expanded_filename;
+	char			*expanded_filename;
 
-	prf = malloc(sizeof(struct _prf_file_t));
+	prf = (prf_file_t)calloc(1, sizeof(struct _prf_file_t));
 	if (!prf)
 		return ENOMEM;
-	memset(prf, 0, sizeof(struct _prf_file_t));
 	prf->magic = PROF_MAGIC_FILE;
 
 	len = (unsigned int)strlen(filespec)+1;
@@ -247,20 +247,20 @@ long profile_open_file(const char * filespec,
 		if (home_env)
 			len += (unsigned int)strlen(home_env);
 	}
-	expanded_filename = malloc(len);
+	expanded_filename = (char *)calloc(len, 1);
 	if (expanded_filename == 0) {
-	    profile_free_file(prf);
-	    return errno;
+		profile_free_file(prf);
+		return errno;
 	}
 	if (home_env) {
-	    strcpy(expanded_filename, home_env);
-	    strcat(expanded_filename, filespec+1);
+		strcpy(expanded_filename, home_env);
+		strcat(expanded_filename, filespec+1);
 	} else
-	    memcpy(expanded_filename, filespec, len);
+		memcpy(expanded_filename, filespec, len);
 
-	prf->filespec = expanded_filename;
+	prf->u.filespec = expanded_filename;
 
-	if (strcmp(prf->filespec, default_filename) != 0) {
+	if (strcmp(prf->u.filespec, default_filename) != 0) {
 		retval = profile_update_file(prf);
 		if (retval) {
 			profile_free_file(prf);
@@ -279,19 +279,18 @@ long profile_update_file(prf_file_t prf)
 	char buf[2048];
 	struct parse_state state;
 
-	if (prf->flags & PROFILE_FILE_NO_RELOAD)
-		return 0;
+//	if (prf->flags & PROFILE_FILE_NO_RELOAD)
+//		return 0;
 
-	if (prf->root) {
-	    return 0;
-	}
+	if (prf->root)
+		return 0;
 
 	memset(&state, 0, sizeof(struct parse_state));
 	retval = profile_create_node("(root)", 0, &state.root_section);
 	if (retval)
 		return retval;
 	errno = 0;
-	f = fopen(prf->filespec, "r");
+	f = fopen(prf->u.filespec, "r");
 	if (f == NULL) {
 		retval = errno;
 		if (retval == 0)
@@ -305,7 +304,7 @@ long profile_update_file(prf_file_t prf)
 		retval = parse_line(buf, &state);
 		if (retval) {
 			if (syntax_err_cb)
-				(syntax_err_cb)(prf->filespec, retval,
+				(syntax_err_cb)(prf->u.filespec, retval,
 						state.line_num);
 			fclose(f);
 			return retval;
@@ -318,12 +317,57 @@ long profile_update_file(prf_file_t prf)
 	return 0;
 }
 
+static __inline size_t bgets(char* dst, size_t dst_size, char* src, size_t src_size, size_t curpos)
+{
+	size_t n, p;
+	for (n = curpos, p = 0; (n<src_size) && (p<dst_size-1); n++, p++) {
+		dst[p] = src[n];
+		if ((dst[p] == 0x0d)||(dst[p] == 0x0a)) {
+			for (; ((src[n]==0x0d)||(src[n]==0x0a))&&(n<src_size); n++);
+			break;
+		}
+	}
+	dst[p] = 0;
+	return n;
+}
+
+long profile_update_buffer(prf_file_t prf)
+{
+	long retval;
+	char buf[2048];
+	struct parse_state state;
+	size_t n = 0;
+
+	if (prf->root)
+		return 0;
+
+	memset(&state, 0, sizeof(struct parse_state));
+	retval = profile_create_node("(root)", 0, &state.root_section);
+	if (retval)
+		return retval;
+	prf->upd_serial++;
+
+	while (n < prf->u.buffer.size) {
+		n = bgets(buf, sizeof(buf), prf->u.buffer.ptr, prf->u.buffer.size, n);
+		retval = parse_line(buf, &state);
+		if (retval) {
+			if (syntax_err_cb)
+				(syntax_err_cb)(prf->u.filespec, retval,
+						state.line_num);
+			return retval;
+		}
+	}
+	prf->root = state.root_section;
+
+	return 0;
+}
+
 void profile_free_file(prf_file_t prf)
 {
-    if (prf->root)
-	profile_free_node(prf->root);
-    free(prf->filespec);
-    free(prf);
+	if (prf->root)
+		profile_free_node(prf->root);
+	free(prf->u.filespec);
+	free(prf);
 }
 
 /* Begin the profile parser */
@@ -730,7 +774,7 @@ void profile_free_node(struct profile_node *node)
 static char *MYstrdup (const char *s)
 {
 	size_t sz = strlen(s) + 1;
-	char *p = malloc(sz);
+	char *p = (char *)malloc(sz);
 	if (p != 0)
 	memcpy(p, s, sz);
 	return p;
@@ -744,10 +788,9 @@ long profile_create_node(const char *name, const char *value,
 {
 	struct profile_node *node;
 
-	node = malloc(sizeof(struct profile_node));
+	node = (struct profile_node *)calloc(1, sizeof(struct profile_node));
 	if (!node)
 		return ENOMEM;
-	memset(node, 0, sizeof(struct profile_node));
 	node->name = strdup(name);
 	if (node->name == 0) {
 		profile_free_node(node);
@@ -954,7 +997,7 @@ profile_iterator_create(profile_t profile, const char *const *names, int flags,
 		done_idx = 1;
 	}
 
-	if ((iter = malloc(sizeof(struct profile_iterator))) == NULL)
+	if ((iter = (struct profile_iterator *)calloc(1, sizeof(struct profile_iterator))) == NULL)
 		return ENOMEM;
 
 	iter->magic = PROF_MAGIC_ITERATOR;
@@ -963,8 +1006,6 @@ profile_iterator_create(profile_t profile, const char *const *names, int flags,
 	iter->flags = flags;
 	iter->file = profile->first_file;
 	iter->done_idx = done_idx;
-	iter->node = 0;
-	iter->num = 0;
 	*ret_iter = iter;
 	return 0;
 }
@@ -1167,7 +1208,7 @@ profile_get_string(profile_t profile, const char *name, const char *subname,
 		value = def_val;
 
 	if (value) {
-		*ret_string = malloc(strlen(value)+1);
+		*ret_string = (char *)malloc(strlen(value)+1);
 		if (*ret_string == 0)
 			return ENOMEM;
 		strcpy(*ret_string, value);
@@ -1332,7 +1373,7 @@ profile_iterator(void **iter_p, char **ret_name, char **ret_value)
 
 	if (ret_name) {
 		if (name) {
-			*ret_name = malloc(strlen(name)+1);
+			*ret_name = (char *)malloc(strlen(name)+1);
 			if (!*ret_name)
 				return ENOMEM;
 			strcpy(*ret_name, name);
@@ -1341,7 +1382,7 @@ profile_iterator(void **iter_p, char **ret_name, char **ret_value)
 	}
 	if (ret_value) {
 		if (value) {
-			*ret_value = malloc(strlen(value)+1);
+			*ret_value = (char *)malloc(strlen(value)+1);
 			if (!*ret_value) {
 				if (ret_name) {
 					free(*ret_name);
@@ -1430,7 +1471,6 @@ const char* profile_errtostr(long error_code)
 	return "Unknown error";
 }
 
-
 #ifdef PROFILE_DEBUG
 /*
  * These functions --- init_list(), end_list(), and add_to_list() are
@@ -1458,7 +1498,7 @@ static long init_list(struct profile_string_list *list)
 {
 	list->num = 0;
 	list->max = 10;
-	list->list = malloc(list->max * sizeof(char *));
+	list->list = (char **)calloc(list->max, sizeof(char *));
 	if (list->list == 0)
 		return ENOMEM;
 	list->list[0] = 0;

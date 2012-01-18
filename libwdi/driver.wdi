@@ -1,35 +1,64 @@
 [driver]
-	name = libusb-win32
-	path = D:\libusb-win32\bin
-	file = {
-		path = amd64/install-filter.exe
-		# ultimately, sha1 should be computed by the embedder
-		# http://blog.didierstevens.com/2008/01/11/the-case-of-the-missing-digital-signatures-tab/
-		# http://hype-free.blogspot.com/2008/09/how-to-verify-executable-digital.html
-		# http://www.google.com/codesearch#XI-8HT7rxM8/trunk/src/maidsafe/cryptopp/test.cpp
-		sha1 = 8FE8E488891B31FC6E3A761F45A1A8AC065E7621
-		type = x86_64
-  }
-   file = {
-    path = amd64/install-filter.exe
-    sha1 = 1234ABCD...
-    type = x86_64
-  } 
+  name = libusb-win32
+  path = D:\libusb-win32\bin
   file = {
-    path = x86/libusb0.dll
-    sha1 = A1B2C3D4...
-    type = x86
+    path = amd64\install-filter.exe
+    sha1 = 3d8a4b30c796e074c207f3de737581c87b8f55ee
+    type = x86_64
+  }
+  file = {
+    path = amd64\libusb0.dll
+    sha1 = f193c5015de3a6c05d87c995f448d9b65fb83f6f
+    type = x86_64
+  }
+  file = {
+    path = amd64\libusb0_x86.dll
+    sha1 = 8c56f60fefc14671f7ccc522e67ea05593af0236
+    type = x86_32
+  }
+  file = {
+    path = amd64\libusb0.sys
+    sha1 = 24c082cc9318230f7d7429e29641b53873a7c8a6
+    type = x86_64
+  }
+  file = {
+    path = x86\install-filter.exe
+    sha1 = 728da2ae549a99e351de71095cb09dec8e702b01
+    type = x86_32
+  }
+  file = {
+    path = x86\libusb0_x86.dll
+    sha1 = 8c56f60fefc14671f7ccc522e67ea05593af0236
+    type = x86_32
+  }
+  file = {
+    path = x86\libusb0.sys
+    sha1 = a3032ebfbbf85b40cd0268a88afa6471fa01bbd8
+    type = x86_32
   }
   file = {
     path = libusb0.inf.in
-    sha1 = AABBCCDD...
+    sha1 = 80d49850f733a3adb137557a89d7af78f7f83229
     type = inf_template
   }
-  ...
-[driver]
-  name = libusbK
-  version = 2.3.4.5
   file = {
-    path = amd64/libusbK.sys
-    ...
+    path = libusb0.cat.in
+    sha1 = 0cdacc696598efc6f73f371765f0c48261d93d1f
+    type = inf_template
+  }
+
+[installer]
+  name = libwdi
+; path = D:\libwdi\libwdi
+  path = D:\libwdi-staging\libwdi
+  version = 1.2.1
+  file = {
+    path = installer_x86.exe
+    sha1 = df5eea6550164c54a85b57cf94001b5fdb7b2f07
+    type = x86_32
+  }
+  file = {
+    path = installer_x64.exe
+    sha1 = c784975d333b32cd4325353ddb672ff551f8f64b
+    type = x86_64
   }
