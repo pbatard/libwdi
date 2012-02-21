@@ -28,6 +28,9 @@
   !insertmacro MUI_UNPAGE_INSTFILES 
   !insertmacro MUI_UNPAGE_FINISH
 
+;Languages
+  !insertmacro MUI_LANGUAGE "English"
+
 ; Installer
 Section "libwdi-example" SecDummy
   SetOutPath $INSTDIR
