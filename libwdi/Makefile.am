@@ -57,3 +57,7 @@ embedded.h: embedder $(noinst_PROGRAMS)
 
 clean-local:
 	-rm -rf embedded.h embedder embedder.exe
+
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libwdi.pc

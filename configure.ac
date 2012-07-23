@@ -325,5 +325,10 @@ AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
 
-AC_CONFIG_FILES([Makefile] [libwdi/Makefile] [examples/Makefile])
+AC_CONFIG_FILES([
+Makefile
+libwdi/Makefile
+libwdi/libwdi.pc
+examples/Makefile
+])
 AC_OUTPUT
