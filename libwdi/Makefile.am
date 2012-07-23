@@ -11,7 +11,8 @@ BUILT_SOURCES = embedded.h
 noinst_PROGRAMS =
 noinst_EXES =
 lib_LTLIBRARIES = libwdi.la
-LIB_SRC = resource.h logging.h tokenizer.h installer.h mssign32.h libwdi.h logging.c tokenizer.c vid_data.c pki.c libwdi_dlg.c libwdi.c
+LIB_SRC = resource.h logging.h tokenizer.h installer.h mssign32.h logging.c tokenizer.c vid_data.c pki.c libwdi_dlg.c libwdi.c
+LIB_HDR = libwdi.h
 
 if OPT_M32
 noinst_PROGRAMS += installer_x86
@@ -51,6 +52,8 @@ libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(AM_LDFLAGS)
 libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
 libwdi_la_SOURCES = $(LIB_SRC)
+libwdi_la_HEADERS = $(LIB_HDR)
+libwdi_ladir = $(includedir)
 
 embedded.h: embedder $(noinst_PROGRAMS)
 	@./embedder embedded.h
