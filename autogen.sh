@@ -4,7 +4,7 @@
 create_def()
 {
   echo "rebuidling libwdi.def file"
-  echo "LIBRARY" > libwdi/libwdi.def
+  echo 'LIBRARY "libwdi.dll"' > libwdi/libwdi.def
   echo "EXPORTS" >> libwdi/libwdi.def
   sed -n -e "s/.*LIBWDI_API.*\([[:blank:]]\)\(wdi.*\)(.*/  \2/p" libwdi/libwdi.c libwdi/vid_data.c libwdi/logging.c >> libwdi/libwdi.def
   # We need to manually define a whole set of DLL aliases if we want the MS

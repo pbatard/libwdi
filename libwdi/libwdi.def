@@ -1,4 +1,4 @@
-LIBRARY
+LIBRARY "libwdi.dll"
 EXPORTS
   wdi_is_driver_supported
   wdi_is_file_embedded
