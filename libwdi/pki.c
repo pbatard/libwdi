@@ -28,6 +28,7 @@
 #include <conio.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 #include "mssign32.h"
 
 #ifndef CATSIGN_STANDALONE

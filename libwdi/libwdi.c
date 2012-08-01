@@ -1447,7 +1447,7 @@ static int install_driver_internal(void* arglist)
 	SECURITY_ATTRIBUTES sa;
 	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
 	HANDLE stdout_w = INVALID_HANDLE_VALUE;
-	HANDLE handle[2] = {INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE};
+	HANDLE handle[3] = { INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE };
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
@@ -1617,6 +1617,7 @@ static int install_driver_internal(void* arglist)
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
+		handle[2] = pi.hThread;		// MSDN indicates to also close this handle when done 
 	}
 
 	r = WDI_SUCCESS;
@@ -1714,8 +1715,9 @@ out:
 	DestroyWindow(find_security_prompt());
 	current_device = NULL;
 	safe_free(buffer);
-	safe_closehandle(handle[0]);
+	safe_closehandle(handle[2]);
 	safe_closehandle(handle[1]);
+	safe_closehandle(handle[0]);
 	safe_closehandle(pipe_handle);
 	MUTEX_RETURN r;
 }
