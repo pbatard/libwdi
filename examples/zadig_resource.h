@@ -39,7 +39,7 @@
 #define IDC_NOTIFICATION_CLOSE          1059
 #define IDC_NOTIFICATION_LINE           1060
 #define IDC_FILTER_ICON                 1061
-#define IDC_LIBUSB1_URL                 1062
+#define IDC_LIBUSBX_URL                 1062
 #define IDC_LIBUSB0_URL                 1063
 #define IDC_LIBUSBK_URL                 1064
 #define IDC_WINUSB_URL                  1065

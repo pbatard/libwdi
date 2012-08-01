@@ -157,7 +157,7 @@ BEGIN
     ICON            "",IDC_WCID_ICON,42,83,20,20,SS_NOTIFY | SS_REALSIZEIMAGE
     LTEXT           "?",IDC_WCID_URL,34,81,6,13,SS_NOTIFY
     LTEXT           "More Information",IDC_LINKS,296,43,76,10
-    LTEXT           "WinUSB (libusb-1.0)",IDC_LIBUSB1_URL,297,54,65,9,SS_NOTIFY
+    LTEXT           "WinUSB (libusbx)",IDC_LIBUSBX_URL,297,54,65,9,SS_NOTIFY
     LTEXT           "libusb-win32",IDC_LIBUSB0_URL,297,65,42,9,SS_NOTIFY
     LTEXT           "libusbK",IDC_LIBUSBK_URL,297,76,25,9,SS_NOTIFY
     LTEXT           "WinUSB (Microsoft)",IDC_WINUSB_URL,297,87,65,9,SS_NOTIFY
@@ -172,14 +172,14 @@ BEGIN
     LTEXT           "Zadig",IDC_ZADIG_BOLD,46,8,25,8,SS_NOPREFIX | SS_NOTIFY
     LTEXT           "Copyright (c) 2010-2011 Pete Batard",IDC_STATIC,46,36,139,8
     DEFPUSHBUTTON   "OK",IDOK,231,174,50,16,WS_GROUP
-    CONTROL         "<a href=""http://libwdi.sf.net"">http://libwdi.sf.net</a>",IDC_ABOUT_LIBWDI_URL,
+    CONTROL         "<a href=""http://libwdi.akeo.ie"">http://libwdi.akeo.ie</a>",IDC_ABOUT_LIBWDI_URL,
                     "SysLink",WS_TABSTOP,46,47,62,9
     LTEXT           "Version 2.0.1 (Build 154)",IDC_STATIC,46,19,78,8
     DEFPUSHBUTTON   "License...",IDC_ABOUT_LICENSE,46,174,50,16,WS_GROUP
     EDITTEXT        IDC_ABOUT_COPYRIGHTS,46,107,235,63,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     LTEXT           "Report bugs or request enhancements at:",IDC_STATIC,46,66,187,8
     LTEXT           "Portions copyright:",IDC_STATIC,46,95,59,8
-    CONTROL         "<a>http://sourceforge.net/apps/trac/libwdi/newticket</a>",IDC_ABOUT_BUG_URL,
+    CONTROL         "<a>https://github.com/pbatard/libwdi/issues</a>",IDC_ABOUT_BUG_URL,
                     "SysLink",WS_TABSTOP,46,76,203,14
 END
 
@@ -236,7 +236,7 @@ BEGIN
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
             VALUE "ProductVersion", "2.0.1.154"
-            VALUE "Comments", "http://libwdi.sf.net"
+            VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
     BLOCK "VarFileInfo"

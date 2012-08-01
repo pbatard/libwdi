@@ -32,7 +32,7 @@ BEGIN
             VALUE "OriginalFilename", "wdi-simple.exe"
             VALUE "ProductName", "WDI-Simple"
             VALUE "ProductVersion", "1.2.1.154"
-            VALUE "Comments", "http://libwdi.sf.net"
+            VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
     BLOCK "VarFileInfo"

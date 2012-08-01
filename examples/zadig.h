@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2012 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,15 +36,15 @@
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
-#define LIBWDI_URL                  "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page"
-#define LIBUSB1_URL                 "http://www.libusb.org/wiki/windows_backend"
+#define LIBWDI_URL                  "http://libwdi.akeo.ie"
+#define LIBUSBX_URL                 "https://github.com/libusbx/libusbx/wiki/Windows-Backend"
 #define LIBUSB0_URL                 "http://sourceforge.net/apps/trac/libusb-win32/wiki"
 #define LIBUSBK_URL                 "http://code.google.com/p/usb-travis/"
 #define WINUSB_URL                  "http://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"
-#define ZADIG_URL                   "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Zadig2"
-#define WCID_URL                    "http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices"
+#define ZADIG_URL                   "https://github.com/pbatard/libwdi/wiki/Zadig"
+#define WCID_URL                    "https://github.com/pbatard/libwdi/wiki/WCID-Devices"
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
-#define BUG_URL                     "http://sourceforge.net/apps/trac/libwdi/newticket"
+#define BUG_URL                     "https://github.com/pbatard/libwdi/issues"
 #define DARK_BLUE                   RGB(0,0,125)
 #define BLACK                       RGB(0,0,0)
 #define WHITE                       RGB(255,255,255)
