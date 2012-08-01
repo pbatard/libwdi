@@ -24,10 +24,10 @@ Additional features:
 - Supports MinGW32, MinGW-w64, cygwin (with -mno-cygwin), Visual Studio, WDK
 
 Installation and Compilation:
-  Please visit: http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Install
+  Please visit: https://github.com/pbatard/libwdi/wiki/Install
 
 API usage:
-  Please visit: http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Usage
+  Please visit: https://github.com/pbatard/libwdi/wiki/Usage]
 
 FAQ:
-  Please visit: http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Faq
+  Please visit: https://github.com/pbatard/libwdi/wiki/FAQ

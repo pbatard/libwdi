@@ -1,4 +1,4 @@
-For more details, please visit: [[http://libwdi.git.sourceforge.net/git/gitweb.cgi?p=libwdi/libwdi;a=shortlog]]
+For more details, please visit: [[https://github.com/pbatard/libwdi/commits/master]]
 = Changelog: =
 === v1.2.1 (2011.11.02) ===
 * Bugfixes:
@@ -10,7 +10,7 @@ For more details, please visit: [[http://libwdi.git.sourceforge.net/git/gitweb.c
 
 === v1.2.0 (2011.10.14) ===
 * Improvements: 
-** [[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=WCID_devices|WCID device]] driver installation support
+** [[https://github.com/pbatard/libwdi/wiki/WCID-Devices|WCID device]] driver installation support
 ** [[http://sourceforge.net/apps/trac/libusb-win32/wiki|libusb-win32]] filter driver installation/uninstallation
 ** Zadig UI redesign and other improvements
 ** Windows 8 and USB 3.0 support improvements
