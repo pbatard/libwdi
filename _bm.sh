@@ -15,7 +15,7 @@ aclocal || exit 1
 autoheader || exit 1
 autoconf || exit 1
 automake -a -c || exit 1
-./configure --disable-shared --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="E:/WinDDK/7600.16385.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin"
+./configure --disable-shared --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="C:/Program Files (x86)/Windows Kits/8.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin"
 
 cd libwdi
 make -j2
