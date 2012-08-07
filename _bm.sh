@@ -2,7 +2,7 @@
 # Create and upload a Zadig release
 # !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
-zadig_version=2.0.1.154
+zadig_version=2.0.1.156
 target_dir=/e/dailies/libwdi
 
 type -P git &>/dev/null || { echo "Git not found. Aborting." >&2; exit 1; }

@@ -1,5 +1,9 @@
 **Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 = Screenshot:\\{{https://github.com/pbatard/libwdi/wiki/images/zadig.png|Zadig screenshot}}\\Changelog: =
+=== v2.0.1.156: ===
+* support the [[http://msdn.microsoft.com/en-US/windows/hardware/br259104|WinUSB redistributables from Windows 8 Preview]]
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16
+
 === v2.0.1.154: ===
 * minor fixes (Clang static-analyzer warnings)
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
