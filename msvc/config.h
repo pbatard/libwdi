@@ -7,7 +7,7 @@
 
 /* embed WinUSB driver files from the following DDK location */
 #ifndef DDK_DIR
-#define DDK_DIR "E:/WinDDK/7600.16385.0"
+#define DDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"
 #endif
 
 /* embed libusb0 driver files from the following location */
@@ -25,8 +25,8 @@
 // #define USER_DIR "C:/signed-driver"
 #endif
 
-/* DDK WDF coinstaller version (string) */
-#define WDF_VER "01009"
+/* DDK WDF coinstaller version */
+#define WDF_VER 1011
 
 /* 32 bit support */
 #define OPT_M32

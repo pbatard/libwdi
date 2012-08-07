@@ -16,8 +16,8 @@ AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 
-WDF_VER="01009"
-AC_DEFINE_UNQUOTED([WDF_VER], ["${WDF_VER}"], [DDK WDF coinstaller version (string)])
+WDF_VER=1011
+AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF coinstaller version])
 
 AC_ARG_WITH([ddkdir],
 	[AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files from the following DDK location])],
@@ -215,21 +215,30 @@ fi
 AC_SUBST([ARCH_CFLAGS])
 AC_SUBST([ARCH_RCFLAGS])
 
+if test "x$WDF_VER" == "x1011"
+then
+  X64_DIR="x64"
+  COINSTALLER_DIR="wdf"
+else
+  X64_DIR="amd64"
+  COINSTALLER_DIR="winusb"
+fi
+
 # AC_CHECK_FILES only works when not cross compiling
 if test "$cross_compiling" != "yes"
 then
 	if test "x$DDK_DIR" != "x"; then
 		# check that the required WinUSB DDK files are available
 		if test "x$enable_64bit" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/amd64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/amd64/winusbcoinstaller2.dll], [],
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/${X64_DIR}/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/${X64_DIR}/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
 		fi
 		if test "x$enable_32bit" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/x86/winusbcoinstaller2.dll], [],
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/x86/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-ddkdir)])])
 		fi
 		if test "x$enable_ia64" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller${WDF_VER}.dll $DDK_DIR/redist/winusb/ia64/winusbcoinstaller2.dll], [],
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/ia64/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
 		fi
 	fi

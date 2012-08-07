@@ -33,6 +33,17 @@ struct emb {
 	char* extraction_subdir;
 };
 
+#define _STR(s) #s
+#define STR(s) _STR(s)
+
+#if (WDF_VER >= 1011)
+#define COINSTALLER_DIR "wdf"
+#define X64_DIR "x64"
+#else
+#define COINSTALLER_DIR "winusb"
+#define X64_DIR "amd64"
+#endif
+
 /*
  * files to embed
  */
@@ -41,18 +52,20 @@ struct emb embeddable_fixed[] = {
 // WinUSB
 #if defined(DDK_DIR)
 #	if defined(OPT_M32)
-		{ 0, DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
-		{ 0, DDK_DIR "\\redist\\winusb\\x86\\winusbcoinstaller2.dll", "x86" },
+		{ 0, DDK_DIR "\\redist\\wdf\\x86\\WdfCoInstaller0" STR(WDF_VER) ".dll", "x86" },
+		{ 0, DDK_DIR "\\redist\\" COINSTALLER_DIR "\\x86\\winusbcoinstaller2.dll", "x86" },
 #	endif	// OPT_M32
 #	if defined(OPT_M64)
-		{ 0, DDK_DIR "\\redist\\wdf\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
-		{ 0, DDK_DIR "\\redist\\winusb\\amd64\\winusbcoinstaller2.dll", "amd64" },
+		{ 0, DDK_DIR "\\redist\\wdf\\" X64_DIR "\\WdfCoInstaller0" STR(WDF_VER) ".dll", "amd64" },
+		{ 0, DDK_DIR "\\redist\\" COINSTALLER_DIR "\\" X64_DIR "\\winusbcoinstaller2.dll", "amd64" },
 #	endif	// OPT_M64
 #	if defined(OPT_IA64)
-		{ 0, DDK_DIR "\\redist\\wdf\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
-		{ 0, DDK_DIR "\\redist\\winusb\\ia64\\winusbcoinstaller2.dll", "ia64" },
+		{ 0, DDK_DIR "\\redist\\wdf\\ia64\\WdfCoInstaller0" STR(WDF_VER) ".dll", "ia64" },
+		{ 0, DDK_DIR "\\redist\\" COINSTALLER_DIR "\\ia64\\winusbcoinstaller2.dll", "ia64" },
 #	endif	// OPT_IA64
+#	if (WDF_VER <= 1009)
 		{ 0, DDK_DIR "\\license.rtf", "license\\WinUSB" },
+#endif
 #endif	// DDK_DIR
 
 // libusb0
@@ -88,7 +101,7 @@ struct emb embeddable_fixed[] = {
 
 #	if	defined(OPT_M32)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\sys\\x86\\WdfCoInstaller" WDF_VER ".dll", "x86" },
+			{ 0, LIBUSBK_DIR "\\sys\\x86\\WdfCoInstaller" STR(WDF_VER) ".dll", "x86" },
 #		endif	// DDK_DIR
 		{ 0, LIBUSBK_DIR "\\sys\\x86\\libusbK.sys", "x86" },
 		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusbK.dll", "x86" },
@@ -109,7 +122,7 @@ struct emb embeddable_fixed[] = {
 
 #	if defined(OPT_M64)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\sys\\amd64\\WdfCoInstaller" WDF_VER ".dll", "amd64" },
+			{ 0, LIBUSBK_DIR "\\sys\\amd64\\WdfCoInstaller" STR(WDF_VER) ".dll", "amd64" },
 #		endif	// DDK_DIR
 		{ 0, LIBUSBK_DIR "\\sys\\amd64\\libusbK.sys", "amd64" },
 		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusbK.dll", "amd64" },
@@ -132,7 +145,7 @@ struct emb embeddable_fixed[] = {
 
 #	if defined(OPT_IA64)
 #		if !defined(DDK_DIR)
-			{ 0, LIBUSBK_DIR "\\sys\\ia64\\WdfCoInstaller" WDF_VER ".dll", "ia64" },
+			{ 0, LIBUSBK_DIR "\\sys\\ia64\\WdfCoInstaller" STR(WDF_VER) ".dll", "ia64" },
 #		endif	// DDK_DIR
 		{ 0, LIBUSBK_DIR "\\sys\\ia64\\libusbK.sys", "ia64" },
 		{ 0, LIBUSBK_DIR "\\dll\\ia64\\libusbK.dll", "ia64" },
