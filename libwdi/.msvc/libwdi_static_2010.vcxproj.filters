@@ -69,5 +69,14 @@
     <None Include="..\winusb.inf.in">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\winusb.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\libusb0.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\libusbk.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

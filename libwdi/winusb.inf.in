@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2010 libusb (GNU LGPL)
+; Copyright (c) 2010-2012 libusbx (GNU LGPL)
 [Strings]
 DeviceName = "#DEVICE_DESCRIPTION#"
 VendorName = "#DEVICE_MANUFACTURER#"
@@ -11,7 +11,7 @@ DeviceGUID = "#DEVICE_INTERFACE_GUID#"
 Signature   = "$Windows NT$"
 Class       = "Universal Serial Bus devices"
 ClassGuid   = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
-Provider    = "libusb.org"
+Provider    = "libusbx.org"
 CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
 
@@ -23,15 +23,15 @@ HKR,,,0,"Universal Serial Bus devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
-%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTia64
+%VendorName% = libusbxDevice_WinUSB,NTx86,NTamd64,NTia64
 
-[libusbDevice_WinUSB.NTx86]
+[libusbxDevice_WinUSB.NTx86]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbDevice_WinUSB.NTamd64]
+[libusbxDevice_WinUSB.NTamd64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbDevice_WinUSB.NTia64]
+[libusbxDevice_WinUSB.NTia64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
 [USB_Install]
@@ -53,7 +53,7 @@ ServiceBinary = %12%\WinUSB.sys
 KmdfService = WINUSB, WinUsb_Install
 
 [WinUSB_Install]
-KmdfLibraryVersion = 1.9
+KmdfLibraryVersion = #KMDF_VERSION#
 
 [USB_Install.HW]
 AddReg = #USE_DEVICE_INTERFACE_GUID#
@@ -69,11 +69,11 @@ AddReg    = CoInstallers_AddReg
 CopyFiles = CoInstallers_CopyFiles
 
 [CoInstallers_AddReg]
-HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01009.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
+HKR,,CoInstallers32,0x00010000,"WdfCoInstaller#WDF_VERSION#.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
 
 [CoInstallers_CopyFiles]
 WinUSBCoInstaller2.dll
-WdfCoInstaller01009.dll
+WdfCoInstaller#WDF_VERSION#.dll
 
 [DestinationDirs]
 CoInstallers_CopyFiles = 11
@@ -83,12 +83,12 @@ CoInstallers_CopyFiles = 11
 
 [SourceDisksFiles.x86]
 WinUSBCoInstaller2.dll  = 1,x86
-WdfCoInstaller01009.dll = 1,x86
+WdfCoInstaller#WDF_VERSION#.dll = 1,x86
 
 [SourceDisksFiles.amd64]
 WinUSBCoInstaller2.dll  = 1,amd64
-WdfCoInstaller01009.dll = 1,amd64
+WdfCoInstaller#WDF_VERSION#.dll = 1,amd64
 
 [SourceDisksFiles.ia64]
 WinUSBCoInstaller2.dll  = 1,ia64
-WdfCoInstaller01009.dll = 1,ia64
+WdfCoInstaller#WDF_VERSION#.dll = 1,ia64

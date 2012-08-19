@@ -1,4 +1,4 @@
-﻿; Copyright (c) 2011 libusbK (GNU LGPL)
+﻿; Copyright (c) 2011-2012 libusbK (GNU LGPL)
 ;
 ; Module Name: #INF_FILENAME#
 ; Description: Installation inf for #DEVICE_DESCRIPTION# device.
@@ -88,7 +88,7 @@ libusbK.sys		= 1,x86
 libusbK.dll		= 1,x86
 libusb0.dll		= 1,x86
 ;libusb-1.0.dll	= 1,x86
-WdfCoInstaller01009.dll = 1,x86
+WdfCoInstaller#WDF_VERSION#.dll = 1,x86
 
 [SourceDisksFiles.amd64]
 libusbK.sys			= 1,amd64
@@ -98,7 +98,7 @@ libusb0.dll			= 1,amd64
 libusb0_x86.dll		= 1,amd64
 ;libusb-1.0.dll		= 1,amd64
 ;libusb-1.0_x86.dll	= 1,amd64
-WdfCoInstaller01009.dll	= 1,amd64
+WdfCoInstaller#WDF_VERSION#.dll	= 1,amd64
 
 [DestinationDirs]
 DefaultDestDir				= 12
@@ -138,10 +138,10 @@ AddReg=CoInstaller_AddReg
 CopyFiles=CoInstaller_CopyFiles
 
 [CoInstaller_CopyFiles]
-WdfCoInstaller01009.dll
+WdfCoInstaller#WDF_VERSION#.dll
 
 [CoInstaller_AddReg]
-HKR,,CoInstallers32,0x00010000, "WdfCoInstaller01009.dll,WdfCoInstaller"
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller#WDF_VERSION#.dll,WdfCoInstaller"
 
 [LUsbK_Device.NT.Wdf]
 KmdfService = libusbK, LUsbK_wdfsect
@@ -150,4 +150,4 @@ KmdfService = libusbK, LUsbK_wdfsect
 KmdfService = libusbK, LUsbK_wdfsect
 
 [LUsbK_wdfsect]
-KmdfLibraryVersion=1.9
+KmdfLibraryVersion=#KMDF_VERSION#

@@ -42,10 +42,10 @@ enum stdlg_user_message_type {
 static const char* progress_message[] = {
 	"Installation can take some time...",
 	"The installation process can take up to 5 minutes...",
-	"The reason it can be so long...",
-	"...is because a System Restore point is created.",		// 1 min
-	"If it's the first time a restore point is created...",
-	"...an extended delay is to expected.",
+	"You may also be asked to reboot for KMDF upgrades.",
+	"If so, please watch for additional popup windows.",	// 1 min
+	"The reason driver installation may take time...",
+	"...is because a System Restore point is created.",
 	"Microsoft offers no means of checking progress...",
 	"...so we can't say how long it'll take...",			// 2 mins
 	"Please continue to be patient...",
