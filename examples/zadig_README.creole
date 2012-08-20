@@ -1,25 +1,30 @@
 **Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 = Screenshot:\\{{https://github.com/pbatard/libwdi/wiki/images/zadig.png|Zadig screenshot}}\\Changelog: =
+=== v2.0.1.157: ===
+* fixes support for KMDF v1.11 [[https://github.com/pbatard/libwdi/issues/1|issue #1]].
+* Note that the use of KMDF v1.11 may require a reboot the first time it is installed on Windows 7. If that is the case, a Windows popup will appear prompting you to reboot. Please pay attention to it!
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11
+
 === v2.0.1.156: ===
 * support the [[http://msdn.microsoft.com/en-US/windows/hardware/br259104|WinUSB redistributables from Windows 8 Preview]]
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11 **[BROKEN]**
 
 === v2.0.1.154: ===
 * minor fixes (Clang static-analyzer warnings)
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0 - KMDF 1.9
 
 === v2.0.1.152: ===
 * fixed memory leaks
 * fixed "could not reset device list" error message
 * updated file properties
 * updated for libwdi v1.2.1
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0 - KMDF 1.9
 
 === v2.0.0.151: ===
 * **Zadig executable is now digitally signed**
 * fixed arrow tooltip not being displayed
 * fixed potential issues reported by Clang static-analyzer
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0 - KMDF 1.9
 
 === v2.0.0.150: ===
 * **New GUI**
@@ -27,13 +32,13 @@
 * facilitate the reporting of unresolved VIDs to the [[http://www.linux-usb.org/usb-ids.html|USB ID Repository]]
 * libusb-win32's filter driver support
 * fixed extraction directory selection
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.4.0 - KMDF 1.9
 
 === v1.1.1.144 ===
 * WCID driver support ([[https://github.com/pbatard/libwdi/wiki/WCID-Devices|more]])
 * changed WinUSB installation category to match Windows 8's ("libusb (WinUSB) devices" -> "Universal Serial Bus Devices")
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.3.0
+* embedded drivers: WinUSB v6.1.7600.16385 (KMDF 1.9), libusb-win32 v1.2.5.0 & libusbK v3.0.3.0 - KMDF 1.9
 
 === v1.1.1.143 ===
 * improved USB 3.0 HUB detection
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.5.0 & libusbK v3.0.3.0
+* embedded drivers: WinUSB v6.1.7600.16385 (KMDF 1.9), libusb-win32 v1.2.5.0 & libusbK v3.0.3.0 - KMDF 1.9
