@@ -27,6 +27,7 @@
   o Changed grow size from 8192 to 1024
 */
 
+#include "config.h"
 #include "tokenizer.h"
 #include <stdlib.h>
 
@@ -41,8 +42,12 @@ BOOL grow_strcpy(char** DstPtr, char** DstPtrOrig, long* DstPos, long* DstAllocS
 {
 	if ((*DstPos)+(ReplaceLength) >= (*DstAllocSize))
 	{
+		void *p;
 		*DstAllocSize = GetDestSize((*DstPos) + ReplaceLength);
-		*DstPtr = realloc((*DstPtr),(*DstAllocSize));
+		p = realloc((*DstPtr),(*DstAllocSize));
+		if (p == NULL)
+			free(*DstPtr);
+		*DstPtr = p;
 	}
 	if (!(*DstPtr))
 	{

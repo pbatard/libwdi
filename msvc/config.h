@@ -5,6 +5,11 @@
 #error "Please make sure the msvc/ directory is removed from your build path."
 #endif
 
+#if defined(_PREFAST_)
+/* Disable "Banned API Usage:" errors when using WDK's OACR/Prefast */
+#pragma warning(disable:28719)
+#endif
+
 /* embed WinUSB driver files from the following DDK location */
 #ifndef DDK_DIR
 #define DDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"

@@ -34,9 +34,13 @@
 #include "libwdi.h"
 #include "msapi_utf8.h"
 
-// DDK complains about checking a const string against NULL
+// DDK complains about checking a const string against NULL...
 #if defined(DDKBUILD)
 #pragma warning(disable:4130)
+#endif
+// as well as "Banned API Usage" when using OACR/Prefast.
+#if defined(_PREFAST_)
+#pragma warning(disable:28719)
 #endif
 
 #define REQUEST_TIMEOUT 5000

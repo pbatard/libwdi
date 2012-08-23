@@ -27,6 +27,13 @@
 #endif
 #include "libwdi.h"
 
+#if defined(_PREFAST_)
+/* Disable "Banned API Usage:" errors when using WDK's OACR/Prefast */
+#pragma warning(disable:28719)
+/* Disable "Consider using 'GetTickCount64' instead of 'GetTickCount'" when using WDK's OACR/Prefast */
+#pragma warning(disable:28159)
+#endif
+
 #define oprintf(...) do {if (!opt_silent) printf(__VA_ARGS__);} while(0)
 
 /*

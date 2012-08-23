@@ -25,6 +25,11 @@
 #include <shellapi.h>
 #include <setupapi.h>
 
+#if defined(_PREFAST_)
+/* Disable "'err' holds a value that must be examined" warning when using WDK's OACR/Prefast */
+#pragma warning(disable:28193)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
