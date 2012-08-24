@@ -547,7 +547,7 @@ void toggle_advanced(void)
 // Toggle edit description
 void toggle_edit(void)
 {
-	if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
+	if ((IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) && (device != NULL)) {
 		combo_breaker(true);
 		if (editable_desc != NULL) {
 			dprintf("program assertion failed - editable_desc != NULL");
@@ -991,7 +991,7 @@ bool parse_ini(void) {
 	}
 
 	// Set the default extraction dir
-	if (profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) {
+	if ((profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) && (tmp != NULL)) {
 		safe_strcpy(extraction_path, sizeof(extraction_path), tmp);
 	}
 
@@ -1548,6 +1548,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_SAVE:		// button: "Save Log"
 			log_size = GetWindowTextLengthU(hInfo);
+			if (log_size == 0)
+				break;
 			log_buffer = (char*)malloc(log_size);
 			if (log_buffer != NULL) {
 				log_size = GetDlgItemTextU(hMain, IDC_INFO, log_buffer, log_size);

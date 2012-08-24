@@ -750,7 +750,7 @@ long profile_create_node(const char *name, const char *value,
 	memset(new, 0, sizeof(struct profile_node));
 	new->name = strdup(name);
 	if (new->name == 0) {
-	    profile_free_node(new);
+	    free(new);
 	    return ENOMEM;
 	}
 	if (value) {
