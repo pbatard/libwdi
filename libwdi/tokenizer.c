@@ -40,6 +40,8 @@
 BOOL grow_strcpy(char** DstPtr, char** DstPtrOrig, long* DstPos, long* DstAllocSize,
 					const char* ReplaceString, long ReplaceLength)
 {
+	if (ReplaceString == NULL)
+		return FALSE;
 	if ((*DstPos)+(ReplaceLength) >= (*DstAllocSize))
 	{
 		void *p;

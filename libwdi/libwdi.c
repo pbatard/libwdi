@@ -505,7 +505,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 
 	for (res=0; res<nb_resources; res++) {
 		// Identify the WinUSB and libusb0 files we'll pick the date & version of
-		if (strcmp(resource[res].name, driver_name[driver_type]) == 0) {
+		if (safe_strcmp(resource[res].name, driver_name[driver_type]) == 0) {
 			break;
 		}
 	}
@@ -526,7 +526,8 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 
 	safe_strcpy(filename, MAX_PATH, tmpdir);
 	safe_strcat(filename, MAX_PATH, "\\");
-	safe_strcat(filename, MAX_PATH, resource[res].name);
+	if (resource[res].name != NULL)	// Stupid Clang!
+		safe_strcat(filename, MAX_PATH, resource[res].name);
 
 	fd = fcreate(filename, "w");
 	if (fd == NULL) {
@@ -748,11 +749,12 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	char strbuf[STR_BUFFER_SIZE], drv_version[] = "xxxxx.xxxxx.xxxxx.xxxxx";
 	wchar_t desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
-	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3"};
+	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "rusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub"};
 	const char usbccgp_name[] = "usbccgp";
 	bool is_hub, is_composite_parent, has_vid;
 
 	MUTEX_START;
+	*list = NULL;
 
 	if (!dlls_available) {
 		init_dlls();
@@ -761,7 +763,6 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	// List all connected USB devices
 	dev_info = SetupDiGetClassDevsA(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
 	if (dev_info == INVALID_HANDLE_VALUE) {
-		*list = NULL;
 		MUTEX_RETURN WDI_ERROR_NO_DEVICE;
 	}
 
@@ -780,7 +781,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		device_info = (struct wdi_device_info*)calloc(1, sizeof(struct wdi_device_info));
 		if (device_info == NULL) {
 			wdi_destroy_list(start);
-			*list = NULL;
+			SetupDiDestroyDeviceInfoList(dev_info);
 			MUTEX_RETURN WDI_ERROR_RESOURCE;
 		}
 

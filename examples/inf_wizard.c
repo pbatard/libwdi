@@ -920,7 +920,8 @@ static void device_list_refresh(HWND list)
 			device = (device_context_t *) malloc(sizeof(device_context_t));
 			memset(device, 0, sizeof(*device));
 			device->wdi=wdi_dev_info;
-			safe_strcpy(device->description,MAX_PATH,device->wdi->desc);
+			if (device->wdi->desc != NULL)
+				safe_strcpy(device->description,MAX_PATH,device->wdi->desc);
 
 			if ((vendor_name = wdi_get_vendor_name(device->wdi->vid)))
 			{
@@ -1132,6 +1133,8 @@ int infwizard_install_driver(HWND dialog, device_context_t *device)
 	struct wdi_options_install_driver options;
 	int ret;
 
+	if (device == NULL)
+		return WDI_ERROR_NO_DEVICE;
 	memset(&options,0,sizeof(options));
 	options.hWnd = dialog;
 	if ((ret = wdi_install_driver(device->wdi, device->inf_dir, device->inf_name, &options)) != WDI_SUCCESS)
