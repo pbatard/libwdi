@@ -1,5 +1,9 @@
 **Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 = Screenshot:\\{{https://github.com/pbatard/libwdi/wiki/images/zadig.png|Zadig screenshot}}\\Changelog: =
+=== v2.0.1.158: ===
+* Fixes support for libusb0.sys as a composite interface driver when used with libusbx.
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11
+
 === v2.0.1.157: ===
 * fixes support for KMDF v1.11 [[https://github.com/pbatard/libwdi/issues/1|issue #1]].
 * Note that the use of KMDF v1.11 may require a reboot the first time it is installed on Windows 7. If that is the case, a Windows popup will appear prompting you to reboot. Please pay attention to it!
