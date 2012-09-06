@@ -107,6 +107,7 @@ HKR,,UpperFilters
 ; libusb-win32 device properties
 [libusb_add_reg_hw]
 HKR,,SurpriseRemovalOK,0x00010001,1
+HKR,,DeviceInterfaceGUIDs,0x00010000,%DeviceGUID%
 
 ; (Optional) the usb configuration value to select when this device
 ; is started.  If this key does not exist the first config is selected.
