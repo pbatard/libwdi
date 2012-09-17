@@ -118,7 +118,9 @@ BEGIN
     PUSHBUTTON      "Install Now..",ID_BUTTON_INSTALLNOW, 20,140,70,15
 END
 
+#if defined(__GNUC__)
 ID_MANIFEST RT_MANIFEST "common_controls.manifest"
+#endif
 
 #endif
 

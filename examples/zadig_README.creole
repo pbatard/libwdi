@@ -1,7 +1,7 @@
 **Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 = Screenshot:\\{{https://github.com/pbatard/libwdi/wiki/images/zadig.png|Zadig screenshot}}\\Changelog: =
 === v2.0.1.158: ===
-* Fixes support for libusb0.sys as a composite interface driver when used with libusbx.
+* Fixes support for libusb0.sys as a composite interface driver when used with [[http://libusbx.org|libusbx]].
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11
 
 === v2.0.1.157: ===
