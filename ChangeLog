@@ -1,6 +1,15 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.2.2 (2012.09.19)
+  Bugfixes:
+  - more Clang static-analyzer fixes
+  - WDK/OACR fixes
+  - other bugfixes
+  Improvements:
+  - Add KMDF v1.11 and Windows Kit 8.0 support
+  - Improved USB 3.0 support
+  - Improved libusb-win32 driver support with libusbx
 o v1.2.1 (2011.11.02)
   Bugfixes:
   - Clang static-analyzer fixes
