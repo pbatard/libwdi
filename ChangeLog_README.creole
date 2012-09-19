@@ -6,9 +6,9 @@ For more details, please visit: [[https://github.com/pbatard/libwdi/commits/mast
 ** WDK/OACR fixes
 ** other bugfixes
 * Improvements:
-** Add [[http://msdn.microsoft.com/en-US/windows/hardware/br259104|KMDF v1.11/Windows Kit 8.0] support
+** Add [[http://msdn.microsoft.com/en-US/windows/hardware/br259104|KMDF v1.11/Windows Kit 8.0]] support
 ** Improved USB 3.0 support
-** Improved libusb-win32 driver support with [[http://libusbx.org|libusbx]
+** Improved libusb-win32 driver support with [[http://libusbx.org|libusbx]]
 === v1.2.1 (2011.11.02) ===
 * Bugfixes:
 ** Clang static-analyzer fixes
