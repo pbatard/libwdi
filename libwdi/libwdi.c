@@ -1474,8 +1474,8 @@ static int install_driver_internal(void* arglist)
 
 	// Detect if another installation is in process
 	if (CMP_WaitNoPendingInstallEvents != NULL) {
-		if (CMP_WaitNoPendingInstallEvents(0) == WAIT_TIMEOUT) {
-			wdi_warn("detected another pending installation - aborting");
+		if (CMP_WaitNoPendingInstallEvents(params->options->pending_install_timeout) == WAIT_TIMEOUT) {
+			wdi_warn("timeout expired while waiting for another pending installation - aborting");
 			MUTEX_RETURN WDI_ERROR_PENDING_INSTALLATION;
 		}
 	} else {
