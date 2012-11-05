@@ -1135,7 +1135,13 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		driver_type = options->driver_type;
 	}
 
-	if (!wdi_is_driver_supported(driver_type, NULL)) {
+	// Ensure driver_type is what we expect
+	if ( (driver_type < 0) || (driver_type > 3) ) {
+		wdi_err("unknown type");
+		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+	}
+
+	if (!wdi_is_driver_supported(driver_type, &driver_version[driver_type])) {
 		for (driver_type=0; driver_type<WDI_NB_DRIVERS; driver_type++) {
 			if (wdi_is_driver_supported(driver_type, NULL)) {
 				wdi_warn("unsupported or no driver type specified, will use %s",
@@ -1153,12 +1159,6 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	if (driver_type == WDI_USER) {
 		wdi_info("custom driver - extracting binaries only (no inf/cat creation)");
 		MUTEX_RETURN extract_binaries(path);
-	}
-
-	// Ensure driver_type is what we expect
-	if ( (driver_type < 0) || (driver_type > 3) ) {
-		wdi_err("unknown type");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
 	}
 
 	if (device_info->desc == NULL) {
