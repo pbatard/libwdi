@@ -69,6 +69,7 @@ void usage(void)
 	printf("-s, --silent               silent mode\n");
 	printf("-b, --progressbar=[HWND]   display a progress bar during install\n");
 	printf("                           an optional HWND can be specified\n");
+	printf("-o, --timeout              timeout (in millis) to wait for any pending installations\n");
 	printf("-l, --log                  set log level (0 = debug, 4 = none)\n");
 	printf("-h, --help                 display usage\n");
 	printf("\n");
@@ -121,6 +122,7 @@ int __cdecl main(int argc, char** argv)
 		{"stealth-cert", no_argument, 0, 1},
 		{"progressbar", optional_argument, 0, 'b'},
 		{"log", required_argument, 0, 'l'},
+		{"timeout", required_argument, 0, 'o'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -132,7 +134,7 @@ int __cdecl main(int argc, char** argv)
 
 	while(1)
 	{
-		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:hxsb", long_options, NULL);
+		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:o:hxsb", long_options, NULL);
 		if (c == -1)
 			break;
 		switch(c) {
@@ -159,6 +161,9 @@ int __cdecl main(int argc, char** argv)
 			break;
 		case 'v':
 			dev.vid = (unsigned short)strtol(optarg, NULL, 0);
+			break;
+		case 'o':
+			oid.pending_install_timeout = (DWORD)strtoul(optarg, NULL, 0);
 			break;
 		case 'p':
 			dev.pid = (unsigned short)strtol(optarg, NULL, 0);
