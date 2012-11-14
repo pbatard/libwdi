@@ -218,6 +218,8 @@ struct wdi_options_install_driver {
 	HWND hWnd;
 	/** Install a filter driver instead of a regular driver (libusb-win32 only) */
 	bool install_filter_driver;
+	/** Number of milliseconds to wait for any pending installations */
+	DWORD pending_install_timeout;
 };
 
 // wdi_install_trusted_certificate options:
