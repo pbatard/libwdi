@@ -99,6 +99,11 @@ enum INF_TAGS
 	USE_DEVICE_INTERFACE_GUID,
 	WDF_VERSION,
 	KMDF_VERSION,
+	LK_COMMA,
+	LK_DLL,
+	LK_X86_DLL,
+	LK_EQ_X86,
+	LK_EQ_X64,
 };
 
 token_entity_t inf_entities[]=
@@ -114,6 +119,11 @@ token_entity_t inf_entities[]=
 	{"USE_DEVICE_INTERFACE_GUID",""},
 	{"WDF_VERSION",""},
 	{"KMDF_VERSION",""},
+	{"LK_COMMA",""},
+	{"LK_DLL",""},
+	{"LK_X86_DLL",""},
+	{"LK_EQ_X86",""},
+	{"LK_EQ_X64",""},
 	{NULL, ""} // DO NOT REMOVE!
 };
 
@@ -1147,6 +1157,16 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 			wdi_warn("program assertion failed - no driver supported");
 			MUTEX_RETURN WDI_ERROR_NOT_FOUND;
 		}
+	}
+
+	// If the target is libusb-win32 and we have the K DLLs, add them to the inf
+	if ((driver_type == WDI_LIBUSB0) && (wdi_is_driver_supported(WDI_LIBUSBK, NULL))) {
+		wdi_info("K driver available - adding the libusbK DLLs to the libusb-win32 inf");
+		static_strcpy(inf_entities[LK_COMMA].replace, ",");
+		static_strcpy(inf_entities[LK_DLL].replace, "libusbk.dll");
+		static_strcpy(inf_entities[LK_X86_DLL].replace, "libusbk_x86.dll");
+		static_strcpy(inf_entities[LK_EQ_X86].replace, "= 1,x86");
+		static_strcpy(inf_entities[LK_EQ_X64].replace, "= 1,amd64");
 	}
 
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries

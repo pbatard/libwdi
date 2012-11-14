@@ -36,14 +36,6 @@ struct emb {
 #define _STR(s) #s
 #define STR(s) _STR(s)
 
-#if (WDF_VER >= 1011)
-#define COINSTALLER_DIR "wdf"
-#define X64_DIR "x64"
-#else
-#define COINSTALLER_DIR "winusb"
-#define X64_DIR "amd64"
-#endif
-
 /*
  * files to embed
  */
@@ -63,9 +55,6 @@ struct emb embeddable_fixed[] = {
 		{ 0, DDK_DIR "\\redist\\wdf\\ia64\\WdfCoInstaller0" STR(WDF_VER) ".dll", "ia64" },
 		{ 0, DDK_DIR "\\redist\\" COINSTALLER_DIR "\\ia64\\winusbcoinstaller2.dll", "ia64" },
 #	endif	// OPT_IA64
-#	if (WDF_VER <= 1009)
-		{ 0, DDK_DIR "\\license.rtf", "license\\WinUSB" },
-#endif
 #endif	// DDK_DIR
 
 // libusb0
@@ -114,10 +103,6 @@ struct emb embeddable_fixed[] = {
 				{ 1, "libusb0_x86.dll", "amd64" },	// reuse
 #			endif	// OPT_M64
 #		endif	// LIBUSB0_DIR
-//		{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
-#		if defined(OPT_M64)
-			{ 1, "libusb-1.0_x86.dll", "amd64" },	// reuse
-#		endif	// OPT_M64
 #	endif	// OPT_M32
 
 #	if defined(OPT_M64)
@@ -126,7 +111,6 @@ struct emb embeddable_fixed[] = {
 #		endif	// DDK_DIR
 		{ 0, LIBUSBK_DIR "\\sys\\amd64\\libusbK.sys", "amd64" },
 		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusbK.dll", "amd64" },
-//		{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb-1.0.dll", "amd64" },
 #		if !defined(LIBUSB0_DIR)
 			{ 0, LIBUSBK_DIR "\\dll\\amd64\\libusb0.dll", "amd64" },
 #		endif	// LIBUSB0_DIR
@@ -134,8 +118,6 @@ struct emb embeddable_fixed[] = {
 			// The x86/ DLLs will not be used, but they are required for rename to _x86
 			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusbK.dll", "x86" },
 			{ 1, "libusbK_x86.dll", "amd64" },
-//			{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb-1.0.dll", "x86" },
-//			{ 1, "libusb-1.0_x86.dll", "amd64" },
 #			if !defined(LIBUSB0_DIR)
 				{ 0, LIBUSBK_DIR "\\dll\\x86\\libusb0.dll", "x86" },
 				{ 1, "libusb0_x86.dll", "amd64" },

@@ -16,9 +16,6 @@ AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 
-WDF_VER=1011
-AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF coinstaller version])
-
 AC_ARG_WITH([ddkdir],
 	[AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files from the following DDK location])],
 	[DDK_DIR=$withval],
@@ -26,6 +23,12 @@ AC_ARG_WITH([ddkdir],
 if test "x$DDK_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([DDK_DIR], ["${DDK_DIR}"], [embed WinUSB driver files from the following DDK location])
 fi
+
+AC_ARG_WITH([wdfver],
+	[AS_HELP_STRING([--with-wdfver], [WDF/KDMF version to use - either 1011 or 1009. Use 1009 if you need XP compatibility])],
+	[WDF_VER=$withval],
+	[WDF_VER=1011])
+AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF/KMDF coinstaller version])	
 
 AC_ARG_WITH([libusb0],
  	[AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location])],
@@ -215,23 +218,20 @@ fi
 AC_SUBST([ARCH_CFLAGS])
 AC_SUBST([ARCH_RCFLAGS])
 
-if test "x$WDF_VER" == "x1011"
-then
-  X64_DIR="x64"
-  COINSTALLER_DIR="wdf"
-else
-  X64_DIR="amd64"
-  COINSTALLER_DIR="winusb"
-fi
-
 # AC_CHECK_FILES only works when not cross compiling
 if test "$cross_compiling" != "yes"
 then
 	if test "x$DDK_DIR" != "x"; then
 		# check that the required WinUSB DDK files are available
+		AC_CHECK_FILES([$DDK_DIR/redist/winusb/], [COINSTALLER_DIR="winusb"], [COINSTALLER_DIR="wdf"])
+		AC_DEFINE_UNQUOTED([COINSTALLER_DIR], ["${COINSTALLER_DIR}"], [CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf")])
+	  AC_SUBST([COINSTALLER_DIR])	
 		if test "x$enable_64bit" != "xno"; then
+		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x64/], [X64_DIR="x64"], [X64_DIR="amd64"])
+		AC_DEFINE_UNQUOTED([X64_DIR], ["${X64_DIR}"], [64bit subdirectory for WinUSB redist files ("x64" or "amd64")])
+	  AC_SUBST([X64_DIR])	
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/${X64_DIR}/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/${X64_DIR}/winusbcoinstaller2.dll], [],
-			[AC_MSG_ERROR([the WinUSB amd64 driver files could not be detected (--with-ddkdir)])])
+			[AC_MSG_ERROR([the WinUSB x64 driver files could not be detected (--with-ddkdir)])])
 		fi
 		if test "x$enable_32bit" != "xno"; then
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/x86/winusbcoinstaller2.dll], [],

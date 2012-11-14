@@ -10,10 +10,23 @@
 #pragma warning(disable:28719)
 #endif
 
-/* embed WinUSB driver files from the following DDK location */
+/* 
+ * Embed WinUSB driver files from the following DDK location
+ * NB: You must also make sure the WDF_VER, COINSTALLER_DIR and X64_DIR
+ * match your WinUSB redist directrories
+ */
 #ifndef DDK_DIR
 #define DDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"
 #endif
+
+/* DDK WDF coinstaller version */
+#define WDF_VER 1009
+
+/* CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf") */
+#define COINSTALLER_DIR "wdf"
+
+/* 64bit subdirectory for WinUSB redist files ("x64" or "amd64") */
+#define X64_DIR "x64"
 
 /* embed libusb0 driver files from the following location */
 #ifndef LIBUSB0_DIR
@@ -29,9 +42,6 @@
 #ifndef USER_DIR
 // #define USER_DIR "C:/signed-driver"
 #endif
-
-/* DDK WDF coinstaller version */
-#define WDF_VER 1011
 
 /* 32 bit support */
 #define OPT_M32

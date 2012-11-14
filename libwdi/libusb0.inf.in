@@ -35,16 +35,18 @@ HKR,,Icon,,-20
 [SourceDisksFiles.x86]
 libusb0.sys     = 1,x86
 libusb0_x86.dll = 1,x86
+#LK_X86_DLL# #LK_EQ_X86#
 
 [SourceDisksFiles.amd64]
 libusb0.sys     = 1,amd64
 libusb0.dll     = 1,amd64
+#LK_DLL#     #LK_EQ_X64#
 libusb0_x86.dll = 1,x86
+#LK_X86_DLL# #LK_EQ_X86#
 
 [SourceDisksFiles.ia64]
 libusb0.sys     = 1,ia64
 libusb0.dll     = 1,ia64
-libusb0_x86.dll = 1,x86
 
 [DestinationDirs]
 libusb_files_sys       = 10,system32\drivers
@@ -57,12 +59,13 @@ libusb0.sys
 
 [libusb_files_dll]
 libusb0.dll
+#LK_DLL#
 
 [libusb_files_dll_x86]
-libusb0.dll, libusb0_x86.dll
+libusb0.dll, libusb0_x86.dll #LK_COMMA# #LK_DLL# #LK_COMMA# #LK_X86_DLL#
 
 [libusb_files_dll_wow64]
-libusb0.dll, libusb0_x86.dll
+libusb0.dll, libusb0_x86.dll #LK_COMMA# #LK_DLL# #LK_COMMA# #LK_X86_DLL#
 
 ;--------------------------------------------------------------------------
 ; libusb-win32 device driver

@@ -4,3 +4,5 @@
 libusb0.sys
 libusb0.dll
 libusb0_x86.dll
+#LK_DLL#
+#LK_X86_DLL#
