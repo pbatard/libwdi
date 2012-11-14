@@ -19,20 +19,9 @@ create_def()
   done
 }
 
-# use glibtoolize if it is available
-(glibtoolize --version) < /dev/null > /dev/null 2>&1 && LIBTOOLIZE=glibtoolize || LIBTOOLIZE=libtoolize
+set -e
 
-$LIBTOOLIZE --copy --force || exit 1
-# Force ltmain's NLS test to set locale to C always. Prevents an
-# issue when compiling shared libs with MinGW on Chinese locale.
-type -P sed &>/dev/null || { echo "sed command not found. Aborting." >&2; exit 1; }
-sed -e s/\\\\\${\$lt_var+set}/set/g ltmain.sh > lttmp.sh
-mv lttmp.sh ltmain.sh
-#
-aclocal || exit 1
-autoheader || exit 1
-autoconf || exit 1
-automake -a -c || exit 1
-./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="C:/Program Files (x86)/Windows Kits/8.0" --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin" $*
+./bootstrap.sh
+./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-ddkdir="C:/Program Files (x86)/Windows Kits/8.0" --with-wdfver=1011 --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin" $*
 # rebuild .def, if sed is available
 type -P sed &>/dev/null && create_def
