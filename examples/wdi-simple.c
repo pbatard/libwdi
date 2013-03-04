@@ -114,7 +114,7 @@ int __cdecl main(int argc, char** argv)
 		{"iid", required_argument, 0, 'i'},
 		{"type", required_argument, 0, 't'},
 		{"filter", no_argument, 0, 2},
-		{"wcid", required_argument, 0, 'w'},
+		{"wcid", no_argument, 0, 'w'},
 		{"dest", required_argument, 0, 'd'},
 		{"cert", required_argument, 0, 'c'},
 		{"extract", no_argument, 0, 'x'},
