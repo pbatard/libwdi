@@ -2713,6 +2713,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x2375, "Digit@lway, Inc." },
 	{ 0x2406, "SANHO Digital Electronics Co., Ltd." },
 	{ 0x2478, "Tripp-Lite" },
+	{ 0x24E1, "Paratronic" },
 	{ 0x2632, "TwinMOS" },
 	{ 0x2650, "Electronics For Imaging, Inc. [hex]" },
 	{ 0x2659, "Sundtek" },
