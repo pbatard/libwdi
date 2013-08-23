@@ -85,10 +85,10 @@ enum windows_version {
 	WINDOWS_UNSUPPORTED,
 	WINDOWS_2K,
 	WINDOWS_XP,
-	WINDOWS_2003_XP64,
+	WINDOWS_2003,
 	WINDOWS_VISTA,
 	WINDOWS_7,
-	WINDOWS_8
+	WINDOWS_8_OR_LATER
 };
 
 // WCID states
@@ -125,7 +125,7 @@ enum wcid_state {
  */
 #define dprintf(...) w_printf(false, __VA_ARGS__)
 #define dsprintf(...) w_printf(true, __VA_ARGS__)
-void detect_windows_version(void);
+enum windows_version detect_windows_version(void);
 void w_printf(bool update_status, const char *format, ...);
 void browse_for_folder(void);
 char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc);

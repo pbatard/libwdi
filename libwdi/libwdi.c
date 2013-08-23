@@ -213,34 +213,43 @@ static int64_t __inline unixtime_to_msfiletime(time_t t)
 }
 
 // Detect Windows version
-#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) detect_version(); } while(0)
-static void detect_version(void)
+#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) windows_version = detect_version(); } while(0)
+static enum windows_version detect_version(void)
 {
-	OSVERSIONINFO os_version;
+	OSVERSIONINFO OSVersion;
 
-	memset(&os_version, 0, sizeof(OSVERSIONINFO));
-	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	windows_version = WINDOWS_UNSUPPORTED;
-	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
-		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
-			windows_version = WINDOWS_2K;
-			wdi_info("Windows 2000");
-		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
-			windows_version = WINDOWS_XP;
-			wdi_info("Windows XP");
-		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
-			windows_version = WINDOWS_2003_XP64;
-			wdi_info("Windows 2003 or Windows XP 64 bit");
-		} else if (os_version.dwMajorVersion >= 6) {
-			if (os_version.dwBuildNumber < 7000) {
-				windows_version = WINDOWS_VISTA;
-				wdi_info("Windows Vista");
-			} else {
-				windows_version = WINDOWS_7;
-				wdi_info("Windows 7");
-			}
-		}
+	memset(&OSVersion, 0, sizeof(OSVERSIONINFO));
+	OSVersion.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	if (GetVersionEx(&OSVersion) == 0)
+		return WINDOWS_UNDEFINED;
+	if (OSVersion.dwPlatformId != VER_PLATFORM_WIN32_NT)
+		return WINDOWS_UNSUPPORTED;
+	// See the Remarks section from http://msdn.microsoft.com/en-us/library/windows/desktop/ms724833.aspx
+	if ((OSVersion.dwMajorVersion < 5) || ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 0))) {
+		wdi_info("Windows 2000 or earlier");
+		return WINDOWS_UNSUPPORTED;
 	}
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 1)) {
+		wdi_info("Windows XP");
+		return WINDOWS_XP;
+	}
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 2)) {
+		wdi_info("Windows 2003 or Windows XP 64 bit");
+		return WINDOWS_2003;
+	}
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 0)) {
+		wdi_info("Windows Vista");
+		return WINDOWS_VISTA;
+	}
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 1)) {
+		wdi_info("Windows 7");
+		return WINDOWS_7;
+	}
+	if ((OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion >= 2))) {
+		wdi_info("Windows 8 or later");
+		return WINDOWS_8_OR_LATER;
+	}
+	return WINDOWS_UNSUPPORTED;
 }
 
 /*
@@ -588,7 +597,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 		// WinUSB is not supported on Win2k/2k3
 		GET_WINDOWS_VERSION;
 		if ( (windows_version == WINDOWS_2K)
-		  || (windows_version == WINDOWS_2003_XP64) ) {
+		  || (windows_version == WINDOWS_2003) ) {
 			return false;
 		}
 		return true;

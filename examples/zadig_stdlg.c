@@ -160,30 +160,30 @@ static char err_string[ERR_BUFFER_SIZE];
 /*
  * Detect Windows version
  */
-void detect_windows_version(void)
+enum windows_version detect_windows_version(void)
 {
-	OSVERSIONINFO os_version;
+	OSVERSIONINFO OSVersion;
 
-	memset(&os_version, 0, sizeof(OSVERSIONINFO));
-	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	windows_version = WINDOWS_UNSUPPORTED;
-	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
-		if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 0)) {
-			windows_version = WINDOWS_2K;
-		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 1)) {
-			windows_version = WINDOWS_XP;
-		} else if ((os_version.dwMajorVersion == 5) && (os_version.dwMinorVersion == 2)) {
-			windows_version = WINDOWS_2003_XP64;
-		} else if (os_version.dwMajorVersion == 6) {
-			if (os_version.dwBuildNumber < 7000) {
-				windows_version = WINDOWS_VISTA;
-			} else {
-				windows_version = WINDOWS_7;
-			}
-		} else if (os_version.dwMajorVersion >= 8) {
-			windows_version = WINDOWS_8;
-		}
-	}
+	memset(&OSVersion, 0, sizeof(OSVERSIONINFO));
+	OSVersion.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	if (GetVersionEx(&OSVersion) == 0)
+		return WINDOWS_UNDEFINED;
+	if (OSVersion.dwPlatformId != VER_PLATFORM_WIN32_NT)
+		return WINDOWS_UNSUPPORTED;
+	// See the Remarks section from http://msdn.microsoft.com/en-us/library/windows/desktop/ms724833.aspx
+	if ((OSVersion.dwMajorVersion < 5) || ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 0)))
+		return WINDOWS_UNSUPPORTED;		// Win2k or earlier
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 1))
+		return WINDOWS_XP;
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 2))
+		return WINDOWS_2003;
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 0))
+		return WINDOWS_VISTA;
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 1))
+		return WINDOWS_7;
+	if ((OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion >= 2)))
+		return WINDOWS_8_OR_LATER;
+	return WINDOWS_UNSUPPORTED;
 }
 
 /*

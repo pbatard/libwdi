@@ -1681,7 +1681,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	// Set the Windows version
-	detect_windows_version();
+	windows_version = detect_windows_version();
 
 	// Save instance of the application for further reference
 	main_instance = hInstance;
