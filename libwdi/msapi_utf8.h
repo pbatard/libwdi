@@ -2,7 +2,7 @@
  * MSAPI_UTF8: Common API calls using UTF-8 strings
  * Compensating for what Microsoft should have done a long long time ago.
  *
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright © 2010-2013 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,15 +24,20 @@
 #include <commdlg.h>
 #include <shellapi.h>
 #include <setupapi.h>
+#include <direct.h>
 
-#if defined(_PREFAST_)
-/* Disable "'err' holds a value that must be examined" warning when using WDK's OACR/Prefast */
-#pragma warning(disable:28193)
+#pragma once
+#if defined(_MSC_VER)
+// disable VS2012 Code Analysis warnings that are intentional
+#pragma warning(disable: 6387)	// Don't care about bad params
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define _LTEXT(txt) L##txt
+#define LTEXT(txt) _LTEXT(txt)
 
 #define wchar_to_utf8_no_alloc(wsrc, dest, dest_size) \
 	WideCharToMultiByte(CP_UTF8, 0, wsrc, -1, dest, dest_size, NULL, NULL)
@@ -40,6 +45,7 @@ extern "C" {
 	MultiByteToWideChar(CP_UTF8, 0, src, -1, wdest, wdest_size)
 #define Edit_ReplaceSelU(hCtrl, str) ((void)SendMessageLU(hCtrl, EM_REPLACESEL, (WPARAM)FALSE, str))
 #define ComboBox_AddStringU(hCtrl, str) ((int)(DWORD)SendMessageLU(hCtrl, CB_ADDSTRING, (WPARAM)FALSE, str))
+#define ComboBox_InsertStringU(hCtrl, index, str) ((int)(DWORD)SendMessageLU(hCtrl, CB_INSERTSTRING, (WPARAM)index, str))
 #define ComboBox_GetTextU(hCtrl, str, max_str) GetWindowTextU(hCtrl, str, max_str)
 #define GetSaveFileNameU(p) GetOpenSaveFileNameU(p, TRUE)
 #define GetOpenFileNameU(p) GetOpenSaveFileNameU(p, FALSE)
@@ -49,7 +55,7 @@ extern "C" {
 
 #define sfree(p) do {if (p != NULL) {free((void*)(p)); p = NULL;}} while(0)
 #define wconvert(p)     wchar_t* w ## p = utf8_to_wchar(p)
-#define walloc(p, size) wchar_t* w ## p = calloc(size, sizeof(wchar_t))
+#define walloc(p, size) wchar_t* w ## p = (wchar_t*)calloc(size, sizeof(wchar_t))
 #define wfree(p) sfree(w ## p)
 
 /*
@@ -130,6 +136,18 @@ static __inline LRESULT SendMessageLU(HWND hWnd, UINT Msg, WPARAM wParam, const 
 	return ret;
 }
 
+static __inline int DrawTextExU(HDC hDC, LPCSTR lpchText, int nCount, LPRECT lpRect, UINT uFormat, LPDRAWTEXTPARAMS lpDTParams)
+{
+	int ret;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(lpchText);
+	ret = DrawTextExW(hDC, wlpchText, nCount, lpRect, uFormat, lpDTParams);
+	err = GetLastError();
+	wfree(lpchText);
+	SetLastError(err);
+	return ret;
+}
+
 static __inline BOOL SHGetPathFromIDListU(LPCITEMIDLIST pidl, char* pszPath)
 {
 	BOOL ret = FALSE;
@@ -158,6 +176,20 @@ static __inline HWND CreateWindowU(char* lpClassName, char* lpWindowName,
 	err = GetLastError();
 	wfree(lpClassName);
 	wfree(lpWindowName);
+	SetLastError(err);
+	return ret;
+}
+
+static __inline int MessageBoxU(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
+{
+	int ret;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(lpText);
+	wconvert(lpCaption);
+	ret = MessageBoxW(hWnd, wlpText, wlpCaption, uType);
+	err = GetLastError();
+	wfree(lpText);
+	wfree(lpCaption);
 	SetLastError(err);
 	return ret;
 }
@@ -248,6 +280,26 @@ static __inline BOOL SetDlgItemTextU(HWND hDlg, int nIDDlgItem, const char* lpSt
 	return ret;
 }
 
+static __inline int ComboBox_GetLBTextU(HWND hCtrl, int index, char* lpString)
+{
+	int size;
+	DWORD err = ERROR_INVALID_DATA;
+	wchar_t* wlpString;
+	if (lpString == NULL)
+		return CB_ERR;
+	size = (int)SendMessageW(hCtrl, CB_GETLBTEXTLEN, (WPARAM)index, (LPARAM)0);
+	if (size < 0)
+		return size;
+	wlpString = (wchar_t*)calloc(size+1, sizeof(wchar_t));
+	size = (int)SendMessageW(hCtrl, CB_GETLBTEXT, (WPARAM)index, (LPARAM)wlpString);
+	err = GetLastError();
+	if (size > 0)
+		wchar_to_utf8_no_alloc(wlpString, lpString, size+1);
+	wfree(lpString);
+	SetLastError(err);
+	return size;
+}
+
 static __inline HANDLE CreateFileU(const char* lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 								   LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
 								   DWORD dwFlagsAndAttributes,  HANDLE hTemplateFile)
@@ -290,7 +342,7 @@ static __inline BOOL GetTextExtentPointU(HDC hdc, const char* lpString, LPSIZE l
 
 static __inline DWORD GetCurrentDirectoryU(DWORD nBufferLength, char* lpBuffer)
 {
-	DWORD ret = 0, err  = ERROR_INVALID_DATA;
+	DWORD ret = 0, err = ERROR_INVALID_DATA;
 	walloc(lpBuffer, nBufferLength);
 	ret = GetCurrentDirectoryW(nBufferLength, wlpBuffer);
 	err = GetLastError();
@@ -298,6 +350,20 @@ static __inline DWORD GetCurrentDirectoryU(DWORD nBufferLength, char* lpBuffer)
 		err = GetLastError();
 	}
 	wfree(lpBuffer);
+	SetLastError(err);
+	return ret;
+}
+
+static __inline DWORD GetModuleFileNameU(HMODULE hModule, char* lpFilename, DWORD nSize)
+{
+	DWORD ret = 0, err = ERROR_INVALID_DATA;
+	walloc(lpFilename, nSize);
+	ret = GetModuleFileNameW(hModule, wlpFilename, nSize);
+	err = GetLastError();
+	if ((ret != 0) && ((ret = wchar_to_utf8_no_alloc(wlpFilename, lpFilename, nSize)) == 0)) {
+		err = GetLastError();
+	}
+	wfree(lpFilename);
 	SetLastError(err);
 	return ret;
 }
@@ -551,6 +617,15 @@ out:
 	return ret;
 }
 
+static __inline int _chdirU(const char *dirname)
+{
+	int ret;
+	wconvert(dirname);
+	ret = _wchdir(wdirname);
+	wfree(dirname);
+	return ret;
+}
+
 static __inline FILE* fopenU(const char* filename, const char* mode)
 {
 	FILE* ret = NULL;
@@ -559,6 +634,25 @@ static __inline FILE* fopenU(const char* filename, const char* mode)
 	ret = _wfopen(wfilename, wmode);
 	wfree(filename);
 	wfree(mode);
+	return ret;
+}
+
+// returned UTF-8 string must be freed
+static __inline char* getenvU(const char* varname)
+{
+	wconvert(varname);
+	char* ret;
+	ret = wchar_to_utf8(_wgetenv(wvarname));
+	wfree(varname);
+	return ret;
+}
+
+static __inline int _mkdirU(const char* dirname)
+{
+	wconvert(dirname);
+	int ret;
+	ret = _wmkdir(wdirname);
+	wfree(dirname);
 	return ret;
 }
 

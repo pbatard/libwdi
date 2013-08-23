@@ -36,9 +36,8 @@
 #endif
 #include "libwdi.h"
 
-#define FLUSHER	while(getchar() != 0x0A)
+#define FLUSHER while(getchar() != 0x0A)
 #define INF_NAME "libusb_device.inf"
-#define DEFAULT_DIR "C:\\usb_driver"
 
 void usage(void)
 {
@@ -57,7 +56,7 @@ int __cdecl main(int argc, char *argv[])
 {
 	int c;
 	struct wdi_device_info *device, *list;
-	char* path = DEFAULT_DIR;
+	char* path = "usb_driver";
 	static struct wdi_options_create_list cl_options = { 0 };
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;

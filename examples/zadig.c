@@ -74,7 +74,7 @@ COLORREF arrow_color = ARROW_GREEN;
 float fScale = 1.0f;
 extern enum windows_version windows_version;
 char app_dir[MAX_PATH], driver_text[64];
-char extraction_path[MAX_PATH] = DEFAULT_DIR;
+char extraction_path[MAX_PATH];
 const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "Custom (extract only)" };
 const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK" };
 struct wdi_options_create_list cl_options = { 0 };
@@ -1666,7 +1666,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	 * to access the actual "System32" as "SysWOW64" gets remapped to "System32"
 	 */
 	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
-	char* libusb_path;
+	char *libusb_path, *tmp;
 	int i;
 	bool r;
 
@@ -1689,8 +1689,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Initialize COM for folder selection
 	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 
-	// Retrieve the current application directory
+	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
+	tmp = getenvU("USERPROFILE");
+	safe_sprintf(extraction_path, sizeof(extraction_path), "%s\\usb_driver", tmp);
+	safe_free(tmp);
 
 	// Create the main Window
 	if ( (hDlg = CreateDialogA(hInstance, "MAIN_DIALOG", NULL, main_callback)) == NULL ) {

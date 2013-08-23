@@ -34,7 +34,6 @@
 #define NOTIFICATION_DELAY          1000
 #define MAX_TOOLTIPS                32
 #define MAX_LOG_SIZE                0x7FFFFFFE
-#define DEFAULT_DIR                 "C:\\usb_driver"
 #define INI_NAME                    "zadig.ini"
 #define LIBWDI_URL                  "http://libwdi.akeo.ie"
 #define LIBUSBX_URL                 "https://github.com/libusbx/libusbx/wiki/Windows-Backend"
