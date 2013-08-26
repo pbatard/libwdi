@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2012 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,12 +82,12 @@ enum user_message_type {
 enum windows_version {
 	WINDOWS_UNDEFINED,
 	WINDOWS_UNSUPPORTED,
-	WINDOWS_2K,
 	WINDOWS_XP,
-	WINDOWS_2003,
+	WINDOWS_2003,	// Also XP_64
 	WINDOWS_VISTA,
 	WINDOWS_7,
-	WINDOWS_8_OR_LATER
+	WINDOWS_8_OR_LATER,
+	WINDOWS_MAX
 };
 
 // WCID states
@@ -108,10 +108,11 @@ enum wcid_state {
 #define safe_stricmp(str1, str2) _stricmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
-#define safe_sprintf _snprintf
+#define safe_sprintf(dst, count, ...) do {_snprintf(dst, count, __VA_ARGS__); (dst)[(count)-1] = 0; } while(0)
 #define safe_strlen(str) ((((char*)str)==NULL)?0:strlen(str))
 #define safe_strdup _strdup
 #define MF_CHECK(cond) ((cond)?MF_CHECKED:MF_UNCHECKED)
+#define IGNORE_RETVAL(expr) do { (void)(expr); } while(0)
 
 #if defined(_MSC_VER)
 #define safe_vsnprintf(buf, size, format, arg) _vsnprintf_s(buf, size, _TRUNCATE, format, arg)
@@ -137,6 +138,7 @@ char* to_valid_filename(char* name, char* ext);
 HWND create_tooltip(HWND hWnd, char* message, int duration);
 void destroy_tooltip(HWND hWnd);
 void destroy_all_tooltips(void);
+void set_title_bar_icon(HWND hDlg);
 
 /*
  * Globals

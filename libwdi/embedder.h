@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 
 // Some adjustment is needed for MSVC
 #if defined(_MSC_VER)
+#pragma warning(disable:6385)
 // Because the embedder is compiled as 32 bit always, we detect
 // 64 bit MS compilations through an additional include
 #include "build64.h"

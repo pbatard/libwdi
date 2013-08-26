@@ -1,7 +1,7 @@
 /*
  * mssign32.h: MSSign32 interface for code signing
  *
- * Copyright (c) 2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2011-2013 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

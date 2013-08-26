@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  *
  * This library is free software; you can redistribute it and/or
@@ -307,8 +307,10 @@ static LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam
 				// 300 secs is the timeout for driver installation on Vista
 				wdi_err("progress timeout expired - KILLING THREAD!");
 				handle = OpenThread(THREAD_TERMINATE, FALSE, (DWORD)progress_thid);
-				TerminateThread(handle, -1);
-				CloseHandle(handle);
+				if (handle != NULL) {
+					TerminateThread(handle, -1);
+					CloseHandle(handle);
+				}
 				PostQuitMessage(WDI_ERROR_TIMEOUT);
 				DestroyWindow(hProgress);
 				return (INT_PTR)FALSE;

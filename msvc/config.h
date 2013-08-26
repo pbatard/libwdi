@@ -9,6 +9,11 @@
 /* Disable "Banned API Usage:" errors when using WDK's OACR/Prefast */
 #pragma warning(disable:28719)
 #endif
+#if defined(_MSC_VER)
+// Disable some VS2012 Code Analysis warnings
+#pragma warning(disable:6258)		// We'll use TerminateThread() regardless
+#pragma warning(disable:6387)
+#endif
 
 /* 
  * Embed WinUSB driver files from the following DDK location

@@ -1,6 +1,6 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2011-2013 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
@@ -562,7 +562,7 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 			org[0] = 0; org_unit[0] = 0;
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATION_NAME, org, sizeof(org));
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATIONAL_UNIT_NAME, org_unit, sizeof(org_unit));
-			_snprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
+			safe_sprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
 				"as a Trusted Publisher on your system:\n\n '%s%s%s%s'\n\n"
 				"This will allow this Publisher to run software with elevated privileges,\n"
 				"as well as install driver packages, without further security notices.\n\n"

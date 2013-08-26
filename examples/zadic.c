@@ -1,7 +1,7 @@
 
 /*
 * Zadic: Automated Driver Installer for USB devices (Console version)
-* Copyright (c) 2010 Pete Batard <pbatard@gmail.com>
+* Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
 * Copyright (c) 2010 Joseph Marshall <jmarshall@gcdataconcepts.com>
 *
 * This library is free software; you can redistribute it and/or

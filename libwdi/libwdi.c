@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2011 Pete Batard <pbatard@gmail.com>
+ * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -225,30 +225,18 @@ static enum windows_version detect_version(void)
 	if (OSVersion.dwPlatformId != VER_PLATFORM_WIN32_NT)
 		return WINDOWS_UNSUPPORTED;
 	// See the Remarks section from http://msdn.microsoft.com/en-us/library/windows/desktop/ms724833.aspx
-	if ((OSVersion.dwMajorVersion < 5) || ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 0))) {
-		wdi_info("Windows 2000 or earlier");
+	if ((OSVersion.dwMajorVersion < 5) || ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 0)))
 		return WINDOWS_UNSUPPORTED;
-	}
-	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 1)) {
-		wdi_info("Windows XP");
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 1))
 		return WINDOWS_XP;
-	}
-	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 2)) {
-		wdi_info("Windows 2003 or Windows XP 64 bit");
+	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 2))
 		return WINDOWS_2003;
-	}
-	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 0)) {
-		wdi_info("Windows Vista");
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 0))
 		return WINDOWS_VISTA;
-	}
-	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 1)) {
-		wdi_info("Windows 7");
+	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 1))
 		return WINDOWS_7;
-	}
-	if ((OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion >= 2))) {
-		wdi_info("Windows 8 or later");
+	if ((OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion >= 2)))
 		return WINDOWS_8_OR_LATER;
-	}
 	return WINDOWS_UNSUPPORTED;
 }
 
@@ -596,7 +584,7 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #if defined(DDK_DIR)
 		// WinUSB is not supported on Win2k/2k3
 		GET_WINDOWS_VERSION;
-		if ( (windows_version == WINDOWS_2K)
+		if ( (windows_version < WINDOWS_XP)
 		  || (windows_version == WINDOWS_2003) ) {
 			return false;
 		}
@@ -1246,7 +1234,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	} else if ((options != NULL) && (options->device_guid != NULL)) {
 		strguid = options->device_guid;
 	} else {
-		CoCreateGuid(&guid);
+		IGNORE_RETVAL(CoCreateGuid(&guid));
 		strguid = guid_to_string(guid);
 	}
 	static_sprintf(inf_entities[DEVICE_INTERFACE_GUID].replace, "%s", strguid);

@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2012 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -264,6 +264,8 @@ int install_driver(void)
 
 		if (pd_options.use_wcid_driver) {
 			dev->desc = (char*)malloc(128);
+			if (dev->desc == NULL)
+				r = WDI_ERROR_RESOURCE; goto out;
 			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 		} else {
 			// Retrieve the various device parameters
@@ -757,6 +759,23 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 	return h;
 }
 
+static __inline const char* PrintWindowsVersion(enum windows_version version)
+{
+	// Must be in the same order as enum WindowsVersion
+	static const char* WindowsVersionName[WINDOWS_MAX] = {
+		"Undefined",
+		"Windows 2000 or earlier (unsupported)",
+		"Windows XP",
+		"Windows 2003 (or XP x64)",
+		"Windows Vista",
+		"Windows 7",
+		"Windows 8 or later",
+	};
+	if ((version < 0) || (version >= WINDOWS_MAX))
+		version = WINDOWS_UNDEFINED;
+	return WindowsVersionName[version];
+}
+
 void init_dialog(HWND hDlg)
 {
 	int err;
@@ -767,6 +786,8 @@ void init_dialog(HWND hDlg)
 	long lfHeight;
 	RECT rect;
 	int i16, i24;
+	BOOL is_x64 = FALSE;
+	BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 
 	struct {
 		HIMAGELIST himl;
@@ -794,6 +815,8 @@ void init_dialog(HWND hDlg)
 	ReleaseDC(hDlg, hdc);
 	i24 = (int)(24.0f*fScale);
 
+	// Set the title bar icon
+	set_title_bar_icon(hDlg);
 	// Create the status line
 	create_status_bar();
 	// Display the version in the right area of the status bar
@@ -929,6 +952,18 @@ void init_dialog(HWND hDlg)
 	}
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
+
+	// Detect if we're running a 32 or 64 bit system
+	if (sizeof(uintptr_t) < 8) {
+		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
+			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
+		if (pIsWow64Process != NULL) {
+			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
+		}
+	} else {
+		is_x64 = TRUE;
+	}
+	dprintf("Windows version: %s %d-bit\n", PrintWindowsVersion(windows_version), is_x64?64:32);
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
@@ -1656,7 +1691,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 /*
  * Application Entrypoint
  */
+#if defined(_MSC_VER) && (_MSC_VER >= 1600)
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
+#else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+#endif
 {
 	HANDLE mutex = NULL;
 	HWND hDlg = NULL;
@@ -1687,7 +1726,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	main_instance = hInstance;
 
 	// Initialize COM for folder selection
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);

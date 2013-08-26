@@ -575,6 +575,8 @@ fallback:
 	// Set the file extension filters
 	ext_strlen = strlen(ext_desc) + 2*strlen(ext) + sizeof(" (*.)\0*.\0All Files (*.*)\0*.*\0\0");
 	ext_string = (char*)malloc(ext_strlen);
+	if (ext_string == NULL)
+		return NULL;
 	safe_sprintf(ext_string, ext_strlen, "%s (*.%s)\r*.%s\rAll Files (*.*)\r*.*\r\0", ext_desc, ext, ext);
 	// Microsoft could really have picked a better delimiter!
 	for (i=0; i<ext_strlen; i++) {
@@ -915,4 +917,42 @@ void destroy_all_tooltips(void)
 		DestroyWindow(ttlist[i].hTip);
 		safe_free(ttlist[i].wstring);
 	}
+}
+
+void set_title_bar_icon(HWND hDlg)
+{
+	HDC hDC;
+	int i16, s16, s32;
+	HICON hSmallIcon, hBigIcon;
+
+	// High DPI scaling
+	i16 = GetSystemMetrics(SM_CXSMICON);
+	hDC = GetDC(hDlg);
+	fScale = GetDeviceCaps(hDC, LOGPIXELSX) / 96.0f;
+	ReleaseDC(hDlg, hDC);
+	// Adjust icon size lookup
+	s16 = i16;
+	s32 = (int)(32.0f*fScale);
+	if (s16 >= 54)
+		s16 = 64;
+	else if (s16 >= 40)
+		s16 = 48;
+	else if (s16 >= 28)
+		s16 = 32;
+	else if (s16 >= 20)
+		s16 = 24;
+	if (s32 >= 54)
+		s32 = 64;
+	else if (s32 >= 40)
+		s32 = 48;
+	else if (s32 >= 28)
+		s32 = 32;
+	else if (s32 >= 20)
+		s32 = 24;
+
+	// Create the title bar icon
+	hSmallIcon = (HICON)LoadImage(main_instance, MAKEINTRESOURCE(IDI_ZADIG), IMAGE_ICON, s16, s16, 0);
+	SendMessage (hDlg, WM_SETICON, ICON_SMALL, (LPARAM)hSmallIcon);
+	hBigIcon = (HICON)LoadImage(main_instance, MAKEINTRESOURCE(IDI_ZADIG), IMAGE_ICON, s32, s32, 0);
+	SendMessage (hDlg, WM_SETICON, ICON_BIG, (LPARAM)hBigIcon);
 }
