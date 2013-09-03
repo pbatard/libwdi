@@ -24,6 +24,7 @@ automake -a -c || exit 1
 
 git archive master | tar -x -C $TARGET_DIR
 cp -r m4 autom4te.cache $TARGET_DIR
+rm -f $TARGET_DIR/*.sh
 cp aclocal.m4 compile config.guess config.sub config.h.in configure depcomp INSTALL install-sh ltmain.sh Makefile.in missing $TARGET_DIR
 cp libwdi/Makefile.in $TARGET_DIR/libwdi/Makefile.in
 cp examples/Makefile.in $TARGET_DIR/examples/Makefile.in

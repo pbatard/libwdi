@@ -28,28 +28,28 @@ AC_ARG_WITH([wdfver],
 	[AS_HELP_STRING([--with-wdfver], [WDF/KDMF version to use - either 1011 or 1009. Use 1009 if you need XP compatibility])],
 	[WDF_VER=$withval],
 	[WDF_VER=1011])
-AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF/KMDF coinstaller version])	
+AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF/KMDF coinstaller version])
 
 AC_ARG_WITH([libusb0],
- 	[AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location])],
- 	[LIBUSB0_DIR=$withval],
- 	[LIBUSB0_DIR=""])
+	[AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location])],
+	[LIBUSB0_DIR=$withval],
+	[LIBUSB0_DIR=""])
 if test "x$LIBUSB0_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([LIBUSB0_DIR], ["${LIBUSB0_DIR}"], [embed libusb0 driver files from the following location])
 fi
 
 AC_ARG_WITH([libusbk],
- 	[AS_HELP_STRING([--with-libusbk], [embed libusbK driver files from the following location])],
- 	[LIBUSBK_DIR=$withval],
- 	[LIBUSBK_DIR=""])
+	[AS_HELP_STRING([--with-libusbk], [embed libusbK driver files from the following location])],
+	[LIBUSBK_DIR=$withval],
+	[LIBUSBK_DIR=""])
 if test "x$LIBUSBK_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([LIBUSBK_DIR], ["${LIBUSBK_DIR}"], [embed libusbK driver files from the following location])
 fi
 
 AC_ARG_WITH([userdir],
- 	[AS_HELP_STRING([--with-userdir], [embed user defined driver files from the following location])],
- 	[USER_DIR=$withval],
- 	[USER_DIR=""])
+	[AS_HELP_STRING([--with-userdir], [embed user defined driver files from the following location])],
+	[USER_DIR=$withval],
+	[USER_DIR=""])
 if test "x$USER_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([USER_DIR], ["${USER_DIR}"], [embed user defined driver files from the following location])
 fi
@@ -109,9 +109,9 @@ LDFLAGS="${saved_LDFLAGS}"
 cross_compiling=$saved_cross_compiling
 if test "x$cc_for_build_ok" != "xyes"; then
 	AC_ERROR([The build compiler cannot produce executables for this
-  platform. You might have to define the CC_FOR_BUILD environment variable.
-  For instance, on 32 bit Windows, if using a multilib MinGW-w64 that defaults
-  to 64 bit executables, you would need: export CC_FOR_BUILD="gcc -m32"])
+	platform. You might have to define the CC_FOR_BUILD environment variable.
+	For instance, on 32 bit Windows, if using a multilib MinGW-w64 that defaults
+	to 64 bit executables, you would need: export CC_FOR_BUILD="gcc -m32"])
 fi
 
 # 32 bit support
@@ -225,11 +225,11 @@ then
 		# check that the required WinUSB DDK files are available
 		AC_CHECK_FILES([$DDK_DIR/redist/winusb/], [COINSTALLER_DIR="winusb"], [COINSTALLER_DIR="wdf"])
 		AC_DEFINE_UNQUOTED([COINSTALLER_DIR], ["${COINSTALLER_DIR}"], [CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf")])
-	  AC_SUBST([COINSTALLER_DIR])	
+		AC_SUBST([COINSTALLER_DIR])
 		if test "x$enable_64bit" != "xno"; then
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x64/], [X64_DIR="x64"], [X64_DIR="amd64"])
 		AC_DEFINE_UNQUOTED([X64_DIR], ["${X64_DIR}"], [64bit subdirectory for WinUSB redist files ("x64" or "amd64")])
-	  AC_SUBST([X64_DIR])	
+		AC_SUBST([X64_DIR])
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/${X64_DIR}/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/${X64_DIR}/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB x64 driver files could not be detected (--with-ddkdir)])])
 		fi
@@ -241,6 +241,10 @@ then
 		AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/ia64/winusbcoinstaller2.dll], [],
 			[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
 		fi
+		case "$DDK_DIR" in
+			[[\\/]]*|?:[[\\/]]*) ;;
+			*) AC_DEFINE_UNQUOTED([DDK_DIR], "../$DDK_DIR");;
+		esac
 	fi
 
 	if test "x$LIBUSB0_DIR" != "x"; then
@@ -255,6 +259,10 @@ then
 		AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
 			[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
 		fi
+		case "$LIBUSB0_DIR" in
+			[[\\/]]*|?:[[\\/]]*) ;;
+			*) AC_DEFINE_UNQUOTED([LIBUSB0_DIR], "../$LIBUSB0_DIR");;
+		esac
 	fi
 
 	if test "x$LIBUSBK_DIR" != "x"; then
@@ -269,10 +277,18 @@ then
 		AC_CHECK_FILES([$LIBUSBK_DIR/sys/ia64/libusbK.sys $LIBUSBK_DIR/dll/ia64/libusbK.dll $LIBUSBK_DIR/dll/ia64/libusb0.dll],,
 			[AC_MSG_ERROR([the libusbK ia64 driver files could not be detected (--with-libusbk)])])
 		fi
+		case "$LIBUSBK_DIR" in
+			[[\\/]]*|?:[[\\/]]*) ;;
+			*) AC_DEFINE_UNQUOTED([LIBUSBK_DIR], "../$LIBUSBK_DIR");;
+		esac
 	fi
 
 	if test "x$USER_DIR" != "x"; then
 		AC_CHECK_FILE([$USER_DIR],,[AC_MSG_ERROR([the custom driver directory could not be detected (--with-userdir)])])
+		case "$USER_DIR" in
+			[[\\/]]*|?:[[\\/]]*) ;;
+			*) AC_DEFINE_UNQUOTED([USER_DIR], "../$USER_DIR");;
+		esac
 	fi
 fi
 
