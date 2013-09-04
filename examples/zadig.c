@@ -99,6 +99,7 @@ bool installation_running = false;
 bool unknown_vid = false;
 bool has_filter_driver = false;
 bool use_arrow_icons = false;
+bool exit_on_success = false;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
@@ -1013,6 +1014,7 @@ bool parse_ini(void) {
 
 	// Set the various boolean options
 	profile_get_boolean(profile, "general", "advanced_mode", NULL, false, &advanced_mode);
+	profile_get_boolean(profile, "general", "exit_on_success", NULL, false, &exit_on_success);
 	profile_get_boolean(profile, "device", "list_all", NULL, false, &cl_options.list_all);
 	profile_get_boolean(profile, "device", "include_hubs", NULL, false, &cl_options.list_hubs);
 	profile_get_boolean(profile, "driver", "extract_only", NULL, false, &extract_only);
@@ -1565,6 +1567,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
 					notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
+					if(exit_on_success){
+						exit(0);
+					}
 				}
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User");
