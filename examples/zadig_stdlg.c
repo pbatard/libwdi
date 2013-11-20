@@ -59,7 +59,7 @@ static LPITEMIDLIST (WINAPI *pSHSimpleIDListFromPath)(PCWSTR pszPath) = NULL;
 static HICON hMessageIcon = (HICON)INVALID_HANDLE_VALUE;
 static char* message_text = NULL;
 static char* message_title = NULL;
-enum windows_version windows_version = WINDOWS_UNSUPPORTED;
+int windows_version = WINDOWS_UNSUPPORTED;
 extern HFONT bold_font;
 extern float fScale;
 static HWND browse_edit;
@@ -160,30 +160,63 @@ static char err_string[ERR_BUFFER_SIZE];
 /*
  * Detect Windows version
  */
-enum windows_version detect_windows_version(void)
+int detect_windows_version(void)
 {
-	OSVERSIONINFO OSVersion;
+	OSVERSIONINFOEXA vi, vi2;
+	unsigned major, minor;
+	ULONGLONG major_equal, minor_equal;
+	BOOL ws;
+	int nWindowsVersion;
 
-	memset(&OSVersion, 0, sizeof(OSVERSIONINFO));
-	OSVersion.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if (GetVersionEx(&OSVersion) == 0)
-		return WINDOWS_UNDEFINED;
-	if (OSVersion.dwPlatformId != VER_PLATFORM_WIN32_NT)
-		return WINDOWS_UNSUPPORTED;
-	// See the Remarks section from http://msdn.microsoft.com/en-us/library/windows/desktop/ms724833.aspx
-	if ((OSVersion.dwMajorVersion < 5) || ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 0)))
-		return WINDOWS_UNSUPPORTED;		// Win2k or earlier
-	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 1))
-		return WINDOWS_XP;
-	if ((OSVersion.dwMajorVersion == 5) && (OSVersion.dwMinorVersion == 2))
-		return WINDOWS_2003;
-	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 0))
-		return WINDOWS_VISTA;
-	if ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion == 1))
-		return WINDOWS_7;
-	if ((OSVersion.dwMajorVersion > 6) || ((OSVersion.dwMajorVersion == 6) && (OSVersion.dwMinorVersion >= 2)))
-		return WINDOWS_8_OR_LATER;
-	return WINDOWS_UNSUPPORTED;
+	nWindowsVersion = WINDOWS_UNDEFINED;
+
+	memset(&vi, 0, sizeof(vi));
+	vi.dwOSVersionInfoSize = sizeof(vi);
+	if (!GetVersionExA((OSVERSIONINFOA *)&vi)) {
+		memset(&vi, 0, sizeof(vi));
+		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
+		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
+			return nWindowsVersion;
+	}
+
+	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+
+		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
+			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
+			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+
+			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
+			for (major = vi.dwMajorVersion; major <= 9; major++) {
+				memset(&vi2, 0, sizeof(vi2));
+				vi2.dwOSVersionInfoSize = sizeof(vi2); vi2.dwMajorVersion = major;
+				if (!VerifyVersionInfoA(&vi2, VER_MAJORVERSION, major_equal))
+					continue;
+				if (vi.dwMajorVersion < major) {
+					vi.dwMajorVersion = major; vi.dwMinorVersion = 0;
+				}
+
+				minor_equal = VerSetConditionMask(0, VER_MINORVERSION, VER_EQUAL);
+				for (minor = vi.dwMinorVersion; minor <= 9; minor++) {
+					memset(&vi2, 0, sizeof(vi2)); vi2.dwOSVersionInfoSize = sizeof(vi2);
+					vi2.dwMinorVersion = minor;
+					if (!VerifyVersionInfoA(&vi2, VER_MINORVERSION, minor_equal))
+						continue;
+					vi.dwMinorVersion = minor;
+					break;
+				}
+
+				break;
+			}
+		}
+
+		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
+			ws = (vi.wProductType <= VER_NT_WORKSTATION);
+			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
+			if (nWindowsVersion < 0x51)
+				nWindowsVersion = WINDOWS_UNSUPPORTED;;
+		}
+	}
+	return nWindowsVersion;
 }
 
 /*

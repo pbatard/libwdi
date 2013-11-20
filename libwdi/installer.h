@@ -85,14 +85,16 @@ enum installer_code {
 /*
  * Windows versions
  */
-enum windows_version {
-	WINDOWS_UNDEFINED,
-	WINDOWS_UNSUPPORTED,
-	WINDOWS_XP,
-	WINDOWS_2003,
-	WINDOWS_VISTA,
-	WINDOWS_7,
-	WINDOWS_8_OR_LATER
+enum WindowsVersion {
+	WINDOWS_UNDEFINED = -1,
+	WINDOWS_UNSUPPORTED = 0,
+	WINDOWS_XP = 0x51,
+	WINDOWS_2003 = 0x52,	// Also XP x64
+	WINDOWS_VISTA = 0x60,
+	WINDOWS_7 = 0x61,
+	WINDOWS_8 = 0x62,
+	WINDOWS_8_1_OR_LATER = 0x63,
+	WINDOWS_MAX
 };
 
 /*

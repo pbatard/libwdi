@@ -72,7 +72,7 @@ HFONT hyperlink_font, bold_font;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 float fScale = 1.0f;
-extern enum windows_version windows_version;
+extern int windows_version;
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH];
 const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "Custom (extract only)" };
@@ -760,21 +760,119 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 	return h;
 }
 
-static __inline const char* PrintWindowsVersion(enum windows_version version)
+static BOOL is_x64(void)
 {
-	// Must be in the same order as enum WindowsVersion
-	static const char* WindowsVersionName[WINDOWS_MAX] = {
-		"Undefined",
-		"Windows 2000 or earlier (unsupported)",
-		"Windows XP",
-		"Windows 2003 (or XP x64)",
-		"Windows Vista",
-		"Windows 7",
-		"Windows 8 or later",
-	};
-	if ((version < 0) || (version >= WINDOWS_MAX))
-		version = WINDOWS_UNDEFINED;
-	return WindowsVersionName[version];
+	BOOL ret = FALSE;
+	BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
+	// Detect if we're running a 32 or 64 bit system
+	if (sizeof(uintptr_t) < 8) {
+		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
+			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
+		if (pIsWow64Process != NULL) {
+			(*pIsWow64Process)(GetCurrentProcess(), &ret);
+		}
+	} else {
+		ret = TRUE;
+	}
+	return ret;
+}
+
+// From smartmontools os_win32.cpp
+static const char* PrintWindowsVersion(void)
+{
+	OSVERSIONINFOEXA vi, vi2;
+	const char* w = 0;
+	const char* w64 = "32 bit";
+	char* vptr;
+	size_t vlen;
+	unsigned major, minor;
+	ULONGLONG major_equal, minor_equal;
+	BOOL ws;
+	int nWindowsVersion;
+	static char WindowsVersionStr[128] = "Windows ";
+
+	nWindowsVersion = WINDOWS_UNDEFINED;
+	safe_strcpy(WindowsVersionStr, sizeof(WindowsVersionStr), "Windows Undefined");
+
+	memset(&vi, 0, sizeof(vi));
+	vi.dwOSVersionInfoSize = sizeof(vi);
+	if (!GetVersionExA((OSVERSIONINFOA *)&vi)) {
+		memset(&vi, 0, sizeof(vi));
+		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
+		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
+			return WindowsVersionStr;
+	}
+
+	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+
+		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
+			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
+			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+
+			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
+			for (major = vi.dwMajorVersion; major <= 9; major++) {
+				memset(&vi2, 0, sizeof(vi2));
+				vi2.dwOSVersionInfoSize = sizeof(vi2); vi2.dwMajorVersion = major;
+				if (!VerifyVersionInfoA(&vi2, VER_MAJORVERSION, major_equal))
+					continue;
+				if (vi.dwMajorVersion < major) {
+					vi.dwMajorVersion = major; vi.dwMinorVersion = 0;
+				}
+
+				minor_equal = VerSetConditionMask(0, VER_MINORVERSION, VER_EQUAL);
+				for (minor = vi.dwMinorVersion; minor <= 9; minor++) {
+					memset(&vi2, 0, sizeof(vi2)); vi2.dwOSVersionInfoSize = sizeof(vi2);
+					vi2.dwMinorVersion = minor;
+					if (!VerifyVersionInfoA(&vi2, VER_MINORVERSION, minor_equal))
+						continue;
+					vi.dwMinorVersion = minor;
+					break;
+				}
+
+				break;
+			}
+		}
+
+		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
+			ws = (vi.wProductType <= VER_NT_WORKSTATION);
+			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
+			switch (nWindowsVersion) {
+			case 0x50: w = "2000";
+				break;
+			case 0x51: w = "XP";
+				break;
+			case 0x52: w = (!GetSystemMetrics(89)?"2003":"2003_R2");
+				break;
+			case 0x60: w = (ws?"Vista":"2008");
+				break;
+			case 0x61: w = (ws?"7":"2008_R2");
+				break;
+			case 0x62: w = (ws?"8":"2012");
+				break;
+			case 0x63: w = (ws?"8.1":"2012_R2");
+				break;
+			default:
+				nWindowsVersion = WINDOWS_UNSUPPORTED;
+				break;
+			}
+		}
+	}
+
+	if (is_x64())
+		w64 = "64-bit";
+
+	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
+	vlen = sizeof(WindowsVersionStr) - sizeof("Windows ") - 1;
+	if (!w)
+		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId==VER_PLATFORM_WIN32_NT?"NT":"??"),
+			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, w64);
+	else if (vi.wServicePackMinor)
+		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
+	else if (vi.wServicePackMajor)
+		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
+	else
+		safe_sprintf(vptr, vlen, "%s %s", w, w64);
+	return WindowsVersionStr;
 }
 
 void init_dialog(HWND hDlg)
@@ -787,8 +885,6 @@ void init_dialog(HWND hDlg)
 	long lfHeight;
 	RECT rect;
 	int i16, i24;
-	BOOL is_x64 = FALSE;
-	BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 
 	struct {
 		HIMAGELIST himl;
@@ -954,17 +1050,7 @@ void init_dialog(HWND hDlg)
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
-	// Detect if we're running a 32 or 64 bit system
-	if (sizeof(uintptr_t) < 8) {
-		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
-		if (pIsWow64Process != NULL) {
-			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
-		}
-	} else {
-		is_x64 = TRUE;
-	}
-	dprintf("Windows version: %s %d-bit\n", PrintWindowsVersion(windows_version), is_x64?64:32);
+	dprintf(PrintWindowsVersion());
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
