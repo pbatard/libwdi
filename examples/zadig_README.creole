@@ -1,10 +1,16 @@
-**Note**: You will need [[http://www.7-zip.org/|7-zip]] to extract the file. You can download 7-zip for Windows **[[http://www.7-zip.org/download.html|here]]**.
 == **IMPORTANT: WINDOWS XP USERS, PLEASE DOWNLOAD THE _XP VERSION: ** ==
 From v2.0.1.156 on, the default version of Zadig uses [[http://msdn.microsoft.com/en-us/library/windows/hardware/gg463279.aspx|KMDF]] v1.11, from the Windows 8 Driver Kit, for WinUSB and libusbK driver installation.\\
 However this version of KMDF is **INCOMPATIBLE** with Windows XP.\\
 Since v2.0.1.160, a specific version of Zadig is also released for XP users, using KMDF v1.09. If you are running XP, please download the **_xp** version!
 
 = Screenshot:\\{{https://github.com/pbatard/libwdi/wiki/images/zadig.png|Zadig screenshot}}\\Changelog: =
+=== v2.0.1.162: ===
+* fix support for devices that have a comma in their description
+* fix usage of relative directories for driver files
+* add support for VIA VL805 USB 3.0 Host Controllers
+* add 'exit_on_success' option in zadig.ini
+* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.6.0
+
 === v2.0.1.161: ===
 * Newer versions of Zadig are now avilable at http://zadig.akeo.ie
 * Zadig is now provided as an LZMA compressed executable

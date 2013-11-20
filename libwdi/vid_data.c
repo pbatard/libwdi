@@ -29,7 +29,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2013.08.21
+ * Version: 2013.10.23
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -41,6 +41,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0105, "Trust International B.V." },
 	{ 0x0145, "Unknown" },
 	{ 0x017c, "MLK" },
+	{ 0x0200, "TP-Link" },
 	{ 0x0204, "Chipsbank Microelectronics Co., Ltd" },
 	{ 0x0218, "Hangzhou Worlde" },
 	{ 0x02ad, "HUMAX Co., Ltd." },
@@ -2765,6 +2766,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x21d6, "Agecodagis SARL" },
 	{ 0x2222, "MacAlly" },
 	{ 0x2227, "SAMWOO Enterprise" },
+	{ 0x2232, "Silicon Motion" },
 	{ 0x2233, "RadioShack Corporation" },
 	{ 0x2237, "Kobo Inc." },
 	{ 0x22a6, "Pie Digital, Inc." },
