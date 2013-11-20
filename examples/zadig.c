@@ -156,7 +156,7 @@ int display_devices(void)
 	_IGNORE(ComboBox_ResetContent(hDeviceList));
 
 	for (dev = list; dev != NULL; dev = dev->next) {
-		// Compute the width needed to accomodate our text
+		// Compute the width needed to accommodate our text
 		GetTextExtentPointU(hdc, dev->desc, &size);
 		max_width = max(max_width, size.cx);
 
@@ -323,7 +323,7 @@ int install_driver(void)
 	}
 	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
-		dsprintf("Succesfully extracted driver files.");
+		dsprintf("Successfully extracted driver files.");
 		// Perform the install if not extracting the files only
 		if ((pd_options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)

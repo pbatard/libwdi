@@ -363,7 +363,7 @@ static __inline char* xlocale_to_utf8(const char* str)
 
 /*
  * Send individual lines of the syslog section pointed by buffer back to the main application
- * xbuffer's payload MUST start at byte 1 to accomodate the SYSLOG_MESSAGE prefix
+ * xbuffer's payload MUST start at byte 1 to accommodate the SYSLOG_MESSAGE prefix
  */
 DWORD process_syslog(char* buffer, DWORD size)
 {

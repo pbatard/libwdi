@@ -847,7 +847,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		// We assume that the first one (REG_MULTI_SZ) is the one we are interested in
 		device_info->hardware_id = safe_strdup(strbuf);
 
-		// Retreive the first Compatible ID
+		// Retrieve the first Compatible ID
 		if (SetupDiGetDeviceRegistryPropertyA(dev_info, &dev_info_data, SPDRP_COMPATIBLEIDS,
 			&reg_type, (BYTE*)strbuf, STR_BUFFER_SIZE, &size)) {
 			wdi_dbg("Compatible ID: %s", strbuf);
@@ -1299,7 +1299,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 		wdi_err("could not tokenize inf file (%d)", inf_file_size);
 		MUTEX_RETURN WDI_ERROR_ACCESS;
 	}
-	wdi_info("succesfully created '%s'", inf_path);
+	wdi_info("successfully created '%s'", inf_path);
 
 	GET_WINDOWS_VERSION;
 	INIT_VISTA_SHELL32;
