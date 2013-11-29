@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* Memory leaks detection - define _CRTDBG_MAP_ALLOC as preprocessor macro */
+#ifdef _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #include <windows.h>
 #include <config.h>
 #include <stdarg.h>

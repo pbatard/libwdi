@@ -99,6 +99,7 @@ BEGIN
     BEGIN
         MENUITEM "Online &Help",                IDM_ONLINEHELP
         MENUITEM "Open &Certificate Manager",   IDM_CERTMGR
+        MENUITEM "&Update Policy and Settings", IDM_UPDATES
         MENUITEM "&About",                      IDM_ABOUT
     END
 END
@@ -107,10 +108,10 @@ IDR_INSTALLSPLIT MENU
 BEGIN
     POPUP "Dummy Popup"
     BEGIN
-        MENUITEM "Install Driver",              IDM_SPLIT_INSTALL, CHECKED
-        MENUITEM "Install WCID Driver",         IDM_SPLIT_WCID
-        MENUITEM "Install Filter Driver",       IDM_SPLIT_FILTER
-        MENUITEM "Extract Files (Don't Install)", IDM_SPLIT_EXTRACT
+        MENUITEM "Install &Driver",             IDM_SPLIT_INSTALL, CHECKED
+        MENUITEM "Install &WCID Driver",        IDM_SPLIT_WCID
+        MENUITEM "Install &Filter Driver",      IDM_SPLIT_FILTER
+        MENUITEM "E&xtract Files (Don't Install)", IDM_SPLIT_EXTRACT
     END
 END
 
@@ -163,24 +164,17 @@ BEGIN
     LTEXT           "WinUSB (Microsoft)",IDC_WINUSB_URL,297,87,65,9,SS_NOTIFY
 END
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 287, 195
-STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ABOUTBOX DIALOGEX 0, 0, 287, 204
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About Zadig"
-FONT 8, "Microsoft Sans Serif", 400, 0, 0x0
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
     ICON            IDI_ZADIG,IDC_ABOUT_ICON,11,8,20,20
-    LTEXT           "Zadig",IDC_ZADIG_BOLD,46,8,25,8,SS_NOPREFIX | SS_NOTIFY
-    LTEXT           "Copyright (c) 2010-2013 Pete Batard",IDC_STATIC,46,36,139,8
-    DEFPUSHBUTTON   "OK",IDOK,231,174,50,16,WS_GROUP
-    CONTROL         "<a href=""http://libwdi.akeo.ie"">http://libwdi.akeo.ie</a>",IDC_ABOUT_LIBWDI_URL,
-                    "SysLink",WS_TABSTOP,46,47,87,9
-    LTEXT           "Version 2.0.1 (Build 162)",IDC_STATIC,46,19,78,8
-    DEFPUSHBUTTON   "License...",IDC_ABOUT_LICENSE,46,174,50,16,WS_GROUP
-    EDITTEXT        IDC_ABOUT_COPYRIGHTS,46,107,235,63,ES_MULTILINE | ES_READONLY | WS_VSCROLL
-    LTEXT           "Report bugs or request enhancements at:",IDC_STATIC,46,66,187,8
-    LTEXT           "Portions copyright:",IDC_STATIC,46,95,59,8
-    CONTROL         "<a>https://github.com/pbatard/libwdi/issues</a>",IDC_ABOUT_BUG_URL,
-                    "SysLink",WS_TABSTOP,46,76,203,14
+    DEFPUSHBUTTON   "OK",IDOK,231,183,50,14,WS_GROUP
+    PUSHBUTTON      "License",IDC_ABOUT_LICENSE,46,183,50,14,WS_GROUP
+    CONTROL         "",IDC_ABOUT_COPYRIGHTS,"RichEdit20W",ES_MULTILINE | ES_READONLY | WS_VSCROLL,46,96,235,81,WS_EX_STATICEDGE
+    CONTROL         "",IDC_ABOUT_BLURB,"RichEdit20W",ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | WS_TABSTOP,46,7,235,89
+    PUSHBUTTON      "Updates",IDC_ABOUT_UPDATES,100,183,50,14,NOT WS_VISIBLE | WS_GROUP
 END
 
 IDD_NOTIFICATION DIALOGEX 0, 0, 263, 63
@@ -192,7 +186,9 @@ BEGIN
     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,0,0,263,38
     ICON            32516,IDC_NOTIFICATION_ICON,6,6,20,20
     LTEXT           "",IDC_NOTIFICATION_TEXT,35,10,219,20
-    PUSHBUTTON      "Close",IDC_NOTIFICATION_CLOSE,211,44,43,14
+    DEFPUSHBUTTON   "No",IDNO,206,44,50,14
+    PUSHBUTTON      "More information",IDC_MORE_INFO,8,44,63,14,NOT WS_VISIBLE
+    PUSHBUTTON      "Yes",IDYES,154,44,50,14,NOT WS_VISIBLE
 END
 
 IDD_LICENSE DIALOGEX 0, 0, 335, 205
@@ -204,6 +200,41 @@ BEGIN
     EDITTEXT        IDC_LICENSE_TEXT,7,7,321,176,ES_MULTILINE | ES_READONLY | WS_VSCROLL
 END
 
+IDD_UPDATE_POLICY DIALOGEX 0, 0, 287, 198
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Update policy and settings"
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    ICON            IDI_ZADIG,IDC_ABOUT_ICON,11,8,20,20
+    DEFPUSHBUTTON   "Close",IDCANCEL,221,172,50,14,WS_GROUP
+    CONTROL         "",IDC_POLICY,"RichEdit20W",WS_VSCROLL | 0x804,46,8,235,130,WS_EX_STATICEDGE
+    COMBOBOX        IDC_UPDATE_FREQUENCY,133,155,66,12,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Check for updates:",IDS_UPDATE_FREQUENCY_TXT,52,157,80,11
+    LTEXT           "Include beta versions:",IDS_INCLUDE_BETAS_TXT,52,173,80,11
+    COMBOBOX        IDC_INCLUDE_BETAS,133,171,36,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Settings",IDS_UPDATE_SETTINGS_GRP,45,145,161,46
+    PUSHBUTTON      "Check Now",IDC_CHECK_NOW,221,154,50,14
+    GROUPBOX        "",IDS_CHECK_NOW_GRP,210,145,71,46
+END
+
+IDD_NEW_VERSION DIALOGEX 0, 0, 384, 268
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Check For Updates"
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    PUSHBUTTON      "Close",IDCANCEL,167,244,50,14,WS_GROUP
+    CONTROL         "",IDC_RELEASE_NOTES,"RichEdit20W",WS_VSCROLL | 0x804,15,77,352,88,WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "Download",IDC_DOWNLOAD,293,211,74,14,WS_GROUP
+    CONTROL         "",IDC_PROGRESS,"msctls_progress32",WS_BORDER,15,212,270,11
+    GROUPBOX        "Release Notes",IDS_NEW_VERSION_NOTES_GRP,8,63,367,111
+    LTEXT           "A newer version is available. Please download the latest version!",IDS_NEW_VERSION_AVAIL_TXT,10,32,366,8
+    LTEXT           "[...]",IDC_YOUR_VERSION,10,8,366,8
+    LTEXT           "[...]",IDC_LATEST_VERSION,10,19,366,8
+    CTEXT           "Click here to go to the website",IDC_WEBSITE,10,49,366,9,SS_NOTIFY
+    GROUPBOX        "Download",IDS_NEW_VERSION_DOWNLOAD_GRP,8,177,367,58
+    EDITTEXT        IDC_DOWNLOAD_URL,15,191,351,13,ES_AUTOHSCROLL | ES_READONLY
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -211,8 +242,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,1,162
- PRODUCTVERSION 2,0,1,162
+ FILEVERSION 2,1,0,163
+ PRODUCTVERSION 2,1,0,163
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -229,13 +260,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig"
-            VALUE "FileVersion", "2.0.1.162"
+            VALUE "FileVersion", "2.1.0.163"
             VALUE "InternalName", "Zadig"
-            VALUE "LegalCopyright", "© 2010-2011 Pete Batard (GPL v3)"
+            VALUE "LegalCopyright", "© 2010-2013 Pete Batard (GPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/gpl.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
-            VALUE "ProductVersion", "2.0.1.162"
+            VALUE "ProductVersion", "2.1.0.163"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
@@ -256,12 +287,10 @@ GUIDELINES DESIGNINFO
 BEGIN
     "MAIN_DIALOG", DIALOG
     BEGIN
-        BOTTOMMARGIN, 306
     END
 
     IDD_ABOUTBOX, DIALOG
     BEGIN
-        BOTTOMMARGIN, 191
     END
 
     IDD_NOTIFICATION, DIALOG
@@ -270,10 +299,14 @@ BEGIN
 
     IDD_LICENSE, DIALOG
     BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 328
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 200
+    END
+
+    IDD_UPDATE_POLICY, DIALOG
+    BEGIN
+    END
+
+    IDD_NEW_VERSION, DIALOG
+    BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED

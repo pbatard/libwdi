@@ -8,6 +8,8 @@
 #define IDD_NOTIFICATION                105
 #define IDB_ZADIG                       106
 #define IDD_LICENSE                     107
+#define IDD_UPDATE_POLICY               108
+#define IDD_NEW_VERSION                 109
 #define IDC_DEVICELIST                  1001
 #define IDC_VID                         1002
 #define IDC_PID                         1003
@@ -26,7 +28,7 @@
 #define IDC_WCID                        1016
 #define IDC_STATUS_RIGHT                1017
 #define IDC_BROWSE                      1019
-#define IDC_ABOUT_LIBWDI_URL            1034
+#define IDC_ABOUT_BLURB                 1034
 #define IDC_CLEAR                       1036
 #define IDC_SAVE                        1037
 #define IDC_TARGETSPIN                  1039
@@ -49,11 +51,32 @@
 #define IDC_THIS_SPACE_FOR_RENT         1070
 #define IDC_VIDPID                      1071
 #define IDC_ABOUT_COPYRIGHTS            1072
-#define IDC_ABOUT_BUG_URL               1073
+#define IDC_ABOUT_UPDATES               1073
 #define IDC_ZADIG_BOLD                  1074
 #define IDC_ABOUT_LICENSE               1075
 #define IDC_LICENSE_TEXT                1076
+#define IDC_MORE_INFO                   1077
+#define IDC_POLICY                      1078
+#define IDC_UPDATE_FREQUENCY            1079
+#define IDC_INCLUDE_BETAS               1080
+#define IDC_RELEASE_NOTES               1081
+#define IDC_DOWNLOAD                    1082
+#define IDC_CHECK_NOW                   1083
+#define IDC_WEBSITE                     1084
+#define IDC_YOUR_VERSION                1085
+#define IDC_LATEST_VERSION              1086
+#define IDC_DOWNLOAD_URL                1087
+#define IDS_UPDATE_SETTINGS_GRP         1088
+#define IDS_UPDATE_FREQUENCY_TXT        1089
+#define IDS_INCLUDE_BETAS_TXT           1090
+#define IDS_NEW_VERSION_AVAIL_TXT       1091
+#define IDS_NEW_VERSION_DOWNLOAD_GRP    1092
+#define IDS_NEW_VERSION_NOTES_GRP       1093
+#define IDS_CHECK_NOW_GRP               1094
+#define IDC_PROGRESS                    1095
+
 #define IDM_ABOUT                       40001
+#define IDM_UPDATES                     40002
 #define IDM_ADVANCEDMODE                40003
 #define IDM_LISTALL                     40004
 #define IDM_CREATE                      40005
@@ -77,9 +100,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        108
+#define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40023
-#define _APS_NEXT_CONTROL_VALUE         1077
+#define _APS_NEXT_CONTROL_VALUE         1096
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -24,6 +24,12 @@
  * See the paragraph on Automatic Elevation at http://helpware.net/VistaCompat.htm
  */
 
+/* Memory leaks detection - define _CRTDBG_MAP_ALLOC as preprocessor macro */
+#ifdef _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #include <windows.h>
 #include <windowsx.h>
 #include <stdlib.h>
@@ -73,6 +79,7 @@ WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 float fScale = 1.0f;
 extern int windows_version;
+WORD application_version[4];
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH];
 const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "Custom (extract only)" };
@@ -89,6 +96,7 @@ int default_driver_type = WDI_WINUSB;
 int log_level = WDI_LOG_LEVEL_INFO;
 int IDC_INSTALL = IDC_INSTALLVISTA;
 int nb_devices = -1;
+int dialog_showing = 0;
 // Application states
 bool advanced_mode = false;
 bool create_device = false;
@@ -139,6 +147,38 @@ void w_printf(bool update_status, const char *format, ...)
 	va_start (args, format);
 	w_printf_v(update_status, format, args);
 	va_end (args);
+}
+
+/*
+ * Display a message on the status bar. If duration is non zero, ensures that message
+ * is displayed for at least duration ms, regardless of any other incoming message
+ */
+static BOOL bStatusTimerArmed = FALSE;
+char szStatusMessage[256] = { 0 };
+static void CALLBACK PrintStatusTimeout(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	bStatusTimerArmed = FALSE;
+	// potentially display lower priority message that was overridden
+	SetDlgItemTextU(hMain, IDC_STATUS, szStatusMessage);
+	KillTimer(hMain, TID_MESSAGE);
+}
+
+void print_status(unsigned int duration, BOOL debug, const char* message)
+{
+	if (message == NULL)
+		return;
+	safe_strcpy(szStatusMessage, sizeof(szStatusMessage), message);
+	if (debug)
+		dprintf("%s\n", szStatusMessage);
+
+	if ((duration) || (!bStatusTimerArmed)) {
+		SetDlgItemTextU(hMain, IDC_STATUS, szStatusMessage);
+	}
+
+	if (duration) {
+		SetTimer(hMain, TID_MESSAGE, duration, PrintStatusTimeout);
+		bStatusTimerArmed = TRUE;
+	}
 }
 
 /*
@@ -271,7 +311,7 @@ int install_driver(void)
 		} else {
 			// Retrieve the various device parameters
 			if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
-				notification(MSG_ERROR, "The description string cannot be empty.", "Driver Installation");
+				notification(MSG_ERROR, NULL, "The description string cannot be empty.", "Driver Installation");
 				r = WDI_ERROR_INVALID_PARAM; goto out;
 			}
 			dev->desc = safe_strdup(str_buf);
@@ -417,7 +457,7 @@ void set_default_driver(void) {
 			}
 		}
 		if (i==WDI_NB_DRIVERS) {
-			notification(MSG_ERROR, "No driver is available for installation with this application.\n"
+			notification(MSG_ERROR, NULL, "No driver is available for installation with this application.\n"
 				"The application will close", "No Driver Available");
 			EndDialog(hMain, 0);
 		}
@@ -760,7 +800,7 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 	return h;
 }
 
-static BOOL is_x64(void)
+BOOL is_x64(void)
 {
 	BOOL ret = FALSE;
 	BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
@@ -875,9 +915,22 @@ static const char* PrintWindowsVersion(void)
 	return WindowsVersionStr;
 }
 
+typedef HIMAGELIST (WINAPI *ImageList_Create_t)(
+	int cx,
+	int cy,
+	UINT flags,
+	int cInitial,
+	int cGrow
+);
+typedef int (WINAPI *ImageList_ReplaceIcon_t)(
+	HIMAGELIST himl,
+	int i,
+	HICON hicon
+);
+
 void init_dialog(HWND hDlg)
 {
-	int err;
+	int i, err;
 	HINSTANCE hDllInst;
 	HICON hIcon;
 	HFONT hf;
@@ -885,6 +938,7 @@ void init_dialog(HWND hDlg)
 	long lfHeight;
 	RECT rect;
 	int i16, i24;
+	char *token, version[] = APP_VERSION;
 
 	struct {
 		HIMAGELIST himl;
@@ -914,6 +968,13 @@ void init_dialog(HWND hDlg)
 
 	// Set the title bar icon
 	set_title_bar_icon(hDlg);
+
+	// Count of Microsoft for making it more attractive to read a
+	// version using strtok() than using GetFileVersionInfo()
+	token = strtok(version, "v");
+	for (i=0; (i<4) && ((token = strtok(NULL, ".")) != NULL); i++)
+		application_version[i] = (uint16_t)atoi(token);
+
 	// Create the status line
 	create_status_bar();
 	// Display the version in the right area of the status bar
@@ -1050,6 +1111,7 @@ void init_dialog(HWND hDlg)
 	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
+	dprintf(APP_VERSION);
 	dprintf(PrintWindowsVersion());
 
 	// Limit the input size of VID, PID, MI
@@ -1203,7 +1265,7 @@ bool parse_preset(char* filename)
 /*
  * Work around the limitations of edit control, for UI aesthetics
  */
-INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+static INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
@@ -1342,6 +1404,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		return (INT_PTR)TRUE;
 
 	case WM_INITDIALOG:
+		SetUpdateCheck();
 		// Setup options
 		cl_options.trim_whitespaces = true;
 
@@ -1370,6 +1433,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 		// Main init
 		init_dialog(hDlg);
+		CheckForUpdates(FALSE);
 
 		// Fall through
 	case UM_REFRESH_LIST:
@@ -1652,17 +1716,17 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
-					notification(MSG_INFO, "The driver was installed successfully.", "Driver Installation");
+					notification(MSG_INFO, NULL, "The driver was installed successfully.", "Driver Installation");
 					if(exit_on_success){
 						exit(0);
 					}
 				}
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User");
-				notification(MSG_WARNING, "Driver installation cancelled by user.", "Driver Installation");
+				notification(MSG_WARNING, NULL, "Driver installation cancelled by user.", "Driver Installation");
 			} else {
 				dsprintf("Driver Installation: FAILED (%s)", wdi_strerror(r));
-				notification(MSG_ERROR, "The driver installation failed.", "Driver Installation");
+				notification(MSG_ERROR, NULL, "The driver installation failed.", "Driver Installation");
 			}
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
@@ -1714,7 +1778,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
-			DialogBoxA(main_instance, MAKEINTRESOURCEA(IDD_ABOUTBOX), hMain, about_callback);
+			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_ABOUTBOX), hMain, about_callback);
+			break;
+		case IDM_UPDATES:
+			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_UPDATE_POLICY), hMain, UpdateCallback);
 			break;
 		case IDM_CERTMGR:
 			memset(&si, 0, sizeof(si));
@@ -1725,7 +1792,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDM_ONLINEHELP:
-			ShellExecuteA(hDlg, "open", ZADIG_URL, NULL, NULL, SW_SHOWNORMAL);
+			ShellExecuteA(hDlg, "open", HELP_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDM_ADVANCEDMODE:
 			toggle_advanced();
@@ -1797,13 +1864,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	 */
 	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
 	char *libusb_path, *tmp;
-	int i;
+	int i, wait_for_mutex = 0;
 	bool r;
 
-	// Prevent 2 applications from running at the same time
-	mutex = CreateMutexA(NULL, TRUE, "Global/Zadig");
-	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS))
-	{
+	// Retrieve the current application directory
+	GetCurrentDirectoryU(MAX_PATH, app_dir);
+
+	// Prevent 2 applications from running at the same time, unless "/W" is passed as an option
+	// in which case we wait for the mutex to be relinquished
+	if ((safe_strlen(lpCmdLine)==2) && (lpCmdLine[0] == '/') && (lpCmdLine[1] == 'W'))
+		wait_for_mutex = 150;		// Try to acquire the mutex for 15 seconds
+	mutex = CreateMutexA(NULL, TRUE, "Global/" APPLICATION_NAME);
+	for (;(wait_for_mutex>0) && (mutex != NULL) && (GetLastError() == ERROR_ALREADY_EXISTS); wait_for_mutex--) {
+		CloseHandle(mutex);
+		Sleep(100);
+		mutex = CreateMutexA(NULL, TRUE, "Global/" APPLICATION_NAME);
+	}
+	if ((mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) {
 		MessageBoxA(NULL, "Another Zadig application is running.\n"
 			"Please close the first application before running another one.",
 			"Other instance detected", MB_ICONSTOP);
@@ -1818,6 +1895,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	// Initialize COM for folder selection
 	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
+
+	// Some dialogs have Rich Edit controls and won't display without this
+	LoadLibraryA("Riched20.dll");
 
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
@@ -1859,6 +1939,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	CloseHandle(mutex);
+#ifdef _CRTDBG_MAP_ALLOC
+	_CrtDumpMemoryLeaks();
+#endif
 
 	return 0;
 }

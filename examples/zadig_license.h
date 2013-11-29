@@ -16,21 +16,55 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const char* additional_copyrights = "License agreements of all following programs\r\n"
-"are part of application license agreement.\r\n"
-"\r\n"
-"Configuration file parsing based on profile.c:\r\n"
-"Copyright (c) 2005-2006, Theodore Ts'o.\r\n"
-"Copyright (c) 2006-2011, the Kerberos Team.\r\n"
-"Redistributable under the GNU General Public License (GPL)\r\n"
-"\r\n"
-"Windows Driver Installer library, libwdi:\r\n"
-"Copyright (c) 2010-2011 by Pete Batard et al.\r\n"
-"GNU Lesser General Public License (LGPL) v3 or later\r\n"
-"\r\n"
-"About and License dialogs inspired by WinSCP\r\n"
-"Copyright (c) 2000-2011 Martin Prikryl.\r\n"
-"GNU General Public License (GPL) v3 or later";
+const char* about_blurb_format =
+"{\\rtf1\\ansi\n"
+"{\\b\\fs20Zadig - The Automated Driver Installer}\\line\n"
+"\\fs18Version %d.%d.%d (Build %d)\\line\n"
+"\\line\n"
+"Copyright © 2010-2013 Pete Batard / Akeo\\line\n"
+APPLICATION_URL "\\line\n"
+"\\line\n"
+"Report bugs or request enhancements at:\\line\n"
+"https://github.com/pbatard/libwdi/issues\\line\n"
+"\\line\n"
+"{\\b\\fs18Additional Copyrights:}}";
+
+const char* additional_copyrights =
+"{\\rtf1\\ansi\n"
+"Windows Driver Installer library, libwdi:\\line\n"
+"Copyright © 2010-20131 by Pete Batard et al.\\line\n"
+"GNU Lesser General Public License (LGPL) v3 or later\\line\n"
+"https://github.com/pbatard/libwdi/wiki\\line\n"
+"\\line\n"
+"Configuration file parsing based on profile.c:\\line\n"
+"Copyright © 2005-2006, Theodore Ts'o.\\line\n"
+"Copyright © 2006-2011, the Kerberos Team.\\line\n"
+"Redistributable under the GNU General Public License (GPL)\\line\n"
+"\\line\n"
+"VID identification from the USB ID Repository\\line\n"
+"Copyright © Stephen J. Gowdy et al., Public Domain\\line\n"
+"http://www.linux-usb.org/usb-ids.html\\line\n"
+"\\line\n"
+"About and License dialogs inspired by WinSCP\\line\n"
+"Copyright © 2000-2013 Martin Prikryl.\\line\n"
+"GNU General Public License (GPL) v3 or later\\line\n"
+"\\line\n"
+"All other references can be found in the source.\\line\n}";
+
+const char* update_policy =
+"{\\rtf1\\ansi{\\fonttbl{\\f0\\fnil\\fcharset0 Microsoft Sans Serif;}{\\f1\\fnil\\fcharset2 Symbol;}}\n"
+"\\fs16\\b Update Policy:\\b0\\line\n"
+"If you choose to allow this program to check for application updates, you agree that the following information may be collected on our server(s):\\par\n"
+"\\pard{\\pntext\\f1\\'B7\\tab}{\\*\\pn\\pnlvlblt\\pnf2\\pnindent0{\\pntxtb\\'B7}}\\fi-150\\li220 Your operating system's architecture and version\\par\n"
+"{\\pntext\\f1\\'B7\\tab}The version of the application you use\\par\n"
+"{\\pntext\\f1\\'B7\\tab}Your IP address\\line\\pard\n"
+"\\line\n"
+"For the purpose of generating private usage statistics, we may keep the information collected, \n"
+"\\b for at most a year\\b0 . However, we will not willingly disclose any of this individual data to third parties.\\line\n\\line\n"
+"\\b Update Process:\\b0\\line\n"
+APPLICATION_NAME " does not install or run background services, therefore update checks are performed only when the main application is running.\\line\n"
+"Internet access is of course required when checking for updates.\\line\n"
+"}";
 
 const char* gplv3 = "                    GNU GENERAL PUBLIC LICENSE\r\n"
 "                       Version 3, 29 June 2007\r\n"

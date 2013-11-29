@@ -21,6 +21,12 @@
 // Undefine the following to run the program as standalone
 //#define CATSIGN_STANDALONE
 
+/* Memory leaks detection - define _CRTDBG_MAP_ALLOC as preprocessor macro */
+#ifdef _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #include <windows.h>
 #include <setupapi.h>
 #include <wincrypt.h>

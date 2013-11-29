@@ -27,6 +27,12 @@
   o Changed grow size from 8192 to 1024
 */
 
+/* Memory leaks detection - define _CRTDBG_MAP_ALLOC as preprocessor macro */
+#ifdef _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif
+
 #include "config.h"
 #include "tokenizer.h"
 #include <stdlib.h>

@@ -1,11 +1,11 @@
-=== v2.0.1.162: ===
+=== v2.0.1.162 (2013.11.20): ===
 * fix support for devices that have a comma in their description
 * fix usage of relative directories for driver files
 * add support for VIA VL805 USB 3.0 Host Controllers
 * add 'exit_on_success' option in zadig.ini
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.6.0
 
-=== v2.0.1.161: ===
+=== v2.0.1.161 (2013.09.03): ===
 * Newer versions of Zadig are now available at http://zadig.akeo.ie
 * Zadig is now provided as an LZMA compressed executable
 * default driver extraction directory is now %USERPROFILE%\usb_driver\

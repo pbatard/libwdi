@@ -24,6 +24,12 @@
     <ClCompile Include="..\zadig_stdlg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\zadig_net.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zadig_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libwdi\msapi_utf8.h">
@@ -39,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\zadig_license.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\zadig_registry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
