@@ -20,6 +20,8 @@
 
 #include <windows.h>
 #include <objbase.h>
+
+#if (!defined(__cplusplus) && !defined(_BOOL))
 #if !defined(bool)
 #define bool BOOL
 #endif
@@ -28,6 +30,7 @@
 #endif
 #if !defined(false)
 #define false FALSE
+#endif
 #endif
 
 #define MAX_DESC_LENGTH             256

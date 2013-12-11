@@ -609,7 +609,7 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 		case ID_BUTTON_NEXT:
 			if (device) {
 				//memset(device, 0, sizeof(*device));
-				device->wdi->is_composite=false;
+				device->wdi->is_composite=FALSE;
 	
 				GetWindowTextU(GetDlgItem(dialog, ID_TEXT_MANUFACTURER),
 					device->manufacturer, sizeof(tmp));
@@ -630,7 +630,7 @@ BOOL CALLBACK dialog_proc_2(HWND dialog, UINT message,
 				if (sscanf(tmp, "0x%02x", &val) == 1)
 				{
 					device->wdi->mi = (BYTE)val;
-					device->wdi->is_composite=true;
+					device->wdi->is_composite=TRUE;
 				}
 				if (save_file(dialog, device))
 					EndDialog(dialog, ID_DIALOG_3);
@@ -986,7 +986,7 @@ static void device_list_clean(HWND list)
 static char* to_valid_filename(char* name, char* ext)
 {
 	size_t i, j, k;
-	bool found;
+	BOOL found;
 	char* ret;
 	wchar_t unauthorized[] = L"\x0001\x0002\x0003\x0004\x0005\x0006\x0007\x0008\x000a"
 		L"\x000b\x000c\x000d\x000e\x000f\x0010\x0011\x0012\x0013\x0014\x0015\x0016\x0017"
@@ -1018,18 +1018,18 @@ static char* to_valid_filename(char* name, char* ext)
 	safe_free(wext);
 
 	for (i=0, k=0; i<wcslen(wret); i++) {
-		found = false;
+		found = FALSE;
 		for (j=0; j<wcslen(unauthorized); j++) {
 			if (wret[i] == unauthorized[j]) {
-				found = true; break;
+				found = TRUE; break;
 			}
 		}
 		if (found) continue;
-		found = false;
+		found = FALSE;
 		for (j=0; j<wcslen(to_underscore); j++) {
 			if (wret[i] == to_underscore[j]) {
 				wret[k++] = '_';
-				found = true; break;
+				found = TRUE; break;
 			}
 		}
 		if (found) continue;

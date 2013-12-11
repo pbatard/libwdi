@@ -53,7 +53,7 @@ static void pipe_wdi_log_v(enum wdi_log_level level,
 	char buffer[LOGBUF_SIZE];
 	DWORD junk;
 	int size1, size2;
-	bool truncated = false;
+	BOOL truncated = FALSE;
 	const char* prefix;
 	const char* truncation_notice = "TRUNCATION detected for above line - Please "
 		"send this log excerpt to the libwdi developers so we can fix it.";
@@ -89,13 +89,13 @@ static void pipe_wdi_log_v(enum wdi_log_level level,
 	if (size1 < 0) {
 		buffer[LOGBUF_SIZE-1] = 0;
 		size1 = LOGBUF_SIZE-1;
-		truncated = true;
+		truncated = TRUE;
 	} else {
 		size2 = safe_vsnprintf(buffer+size1, LOGBUF_SIZE-size1, format, args);
 		if (size2 < 0) {
 			buffer[LOGBUF_SIZE-1] = 0;
 			size2 = LOGBUF_SIZE-1-size1;
-			truncated = true;
+			truncated = TRUE;
 		}
 	}
 

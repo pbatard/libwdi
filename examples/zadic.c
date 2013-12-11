@@ -66,7 +66,7 @@ int __cdecl main(int argc, char *argv[])
 	static int use_supplied_inf_flag = 0;
 	int r, option_index = 0;
 
-	cl_options.trim_whitespaces = true;
+	cl_options.trim_whitespaces = TRUE;
 
 	// Parse command-line options
 	while(1)

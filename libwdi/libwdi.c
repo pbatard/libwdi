@@ -138,8 +138,8 @@ token_entity_t inf_entities[]=
  * Global variables
  */
 static struct wdi_device_info *current_device = NULL;
-static bool dlls_available = false;
-static bool filter_driver = false;
+static BOOL dlls_available = FALSE;
+static BOOL filter_driver = FALSE;
 static DWORD timeout = DEFAULT_TIMEOUT;
 static HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
@@ -366,9 +366,9 @@ static PSID get_sid(void) {
 
 /*
  * Check whether the path is a directory with write access
- * if create is true, create directory if it doesn't exist
+ * if create is TRUE, create directory if it doesn't exist
  */
-static int check_dir(char* path, bool create)
+static int check_dir(char* path, BOOL create)
 {
 	int r;
 	DWORD file_attributes;
@@ -564,7 +564,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 		wdi_warn("unable to use TEMP to extract file");
 		return WDI_ERROR_RESOURCE;
 	}
-	r = check_dir(tmpdir, true);
+	r = check_dir(tmpdir, TRUE);
 	if (r != WDI_SUCCESS) {
 		return r;
 	}
@@ -610,7 +610,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 /*
  * Find out if the driver selected is actually embedded in this version of the library
  */
-bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
+BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	if (driver_info != NULL) {
 		memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
@@ -624,33 +624,33 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 		GET_WINDOWS_VERSION;
 		if ( (windows_version < WINDOWS_XP)
 		  || (windows_version == WINDOWS_2003) ) {
-			return false;
+			return FALSE;
 		}
-		return true;
+		return TRUE;
 #else
-		return false;
+		return FALSE;
 #endif
 	case WDI_LIBUSB0:
 #if defined(LIBUSB0_DIR)
-		return true;
+		return TRUE;
 #else
-		return false;
+		return FALSE;
 #endif
 	case WDI_LIBUSBK:
 #if defined(LIBUSBK_DIR)
-		return true;
+		return TRUE;
 #else
-		return false;
+		return FALSE;
 #endif
 	case WDI_USER:
 #if defined(USER_DIR)
-		return true;
+		return TRUE;
 #else
-		return false;
+		return FALSE;
 #endif
 	default:
 		wdi_err("unknown driver type");
-		return false;
+		return FALSE;
 	}
 }
 
@@ -659,21 +659,21 @@ bool LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
  * Find out if a file is embedded in the current libwdi resources
  * path is the relative path for
  */
-bool LIBWDI_API wdi_is_file_embedded(char* path, char* name)
+BOOL LIBWDI_API wdi_is_file_embedded(char* path, char* name)
 {
 	int i;
 
 	for (i=0; i<nb_resources; i++) {
 		if (safe_strcmp(name, resource[i].name) == 0) {
 			if (path == NULL) {
-				return true;
+				return TRUE;
 			}
 			if (safe_strcmp(path, resource[i].subdir) == 0) {
-				return true;
+				return TRUE;
 			}
 		}
 	}
-	return false;
+	return FALSE;
 }
 
 
@@ -796,7 +796,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "rusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub"};
 	const char usbccgp_name[] = "usbccgp";
-	bool is_hub, is_composite_parent, has_vid;
+	BOOL is_hub, is_composite_parent, has_vid;
 
 	MUTEX_START;
 	*list = NULL;
@@ -854,10 +854,10 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		} else {
 			device_info->driver = safe_strdup(strbuf);
 		}
-		is_hub = false;
+		is_hub = FALSE;
 		for (j=0; j<ARRAYSIZE(usbhub_name); j++) {
 			if (safe_stricmp(strbuf, usbhub_name[j]) == 0) {
-				is_hub = true;
+				is_hub = TRUE;
 				break;
 			}
 		}
@@ -866,12 +866,12 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		}
 		// Also eliminate composite devices parent drivers, as replacing these drivers
 		// is a bad idea
-		is_composite_parent = false;
+		is_composite_parent = FALSE;
 		if (safe_stricmp(strbuf, usbccgp_name) == 0) {
 			if (!options->list_hubs) {
 				continue;
 			}
-			is_composite_parent = true;
+			is_composite_parent = TRUE;
 		}
 
 		// Retrieve the first hardware ID
@@ -961,10 +961,10 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 			}
 		}
 
-		device_info->is_composite = false;	// non composite by default
+		device_info->is_composite = FALSE;	// non composite by default
 		device_info->mi = 0;
 		token = strtok (strbuf, "\\#&");
-		has_vid = false;
+		has_vid = FALSE;
 		while(token != NULL) {
 			for (j = 0; j < 3; j++) {
 				if (safe_strncmp(token, prefix[j], safe_strlen(prefix[j])) == 0) {
@@ -975,7 +975,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 						} else {
 							device_info->vid = (unsigned short)tmp;
 						}
-						has_vid = true;
+						has_vid = TRUE;
 						break;
 					case 1:
 						if (sscanf(token, "PID_%04X", &tmp) != 1) {
@@ -988,7 +988,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 						if (sscanf(token, "MI_%02X", &tmp) != 1) {
 							wdi_err("could not convert MI string");
 						} else {
-							device_info->is_composite = true;
+							device_info->is_composite = TRUE;
 							device_info->mi = (unsigned char)tmp;
 							if ((wcslen(desc) + sizeof(" (Interface ###)")) < MAX_DESC_LENGTH) {
 								_snwprintf(&desc[wcslen(desc)], sizeof(" (Interface ###)"),
@@ -1077,7 +1077,7 @@ static int extract_binaries(char* path)
 		safe_strcat(filename, MAX_PATH, "\\");
 		safe_strcat(filename, MAX_PATH, resource[i].subdir);
 
-		r = check_dir(filename, true);
+		r = check_dir(filename, TRUE);
 		if (r != WDI_SUCCESS) {
 			return r;
 		}
@@ -1171,7 +1171,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* pat
 	}
 
 	// Try to create directory if it doesn't exist
-	r = check_dir(path, true);
+	r = check_dir(path, TRUE);
 	if (r != WDI_SUCCESS) {
 		MUTEX_RETURN r;
 	}
@@ -1501,7 +1501,7 @@ static int install_driver_internal(void* arglist)
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
-	BOOL is_x64 = false;
+	BOOL is_x64 = FALSE;
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
 
@@ -1548,7 +1548,7 @@ static int install_driver_internal(void* arglist)
 			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
 		}
 	} else {
-		is_x64 = true;
+		is_x64 = TRUE;
 	}
 
 	// Use a pipe to communicate with our installer

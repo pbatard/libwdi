@@ -18,6 +18,7 @@
 
 #pragma once
 
+#if (!defined(__cplusplus) && !defined(_BOOL))
 #if !defined(bool)
 #define bool BOOL
 #endif
@@ -26,6 +27,7 @@
 #endif
 #if !defined(false)
 #define false FALSE
+#endif
 #endif
 
 #define _IGNORE(expr) do { (void)(expr); } while(0)

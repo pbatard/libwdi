@@ -93,13 +93,13 @@ HWND GetConsoleHwnd(void)
 
 int __cdecl main(int argc, char** argv)
 {
-	static struct wdi_device_info *ldev, dev = {NULL, VID, PID, false, 0, DESC, NULL, NULL, NULL};
+	static struct wdi_device_info *ldev, dev = {NULL, VID, PID, FALSE, 0, DESC, NULL, NULL, NULL};
 	static struct wdi_options_create_list ocl = { 0 };
 	static struct wdi_options_prepare_driver opd = { 0 };
 	static struct wdi_options_install_driver oid = { 0 };
 	static struct wdi_options_install_cert oic = { 0 };
 	static int opt_silent = 0, opt_extract = 0, log_level = WDI_LOG_LEVEL_WARNING;
-	static bool matching_device_found;
+	static BOOL matching_device_found;
 	int c, r;
 	char *inf_name = INF_NAME;
 	char *ext_dir = DEFAULT_DIR;
@@ -127,9 +127,9 @@ int __cdecl main(int argc, char** argv)
 		{0, 0, 0, 0}
 	};
 
-	ocl.list_all = true;
-	ocl.list_hubs = true;
-	ocl.trim_whitespaces = true;
+	ocl.list_all = TRUE;
+	ocl.list_hubs = TRUE;
+	ocl.trim_whitespaces = TRUE;
 	opd.driver_type = WDI_WINUSB;
 
 	while(1)
@@ -139,10 +139,10 @@ int __cdecl main(int argc, char** argv)
 			break;
 		switch(c) {
 		case 1: // --stealth-cert
-			oic.disable_warning = true;
+			oic.disable_warning = TRUE;
 			break;
 		case 2: // --filter
-			oid.install_filter_driver = true;
+			oid.install_filter_driver = TRUE;
 			break;
 		case 'n':
 			dev.desc = optarg;
@@ -169,14 +169,14 @@ int __cdecl main(int argc, char** argv)
 			dev.pid = (unsigned short)strtol(optarg, NULL, 0);
 			break;
 		case 'i':
-			dev.is_composite = true;
+			dev.is_composite = TRUE;
 			dev.mi = (unsigned char)strtol(optarg, NULL, 0);
 			break;
 		case 't':
 			opd.driver_type = (int)strtol(optarg, NULL, 0);
 			break;
 		case 'w':
-			opd.use_wcid_driver = true;
+			opd.use_wcid_driver = TRUE;
 			break;
 		case 'h':
 			usage();
@@ -219,14 +219,14 @@ int __cdecl main(int argc, char** argv)
 	oprintf("Installing driver(s)...\n");
 
 	// Try to match against a plugged device to avoid device manager prompts
-	matching_device_found = false;
+	matching_device_found = FALSE;
 	if (wdi_create_list(&ldev, &ocl) == WDI_SUCCESS) {
 		r = WDI_SUCCESS;
 		for (; (ldev != NULL) && (r == WDI_SUCCESS); ldev = ldev->next) {
 			if ( (ldev->vid == dev.vid) && (ldev->pid == dev.pid) && (ldev->mi == dev.mi) ) {
 				dev.hardware_id = ldev->hardware_id;
 				dev.device_id = ldev->device_id;
-				matching_device_found = true;
+				matching_device_found = TRUE;
 				oprintf("  %s: ", dev.hardware_id);
 				fflush(stdout);
 				r = wdi_install_driver(&dev, ext_dir, inf_name, &oid);
