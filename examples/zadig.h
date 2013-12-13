@@ -18,18 +18,6 @@
 
 #pragma once
 
-#if (!defined(__cplusplus) && !defined(_BOOL))
-#if !defined(bool)
-#define bool BOOL
-#endif
-#if !defined(true)
-#define true TRUE
-#endif
-#if !defined(false)
-#define false FALSE
-#endif
-#endif
-
 #define _IGNORE(expr) do { (void)(expr); } while(0)
 
 #define APPLICATION_NAME            "Zadig"
@@ -147,16 +135,16 @@ typedef struct {
 /*
  * Shared prototypes
  */
-#define dprintf(...) w_printf(false, __VA_ARGS__)
-#define dsprintf(...) w_printf(true, __VA_ARGS__)
-#define vuprintf(...) if (verbose) w_printf(false, __VA_ARGS__)
-#define vvuprintf(...) if (verbose > 1) w_printf(false, __VA_ARGS__)
+#define dprintf(...) w_printf(FALSE, __VA_ARGS__)
+#define dsprintf(...) w_printf(TRUE, __VA_ARGS__)
+#define vuprintf(...) if (verbose) w_printf(FALSE, __VA_ARGS__)
+#define vvuprintf(...) if (verbose > 1) w_printf(FALSE, __VA_ARGS__)
 void print_status(unsigned int duration, BOOL debug, const char* message);
 int detect_windows_version(void);
-void w_printf(bool update_status, const char *format, ...);
+void w_printf(BOOL update_status, const char *format, ...);
 void browse_for_folder(void);
-char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc);
-bool file_io(bool save, char* path, char** buffer, DWORD* size);
+char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_desc);
+BOOL file_io(BOOL save, char* path, char** buffer, DWORD* size);
 INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void create_status_bar(void);

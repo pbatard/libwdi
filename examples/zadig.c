@@ -52,9 +52,9 @@
 #define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
 #endif
 
-void toggle_driverless(bool refresh);
+void toggle_driverless(BOOL refresh);
 void set_install_button(void);
-bool parse_ini(void);
+BOOL parse_ini(void);
 
 /*
  * Globals
@@ -98,16 +98,16 @@ int IDC_INSTALL = IDC_INSTALLVISTA;
 int nb_devices = -1;
 int dialog_showing = 0;
 // Application states
-bool advanced_mode = false;
-bool create_device = false;
-bool replace_driver = false;
-bool extract_only = false;
-bool from_install = false;
-bool installation_running = false;
-bool unknown_vid = false;
-bool has_filter_driver = false;
-bool use_arrow_icons = false;
-bool exit_on_success = false;
+BOOL advanced_mode = FALSE;
+BOOL create_device = FALSE;
+BOOL replace_driver = FALSE;
+BOOL extract_only = FALSE;
+BOOL from_install = FALSE;
+BOOL installation_running = FALSE;
+BOOL unknown_vid = FALSE;
+BOOL has_filter_driver = FALSE;
+BOOL use_arrow_icons = FALSE;
+BOOL exit_on_success = FALSE;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
@@ -115,7 +115,7 @@ UINT64 target_driver_version = 0;
 /*
  * On screen logging and status
  */
-void w_printf_v(bool update_status, const char *format, va_list args)
+void w_printf_v(BOOL update_status, const char *format, va_list args)
 {
 	char str[STR_BUFFER_SIZE+2];
 	int size;
@@ -140,7 +140,7 @@ void w_printf_v(bool update_status, const char *format, va_list args)
 	}
 }
 
-void w_printf(bool update_status, const char *format, ...)
+void w_printf(BOOL update_status, const char *format, ...)
 {
 	va_list args;
 
@@ -284,7 +284,7 @@ int install_driver(void)
 	struct wdi_device_info* dev = device;
 	char str_buf[STR_BUFFER_SIZE];
 	char* inf_name = NULL;
-	bool need_dealloc = false;
+	BOOL need_dealloc = FALSE;
 	int tmp, r = WDI_ERROR_OTHER;
 
 	if ( (dev == NULL) && (!extract_only) && (!pd_options.use_wcid_driver)
@@ -292,7 +292,7 @@ int install_driver(void)
 		return WDI_ERROR_NO_DEVICE;
 	}
 
-	installation_running = true;
+	installation_running = TRUE;
 	if ( (GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED)
 	  || (pd_options.use_wcid_driver) ) {
 		// If the device is created from scratch, override the existing device
@@ -301,7 +301,7 @@ int install_driver(void)
 			dprintf("could not create new device_info struct for installation");
 			r = WDI_ERROR_RESOURCE; goto out;
 		}
-		need_dealloc = true;
+		need_dealloc = TRUE;
 
 		if (pd_options.use_wcid_driver) {
 			dev->desc = (char*)malloc(128);
@@ -330,10 +330,10 @@ int install_driver(void)
 			GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
 			if ( (safe_strlen(str_buf) != 0)
 			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
-				dev->is_composite = true;
+				dev->is_composite = TRUE;
 				dev->mi = (unsigned char)tmp;
 			} else {
-				dev->is_composite = false;
+				dev->is_composite = FALSE;
 				dev->mi = 0;
 			}
 		}
@@ -378,7 +378,7 @@ int install_driver(void)
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = (dev != NULL)?safe_strdup(dev->hardware_id):NULL;
 			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.use_wcid_driver)) {
-				toggle_driverless(false);
+				toggle_driverless(FALSE);
 			}
 			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
@@ -393,15 +393,15 @@ out:
 		free(dev);
 	}
 	safe_free(inf_name);
-	from_install = true;
-	installation_running = false;
+	from_install = TRUE;
+	installation_running = FALSE;
 	return r;
 }
 
 /*
  * Toggle between combo and edit
  */
-void combo_breaker(bool edit)
+void combo_breaker(BOOL edit)
 {
 	if (edit) {
 		ShowWindow(GetDlgItem(hMain, IDC_DEVICELIST), SW_HIDE);
@@ -415,12 +415,12 @@ void combo_breaker(bool edit)
 /*
  * Display or hide the "Install Filter Driver" menu item
  */
-void set_filter_menu(bool display)
+void set_filter_menu(BOOL display)
 {
 	char* itemddesc[2] = {"Install Filter Driver", "Delete Filter Driver"};
 	static MENUITEMINFOA mi_filter = { sizeof(MENUITEMINFOA), MIIM_FTYPE|MIIM_ID|MIIM_STRING|MIIM_STATE, MFT_STRING, MFS_ENABLED,
 		IDM_SPLIT_FILTER, NULL, NULL, NULL, 0, NULL, 0, NULL };
-	static bool filter_is_displayed = true;
+	static BOOL filter_is_displayed = TRUE;
 
 	// Find if a filter driver is in use
 	has_filter_driver = (device != NULL) && (safe_stricmp(driver_name[WDI_LIBUSB0], device->upper_filter) == 0);
@@ -436,12 +436,12 @@ void set_filter_menu(bool display)
 			InsertMenuItemA(hMenuSplit, IDM_SPLIT_EXTRACT, FALSE, &mi_filter);
 			return;
 		}
-		filter_is_displayed = false;
+		filter_is_displayed = FALSE;
 	} else {
 		if (!display)
 			return;
 		InsertMenuItemA(hMenuSplit, IDM_SPLIT_EXTRACT, FALSE, &mi_filter);
-		filter_is_displayed = true;
+		filter_is_displayed = TRUE;
 	}
 }
 
@@ -497,7 +497,7 @@ void set_driver(void)
  * Select the next available target driver
  * increment: go through the list up or down
  */
-bool select_next_driver(int increment)
+BOOL select_next_driver(int increment)
 {
 	int i;
 
@@ -507,17 +507,17 @@ bool select_next_driver(int increment)
 			break;
 	}
 	if (i == WDI_NB_DRIVERS) {
-		return false;
+		return FALSE;
 	}
 	set_driver();
-	return true;
+	return TRUE;
 }
 
 // Hide/Show the MI field
-void display_mi(bool show)
+void display_mi(BOOL show)
 {
 	int cmd = show?SW_SHOW:SW_HIDE;
-	static bool mi_shown = true;
+	static BOOL mi_shown = TRUE;
 	const int report_shift = 27;
 	RECT rect;
 	POINT point, origin;
@@ -591,7 +591,7 @@ void toggle_advanced(void)
 void toggle_edit(void)
 {
 	if ((IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) && (device != NULL)) {
-		combo_breaker(true);
+		combo_breaker(TRUE);
 		if (editable_desc != NULL) {
 			dprintf("program assertion failed - editable_desc != NULL");
 			return;
@@ -600,7 +600,7 @@ void toggle_edit(void)
 		if (editable_desc == NULL) {
 			dprintf("could not allocate buffer to edit description");
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
-			combo_breaker(false);
+			combo_breaker(FALSE);
 			return;
 		}
 		safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
@@ -609,7 +609,7 @@ void toggle_edit(void)
 		SetDlgItemTextU(hMain, IDC_DEVICEEDIT, editable_desc);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
-		combo_breaker(false);
+		combo_breaker(FALSE);
 		display_devices();
 		editable_desc = NULL;
 	}
@@ -618,8 +618,8 @@ void toggle_edit(void)
 // Update WCID, filter and coloured arrow
 void update_ui(void)
 {
-	bool same_driver;
-	bool warn;
+	BOOL same_driver;
+	BOOL warn;
 
 	switch (has_wcid) {
 	case WCID_TRUE:
@@ -637,7 +637,7 @@ void update_ui(void)
 	}
 
 	if (pd_options.driver_type != WDI_LIBUSB0) {
-		id_options.install_filter_driver = false;
+		id_options.install_filter_driver = FALSE;
 	}
 	set_filter_menu((pd_options.driver_type == WDI_LIBUSB0) && (nb_devices>=0));
 	same_driver = device && (safe_stricmp(device->driver, driver_name[pd_options.driver_type]) == 0);
@@ -659,7 +659,7 @@ void update_ui(void)
 }
 
 // Toggle device creation mode
-void toggle_create(bool refresh)
+void toggle_create(BOOL refresh)
 {
 	create_device = !(GetMenuState(hMenuDevice, IDM_CREATE, MF_CHECKED) & MF_CHECKED);
 	if (create_device) {
@@ -669,10 +669,10 @@ void toggle_create(bool refresh)
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 			toggle_edit();
 		}
-		combo_breaker(true);
+		combo_breaker(TRUE);
 		has_wcid = WCID_NONE;
 		update_ui();
-		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
+		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), FALSE);
 		SetDlgItemTextA(hMain, IDC_VID, "");
 		SetDlgItemTextA(hMain, IDC_PID, "");
 		SetDlgItemTextA(hMain, IDC_MI, "");
@@ -683,11 +683,11 @@ void toggle_create(bool refresh)
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		destroy_tooltip(hVIDToolTip);
 		hVIDToolTip = NULL;
-		unknown_vid = false;
-		display_mi(true);
+		unknown_vid = FALSE;
+		display_mi(TRUE);
 		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
 	} else {
-		combo_breaker(false);
+		combo_breaker(FALSE);
 		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)TRUE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)TRUE, 0);
 		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)TRUE, 0);
@@ -696,45 +696,45 @@ void toggle_create(bool refresh)
 		}
 	}
 	CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
-	pd_options.use_wcid_driver = false;
-	replace_driver = false;
+	pd_options.use_wcid_driver = FALSE;
+	replace_driver = FALSE;
 	set_install_button();
 }
 
 // Toggle ignore hubs & composite
-void toggle_hubs(bool refresh)
+void toggle_hubs(BOOL refresh)
 {
 	cl_options.list_hubs = GetMenuState(hMenuOptions, IDM_IGNOREHUBS, MF_CHECKED) & MF_CHECKED;
 
 	if (create_device) {
-		toggle_create(true);
+		toggle_create(TRUE);
 	}
 
 	CheckMenuItem(hMenuOptions, IDM_IGNOREHUBS, cl_options.list_hubs?MF_UNCHECKED:MF_CHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
-	combo_breaker(false);
+	combo_breaker(FALSE);
 	if (refresh) {
 		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 	}
 }
 
 // Toggle driverless device listing
-void toggle_driverless(bool refresh)
+void toggle_driverless(BOOL refresh)
 {
 	cl_options.list_all = !(GetMenuState(hMenuOptions, IDM_LISTALL, MF_CHECKED) & MF_CHECKED);
 	EnableMenuItem(hMenuOptions, IDM_IGNOREHUBS, cl_options.list_all?MF_ENABLED:MF_GRAYED);
 
 	if (create_device) {
-		toggle_create(true);
+		toggle_create(TRUE);
 	}
 
 	CheckMenuItem(hMenuOptions, IDM_LISTALL, cl_options.list_all?MF_CHECKED:MF_UNCHECKED);
 	// Reset Edit button
 	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
-	combo_breaker(false);
+	combo_breaker(FALSE);
 	if (refresh) {
 		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 	}
@@ -1045,7 +1045,7 @@ void init_dialog(HWND hDlg)
 		if ((hDllInst = LoadLibraryA("netshell.dll")) == NULL) break;	// Orange right arrow
 		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
 		if ( (hIconArrowGreen == NULL) || (hIconArrowOrange == NULL) ) break;
-		use_arrow_icons = true;
+		use_arrow_icons = TRUE;
 		// On newer OSes, recreate the control so that it uses icons
 		GetWindowRect(hArrow, &rect);
 		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
@@ -1089,8 +1089,8 @@ void init_dialog(HWND hDlg)
 	// Setup the Install split button
 	if (windows_version < WINDOWS_VISTA) {
 		IDC_INSTALL = IDC_INSTALLXP;
-		ShowWindow(GetDlgItem(hMain, IDC_INSTALLXP), true);
-		ShowWindow(GetDlgItem(hMain, IDC_INSTALLVISTA), false);
+		ShowWindow(GetDlgItem(hMain, IDC_INSTALLXP), TRUE);
+		ShowWindow(GetDlgItem(hMain, IDC_INSTALLVISTA), FALSE);
 		// Load a bitmap to emulate split on XP
 		hIcon = (HICON)LoadImage(main_instance, MAKEINTRESOURCE(IDI_SPLIT), IMAGE_ICON, 16, 40, LR_DEFAULTCOLOR);
 		bi.himl = pImageList_Create(16, 40, ILC_COLOR32 | ILC_MASK, 1, 0);
@@ -1128,10 +1128,10 @@ void init_dialog(HWND hDlg)
 		toggle_advanced();	// We start in advanced mode
 	}
 	if (cl_options.list_all) {
-		toggle_driverless(false);
+		toggle_driverless(FALSE);
 	}
 	if (cl_options.list_hubs) {
-		toggle_hubs(false);
+		toggle_hubs(FALSE);
 	}
 	pd_options.driver_type = default_driver_type;
 	select_next_driver(0);
@@ -1140,7 +1140,7 @@ void init_dialog(HWND hDlg)
 /*
  * Parse the default ini file
  */
-bool parse_ini(void) {
+BOOL parse_ini(void) {
 	profile_t profile;
 	char* tmp = NULL;
 	long r;
@@ -1148,26 +1148,26 @@ bool parse_ini(void) {
 	// Check if the ini file exists
 	if (GetFileAttributesU(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
 		dprintf("ini file '%s' not found - default parameters will be used", INI_NAME);
-		return false;
+		return FALSE;
 	}
 
 	// Parse the file
 	r = profile_open(INI_NAME, &profile);
 	if (r) {
 		dprintf("error while processing '%s': %s", INI_NAME, profile_errtostr(r));
-		return false;
+		return FALSE;
 	}
 
 	dprintf("reading ini file '%s'", INI_NAME);
 
 	// Set the various boolean options
-	profile_get_boolean(profile, "general", "advanced_mode", NULL, false, &advanced_mode);
-	profile_get_boolean(profile, "general", "exit_on_success", NULL, false, &exit_on_success);
-	profile_get_boolean(profile, "device", "list_all", NULL, false, &cl_options.list_all);
-	profile_get_boolean(profile, "device", "include_hubs", NULL, false, &cl_options.list_hubs);
-	profile_get_boolean(profile, "driver", "extract_only", NULL, false, &extract_only);
-	profile_get_boolean(profile, "device", "trim_whitespaces", NULL, false, &cl_options.trim_whitespaces);
-	profile_get_boolean(profile, "security", "disable_cert_install_warning", NULL, false, &ic_options.disable_warning);
+	profile_get_boolean(profile, "general", "advanced_mode", NULL, FALSE, &advanced_mode);
+	profile_get_boolean(profile, "general", "exit_on_success", NULL, FALSE, &exit_on_success);
+	profile_get_boolean(profile, "device", "list_all", NULL, FALSE, &cl_options.list_all);
+	profile_get_boolean(profile, "device", "include_hubs", NULL, FALSE, &cl_options.list_hubs);
+	profile_get_boolean(profile, "driver", "extract_only", NULL, FALSE, &extract_only);
+	profile_get_boolean(profile, "device", "trim_whitespaces", NULL, FALSE, &cl_options.trim_whitespaces);
+	profile_get_boolean(profile, "security", "disable_cert_install_warning", NULL, FALSE, &ic_options.disable_warning);
 
 	// Set the log level
 	profile_get_integer(profile, "general", "log_level", NULL, WDI_LOG_LEVEL_INFO, &log_level);
@@ -1200,13 +1200,13 @@ bool parse_ini(void) {
 
 	profile_close(profile);
 
-	return true;
+	return TRUE;
 }
 
 /*
  * Parse a preset device configuration file
  */
-bool parse_preset(char* filename)
+BOOL parse_preset(char* filename)
 {
 	profile_t profile;
 	unsigned int tmp = 0x10000;
@@ -1215,24 +1215,24 @@ bool parse_preset(char* filename)
 	char* desc = NULL;
 
 	if (filename == NULL) {
-		return false;
+		return FALSE;
 	}
 
 	r = profile_open(filename, &profile);
 	if (r) {
 		dprintf("error while processing '%s': %s", filename, profile_errtostr(r));
-		return false;
+		return FALSE;
 	}
 
 	profile_get_uint(profile, "device", "VID", NULL, 0x10000, &tmp);
 	if (tmp > 0xFFFF) {
 		dprintf("no VID found in preset file - aborting readout");
 		profile_close(profile);
-		return false;
+		return FALSE;
 	}
 
 	if (!create_device) {
-		toggle_create(false);
+		toggle_create(FALSE);
 	}
 
 	safe_sprintf(str_tmp, 5, "%04X", tmp);
@@ -1259,7 +1259,7 @@ bool parse_preset(char* filename)
 
 	profile_close(profile);
 
-	return true;
+	return TRUE;
 }
 
 /*
@@ -1383,10 +1383,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
 				"USB Event Notification", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
 				if (create_device) {
-					toggle_create(false);
+					toggle_create(FALSE);
 				}
 				CheckMenuItem(hMenuDevice, IDM_CREATE, MF_UNCHECKED);
-				combo_breaker(false);
+				combo_breaker(FALSE);
 				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
 			}
 		} else {
@@ -1406,7 +1406,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_INITDIALOG:
 		SetUpdateCheck();
 		// Setup options
-		cl_options.trim_whitespaces = true;
+		cl_options.trim_whitespaces = TRUE;
 
 		// Setup local visual variables
 		white_brush = CreateSolidBrush(WHITE);
@@ -1440,10 +1440,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		NOT_DURING_INSTALL;
 		// Reset edit mode if selected
 		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
-			combo_breaker(false);
+			combo_breaker(FALSE);
 			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
 		}
-		id_options.install_filter_driver = false;
+		id_options.install_filter_driver = FALSE;
 		if (list != NULL) wdi_destroy_list(list);
 		if (!from_install) {
 			current_device_index = 0;
@@ -1462,10 +1462,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetDlgItemTextA(hMain, IDC_VID, "");
 			SetDlgItemTextA(hMain, IDC_PID, "");
 			SetDlgItemTextA(hMain, IDC_DRIVER, "");
-			display_mi(false);
-			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), false);
+			display_mi(FALSE);
+			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), FALSE);
 			has_wcid = WCID_NONE;
-			pd_options.use_wcid_driver = true;
+			pd_options.use_wcid_driver = TRUE;
 			update_ui();
 			set_install_button();
 		}
@@ -1474,7 +1474,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			dsprintf("%d device%s found.", nb_devices+1, (nb_devices!=0)?"s":"");
 		} else {
 			dprintf("%d device%s found.", nb_devices+1, (nb_devices!=0)?"s":"");
-			from_install = false;
+			from_install = FALSE;
 		}
 		return (INT_PTR)TRUE;
 
@@ -1657,9 +1657,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					if (device->is_composite) {
 						safe_sprintf(str_tmp, 5, "%02X", device->mi);
 						SetDlgItemTextA(hMain, IDC_MI, str_tmp);
-						display_mi(true);
+						display_mi(TRUE);
 					} else {
-						display_mi(false);
+						display_mi(FALSE);
 					}
 					// Display the WCID status
 					pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
@@ -1681,11 +1681,11 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 								pd_options.driver_type = i;
 								set_driver();
 							} else {
-								pd_options.use_wcid_driver = false;
+								pd_options.use_wcid_driver = FALSE;
 							}
 						}
 					}
-					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), true);
+					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), TRUE);
 				} else {
 					has_wcid = WCID_NONE;
 				}
@@ -1747,9 +1747,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					dprintf("unable to read log text");
 				} else {
 					log_size--;	// remove NULL terminator
-					filepath = file_dialog(true, app_dir, "zadig.log", "log", "Zadig log");
+					filepath = file_dialog(TRUE, app_dir, "zadig.log", "log", "Zadig log");
 					if (filepath != NULL) {
-						file_io(true, filepath, &log_buffer, &log_size);
+						file_io(TRUE, filepath, &log_buffer, &log_size);
 					}
 					safe_free(filepath);
 				}
@@ -1771,10 +1771,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		// Main Menus
 		case IDM_CREATE:
-			toggle_create(true);
+			toggle_create(TRUE);
 			break;
 		case IDM_OPEN:
-			filepath = file_dialog(false, app_dir, "sample.cfg", "cfg", "Zadig device config");
+			filepath = file_dialog(FALSE, app_dir, "sample.cfg", "cfg", "Zadig device config");
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
@@ -1798,10 +1798,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_advanced();
 			break;
 		case IDM_LISTALL:
-			toggle_driverless(true);
+			toggle_driverless(TRUE);
 			break;
 		case IDM_IGNOREHUBS:
-			toggle_hubs(true);
+			toggle_hubs(TRUE);
 			break;
 		case IDM_CREATECAT:
 			pd_options.disable_cat = GetMenuState(hMenuOptions, IDM_CREATECAT, MF_CHECKED) & MF_CHECKED;
@@ -1865,7 +1865,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
 	char *libusb_path, *tmp;
 	int i, wait_for_mutex = 0;
-	bool r;
+	BOOL r;
 
 	// Retrieve the current application directory
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
@@ -1917,14 +1917,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		// Alt-Z => Delete libusb-1.0 DLLs
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
 			libusb_path = (char*)malloc(MAX_PATH);
-			for (r = true, i = 0; i<ARRAYSIZE(system_dir); i++) {
+			for (r = TRUE, i = 0; i<ARRAYSIZE(system_dir); i++) {
 				safe_strcpy(libusb_path, MAX_PATH, getenv("WINDIR"));
 				safe_strcat(libusb_path, MAX_PATH, "\\");
 				safe_strcat(libusb_path, MAX_PATH, system_dir[i]);
 				safe_strcat(libusb_path, MAX_PATH, "\\libusb-1.0.dll");
 				DeleteFileA(libusb_path);
 				if (GetFileAttributesA(libusb_path) != INVALID_FILE_ATTRIBUTES) {
-					r = false;
+					r = FALSE;
 				}
 			}
 			if (r) {

@@ -1197,7 +1197,7 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
  * Create a cat file for driver package signing, and add any listed matching file found in the
  * szSearchDir directory
  */
-BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList)
+BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFileList, DWORD cFileList)
 {
 	PF_DECL(CryptCATOpen);
 	PF_DECL(CryptCATClose);
@@ -1212,6 +1212,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFil
 	LPWSTR wszCatPath = NULL;
 	LPWSTR wszHWID = NULL;
 	LPCWSTR wszOS = L"XPX86,XPX64,VistaX86,VistaX64,7X86,7X64";
+	LPSTR * szLocalFileList;
 
 	PF_INIT_OR_OUT(CryptCATOpen, wintrust);
 	PF_INIT_OR_OUT(CryptCATClose, wintrust);
@@ -1249,9 +1250,16 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFil
 		goto out;
 	}
 	// Make sure the list entries are all lowercase
-	for (i=0; i<cFileList; i++) _strlwr(szFileList[i]);
-	ScanDirAndHash(hCat, "", szFileList, cFileList);
-
+	szLocalFileList = (LPSTR *)malloc(cFileList*sizeof(LPSTR));
+	for (i=0; i<cFileList; i++){
+		szLocalFileList[i] = _strdup(szFileList[i]);
+		_strlwr(szLocalFileList[i]);
+	}
+	ScanDirAndHash(hCat, "", szLocalFileList, cFileList);
+	for (i=0; i<cFileList; i++){
+		free(szLocalFileList[i]);
+	}
+	free(szLocalFileList);
 	// The cat needs to be sorted before being saved
 	if (!pfCryptCATPersistStore(hCat)) {
 		wdi_warn("unable to sort file: %s",  windows_error_str(0));
