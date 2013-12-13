@@ -235,7 +235,7 @@ LIBWDI_EXP BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILE
  * path is the relative path that would be used for extraction and can be NULL,
  * in which case any instance of "name" will return true, no matter the extraction path
  */
-LIBWDI_EXP BOOL LIBWDI_API wdi_is_file_embedded(char* path, char* name);
+LIBWDI_EXP BOOL LIBWDI_API wdi_is_file_embedded(const char* path, const char* name);
 
 /*
  * Retrieve the full Vendor name from a Vendor ID (VID)
@@ -257,21 +257,21 @@ LIBWDI_EXP int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list);
 /*
  * Create an inf file for a specific device
  */
-LIBWDI_EXP int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options_prepare_driver* options);
+LIBWDI_EXP int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, struct wdi_options_prepare_driver* options);
 
 /*
  * Install a driver for a specific device
  */
-LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options_install_driver* options);
+LIBWDI_EXP int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, struct wdi_options_install_driver* options);
 
 /*
  * Install a code signing certificate (from embedded resources) into
  * the Trusted Publisher repository. Requires elevated privileges when
  * running the application on Vista and later.
  */
-LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
+LIBWDI_EXP int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 														  struct wdi_options_install_cert* options);
 
 /*

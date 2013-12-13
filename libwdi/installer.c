@@ -580,7 +580,7 @@ static __inline int process_error(DWORD r, char* path) {
 }
 
 // Disable or restore the system restore creation point settings for driver install
-bool disable_system_restore(bool enabled)
+BOOL disable_system_restore(BOOL enabled)
 {
 	OSVERSIONINFO os_version;
 	LONG r;
@@ -603,7 +603,7 @@ bool disable_system_restore(bool enabled)
 	os_version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	if ((GetVersionEx(&os_version) != 0) && (os_version.dwPlatformId == VER_PLATFORM_WIN32_NT)) {
 		if (os_version.dwMajorVersion < 6) {
-			return true;
+			return TRUE;
 		}
 	}
 
@@ -669,13 +669,13 @@ bool disable_system_restore(bool enabled)
 
 	RegCloseKey(machine_key);
 	pLGPO->lpVtbl->Release(pLGPO);
-	return true;
+	return TRUE;
 
 error:
 	if (machine_key != NULL) RegCloseKey(machine_key);
 	if (disable_system_restore_key != NULL) RegCloseKey(disable_system_restore_key);
 	if (pLGPO != NULL) pLGPO->lpVtbl->Release(pLGPO);
-	return false;
+	return FALSE;
 }
 
 // TODO: allow commandline options (v2)
@@ -760,7 +760,7 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 	}
 
 	// Disable the creation of a restore point
-	disable_system_restore(true);
+	disable_system_restore(TRUE);
 
 	// Find if the device is plugged in
 	send_status(IC_SET_TIMEOUT_INFINITE);
@@ -768,7 +768,7 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 		plog("Installing driver for %s - please wait...", hardware_id);
 		b = UpdateDriverForPlugAndPlayDevicesU(NULL, hardware_id, path, INSTALLFLAG_FORCE, NULL);
 		send_status(IC_SET_TIMEOUT_DEFAULT);
-		if (b == true) {
+		if (b == TRUE) {
 			// Success
 			plog("driver update completed");
 			enumerate_device(device_id);
@@ -808,7 +808,7 @@ out:
 	send_status(IC_INSTALLER_COMPLETED);
 	pstat(ret);
 	// Restore the system restore point creation original settings
-	disable_system_restore(false);
+	disable_system_restore(FALSE);
 	// TODO: have libwi send an ACK?
 	Sleep(1000);
 	SetEvent(syslog_terminate_event);
