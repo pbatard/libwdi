@@ -46,3 +46,6 @@ ltmain.sh
 missing
 sources
 stamp-h1
+build
+libwdi/*.bak
+examples/*.bak

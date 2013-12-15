@@ -78,7 +78,7 @@ extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist
 // These ones are defined in pki
 extern BOOL AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
 extern BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
-extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList);
+extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFileList, DWORD cFileList);
 
 /*
  * Structure used for the threaded call to install_driver_internal()
