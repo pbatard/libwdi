@@ -41,6 +41,10 @@ struct emb {
  */
 struct emb embeddable_fixed[] = {
 
+#ifndef SRC_DIR
+#define SRC_DIR "."
+#endif
+
 // WinUSB
 #if defined(DDK_DIR)
 #	if defined(OPT_M32)
@@ -144,11 +148,11 @@ struct emb embeddable_fixed[] = {
 	{ 0, INSTALLER_PATH_64 "\\installer_x64.exe", "." },
 #endif
 // inf templates for the tokenizer ("" directory means no extraction)
-	{ 0, "winusb.inf.in", "" },
-	{ 0, "libusb0.inf.in", "" },
-	{ 0, "libusbk.inf.in", "" },
+	{ 0, SRC_DIR "\\winusb.inf.in", "" },
+	{ 0, SRC_DIR "\\libusb0.inf.in", "" },
+	{ 0, SRC_DIR "\\libusbk.inf.in", "" },
 // cat file lists for self signing
-	{ 0, "winusb.cat.in", "" },
-	{ 0, "libusb0.cat.in", "" },
-	{ 0, "libusbk.cat.in", "" },
+	{ 0, SRC_DIR "\\winusb.cat.in", "" },
+	{ 0, SRC_DIR "\\libusb0.cat.in", "" },
+	{ 0, SRC_DIR "\\libusbk.cat.in", "" },
 };

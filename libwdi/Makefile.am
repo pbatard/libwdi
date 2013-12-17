@@ -2,7 +2,7 @@ all-local: embedded.h libwdi.la
 if CREATE_IMPORT_LIB
 # Rebuild the import lib from the .def so that MS and MinGW DLLs can be interchanged
 	@echo "  CCLD   libwdi.dll.a"
-	@$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
+	@$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def $(top_srcdir)/libwdi/libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
 endif
 
 INCLUDES = -I$(top_srcdir)
@@ -40,8 +40,8 @@ pkg_v_localcc_ = $(pkg_v_localcc_$(AM_DEFAULT_VERBOSITY))
 pkg_v_localcc_0 = @echo "  CCLD   $@";
 
 # call host's CC to allow for cross compilation
-embedder: embedder.h embedder_files.h embedder.c
-	$(pkg_v_localcc)$(CC_FOR_BUILD) -I.. embedder.c -o $@
+embedder: embedder.c embedder.h embedder_files.h
+	$(pkg_v_localcc)$(CC_FOR_BUILD) -I.. $< -o $@
 
 EXTRA_DIST = $(LIB_SRC)
 

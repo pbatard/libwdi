@@ -68,7 +68,13 @@ case $host in
 	AM_CFLAGS="-Wshadow"
 	AM_LDFLAGS="-Wl,--add-stdcall-alias"
 	;;
+*-cygwin*)
+	AC_MSG_RESULT([$host])
+	AC_MSG_ERROR([You need to add something like  --host=i686-pc-mingw32 to to you configure command line])
+	AC_MSG_ERROR([unsupported development environment])
+	;;
 *)
+	AC_MSG_RESULT([$host])
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
@@ -349,6 +355,9 @@ AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBCONFIG_CFLAGS])
 AC_SUBST([LIBCONFIG_LIBADD])
+
+abs_srcdir=`(cd $srcdir && (cygpath -ma . || pwd))`/libwdi
+AC_DEFINE_UNQUOTED([SRC_DIR], ["${abs_srcdir}"], [Sources location, wrt build dir])
 
 AC_CONFIG_FILES([
 Makefile

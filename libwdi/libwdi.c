@@ -78,15 +78,15 @@ extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist
 // These ones are defined in pki
 extern BOOL AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
 extern BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
-extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPSTR* szFileList, DWORD cFileList);
+extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFileList, DWORD cFileList);
 
 /*
  * Structure used for the threaded call to install_driver_internal()
  */
 struct install_driver_params {
 	struct wdi_device_info* device_info;
-	char* path;
-	char* inf_name;
+	const char* path;
+	const char* inf_name;
 	struct wdi_options_install_driver* options;
 };
 
@@ -368,7 +368,7 @@ static PSID get_sid(void) {
  * Check whether the path is a directory with write access
  * if create is TRUE, create directory if it doesn't exist
  */
-static int check_dir(char* path, BOOL create)
+static int check_dir(const char* path, BOOL create)
 {
 	int r;
 	DWORD file_attributes;
@@ -659,7 +659,7 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
  * Find out if a file is embedded in the current libwdi resources
  * path is the relative path for
  */
-BOOL LIBWDI_API wdi_is_file_embedded(char* path, char* name)
+BOOL LIBWDI_API wdi_is_file_embedded(const char* path, const char* name)
 {
 	int i;
 
@@ -1062,7 +1062,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 }
 
 // extract the embedded binary resources
-static int extract_binaries(char* path)
+static int extract_binaries(const char* path)
 {
 	FILE *fd;
 	char filename[MAX_PATH];
@@ -1124,14 +1124,16 @@ static long tokenize_internal(const char* resource_name, char** dst, const token
 
 #define CAT_LIST_MAX_ENTRIES 16
 // Create an inf and extract coinstallers in the directory pointed by path
-int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options_prepare_driver* options)
+int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
+#endif
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
-	char* cat_list[CAT_LIST_MAX_ENTRIES+1];
+	const char* cat_list[CAT_LIST_MAX_ENTRIES+1];
 	char inf_path[MAX_PATH], cat_path[MAX_PATH], hw_id[40], cert_subject[64];
 	char *strguid, *token, *cat_name = NULL, *dst = NULL, *cat_in_copy = NULL;
 	wchar_t *wdst = NULL;
@@ -1576,7 +1578,9 @@ static int install_driver_internal(void* arglist)
 		} else {
 			static_strcat(exename, "\\installer_x86.exe");
 		}
-		static_strcpy(exeargs, params->inf_name);
+		static_strcpy(exeargs, "\"");
+		static_strcat(exeargs, params->inf_name);
+		static_strcat(exeargs, "\"");
 	} else {
 		// Use libusb-win32's filter driver installer
 		if (is_x64) {
@@ -1772,8 +1776,8 @@ out:
 	MUTEX_RETURN r;
 }
 
-int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* path,
-								  char* inf_name, struct wdi_options_install_driver* options)
+int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, struct wdi_options_install_driver* options)
 {
 	struct install_driver_params params;
 	params.device_info = device_info;
@@ -1791,7 +1795,7 @@ int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, char* pat
 
 // Install a driver signing certificate to the Trusted Publisher system store
 // This allows promptless installation if you also provide a signed inf/cat pair
-int LIBWDI_API wdi_install_trusted_certificate(char* cert_name,
+int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 											   struct wdi_options_install_cert* options)
 {
 	int i;

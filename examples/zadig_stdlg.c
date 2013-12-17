@@ -73,9 +73,9 @@ extern float fScale;
 static HWND browse_edit;
 static WNDPROC org_browse_wndproc;
 static const SETTEXTEX friggin_microsoft_unicode_amateurs = {ST_DEFAULT, CP_UTF8};
-static bool notification_is_question;
+static BOOL notification_is_question;
 static const notification_info* notification_more_info;
-static bool reg_commcheck = FALSE;
+static BOOL reg_commcheck = FALSE;
 static WNDPROC original_wndproc = NULL;
 
 /*
@@ -85,7 +85,7 @@ static WNDPROC original_wndproc = NULL;
 char* to_valid_filename(char* name, char* ext)
 {
 	size_t i, j, k;
-	bool found;
+	BOOL found;
 	char* ret;
 	wchar_t unauthorized[] = L"\x0001\x0002\x0003\x0004\x0005\x0006\x0007\x0008\x000a"
 		L"\x000b\x000c\x000d\x000e\x000f\x0010\x0011\x0012\x0013\x0014\x0015\x0016\x0017"
@@ -117,18 +117,18 @@ char* to_valid_filename(char* name, char* ext)
 	safe_free(wext);
 
 	for (i=0, k=0; i<wcslen(wret); i++) {
-		found = false;
+		found = FALSE;
 		for (j=0; j<wcslen(unauthorized); j++) {
 			if (wret[i] == unauthorized[j]) {
-				found = true; break;
+				found = TRUE; break;
 			}
 		}
 		if (found) continue;
-		found = false;
+		found = FALSE;
 		for (j=0; j<wcslen(to_underscore); j++) {
 			if (wret[i] == to_underscore[j]) {
 				wret[k++] = '_';
-				found = true; break;
+				found = TRUE; break;
 			}
 		}
 		if (found) continue;
@@ -453,14 +453,14 @@ fallback:
  * read or write I/O to a file
  * buffer is allocated by the procedure. path is UTF-8
  */
-bool file_io(bool save, char* path, char** buffer, DWORD* size)
+BOOL file_io(BOOL save, char* path, char** buffer, DWORD* size)
 {
 	SECURITY_ATTRIBUTES s_attr, *ps = NULL;
 	SECURITY_DESCRIPTOR s_desc;
 	PSID sid = NULL;
 	HANDLE handle;
 	BOOL r;
-	bool ret = false;
+	BOOL ret = FALSE;
 
 	// Change the owner from admin to regular user
 	sid = get_sid();
@@ -504,7 +504,7 @@ bool file_io(bool save, char* path, char** buffer, DWORD* size)
 	}
 
 	dsprintf("%s '%s'", save?"Saved file as":"Opened file", path);
-	ret = true;
+	ret = TRUE;
 
 out:
 	CloseHandle(handle);
@@ -523,7 +523,7 @@ out:
  * Will use the newer IFileOpenDialog if *compiled* for Vista or later
  * All string parameters are UTF-8
  */
-char* file_dialog(bool save, char* path, char* filename, char* ext, char* ext_desc)
+char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_desc)
 {
 	DWORD tmp;
 	OPENFILENAMEA ofn;
