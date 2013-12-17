@@ -1128,7 +1128,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 								  const char* inf_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
+#if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
+#endif
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
 	const char* cat_list[CAT_LIST_MAX_ENTRIES+1];
@@ -1576,7 +1578,7 @@ static int install_driver_internal(void* arglist)
 		} else {
 			static_strcat(exename, "\\installer_x86.exe");
 		}
-		static_strcpy(exeargs, params->inf_name);
+		safe_sprintf(exeargs, sizeof(exeargs), "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
 		if (is_x64) {
