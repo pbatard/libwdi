@@ -1570,24 +1570,13 @@ static int install_driver_internal(void* arglist)
 	overlapped.hEvent = handle[0];
 
 	if (!filter_driver) {
-		safe_strcpy(exename, sizeof(exename), path);
 		// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 		// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
-		if (is_x64) {
-			static_strcat(exename, "\\installer_x64.exe");
-		} else {
-			static_strcat(exename, "\\installer_x86.exe");
-		}
+		safe_sprintf(exename, sizeof(exename), "\"%s\\installer_x%s.exe\"", path, is_x64?"64":"32");
 		safe_sprintf(exeargs, sizeof(exeargs), "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
-		if (is_x64) {
-			static_strcat(path, "\\amd64");
-		} else {
-			static_strcat(path, "\\x86");
-		}
-		safe_strcpy(exename, sizeof(exename), path);
-		safe_strcat(exename, sizeof(exename), "\\install-filter.exe");
+		safe_sprintf(exename, sizeof(exename), "\"%s\\%s\\\\install-filter.exe\"", path, is_x64?"amd64":"x86");
 		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
 			// Device already has the libusb-win32 filter => remove
 			static_strcpy(exeargs, "uninstall -d=");

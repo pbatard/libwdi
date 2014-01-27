@@ -132,6 +132,9 @@ void w_printf_v(BOOL update_status, const char *format, va_list args)
 	str[slen] = '\r';
 	str[slen+1] = '\n';
 	str[slen+2] = 0;
+
+	// Also send output to debug logger
+	OutputDebugStringA(str);
 	// Set cursor to the end of the buffer
 	Edit_SetSel(hInfo, MAX_LOG_SIZE, MAX_LOG_SIZE);
 	Edit_ReplaceSelU(hInfo, str);
@@ -311,7 +314,7 @@ int install_driver(void)
 		} else {
 			// Retrieve the various device parameters
 			if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
-				notification(MSG_ERROR, NULL, "The description string cannot be empty.", "Driver Installation");
+				notification(MSG_ERROR, NULL, "Driver Installation", "The description string cannot be empty.");
 				r = WDI_ERROR_INVALID_PARAM; goto out;
 			}
 			dev->desc = safe_strdup(str_buf);
@@ -457,8 +460,8 @@ void set_default_driver(void) {
 			}
 		}
 		if (i==WDI_NB_DRIVERS) {
-			notification(MSG_ERROR, NULL, "No driver is available for installation with this application.\n"
-				"The application will close", "No Driver Available");
+			notification(MSG_ERROR, NULL, "No Driver Available", "No driver is available for installation with this application.\n"
+				"The application will close");
 			EndDialog(hMain, 0);
 		}
 		dprintf("falling back to '%s' for default driver", driver_display_name[default_driver_type]);
@@ -1716,17 +1719,17 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
-					notification(MSG_INFO, NULL, "The driver was installed successfully.", "Driver Installation");
+					notification(MSG_INFO, NULL, "Driver Installation", "The driver was installed successfully.");
 					if(exit_on_success){
 						exit(0);
 					}
 				}
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User");
-				notification(MSG_WARNING, NULL, "Driver installation cancelled by user.", "Driver Installation");
+				notification(MSG_WARNING, NULL, "Driver Installation", "Driver installation cancelled by user.");
 			} else {
 				dsprintf("Driver Installation: FAILED (%s)", wdi_strerror(r));
-				notification(MSG_ERROR, NULL, "The driver installation failed.", "Driver Installation");
+				notification(MSG_ERROR, NULL, "Driver Installation", "The driver installation failed.");
 			}
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
