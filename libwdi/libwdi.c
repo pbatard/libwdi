@@ -794,7 +794,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	char strbuf[STR_BUFFER_SIZE], drv_version[] = "xxxxx.xxxxx.xxxxx.xxxxx";
 	wchar_t desc[MAX_DESC_LENGTH];
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
-	const char* usbhub_name[] = {"usbhub", "usbhub3", "nusb3hub", "rusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub"};
+	const char* usbhub_name[] = {"usbhub", "usbhub3", "usb3hub", "nusb3hub", "rusb3hub", "flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub"};
 	const char usbccgp_name[] = "usbccgp";
 	BOOL is_hub, is_composite_parent, has_vid;
 

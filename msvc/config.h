@@ -21,7 +21,7 @@
  * match your WinUSB redist directrories
  */
 #ifndef DDK_DIR
-#define DDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"
+#define DDK_DIR "C:/Program Files (x86)/Windows Kits/8.1"
 #endif
 
 /* DDK WDF coinstaller version */
