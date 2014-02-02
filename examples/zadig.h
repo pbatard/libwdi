@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #define MAX_PROGRESS                (0xFFFF-1)
 #define INI_NAME                    "zadig.ini"
 #define LIBWDI_URL                  "http://libwdi.akeo.ie"
-#define LIBUSBX_URL                 "https://github.com/libusbx/libusbx/wiki/Windows-Backend"
+#define LIBUSB_URL                  "http://windows.libusb.info"
 #define LIBUSB0_URL                 "http://sourceforge.net/apps/trac/libusb-win32/wiki"
 #define LIBUSBK_URL                 "http://code.google.com/p/usb-travis/"
 #define WINUSB_URL                  "http://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"

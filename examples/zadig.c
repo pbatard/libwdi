@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1006,7 +1006,7 @@ void init_dialog(HWND hDlg)
 		"Submit Vendor to the USB ID Repository", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
 		"This device also has the\nlibusb-win32 filter driver", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_LIBUSBX_URL),
+	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB_URL),
 		"Find out more about libusbx online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB0_URL),
 		"Find out more about libusb-win32 online", -1);
@@ -1278,7 +1278,7 @@ static INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam
 			return (INT_PTR)TRUE;
 		}
 		if ( ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB0_URL))
-		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSBX_URL))
+		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSB_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_LIBUSBK_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WINUSB_URL))
 		  || ((HWND)wParam == GetDlgItem(hDlg, IDC_WCID_URL)) ) {
@@ -1523,7 +1523,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
 		}
 		if ( (hCtrl == GetDlgItem(hMain, IDC_LIBUSB0_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBX_URL))
+		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSB_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBK_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_WINUSB_URL))
 		  || (hCtrl == GetDlgItem(hMain, IDC_WCID_URL)) ) {
@@ -1584,8 +1584,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDC_LIBUSB0_URL:
 			ShellExecuteA(hDlg, "open", LIBUSB0_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
-		case IDC_LIBUSBX_URL:
-			ShellExecuteA(hDlg, "open", LIBUSBX_URL, NULL, NULL, SW_SHOWNORMAL);
+		case IDC_LIBUSB_URL:
+			ShellExecuteA(hDlg, "open", LIBUSB_URL, NULL, NULL, SW_SHOWNORMAL);
 			break;
 		case IDC_LIBUSBK_URL:
 			ShellExecuteA(hDlg, "open", LIBUSBK_URL, NULL, NULL, SW_SHOWNORMAL);

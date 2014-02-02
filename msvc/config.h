@@ -25,7 +25,7 @@
 #endif
 
 /* DDK WDF coinstaller version */
-#define WDF_VER 1009
+#define WDF_VER 1011
 
 /* CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf") */
 #define COINSTALLER_DIR "wdf"

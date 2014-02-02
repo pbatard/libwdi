@@ -325,7 +325,7 @@ AC_ARG_ENABLE(debug, AS_HELP_STRING([--enable-debug], [include debug symbols for
 if test "x$debug_enabled" = "xyes" ; then
   CFLAGS="-g -O2"
 else
-  CFLAGS="-O2"
+  CFLAGS="-Os"
 fi
 
 # Examples build

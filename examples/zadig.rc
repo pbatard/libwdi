@@ -158,7 +158,7 @@ BEGIN
     ICON            "",IDC_WCID_ICON,42,83,20,20,SS_NOTIFY | SS_REALSIZEIMAGE
     LTEXT           "?",IDC_WCID_URL,34,81,6,13,SS_NOTIFY
     LTEXT           "More Information",IDC_LINKS,296,43,76,10
-    LTEXT           "WinUSB (libusbx)",IDC_LIBUSBX_URL,297,54,65,9,SS_NOTIFY
+    LTEXT           "WinUSB (libusb)",IDC_LIBUSB_URL,297,54,65,9,SS_NOTIFY
     LTEXT           "libusb-win32",IDC_LIBUSB0_URL,297,65,42,9,SS_NOTIFY
     LTEXT           "libusbK",IDC_LIBUSBK_URL,297,76,25,9,SS_NOTIFY
     LTEXT           "WinUSB (Microsoft)",IDC_WINUSB_URL,297,87,65,9,SS_NOTIFY
