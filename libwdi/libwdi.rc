@@ -50,8 +50,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,2,656
- PRODUCTVERSION 1,2,2,656
+ FILEVERSION 1,2,2,657
+ PRODUCTVERSION 1,2,2,657
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,13 +68,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "libwdi: Windows Driver Installer Library"
-            VALUE "FileVersion", "1.2.2.656"
+            VALUE "FileVersion", "1.2.2.657"
             VALUE "InternalName", "libwdi"
             VALUE "LegalCopyright", "© 2010-2011 Pete Batard (LGPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "libwdi"
             VALUE "ProductName", "libwdi"
-            VALUE "ProductVersion", "1.2.2.656"
+            VALUE "ProductVersion", "1.2.2.657"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END

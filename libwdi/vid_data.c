@@ -29,7 +29,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2013.10.23
+ * Version: 2014.01.08
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -1032,7 +1032,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0900, "Pinnacle Systems, Inc." },
 	{ 0x0901, "VST Technologies" },
 	{ 0x0906, "Faraday Technology Corp." },
-	{ 0x0908, "ShenZhen SANZHAI Technology Co.,Ltd" },
+	{ 0x0908, "Siemens AG" },
 	{ 0x0909, "Audio-Technica Corp." },
 	{ 0x090a, "Trumpion Microelectronics, Inc." },
 	{ 0x090b, "Neurosmith" },
@@ -2592,6 +2592,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x1b59, "K.S. Terminals Inc." },
 	{ 0x1b5a, "Chao Zhou Kai Yuan Electric Co., Ltd." },
 	{ 0x1b65, "The Hong Kong Standards and Testing Centre Ltd." },
+	{ 0x1b71, "Fushicai" },
 	{ 0x1b72, "ATERGI TECHNOLOGY CO., LTD." },
 	{ 0x1b73, "Fresco Logic" },
 	{ 0x1b75, "Ovislink Corp." },
@@ -2760,6 +2761,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x20df, "Simtec Electronics" },
 	{ 0x20f4, "TRENDnet" },
 	{ 0x2101, "ActionStar" },
+	{ 0x2149, "Advanced Silicon S.A." },
 	{ 0x2162, "Creative (?)" },
 	{ 0x2184, "GW Instek" },
 	{ 0x21a1, "Emotiv Systems Pty. Ltd." },
@@ -2769,6 +2771,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x2232, "Silicon Motion" },
 	{ 0x2233, "RadioShack Corporation" },
 	{ 0x2237, "Kobo Inc." },
+	{ 0x228d, "8D Technologies inc." },
 	{ 0x22a6, "Pie Digital, Inc." },
 	{ 0x22b8, "Motorola PCS" },
 	{ 0x22b9, "eTurboTouch Technology, Inc." },

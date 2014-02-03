@@ -1126,7 +1126,7 @@ BOOL SetUpdateCheck(void)
 	if (ReadRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL) == 0) {
 
 		// Add a hack for people who'd prefer the app not to prompt about update settings on first run.
-		// If the executable is called "rufus.exe", without version, we disable the prompt
+		// If the executable is called "<app_name>.exe", without version, we disable the prompt
 		GetModuleFileNameU(NULL, filename, sizeof(filename));
 		fn_len = safe_strlen(filename);
 		exe_len = safe_strlen(exename);
