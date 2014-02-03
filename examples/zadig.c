@@ -44,6 +44,7 @@
 #include "libwdi.h"
 #include "msapi_utf8.h"
 #include "zadig_resource.h"
+#include "zadig_registry.h"
 #include "zadig.h"
 #include "profile.h"
 
@@ -261,7 +262,10 @@ int get_driver_type(struct wdi_device_info* dev)
 {
 	int i;
 	const char* libusb_name[] = { "WinUSB", "libusb0", "libusbK" };
-	const char* system_name[] = { "usbhub", "usbhub3", "nusb3hub", "usbccgp", "USBSTOR", "HidUsb"};
+	const char* system_name[] = { "usbccgp", "usbstor", "uaspstor", "vusbstor", "etronstor", "hidusb",
+		// NOTE: The list of hubs below should match the one from libwdi.c
+		"usbhub", "usbhub3", "nusb3hub", "usbhub", "usbhub3", "usb3hub", "nusb3hub", "rusb3hub",
+		"flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub"};
 
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
@@ -1937,6 +1941,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			}
 			continue;
 		}
+		// Alt-R => Remove all the registry keys created by Zadig
+		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'R')) {
+			dsprintf(DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME "\\" APPLICATION_NAME)?
+				"Application registry keys successfully deleted":"Failed to delete application registry keys");
+			// Also try to delete the upper key (company name) if it's empty (don't care about the result)
+			DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME);
+			continue;
+		}
+
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
