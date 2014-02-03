@@ -1,5 +1,5 @@
 #!/bin/sh
-# Changes the version number
+# Changes the version number for the library and non Zadig samples
 # !!!THIS SCRIPT IS FOR INTERNAL DEVELOPER USE ONLY!!!
 
 type -P sed &>/dev/null || { echo "sed command not found. Aborting." >&2; exit 1; }
@@ -26,8 +26,8 @@ case $MICRO in *[!0-9]*)
   exit 1
 esac
 echo "changing version to $MAJOR.$MINOR.$MICRO"
-sed -e "s/^AC_INIT(\[\([^ ]*\)\], \[[^ ]*\]\(.*\)/AC_INIT([\1], [$MAJOR.$MINOR.$MICRO]\2/" configure.ac > configure.ac~
-mv configure.ac~ configure.ac
+sed -i -e "s/^AC_INIT(\[\([^ ]*\)\], \[[^ ]*\]\(.*\)/AC_INIT([\1], [$MAJOR.$MINOR.$MICRO]\2/" configure.ac
+
 cat > cmd.sed <<\_EOF
 s/^[ \t]*FILEVERSION[ \t]*.*,.*,.*,\(.*\)/ FILEVERSION @@MAJOR@@,@@MINOR@@,@@MICRO@@,\1/
 s/^[ \t]*PRODUCTVERSION[ \t]*.*,.*,.*,\(.*\)/ PRODUCTVERSION @@MAJOR@@,@@MINOR@@,@@MICRO@@,\1/
@@ -36,15 +36,13 @@ s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*".*\..*\..*\.\(.*\)"/\1VALUE "Pro
 _EOF
 
 # First run sed to substitute our variable in the sed command file
-sed -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" -e "s/@@MICRO@@/$MICRO/g" cmd.sed > cmd.sed~
-mv cmd.sed~ cmd.sed
-# Run sed to update the .rc files minor version
-sed -f cmd.sed libwdi/libwdi.rc > libwdi/libwdi.rc~
-mv libwdi/libwdi.rc~ libwdi/libwdi.rc
-sed -f cmd.sed examples/zadic.rc > examples/zadic.rc~
-mv examples/zadic.rc~ examples/zadic.rc
-sed -f cmd.sed examples/wdi-simple.rc > examples/wdi-simple.rc~
-mv examples/wdi-simple.rc~ examples/wdi-simple.rc
-sed -f cmd.sed _bm.sh > _bm.sh~
-mv _bm.sh~ _bm.sh
+sed -i -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" -e "s/@@MICRO@@/$MICRO/g" cmd.sed
+# Run sed to update the .rc version
+sed -i -f cmd.sed libwdi/libwdi.rc
+sed -i 's/$/\r/' libwdi/libwdi.rc
+sed -i -f cmd.sed examples/zadic.rc
+sed -i 's/$/\r/' examples/zadic.rc
+sed -i -f cmd.sed examples/wdi-simple.rc
+sed -i 's/$/\r/' examples/wdi-simple.rc
+sed -i -f cmd.sed _bm.sh
 rm cmd.sed

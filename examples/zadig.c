@@ -978,7 +978,7 @@ void init_dialog(HWND hDlg)
 
 	// Count of Microsoft for making it more attractive to read a
 	// version using strtok() than using GetFileVersionInfo()
-	token = strtok(version, "v");
+	token = strtok(version, " ");
 	for (i=0; (i<4) && ((token = strtok(NULL, ".")) != NULL); i++)
 		application_version[i] = (uint16_t)atoi(token);
 
