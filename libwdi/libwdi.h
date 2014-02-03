@@ -294,6 +294,11 @@ LIBWDI_EXP int LIBWDI_API wdi_unregister_logger(HWND hWnd);
  */
 LIBWDI_EXP int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size);
 
+/*
+ * Return the WDF version used by the native drivers
+ */
+LIBWDI_EXP int LIBWDI_API wdi_get_wdf_version(void);
+
 #ifdef __cplusplus
 }
 #endif

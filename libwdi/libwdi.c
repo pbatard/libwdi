@@ -135,6 +135,97 @@ token_entity_t inf_entities[]=
 };
 
 /*
+ * List of Android devices that need to be assigned a specific Device Interface GUID
+ * so that they are recognized with Google's debug tools.
+ * This list gets updated from https://github.com/gu1dry/android_winusb/ (Cyanogenmod)
+ * and http://developer.android.com/sdk/win-usb.html (Google USB driver)
+ * NB: We don't specify an MI, as the assumption is that the MTP driver has already been
+ * installed automatically, which will only leave the driverless debug interface to pick
+ * a driver for.
+ */
+const char* android_device_guid = "{f72fe0d4-cbcb-407d-8814-9ed673d0dd6b}";
+const struct {uint16_t vid; uint16_t pid;} android_device[] = {
+	{0x0451, 0xD022},
+	{0x0451, 0xD101},
+	{0x0489, 0xC001},
+	{0x04E8, 0x685D},
+	{0x04E8, 0x685E},
+	{0x04E8, 0x6860},
+	{0x05C6, 0x9025},
+	{0x0955, 0x7100},
+	{0x0B05, 0x4D01},
+	{0x0B05, 0x4D03},
+	{0x0B05, 0x4E01},
+	{0x0B05, 0x4E03},
+	{0x0B05, 0x4E1F},
+	{0x0B05, 0x4E3F},
+	{0x0BB4, 0x0C01},
+	{0x0BB4, 0x0C02},
+	{0x0BB4, 0x0C03},
+	{0x0BB4, 0x0C87},
+	{0x0BB4, 0x0C8B},
+	{0x0BB4, 0x0C8D},
+	{0x0BB4, 0x0C91},
+	{0x0BB4, 0x0C92},
+	{0x0BB4, 0x0C96},
+	{0x0BB4, 0x0C97},
+	{0x0BB4, 0x0CA2},
+	{0x0BB4, 0x0CA4},
+	{0x0BB4, 0x0CA5},
+	{0x0BB4, 0x0CAC},
+	{0x0BB4, 0x0CAD},
+	{0x0BB4, 0x0CBA},
+	{0x0BB4, 0x0CED},
+	{0x0BB4, 0x0E03},
+	{0x0BB4, 0x0FF9},
+	{0x0BB4, 0x0FFF},
+	{0x0FCE, 0x0DDE},
+	{0x0FCE, 0x4E30},
+	{0x0FCE, 0x6860},
+	{0x0FCE, 0xD001},
+	{0x1004, 0x618E},
+	{0x12D1, 0x1501},
+	{0x18D1, 0x0D02},
+	{0x18D1, 0x0D02},
+	{0x18D1, 0x2C10},
+	{0x18D1, 0x2C11},
+	{0x18D1, 0x4E11},
+	{0x18D1, 0x4E12},
+	{0x18D1, 0x4E21},
+	{0x18D1, 0x4E22},
+	{0x18D1, 0x4E23},
+	{0x18D1, 0x4E24},
+	{0x18D1, 0x4E30},
+	{0x18D1, 0x4E40},
+	{0x18D1, 0x4E41},
+	{0x18D1, 0x4E42},
+	{0x18D1, 0x4E44},
+	{0x18D1, 0x4EE0},
+	{0x18D1, 0x4EE1},
+	{0x18D1, 0x4EE2},
+	{0x18D1, 0x4EE3},
+	{0x18D1, 0x4EE4},
+	{0x18D1, 0x4EE4},
+	{0x18D1, 0x4EE5},
+	{0x18D1, 0x4EE6},
+	{0x18D1, 0x708C},
+	{0x18D1, 0x708C},
+	{0x18D1, 0x9001},
+	{0x18D1, 0x9001},
+	{0x18D1, 0xD002},
+	{0x19D2, 0x1351},
+	{0x19D2, 0x1354},
+	{0x2080, 0x0002},
+	{0x22B8, 0x2D66},
+	{0x22B8, 0x41DB},
+	{0x22B8, 0x4286},
+	{0x22B8, 0x42A4},
+	{0x22B8, 0x42DA},
+	{0x22B8, 0x4331},
+	{0x22B8, 0x70A9},
+};
+
+/*
  * Global variables
  */
 static struct wdi_device_info *current_device = NULL;
@@ -1139,8 +1230,9 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	char inf_path[MAX_PATH], cat_path[MAX_PATH], hw_id[40], cert_subject[64];
 	char *strguid, *token, *cat_name = NULL, *dst = NULL, *cat_in_copy = NULL;
 	wchar_t *wdst = NULL;
-	int nb_entries, driver_type = WDI_WINUSB, r = WDI_ERROR_OTHER;
+	int i, nb_entries, driver_type = WDI_WINUSB, r = WDI_ERROR_OTHER;
 	long inf_file_size, cat_file_size;
+	BOOL is_android_device = FALSE;
 	FILE* fd;
 	GUID guid;
 	SYSTEMTIME system_time;
@@ -1270,11 +1362,22 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		static_strcpy(inf_entities[USE_DEVICE_INTERFACE_GUID].replace, "AddDeviceInterfaceGUID");
 	}
 
+	// Find out if we have an Android device
+	for (i=0; i<ARRAYSIZE(android_device); i++) {
+		if ((android_device[i].vid == device_info->vid) && (android_device[i].pid == device_info->pid)) {
+			is_android_device = TRUE;
+			break;
+		}
+	}
+
 	// Populate the Device Interface GUID
 	if ((options != NULL) && (options->use_wcid_driver)) {
 		strguid = "UNUSED";
 	} else if ((options != NULL) && (options->device_guid != NULL)) {
 		strguid = options->device_guid;
+	} else if (is_android_device) {
+		wdi_info("using Android Device Interface GUID");
+		strguid = (char*)android_device_guid;
 	} else {
 		IGNORE_RETVAL(CoCreateGuid(&guid));
 		strguid = guid_to_string(guid);
@@ -1392,6 +1495,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 			wdi_warn("could not sign cat file");
 		}
 		safe_free(cat_in_copy);
+		safe_free(dst);
 	} else {
 		wdi_info("No .cat file generated (not running Vista or later, or missing elevated privileges)");
 	}
@@ -1824,4 +1928,14 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 
 	wdi_err("this call must be run with elevated privileges on Vista and later");
 	return WDI_ERROR_NEEDS_ADMIN;
+}
+
+// Return the WDF version used by the native drivers
+int LIBWDI_API wdi_get_wdf_version(void)
+{
+#if defined(WDF_VER)
+	return WDF_VER;
+#else
+	return -1;
+#endif
 }

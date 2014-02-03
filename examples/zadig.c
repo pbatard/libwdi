@@ -1897,6 +1897,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Set the Windows version
 	windows_version = detect_windows_version();
 
+	// Alert users if they are running the non XP version on XP
+	if ((windows_version < WINDOWS_VISTA) && (wdi_get_wdf_version() >= 1011)) {
+		MessageBoxA(NULL, "This version of Zadig can only be run on Windows Vista or later, as it "
+			"installs drivers using WDF framework 1.11, which is not compatible with older versions "
+			"of Windows.\nPlease use the XP version of Zadig, from " APPLICATION_URL ", if you want "
+			"to install USB drivers on this platform.", "Incompatible version", MB_ICONSTOP);
+		return 0;
+	}
+
 	// Save instance of the application for further reference
 	main_instance = hInstance;
 
