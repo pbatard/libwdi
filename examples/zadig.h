@@ -46,7 +46,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.1.0.657"
+#define APP_VERSION                 "Zadig 2.1.0.658"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {

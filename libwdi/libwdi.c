@@ -1678,7 +1678,7 @@ static int install_driver_internal(void* arglist)
 	if (!filter_driver) {
 		// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 		// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
-		safe_sprintf(exename, sizeof(exename), "\"%s\\installer_x%s.exe\"", path, is_x64?"64":"32");
+		safe_sprintf(exename, sizeof(exename), "\"%s\\installer_x%s.exe\"", path, is_x64?"64":"86");
 		safe_sprintf(exeargs, sizeof(exeargs), "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
