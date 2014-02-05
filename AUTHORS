@@ -1,11 +1,13 @@
-copyright (c) 2010-2011 Pete Batard <pete@akeo.ie>
-copyright (c) 2010-2011 Travis Robinson <libusbdotnet@gmail.com>
+Copyright ©  2010-2014 Pete Batard <pete@akeo.ie>
+Copyright ©  2010-2011 Travis Robinson <libusbdotnet@gmail.com>
 
-Zadic improvements:
-  copyright (c) 2010 Joseph Marshall <jmarshall@gcdataconcepts.com>
-
-profile parser author (Zadig): 
-  Theodore Ts'o
-
-Additional testing, improvement suggestions and overall wise advice:
-  Xiaofan Chen
+Other contributors:
+Alexander Sashnov
+Bob Paddock
+JaggedJax
+Jerome-PS
+Joseph Marshall
+Liam Staskawicz
+Uri Lublin
+Vitali Lovich
+Xiaofan Chen
