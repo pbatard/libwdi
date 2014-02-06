@@ -19,7 +19,7 @@ o v1.2.2 (2012.09.19)
   Improvements:
   - Add KMDF v1.11 and Windows Kit 8.0 support
   - Improved USB 3.0 support
-  - Improved libusb-win32 driver support with libusbx
+  - Improved libusb-win32 driver support with libusb
 
 o v1.2.1 (2011.11.02)
   Bugfixes:

@@ -1011,7 +1011,7 @@ void init_dialog(HWND hDlg)
 	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
 		"This device also has the\nlibusb-win32 filter driver", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB_URL),
-		"Find out more about libusbx online", -1);
+		"Find out more about libusb online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB0_URL),
 		"Find out more about libusb-win32 online", -1);
 	create_tooltip(GetDlgItem(hMain, IDC_LIBUSBK_URL),

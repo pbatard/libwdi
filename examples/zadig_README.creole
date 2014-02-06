@@ -21,7 +21,7 @@
 
 === v2.0.1.160: ===
 * Zadig is now provided in 2 versions: One for XP users that includes KMDF/WDF 1.09 and one for Vista, Windows 7 and Windows 8 users that includes KMDF/WDF 1.11. Make sure you pick the right one!
-* libusb-win32 should now install the libusbK DLL. This is needed for libusbx applications using libusb-win32.
+* libusb-win32 should now install the libusbK DLL. This is needed for libusb applications using libusb-win32.
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16
 
 === v2.0.1.159: ===
@@ -30,7 +30,7 @@
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11
 
 === v2.0.1.158: ===
-* Fixes support for libusb0.sys as a composite interface driver when used with [[http://libusbx.org|libusbx]].
+* Fixes support for libusb0.sys as a composite interface driver when used with [[http://libusb.info|libusb]].
 * embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.5.16 - KMDF 1.11
 
 === v2.0.1.157: ===

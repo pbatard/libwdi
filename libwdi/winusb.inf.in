@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2010-2012 libusbx (GNU LGPL)
+; Copyright (c) 2010-2014 libusb (GNU LGPL)
 [Strings]
 DeviceName = "#DEVICE_DESCRIPTION#"
 VendorName = "#DEVICE_MANUFACTURER#"
@@ -11,7 +11,7 @@ DeviceGUID = "#DEVICE_INTERFACE_GUID#"
 Signature   = "$Windows NT$"
 Class       = "Universal Serial Bus devices"
 ClassGuid   = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
-Provider    = "libusbx.org"
+Provider    = "libusb.info"
 CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
 
@@ -23,15 +23,15 @@ HKR,,,0,"Universal Serial Bus devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
-%VendorName% = libusbxDevice_WinUSB,NTx86,NTamd64,NTia64
+%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTia64
 
-[libusbxDevice_WinUSB.NTx86]
+[libusbDevice_WinUSB.NTx86]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbxDevice_WinUSB.NTamd64]
+[libusbDevice_WinUSB.NTamd64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbxDevice_WinUSB.NTia64]
+[libusbDevice_WinUSB.NTia64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
 [USB_Install]
