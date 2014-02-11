@@ -954,14 +954,14 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 				break;
 			}
 		}
-		if (is_hub && (!options->list_hubs)) {
+		if (is_hub && ((options == NULL) || (!options->list_hubs))) {
 			continue;
 		}
 		// Also eliminate composite devices parent drivers, as replacing these drivers
 		// is a bad idea
 		is_composite_parent = FALSE;
 		if (safe_stricmp(strbuf, usbccgp_name) == 0) {
-			if (!options->list_hubs) {
+			if ((options == NULL) || (!options->list_hubs)) {
 				continue;
 			}
 			is_composite_parent = TRUE;
@@ -1620,7 +1620,9 @@ static int install_driver_internal(void* arglist)
 	}
 
 	current_device = params->device_info;
-	filter_driver = params->options->install_filter_driver;
+	filter_driver = FALSE;
+	if (params->options != NULL)
+		filter_driver = params->options->install_filter_driver;
 
 	// Try to use the user's temp dir if no path is provided
 	if ((params->path == NULL) || (params->path[0] == 0)) {
@@ -1636,7 +1638,7 @@ static int install_driver_internal(void* arglist)
 	}
 
 	// Detect if another installation is in process
-	if (CMP_WaitNoPendingInstallEvents != NULL) {
+	if ((params->options != NULL) && (CMP_WaitNoPendingInstallEvents != NULL)) {
 		if (CMP_WaitNoPendingInstallEvents(params->options->pending_install_timeout) == WAIT_TIMEOUT) {
 			wdi_warn("timeout expired while waiting for another pending installation - aborting");
 			MUTEX_RETURN WDI_ERROR_PENDING_INSTALLATION;
