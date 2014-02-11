@@ -44,5 +44,4 @@ sed -i -f cmd.sed examples/zadic.rc
 sed -i 's/$/\r/' examples/zadic.rc
 sed -i -f cmd.sed examples/wdi-simple.rc
 sed -i 's/$/\r/' examples/wdi-simple.rc
-sed -i -f cmd.sed _bm.sh
 rm cmd.sed

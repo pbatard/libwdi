@@ -29,14 +29,12 @@ s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@TAGVER@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@TAGVER@@"/
 s/^\(.*\)"Zadig \(.*\)\..*"\(.*\)/\1"Zadig \2.@@TAGVER@@"\3/
-s/^zadig_version=\(.*\)\..*/zadig_version=\1.@@TAGVER@@/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
 sed -i -e "s/@@TAGVER@@/$TAGVER/g" cmd.sed
 
 # Run sed to update the nano version, and add the modified files
-sed -i -f cmd.sed _bm.sh
 sed -i -f cmd.sed libwdi/libwdi.rc
 sed -i 's/$/\r/' libwdi/libwdi.rc
 sed -i -f cmd.sed examples/zadic.rc
@@ -47,5 +45,5 @@ sed -i -f cmd.sed examples/zadig.h
 sed -i 's/$/\r/' examples/zadig.h
 sed -i -f cmd.sed examples/wdi-simple.rc
 sed -i 's/$/\r/' examples/wdi-simple.rc
-git add _bm.sh libwdi/libwdi.rc examples/zadic.rc examples/zadig.rc examples/zadig.h examples/wdi-simple.rc
+git add libwdi/libwdi.rc examples/zadic.rc examples/zadig.rc examples/zadig.h examples/wdi-simple.rc
 rm cmd.sed

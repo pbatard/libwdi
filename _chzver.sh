@@ -41,9 +41,4 @@ sed -i 's/$/\r/' examples/zadig.rc
 sed -i -f cmd.sed examples/zadig.h
 sed -i 's/$/\r/' examples/zadig.h
 
-cat > cmd.sed <<\_EOF
-s/^zadig_version=.*\.\(.*\)/zadig_version=@@MAJOR@@.@@MINOR@@.@@MICRO@@.\1/
-_EOF
-sed -i -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" -e "s/@@MICRO@@/$MICRO/g" cmd.sed
-sed -i -f cmd.sed _bm.sh
 rm cmd.sed
