@@ -265,7 +265,7 @@ int get_driver_type(struct wdi_device_info* dev)
 	const char* system_name[] = { "usbccgp", "usbstor", "uaspstor", "vusbstor", "etronstor", "hidusb",
 		// NOTE: The list of hubs below should match the one from libwdi.c
 		"usbhub", "usbhub3", "nusb3hub", "usbhub", "usbhub3", "usb3hub", "nusb3hub", "rusb3hub",
-		"flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub"};
+		"flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub", "amdhub30" };
 
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
