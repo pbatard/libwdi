@@ -1724,10 +1724,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
 					notification(MSG_INFO, NULL, "Driver Installation", "The driver was installed successfully.");
-					if(exit_on_success){
-						exit(0);
-					}
 				}
+				if (exit_on_success)
+					PostMessage(hMain, WM_CLOSE, 0, 0);
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User");
 				notification(MSG_WARNING, NULL, "Driver Installation", "Driver installation cancelled by user.");
