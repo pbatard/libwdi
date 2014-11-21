@@ -7,7 +7,10 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "winresrc.h"
+#if !defined(IDC_STATIC)
+#define IDC_STATIC -1
+#endif
 #if !defined(BS_SPLITBUTTON)
 #define BS_SPLITBUTTON 0x0000000C
 #endif
@@ -35,7 +38,10 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include ""winresrc.h""\r\n"
+    "#if !defined(IDC_STATIC)\r\n"
+    "#define IDC_STATIC -1\r\n"
+    "#endif\r\n"
     "#if !defined(BS_SPLITBUTTON)\r\n"
     "#define BS_SPLITBUTTON 0x0000000C\r\n"
     "#endif\r\n"
@@ -150,7 +156,7 @@ BEGIN
     LTEXT           "ð",IDC_RARR,142,44,17,14,SS_NOTIFY | SS_CENTERIMAGE | NOT WS_VISIBLE
     EDITTEXT        IDC_TARGET,162,44,98,14,ES_READONLY | NOT WS_TABSTOP
     CONTROL         "",IDC_TARGETSPIN,"msctls_updown32",UDS_ARROWKEYS,260,44,11,14,WS_EX_TRANSPARENT
-    CONTROL         106,IDC_THIS_SPACE_FOR_RENT,"Static",SS_BITMAP | SS_CENTERIMAGE | SS_REALSIZEIMAGE,278,37,97,66
+    CONTROL         IDB_ZADIG,IDC_THIS_SPACE_FOR_RENT,"Static",SS_BITMAP | SS_CENTERIMAGE | SS_REALSIZEIMAGE,278,37,97,66
     EDITTEXT        IDC_INFO,12,109,357,162,ES_MULTILINE | ES_READONLY | WS_VSCROLL
     GROUPBOX        "",IDC_GROUPLOG,6,99,369,199
     PUSHBUTTON      "Clear Log",IDC_CLEAR,137,276,50,14
@@ -184,7 +190,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "",IDC_NOTIFICATION_LINE,0,0,263,39
     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,0,0,263,38
-    ICON            32516,IDC_NOTIFICATION_ICON,6,6,20,20
+    ICON            OCR_UP,IDC_NOTIFICATION_ICON,6,6,20,20
     LTEXT           "",IDC_NOTIFICATION_TEXT,35,10,219,20
     DEFPUSHBUTTON   "No",IDNO,206,44,50,14
     PUSHBUTTON      "More information",IDC_MORE_INFO,8,44,63,14,NOT WS_VISIBLE
@@ -242,8 +248,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,1,0,664
- PRODUCTVERSION 2,1,0,664
+ FILEVERSION 2,1,0,665
+ PRODUCTVERSION 2,1,0,665
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -260,13 +266,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig"
-            VALUE "FileVersion", "2.1.0.664"
+            VALUE "FileVersion", "2.1.0.665"
             VALUE "InternalName", "Zadig"
             VALUE "LegalCopyright", "© 2010-2014 Pete Batard (GPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/gpl.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
-            VALUE "ProductVersion", "2.1.0.664"
+            VALUE "ProductVersion", "2.1.0.665"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END

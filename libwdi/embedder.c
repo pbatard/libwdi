@@ -48,6 +48,7 @@
 #include "embedder_files.h"
 
 #define safe_free(p) do {if (p != NULL) {free(p); p = NULL;}} while(0)
+#define perr(...) fprintf(stderr, "embedder : error: " __VA_ARGS__)
 
 const int nb_embeddables_fixed = sizeof(embeddable_fixed)/sizeof(struct emb);
 int nb_embeddables;
@@ -170,7 +171,7 @@ int get_full_path(char* src, char* dst, size_t dst_size)
 	}
 	basename_free(src);
 #endif
-	fprintf(stderr, "Unable to get full path for '%s'.\n", src);
+	perr("Could not get full path for '%s'.\n", src);
 	return 1;
 }
 
@@ -196,7 +197,7 @@ void scan_dir(char *dirname, int countfiles)
 
 	// Get the proper directory path
 	if ( (strlen(initial_dir) + strlen(dirname) + 4) > sizeof(dir) ) {
-		fprintf(stderr, "Path overflow.\n");
+		perr("Path overflow.\n");
 		return;
 	}
 	sprintf(dir, "%s%c%s", initial_dir, NATIVE_SEPARATOR, dirname);
@@ -235,7 +236,7 @@ void scan_dir(char *dirname, int countfiles)
 			  && (strcmp(entry, "..") != 0)) {
 				// Get the full path for sub directory
 				if ( (strlen(dirname) + strlen(entry) + 2) > sizeof(subdir) ) {
-					fprintf(stderr, "Path overflow.\n");
+					perr("Path overflow.\n");
 					return;
 				}
 				sprintf(subdir, "%s%c%s", dirname, NATIVE_SEPARATOR, entry);
@@ -281,16 +282,15 @@ void add_user_files(void) {
 	// Dry run to count additional files
 	scan_dir("", -1);
 	if (nb_embeddables == nb_embeddables_fixed) {
-		fprintf(stderr, "No user embeddable files found.\n");
-		fprintf(stderr, "Note that the USER_DIR path must be provided in Windows format\n");
-		fprintf(stderr, "(eg: 'C:\\signed-driver').if compiling from a Windows platform.\n");
+		perr("No user embeddable files found.\nNote that the USER_DIR path must be provided in Windows format\n" \
+			"(eg: 'C:\\signed-driver'), if compiling from a Windows platform.\n");
 		return;
 	}
 
 	// Extend the array to add the user files
 	embeddable = calloc(nb_embeddables, sizeof(struct emb));
 	if (embeddable == NULL) {
-		fprintf(stderr, "Could not include user embeddable files.\n");
+		perr("Could not include user embeddable files.\n");
 		return;
 	}
 	// Copy the fixed part of our table into our new array
@@ -334,7 +334,7 @@ main (int argc, char *argv[])
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	if (argc != 2) {
-		fprintf(stderr, "You must supply a header name.\n");
+		perr("You must supply a header name.\n");
 		return 1;
 	}
 
@@ -349,7 +349,7 @@ main (int argc, char *argv[])
 		for (i=0; i<nb_embeddables; i++) {
 			if (embeddable[i].reuse_last) break;
 			if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
-				fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
+				perr("Unable to get full path for '%s'.\n", embeddable[i].file_name);
 				goto out1;
 			}
 			if (NATIVE_STAT(fullpath, &stbuf) != 0) {
@@ -378,7 +378,7 @@ main (int argc, char *argv[])
 
 	header_fd = fopen(argv[1], "w");
 	if (header_fd == NULL) {
-		fprintf(stderr, "Can't create file '%s'.\n", argv[1]);
+		perr("Could not create file '%s'.\n", argv[1]);
 		goto out1;
 	}
 	fprintf(header_fd, "#pragma once\n");
@@ -388,7 +388,7 @@ main (int argc, char *argv[])
 			continue;
 		}
 		if (get_full_path(embeddable[i].file_name, fullpath, MAX_PATH)) {
-			fprintf(stderr, "Unable to get full path for '%s'.\n", embeddable[i].file_name);
+			perr("Could not get full path for '%s'.\n", embeddable[i].file_name);
 			goto out2;
 		}
 #if defined(_WIN32)
@@ -400,7 +400,7 @@ main (int argc, char *argv[])
 		fd = fopen(fullpath, "rb");
 #endif
 		if (fd == NULL) {
-			fprintf(stderr, "Couldn't open file '%s'.\n", fullpath);
+			perr("Could not open file '%s'.\n", fullpath);
 			goto out2;
 		}
 
@@ -412,27 +412,23 @@ main (int argc, char *argv[])
 			printf("\n");
 		}
 		file_time[i] = (int64_t)stbuf.st_ctime;
+		file_size[i] = (size_t)stbuf.st_size;
 
-		fseek(fd, 0, SEEK_END);
-		size = (size_t)ftell(fd);
-		fseek(fd, 0, SEEK_SET);
-		file_size[i] = size;
-
-		buffer = (unsigned char*) malloc(size);
+		buffer = (unsigned char*) malloc(file_size[i]);
 		if (buffer == NULL) {
-			fprintf(stderr, "Couldn't allocate buffer.\n");
+			perr("Could not allocate buffer.\n");
 			goto out3;
 		}
 
-		if (fread(buffer, 1, size, fd) != size) {
-			fprintf(stderr, "Read error.\n");
+		if (fread(buffer, 1, file_size[i], fd) != file_size[i]) {
+			perr("Could not read file '%s'.\n", fullpath);
 			goto out4;
 		}
 		fclose(fd);
 
 		sprintf(internal_name, "file_%03X", (unsigned char)i);
 		fprintf(header_fd, "const unsigned char %s[] = {", internal_name);
-		dump_buffer_hex(header_fd, buffer, size);
+		dump_buffer_hex(header_fd, buffer, file_size[i]);
 		fprintf(header_fd, "};\n\n");
 		safe_free(buffer);
 	}
@@ -479,6 +475,7 @@ out3:
 out2:
 	fclose(header_fd);
 	// Must delete a failed file so that Make can relaunch its build
+	// coverity[tainted_string]
 	NATIVE_UNLINK(argv[1]);
 out1:
 #if defined(USER_DIR)

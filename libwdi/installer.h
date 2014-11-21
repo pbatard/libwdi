@@ -21,6 +21,16 @@
 #include <windows.h>
 #include <objbase.h>
 
+#if defined(_MSC_VER)
+// disable MSVC warnings that are benign
+#pragma warning(disable:4100)  // unreferenced formal parameter
+#pragma warning(disable:4127)  // conditional expression is constant
+#pragma warning(disable:4201)  // nameless struct/union
+#pragma warning(disable:4214)  // bit field types other than int
+#pragma warning(disable:4996)  // deprecated API calls
+#pragma warning(disable:28159) // more deprecated API calls
+#endif
+
 #define MAX_DESC_LENGTH             256
 #define MAX_PATH_LENGTH             512
 #define MAX_KEY_LENGTH              256

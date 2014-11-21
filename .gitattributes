@@ -7,6 +7,7 @@
 *.vcxproj*      eol=crlf
 *.inf.in        eol=crlf
 *.rc            eol=crlf
+*.def           eol=crlf
 .gitattributes  export-ignore
 .gitignore      export-ignore
 *.creole        export-ignore

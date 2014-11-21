@@ -1,5 +1,8 @@
+
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external utilities", "external utilities", "{B1F3B94A-4EC4-406E-9CBF-056E1EA03DE0}"

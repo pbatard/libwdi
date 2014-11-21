@@ -18,7 +18,20 @@
 
 #pragma once
 
-#define _IGNORE(expr) do { (void)(expr); } while(0)
+#if defined(_MSC_VER)
+// disable MSVC warnings that are benign
+#pragma warning(disable:4100)  // unreferenced formal parameter
+#pragma warning(disable:4127)  // conditional expression is constant
+#pragma warning(disable:4201)  // nameless struct/union
+#pragma warning(disable:4214)  // bit field types other than int
+#pragma warning(disable:4996)  // deprecated API calls
+#pragma warning(disable:28159) // more deprecated API calls
+#endif
+
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(A)                (sizeof(A)/sizeof((A)[0]))
+#endif
+#define _IGNORE(expr)               do { (void)(expr); } while(0)
 
 #define APPLICATION_NAME            "Zadig"
 #define COMPANY_NAME                "Akeo Consulting"
@@ -46,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.1.0.664"
+#define APP_VERSION                 "Zadig 2.1.0.665"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
@@ -194,4 +207,10 @@ typedef struct
 #endif
 #if !defined(BCM_SETIMAGELIST)
 #define BCM_SETIMAGELIST        (0x1602)
+#endif
+#if !defined(PBS_MARQUEE)
+#define PBS_MARQUEE 0x08
+#endif
+#if !defined(PBM_SETMARQUEE)
+#define PBM_SETMARQUEE (WM_USER+10)
 #endif
