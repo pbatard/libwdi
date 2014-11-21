@@ -18,9 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Undefine the following to run the program as standalone
-//#define CATSIGN_STANDALONE
-
 /* Memory leaks detection - define _CRTDBG_MAP_ALLOC as preprocessor macro */
 #ifdef _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
@@ -37,31 +34,13 @@
 #include <ctype.h>
 #include "mssign32.h"
 
-#ifndef CATSIGN_STANDALONE
 #include <config.h>
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
-extern char *windows_error_str(uint32_t retval);
-#else
-#define wdi_log(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
-#define wdi_dbg wdi_log
-#define wdi_warn wdi_log
-#define wdi_info wdi_log
-static char *windows_error_str(unsigned int retval) {
-static char err_string[20];
-	unsigned int error_code;
-	error_code = retval?retval:GetLastError();
-	_snprintf(err_string, MAX_PATH, "errcode #%X", error_code);
-	return err_string;
-}
-#endif
 
-#define PF_INIT_OR_OUT(proc, dllname) \
-	PF_INIT(proc, dllname); if (pf##proc == NULL) { \
-	wdi_warn("unable to access %s DLL", #dllname); goto out; }
-
-#define KEY_CONTAINER L"libwdi key container"
+#define KEY_CONTAINER   L"libwdi key container"
+#define PF_ERR          wdi_err
 #ifndef CERT_STORE_PROV_SYSTEM_A
 #define CERT_STORE_PROV_SYSTEM_A ((LPCSTR) 9)
 #endif
@@ -389,6 +368,7 @@ typedef BOOL (WINAPI *CryptCATAdminCalcHashFromFileHandle_t)(
 	DWORD dwFlags
 );
 
+extern char *windows_error_str(uint32_t retval);
 
 /*
  * Convert an UTF8 string to UTF-16 (allocate returned string)
@@ -412,7 +392,6 @@ static __inline LPWSTR UTF8toWCHAR(LPCSTR szStr)
 	}
 	return wszStr;
 }
-
 
 /*
  * Parts of the following functions are based on:
@@ -607,7 +586,6 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	PF_DECL(CertCreateSelfSignCertificate);
 	PF_DECL(CertFreeCertificateContext);
 
-	BOOL success = FALSE;
 	DWORD dwSize;
 	HCRYPTPROV hCSP = 0;
 	HCRYPTKEY hKey = 0;
@@ -738,7 +716,6 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 		goto out;
 	}
 	wdi_info("created new self-signed certificate '%s'", szCertSubject);
-	success = TRUE;
 
 out:
 	if (pbEnhKeyUsage != NULL) free(pbEnhKeyUsage);
@@ -748,10 +725,6 @@ out:
 	if (SubjectIssuerBlob.pbData != NULL) free(SubjectIssuerBlob.pbData);
 	if (hKey) CryptDestroyKey(hKey);
 	if (hCSP) CryptReleaseContext(hCSP, 0);
-	if ((!success) && (pCertContext != NULL)) {
-		pfCertFreeCertificateContext(pCertContext);
-		pCertContext = NULL;
-	}
 	return pCertContext;
 }
 
@@ -842,7 +815,6 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	BOOL r = FALSE;
 	LPWSTR wszFileName = NULL;
 	HRESULT hResult = S_OK;
-	HCERTSTORE hCertStore = NULL; 
 	PCCERT_CONTEXT pCertContext = NULL;
 	DWORD dwIndex;
 	SIGNER_FILE_INFO signerFileInfo;
@@ -950,7 +922,6 @@ out:
 	if (wszFileName != NULL) free((void*)wszFileName);
 	if (pSignerContext != NULL) pfSignerFreeSignerContext(pSignerContext);
 	if (pCertContext != NULL) pfCertFreeCertificateContext(pCertContext);
-	if (hCertStore) pfCertCloseStore(hCertStore, 0);
 
 	return r;
 }
@@ -1147,7 +1118,7 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
 
 	// Get the proper directory path
 	if ( (strlen(szInitialDir) + strlen(szDirName) + 4) > sizeof(szDir) ) {
-		fprintf(stderr, "Path overflow.\n");
+		wdi_warn("path overflow");
 		return;
 	}
 	sprintf(szDir, "%s%c%s", szInitialDir, '\\', szDirName);
@@ -1167,7 +1138,8 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
 			  && (strcmp(szEntry, "..") != 0)) {
 				// Get the full path for sub directory
 				if ( (strlen(szDirName) + strlen(szEntry) + 2) > sizeof(szSubDir) ) {
-					fprintf(stderr, "Path overflow.\n");
+					wdi_warn("path overflow");
+					FindClose(hList);
 					return;
 				}
 				sprintf(szSubDir, "%s%c%s", szDirName, '\\', szEntry);
@@ -1282,61 +1254,3 @@ out:
 	if ((hCat)) pfCryptCATClose(hCat);
 	return r;
 }
-
-/*
- * Main entrypoint if run as standalone
- */
-#ifdef CATSIGN_STANDALONE
-#define CAT_LIST_MAX_ENTRIES 64
-// TODO: feed VID/PID, output cat, self sign etc.
-int __cdecl main(int argc, char** argv)
-{
-	HANDLE hList = NULL;
-	DWORD dwListSize;
-	BYTE* pbList;
-	LPWSTR wszFileListName = NULL;
-	LPSTR szFileList[CAT_LIST_MAX_ENTRIES+1];
-	CHAR* token;
-	int nb_entries;
-
-	if (argc < 2) {
-		printf("usage: catsign filelist.txt\n");
-		return 1;
-	}
-
-	wszFileListName = UTF8toWCHAR(argv[1]);
-	hList = CreateFileW(wszFileListName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	dwListSize = GetFileSize(hList, NULL);
-	if ( (dwListSize == INVALID_FILE_SIZE) || ((pbList = (BYTE*)malloc(dwListSize)) == NULL)
-	  || (!ReadFile(hList, pbList, dwListSize, &dwListSize, NULL)) ) {
-		wdi_warn("failed to read list file '%s': %s", argv[1], windows_error_str(0));
-		goto out;
-	}
-
-	// Build the filename list
-	nb_entries = 0;
-	if ((token = strtok(pbList, "\n\r")) == NULL) {
-		wdi_warn("file list is empty");
-		goto out;
-	}
-	do {
-		// Eliminate leading, trailing spaces & comments (#...)
-		while (isspace(*token)) token++;
-		while (strlen(token) && isspace(token[strlen(token)-1]))
-			token[strlen(token)-1] = 0;
-		if ((*token == '#') || (*token == 0)) continue;
-		szFileList[nb_entries++] = token;
-		if (nb_entries >= CAT_LIST_MAX_ENTRIES) {
-			wdi_warn("more than %d cat entries - ignoring the rest", CAT_LIST_MAX_ENTRIES);
-			break;
-		}
-	} while ((token = strtok(NULL, "\n\r")) != NULL);
-
-	CreateCat("created.cat", "USB\\VID_ABCD&pid_1234&MI_01", ".", szFileList, nb_entries);
-
-out:
-	if (wszFileListName != NULL) free(wszFileListName);
-	if (hList) CloseHandle(hList);
-	return 0;
-}
-#endif

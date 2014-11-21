@@ -42,3 +42,8 @@ sed -i -f cmd.sed examples/zadig.h
 sed -i 's/$/\r/' examples/zadig.h
 
 rm cmd.sed
+
+# Update VID data while we're at it
+cd libwdi
+. vid_data.sh
+cd ..

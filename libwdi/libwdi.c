@@ -48,6 +48,7 @@
 
 // Initial timeout delay to wait for the installer to run
 #define DEFAULT_TIMEOUT 10000
+#define PF_ERR          wdi_err
 
 // These warnings are taken care of in configure for other platforms
 #if defined(_MSC_VER)
@@ -255,17 +256,19 @@ typedef struct {
 const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
 
+// TODO: use the PF_ calls everywhere!
+
 // The following are only available on Vista and later
 static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
 static BOOL (WINAPI *pSetupDiGetDevicePropertyW)(HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD) = NULL;
 #define INIT_VISTA_SHELL32 if (pIsUserAnAdmin == NULL) {				\
 	pIsUserAnAdmin = (BOOL (WINAPI *)(void))							\
-		GetProcAddress(GetModuleHandleA("SHELL32"), "IsUserAnAdmin");	\
+		GetProcAddress(GetDLLHandle("shell32.dll"), "IsUserAnAdmin");	\
 	}
 #define INIT_VISTA_GET_DEV_PROP {														\
 	pSetupDiGetDevicePropertyW = (BOOL (WINAPI *)(HDEVINFO, PSP_DEVINFO_DATA,			\
 		const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD))						\
-		GetProcAddress(GetModuleHandleA("Setupapi.dll"), "SetupDiGetDevicePropertyW");	\
+		GetProcAddress(GetDLLHandle("setupapi.dll"), "SetupDiGetDevicePropertyW");	\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
 #define IS_VISTA_GET_DEV_PROP_AVAILABLE (pSetupDiGetDevicePropertyW != NULL)
@@ -287,12 +290,12 @@ static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
 /*
  * Cfgmgr32.dll, SetupAPI.dll interfaces
  */
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 // This call is only available on XP and later
-DLL_DECLARE(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
+PF_TYPE_DECL(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 
 // Check the status of the installer process
 static int __inline check_completion(HANDLE process_handle) {
@@ -559,7 +562,7 @@ static FILE *fcreate(const char *filename, const char *mode)
 	}
 
 	// Simple mode handling.
-	for (i=0; i<safe_strlen(mode); i++) {
+	for (i=0; i<strlen(mode); i++) {
 		if (mode[i] == 'r') {
 			access_mode |= GENERIC_READ;
 		} else if (mode[i] == 'w') {
@@ -624,10 +627,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	}
 
 	// Avoid the need for end user apps to link against version.lib
-	h = GetModuleHandleA("Version.dll");
-	if (h == NULL) {
-		h = LoadLibraryA("Version.dll");
-	}
+	h = GetDLLHandle("Version.dll");
 	if (h == NULL) {
 		wdi_warn("unable to open version.dll");
 		return WDI_ERROR_RESOURCE;
@@ -858,14 +858,19 @@ static void free_di(struct wdi_device_info *di)
 }
 
 // Setup the Cfgmgr32 and SetupApi DLLs
-static int init_dlls(void)
+static BOOL init_dlls(void)
 {
-	DLL_LOAD(Cfgmgr32.dll, CM_Get_Parent, TRUE);
-	DLL_LOAD(Cfgmgr32.dll, CM_Get_Child, TRUE);
-	DLL_LOAD(Cfgmgr32.dll, CM_Get_Sibling, TRUE);
-	DLL_LOAD(Cfgmgr32.dll, CM_Get_Device_IDA, TRUE);
-	DLL_LOAD(Setupapi.dll, CMP_WaitNoPendingInstallEvents, FALSE);
-	return WDI_SUCCESS;
+	if (dlls_available) 
+		return TRUE;
+	PF_INIT_OR_OUT(CM_Get_Parent, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CM_Get_Child, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CM_Get_Sibling, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CM_Get_Device_IDA, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CMP_WaitNoPendingInstallEvents, Setupapi.dll);
+	dlls_available = TRUE;
+	return TRUE;
+out:
+	return FALSE;
 }
 
 // List USB devices
@@ -894,14 +899,13 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	MUTEX_START;
 	*list = NULL;
 
-	if (!dlls_available) {
-		init_dlls();
-	}
+	if (!init_dlls())
+		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 
 	// List all connected USB devices
 	dev_info = SetupDiGetClassDevsA(NULL, "USB", NULL, DIGCF_PRESENT|DIGCF_ALLCLASSES);
 	if (dev_info == INVALID_HANDLE_VALUE) {
-		MUTEX_RETURN WDI_ERROR_NO_DEVICE;
+		MUTEX_RETURN(WDI_ERROR_NO_DEVICE);
 	}
 
 	// Find the ones that are driverless
@@ -920,7 +924,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		if (device_info == NULL) {
 			wdi_destroy_list(start);
 			SetupDiDestroyDeviceInfoList(dev_info);
-			MUTEX_RETURN WDI_ERROR_RESOURCE;
+			MUTEX_RETURN(WDI_ERROR_RESOURCE);
 		}
 
 		// SPDRP_DRIVER seems to do a better job at detecting driverless devices than
@@ -1014,7 +1018,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 		// Retrieve device ID. This is needed to re-enumerate our device and force
 		// the final driver installation
-		r = CM_Get_Device_IDA(dev_info_data.DevInst, strbuf, STR_BUFFER_SIZE, 0);
+		r = pfCM_Get_Device_IDA(dev_info_data.DevInst, strbuf, STR_BUFFER_SIZE, 0);
 		if (r != CR_SUCCESS) {
 			wdi_err("could not retrieve simple path for device %d: CR error %d", i, r);
 			continue;
@@ -1137,7 +1141,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	SetupDiDestroyDeviceInfoList(dev_info);
 
 	*list = start;
-	MUTEX_RETURN (*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS;
+	MUTEX_RETURN((*list==NULL)?WDI_ERROR_NO_DEVICE:WDI_SUCCESS);
 }
 
 int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
@@ -1151,7 +1155,7 @@ int LIBWDI_API wdi_destroy_list(struct wdi_device_info* list)
 		list = list->next;
 		free_di(tmp);
 	}
-	MUTEX_RETURN WDI_SUCCESS;
+	MUTEX_RETURN(WDI_SUCCESS);
 }
 
 // extract the embedded binary resources
@@ -1242,17 +1246,16 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 
 	if ((device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
 
-	if (!dlls_available) {
-		init_dlls();
-	}
+	if (!init_dlls())
+		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 
 	// Check the inf file provided and create the cat file name
 	if (strcmp(inf_name+safe_strlen(inf_name)-4, inf_ext) != 0) {
 		wdi_err("inf name provided must have a '.inf' extension");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
 
 	// Try to use the user's temp dir if no path is provided
@@ -1260,7 +1263,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		path = getenv("TEMP");
 		if (path == NULL) {
 			wdi_err("no path provided and unable to use TEMP");
-			MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+			MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 		} else {
 			wdi_info("no path provided - extracting to '%s'", path);
 		}
@@ -1269,7 +1272,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	// Try to create directory if it doesn't exist
 	r = check_dir(path, TRUE);
 	if (r != WDI_SUCCESS) {
-		MUTEX_RETURN r;
+		MUTEX_RETURN(r);
 	}
 
 	if (options != NULL) {
@@ -1279,7 +1282,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	// Ensure driver_type is what we expect
 	if ( (driver_type < 0) || (driver_type > 3) ) {
 		wdi_err("unknown type");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
 
 	if (!wdi_is_driver_supported(driver_type, &driver_version[driver_type])) {
@@ -1292,7 +1295,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		}
 		if (driver_type == WDI_NB_DRIVERS) {
 			wdi_warn("program assertion failed - no driver supported");
-			MUTEX_RETURN WDI_ERROR_NOT_FOUND;
+			MUTEX_RETURN(WDI_ERROR_NOT_FOUND);
 		}
 	}
 
@@ -1309,23 +1312,23 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	// For custom drivers, as we cannot autogenerate the inf, simply extract binaries
 	if (driver_type == WDI_USER) {
 		wdi_info("custom driver - extracting binaries only (no inf/cat creation)");
-		MUTEX_RETURN extract_binaries(path);
+		MUTEX_RETURN(extract_binaries(path));
 	}
 
 	if (device_info->desc == NULL) {
 		wdi_err("no device ID was given for the device - aborting");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
 
 	r = extract_binaries(path);
 	if (r != WDI_SUCCESS) {
-		MUTEX_RETURN r;
+		MUTEX_RETURN(r);
 	}
 
 	// Populate the inf and cat names & paths
 	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH - 2)) {
 		wdi_err("qualified path for inf file is too long: '%s\\%s", path, inf_name);
-		MUTEX_RETURN WDI_ERROR_RESOURCE;
+		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 	}
 	safe_strcpy(inf_path, sizeof(inf_path), path);
 	safe_strcat(inf_path, sizeof(inf_path), "\\");
@@ -1338,7 +1341,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	static_strcpy(inf_entities[INF_FILENAME].replace, inf_name);
 	cat_name = safe_strdup(inf_name);
 	if (cat_name == NULL) {
-		MUTEX_RETURN WDI_ERROR_RESOURCE;
+		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 	}
 	cat_name[safe_strlen(inf_name)-3] = 'c';
 	cat_name[safe_strlen(inf_name)-2] = 'a';
@@ -1402,7 +1405,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	// Extra check, in case somebody modifies our code
 	if ((driver_type < 0) && (driver_type > ARRAYSIZE(driver_version))) {
 		wdi_err("program assertion failed - driver_version[] index out of range");
-		MUTEX_RETURN WDI_ERROR_OTHER;
+		MUTEX_RETURN(WDI_ERROR_OTHER);
 	}
 
 	// Write the date and version data
@@ -1425,7 +1428,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		fd = fcreate(inf_path, "w");
 		if (fd == NULL) {
 			wdi_err("failed to create file: %s", inf_path);
-			MUTEX_RETURN WDI_ERROR_ACCESS;
+			MUTEX_RETURN(WDI_ERROR_ACCESS);
 		}
 		// Converting to UTF-16 is the only way to get devices using a
 		// non-english locale to display properly in device manager. UTF-8 will not do.
@@ -1433,7 +1436,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		if (wdst == NULL) {
 			wdi_err("could not convert '%s' to UTF-16", dst);
 			safe_free(dst);
-			MUTEX_RETURN WDI_ERROR_RESOURCE;
+			MUTEX_RETURN(WDI_ERROR_RESOURCE);
 		}
 		fwrite(&bom, 2, 1, fd);	// Write the BOM
 		fwrite(wdst, 2, wcslen(wdst), fd);
@@ -1442,7 +1445,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		safe_free(dst);
 	} else {
 		wdi_err("could not tokenize inf file (%d)", inf_file_size);
-		MUTEX_RETURN WDI_ERROR_ACCESS;
+		MUTEX_RETURN(WDI_ERROR_ACCESS);
 	}
 	wdi_info("successfully created '%s'", inf_path);
 
@@ -1452,7 +1455,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		// On Vista and later, try to create and self-sign the cat file to remove security prompts
 		if ((options != NULL) && (options->disable_cat)) {
 			wdi_info(".cat generation disabled by user");
-			MUTEX_RETURN WDI_SUCCESS;
+			MUTEX_RETURN(WDI_SUCCESS);
 		}
 		wdi_info("Vista or later detected - creating and self-signing a .cat file...");
 
@@ -1460,7 +1463,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		if ((cat_file_size = tokenize_internal(cat_template[driver_type],
 			&dst, inf_entities, "#", "#", 0)) <= 0) {
 			wdi_err("could not tokenize inf file (%d)", inf_file_size);
-			MUTEX_RETURN WDI_ERROR_ACCESS;
+			MUTEX_RETURN(WDI_ERROR_ACCESS);
 		}
 
 		// Build the filename list
@@ -1499,7 +1502,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	} else {
 		wdi_info("No .cat file generated (not running Vista or later, or missing elevated privileges)");
 	}
-	MUTEX_RETURN WDI_SUCCESS;
+	MUTEX_RETURN(WDI_SUCCESS);
 }
 
 // Handle messages received from the elevated installer through the pipe
@@ -1615,9 +1618,8 @@ static int install_driver_internal(void* arglist)
 
 	MUTEX_START;
 
-	if (!dlls_available) {
-		init_dlls();
-	}
+	if (!init_dlls())
+		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 
 	current_device = params->device_info;
 	filter_driver = FALSE;
@@ -1634,14 +1636,14 @@ static int install_driver_internal(void* arglist)
 
 	if ((params->device_info == NULL) || (params->inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
-		MUTEX_RETURN WDI_ERROR_INVALID_PARAM;
+		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
 
 	// Detect if another installation is in process
-	if ((params->options != NULL) && (CMP_WaitNoPendingInstallEvents != NULL)) {
-		if (CMP_WaitNoPendingInstallEvents(params->options->pending_install_timeout) == WAIT_TIMEOUT) {
+	if ((params->options != NULL) && (pfCMP_WaitNoPendingInstallEvents != NULL)) {
+		if (pfCMP_WaitNoPendingInstallEvents(params->options->pending_install_timeout) == WAIT_TIMEOUT) {
 			wdi_warn("timeout expired while waiting for another pending installation - aborting");
-			MUTEX_RETURN WDI_ERROR_PENDING_INSTALLATION;
+			MUTEX_RETURN(WDI_ERROR_PENDING_INSTALLATION);
 		}
 	} else {
 		wdi_dbg("CMP_WaitNoPendingInstallEvents not available");
@@ -1653,7 +1655,7 @@ static int install_driver_internal(void* arglist)
 		// This application is not 64 bit, but it might be 32 bit
 		// running in WOW64
 		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
+			GetProcAddress(GetDLLHandle("kernel32.dll"), "IsWow64Process");
 		if (pIsWow64Process != NULL) {
 			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
 		}
@@ -1868,7 +1870,8 @@ out:
 	safe_closehandle(handle[1]);
 	safe_closehandle(handle[0]);
 	safe_closehandle(pipe_handle);
-	MUTEX_RETURN r;
+	safe_closehandle(stdout_w);
+	MUTEX_RETURN(r);
 }
 
 int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, const char* path,

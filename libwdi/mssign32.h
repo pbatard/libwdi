@@ -153,18 +153,6 @@ typedef struct _SIGNER_CONTEXT {
 	BYTE *pbBlob;
 } SIGNER_CONTEXT, *PSIGNER_CONTEXT;
 
-// Helper function to obtain a handle to a DLL
-static __inline HMODULE GetDLLHandle(char* szDLLName)
-{
-	HMODULE h = NULL;
-	if ((h = GetModuleHandleA(szDLLName)) == NULL)
-		h = LoadLibraryA(szDLLName);
-	return h;
-}
-
-#define PF_DECL(proc) proc##_t pf##proc = NULL
-#define PF_INIT(proc, dllname) pf##proc = (proc##_t) GetProcAddress(GetDLLHandle(#dllname), #proc)
-
 /*
  * typedefs for the function prototypes. Use the something like:
  *   PF_DELC(SignerSignEx);

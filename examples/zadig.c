@@ -49,9 +49,6 @@
 #include "profile.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
-#endif
 
 void toggle_driverless(BOOL refresh);
 void set_install_button(void);
@@ -312,8 +309,10 @@ int install_driver(void)
 
 		if (pd_options.use_wcid_driver) {
 			dev->desc = (char*)malloc(128);
-			if (dev->desc == NULL)
-				r = WDI_ERROR_RESOURCE; goto out;
+			if (dev->desc == NULL) {
+				r = WDI_ERROR_RESOURCE;
+				goto out;
+			}
 			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 		} else {
 			// Retrieve the various device parameters
@@ -798,15 +797,6 @@ void set_loglevel(DWORD menu_cmd)
 	wdi_set_log_level(log_level);
 }
 
-// Helper function to obtain a handle to a DLL
-static __inline HMODULE GetDLLHandle(char* szDLLName)
-{
-	HMODULE h = NULL;
-	if ((h = GetModuleHandleA(szDLLName)) == NULL)
-		h = LoadLibraryA(szDLLName);
-	return h;
-}
-
 BOOL is_x64(void)
 {
 	BOOL ret = FALSE;
@@ -814,7 +804,7 @@ BOOL is_x64(void)
 	// Detect if we're running a 32 or 64 bit system
 	if (sizeof(uintptr_t) < 8) {
 		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetModuleHandleA("KERNEL32"), "IsWow64Process");
+			GetProcAddress(GetDLLHandle("kernel32"), "IsWow64Process");
 		if (pIsWow64Process != NULL) {
 			(*pIsWow64Process)(GetCurrentProcess(), &ret);
 		}
@@ -898,8 +888,13 @@ static const char* PrintWindowsVersion(void)
 				break;
 			case 0x63: w = (ws?"8.1":"2012_R2");
 				break;
+			case 0x64: w = (ws?"10":"2015");
+				break;
 			default:
-				nWindowsVersion = WINDOWS_UNSUPPORTED;
+				if (nWindowsVersion < 0x50)
+					nWindowsVersion = WINDOWS_UNSUPPORTED;
+				else
+					w = "11 or later";
 				break;
 			}
 		}
@@ -978,7 +973,7 @@ void init_dialog(HWND hDlg)
 
 	// Count of Microsoft for making it more attractive to read a
 	// version using strtok() than using GetFileVersionInfo()
-	token = strtok(version, " ");
+	IGNORE_RETVAL(strtok(version, " "));
 	for (i=0; (i<4) && ((token = strtok(NULL, ".")) != NULL); i++)
 		application_version[i] = (uint16_t)atoi(token);
 
@@ -1020,36 +1015,36 @@ void init_dialog(HWND hDlg)
 		"Find out more about WinUSB online", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
-	hDllInst = LoadLibraryA("shell32.dll");
+	hDllInst = GetDLLHandle("shell32.dll");
 	// These shell32 icons should be available on any Windows system
 	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	// Try to locate a green checkmark icon
-	hDllInst = LoadLibraryA("urlmon.dll");
+	hDllInst = GetDLLHandle("urlmon.dll");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconTickOK == NULL)) {
 		// No luck, fallback to next best thing in shell32
-		hDllInst = LoadLibraryA("shell32.dll");
+		hDllInst = GetDLLHandle("shell32.dll");
 		hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(246), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	// Try to locate a funnel icon
-	hDllInst = LoadLibraryA("admtmpl.dll");
+	hDllInst = GetDLLHandle("admtmpl.dll");
 	hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(6), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
-		hDllInst = LoadLibraryA("wmploc.dll");
+		hDllInst = GetDLLHandle("wmploc.dll");
 		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(475), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
 		// No luck, fallback to next best thing in shell32
-		hDllInst = LoadLibraryA("shell32.dll");
+		hDllInst = GetDLLHandle("shell32.dll");
 		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(278), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	SendMessage(GetDlgItem(hDlg, IDC_FILTER_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconFilter);
 	do {
-		if ((hDllInst = LoadLibraryA("ieframe.dll")) == NULL) break;	// Green right arrow
+		if ((hDllInst = GetDLLHandle("ieframe.dll")) == NULL) break;	// Green right arrow
 		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
-		if ((hDllInst = LoadLibraryA("netshell.dll")) == NULL) break;	// Orange right arrow
+		if ((hDllInst = GetDLLHandle("netshell.dll")) == NULL) break;	// Orange right arrow
 		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
 		if ( (hIconArrowGreen == NULL) || (hIconArrowOrange == NULL) ) break;
 		use_arrow_icons = TRUE;
@@ -1078,8 +1073,8 @@ void init_dialog(HWND hDlg)
 	}
 
 	// Set a folder icon on the select folder button
-	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_Create");
-	pImageList_ReplaceIcon = (ImageList_ReplaceIcon_t) GetProcAddress(GetDLLHandle("Comctl32.dll"), "ImageList_ReplaceIcon");
+	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("comctl32.dll"), "ImageList_Create");
+	pImageList_ReplaceIcon = (ImageList_ReplaceIcon_t) GetProcAddress(GetDLLHandle("comctl32.dll"), "ImageList_ReplaceIcon");
 
 	bi.himl = pImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	pImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
@@ -1869,7 +1864,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	 * to access the actual "System32" as "SysWOW64" gets remapped to "System32"
 	 */
 	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
-	char *libusb_path, *tmp;
+	char path[MAX_PATH], *tmp;
 	int i, wait_for_mutex = 0;
 	BOOL r;
 
@@ -1890,6 +1885,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBoxA(NULL, "Another Zadig application is running.\n"
 			"Please close the first application before running another one.",
 			"Other instance detected", MB_ICONSTOP);
+		safe_closehandle(mutex);
 		return 0;
 	}
 
@@ -1902,6 +1898,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			"installs drivers using WDF framework 1.11, which is not compatible with older versions "
 			"of Windows.\nPlease use the XP version of Zadig, from " APPLICATION_URL ", if you want "
 			"to install USB drivers on this platform.", "Incompatible version", MB_ICONSTOP);
+		CloseHandle(mutex);
 		return 0;
 	}
 
@@ -1912,7 +1909,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 
 	// Some dialogs have Rich Edit controls and won't display without this
-	LoadLibraryA("Riched20.dll");
+	GetDLLHandle("Riched20.dll");
 
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
@@ -1931,14 +1928,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while(GetMessage(&msg, NULL, 0, 0)) {
 		// Alt-Z => Delete libusb-1.0 DLLs
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
-			libusb_path = (char*)malloc(MAX_PATH);
 			for (r = TRUE, i = 0; i<ARRAYSIZE(system_dir); i++) {
-				safe_strcpy(libusb_path, MAX_PATH, getenv("WINDIR"));
-				safe_strcat(libusb_path, MAX_PATH, "\\");
-				safe_strcat(libusb_path, MAX_PATH, system_dir[i]);
-				safe_strcat(libusb_path, MAX_PATH, "\\libusb-1.0.dll");
-				DeleteFileA(libusb_path);
-				if (GetFileAttributesA(libusb_path) != INVALID_FILE_ATTRIBUTES) {
+				path[0] = 0;
+				safe_strcpy(path, MAX_PATH, getenv("WINDIR"));
+				safe_strcat(path, MAX_PATH, "\\");
+				safe_strcat(path, MAX_PATH, system_dir[i]);
+				safe_strcat(path, MAX_PATH, "\\libusb-1.0.dll");
+				// coverity[tainted_string]
+				DeleteFileA(path);
+				if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) {
 					r = FALSE;
 				}
 			}

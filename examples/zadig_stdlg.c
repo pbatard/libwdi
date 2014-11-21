@@ -51,14 +51,14 @@ static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID,
 #endif
 #define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {						\
 	pSHCreateItemFromParsingName = (HRESULT (WINAPI *)(PCWSTR, IBindCtx*, REFIID, void **))	\
-			GetProcAddress(GetModuleHandleA("SHELL32"), "SHCreateItemFromParsingName");		\
+			GetProcAddress(GetDLLHandle("shell32.dll"), "SHCreateItemFromParsingName");		\
 	}
 #define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
 // And this one is simply not available in MinGW32
 static LPITEMIDLIST (WINAPI *pSHSimpleIDListFromPath)(PCWSTR pszPath) = NULL;
 #define INIT_XP_SHELL32 if (pSHSimpleIDListFromPath == NULL) {								\
 	pSHSimpleIDListFromPath = (LPITEMIDLIST (WINAPI *)(PCWSTR))								\
-			GetProcAddress(GetModuleHandleA("SHELL32"), "SHSimpleIDListFromPath");			\
+			GetProcAddress(GetDLLHandle("shell32.dll"), "SHSimpleIDListFromPath");			\
 	}
 
 /*
@@ -535,7 +535,7 @@ char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_de
 
 #if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	HRESULT hr = FALSE;
-	IFileDialog *pfd;
+	IFileDialog *pfd = NULL;
 	IShellItem *psiResult;
 	COMDLG_FILTERSPEC filter_spec[2];
 	char* ext_filter;
@@ -1241,8 +1241,10 @@ INT_PTR CALLBACK new_version_callback(HWND hDlg, UINT message, WPARAM wParam, LP
 		switch (LOWORD(wParam)) {
 		case IDCLOSE:
 		case IDCANCEL:
-			safe_free(filepath);
-			EndDialog(hDlg, LOWORD(wParam));
+			if (download_status != 1) {
+				safe_free(filepath);
+				EndDialog(hDlg, LOWORD(wParam));
+			}
 			return (INT_PTR)TRUE;
 		case IDC_WEBSITE:
 			ShellExecuteA(hDlg, "open", APPLICATION_URL, NULL, NULL, SW_SHOWNORMAL);
@@ -1250,14 +1252,16 @@ INT_PTR CALLBACK new_version_callback(HWND hDlg, UINT message, WPARAM wParam, LP
 		case IDC_DOWNLOAD:	// Also doubles as abort and launch function
 			switch(download_status) {
 			case 1:		// Abort
+				download_status = 0;
 				download_error = ERROR_SEVERITY_ERROR|ERROR_CANCELLED;
 				break;
 			case 2:		// Launch newer version and close this one
+				Sleep(1000);	// Add a delay on account of antivirus scanners
 				memset(&si, 0, sizeof(si));
 				memset(&pi, 0, sizeof(pi));
 				si.cb = sizeof(si);
 				if (!CreateProcessU(filepath, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-					print_status(0, FALSE, "Failed to launch new application");
+					print_status(0, TRUE, "Failed to launch new application");
 					// TODO: produce a message box and add a retry in case the file is in use
 					dprintf("Failed to launch new application: %s\n", WindowsErrorString());
 				} else {
@@ -1267,10 +1271,17 @@ INT_PTR CALLBACK new_version_callback(HWND hDlg, UINT message, WPARAM wParam, LP
 				}
 				break;
 			default:	// Download
-				for (i=(int)safe_strlen(update.download_url); (i>0)&&(update.download_url[i]!='/'); i--);
+				if (update.download_url == NULL) {
+					print_status(0, TRUE, "Could not get download URL\n");
+					break;
+				}
+				for (i=(int)strlen(update.download_url); (i>0)&&(update.download_url[i]!='/'); i--);
 				filepath = file_dialog(TRUE, app_dir, (char*)&update.download_url[i+1], "exe", "Application");
-				if (filepath != NULL)
-					DownloadFileThreaded(update.download_url, filepath, hDlg);
+				if (filepath == NULL) {
+					print_status(0, TRUE, "Could not get save path\n");
+					break;
+				}
+				DownloadFileThreaded(update.download_url, filepath, hDlg);
 				break;
 			}
 			return (INT_PTR)TRUE;

@@ -197,7 +197,7 @@ static __inline char* get_sanitized_token_data_buffer(const char* token, unsigne
 	size_t i;
 	char* data = get_token_data_buffer(token, n, buffer, buffer_size);
 	if (data != NULL) {
-		for (i=0; i<safe_strlen(data); i++) {
+		for (i=0; i<strlen(data); i++) {
 			if ((data[i] == '\\') && (data[i+1] == 'n')) {
 				data[i] = '\r';
 				data[i+1] = '\n';

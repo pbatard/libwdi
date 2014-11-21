@@ -270,7 +270,8 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	print_status(0, FALSE, msg);
 	dprintf("Downloading %s from %s\n", file, url);
 
-	if (!InternetCrackUrlA(url, (DWORD)safe_strlen(url), 0, &UrlParts)) {
+	if ( (!InternetCrackUrlA(url, (DWORD)safe_strlen(url), 0, &UrlParts))
+	  || (UrlParts.lpszHostName == NULL) || (UrlParts.lpszUrlPath == NULL)) {
 		dprintf("Unable to decode URL: %s\n", WindowsErrorString());
 		goto out;
 	}

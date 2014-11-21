@@ -96,8 +96,10 @@ static __inline BOOL _GetRegistryKey(HKEY key_root, const char* key_name, DWORD 
 		r = TRUE;
 	}
 out:
-	RegCloseKey(hSoftware);
-	RegCloseKey(hApp);
+	if (hSoftware != NULL)
+		RegCloseKey(hSoftware);
+	if (hApp != NULL)
+		RegCloseKey(hApp);
 	return r;
 }
 
@@ -117,8 +119,10 @@ static __inline BOOL _SetRegistryKey(HKEY key_root, const char* key_name, DWORD 
 	r = (RegSetValueExA(hApp, key_name, 0, dwType, src, src_size) == ERROR_SUCCESS);
 
 out:
-	RegCloseKey(hSoftware);
-	RegCloseKey(hApp);
+	if (hSoftware != NULL)
+		RegCloseKey(hSoftware);
+	if (hApp != NULL)
+		RegCloseKey(hApp);
 	return r;
 }
 

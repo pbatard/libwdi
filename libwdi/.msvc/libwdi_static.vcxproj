@@ -80,7 +80,6 @@
     <PreBuildEvent>
       <Message>Embedding binary resources</Message>
       <Command>cd $(ProjectDir)\..
-if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
@@ -99,19 +98,11 @@ embedder embedded.h</Command>
     <Lib>
       <OutputFile>$(OutDir)libwdi.lib</OutputFile>
     </Lib>
-    <PostBuildEvent>
-      <Command>cd $(ProjectDir)\..
-ren embedded.h embedded.no_is</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>rename embedded.h, to avoid Intellisense hogging CPU time parsing it</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
       <Message>Embedding binary resources</Message>
       <Command>cd $(ProjectDir)\..
-if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
@@ -129,19 +120,11 @@ embedder embedded.h</Command>
     <Lib>
       <OutputFile>$(OutDir)libwdi.lib</OutputFile>
     </Lib>
-    <PostBuildEvent>
-      <Command>cd $(ProjectDir)\..
-ren embedded.h embedded.no_is</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>rename embedded.h, to avoid Intellisense hogging CPU time parsing it</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Message>Embedding binary resources</Message>
       <Command>cd $(ProjectDir)\..
-if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
@@ -158,19 +141,11 @@ embedder embedded.h</Command>
     <Lib>
       <OutputFile>$(OutDir)libwdi.lib</OutputFile>
     </Lib>
-    <PostBuildEvent>
-      <Command>cd $(ProjectDir)\..
-ren embedded.h embedded.no_is</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>rename embedded.h, to avoid Intellisense hogging CPU time parsing it</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
       <Message>Embedding binary resources</Message>
       <Command>cd $(ProjectDir)\..
-if exist embedded.no_is ren embedded.no_is embedded.h
 embedder embedded.h</Command>
     </PreBuildEvent>
     <ClCompile>
@@ -187,13 +162,6 @@ embedder embedded.h</Command>
     <Lib>
       <OutputFile>$(OutDir)libwdi.lib</OutputFile>
     </Lib>
-    <PostBuildEvent>
-      <Command>cd $(ProjectDir)\..
-ren embedded.h embedded.no_is</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
-      <Message>rename embedded.h, to avoid Intellisense hogging CPU time parsing it</Message>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libwdi.c" />

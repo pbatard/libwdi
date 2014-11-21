@@ -44,6 +44,7 @@
 #endif
 
 #define REQUEST_TIMEOUT 5000
+#define PF_ERR          plog
 
 // UpdateDriverForPlugAndPlayDevices.InstallFlags constants
 #define INSTALLFLAG_FORCE                 0x00000001
@@ -64,10 +65,10 @@ typedef DEVNODEID_A DEVNODEID;
 typedef DEVINSTID_A DEVINSTID;
 #endif
 
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
-DLL_DECLARE(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
-DLL_DECLARE(CDECL, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
+PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
+PF_TYPE_DECL(CDECL, int, __wgetmainargs, (int*, wchar_t***, wchar_t***, int, int*));
 
 /*
  * Globals
@@ -76,16 +77,6 @@ HANDLE pipe_handle = INVALID_HANDLE_VALUE;
 HANDLE syslog_ready_event = INVALID_HANDLE_VALUE;
 HANDLE syslog_terminate_event = INVALID_HANDLE_VALUE;
 PSID user_psid = NULL;
-
-// Setup the Cfgmgr32 DLLs
-static int init_dlls(void)
-{
-	DLL_LOAD(Cfgmgr32.dll, CM_Locate_DevNodeA, TRUE);
-	DLL_LOAD(Cfgmgr32.dll, CM_Reenumerate_DevNode, TRUE);
-	DLL_LOAD(Cfgmgr32.dll, CM_Get_DevNode_Status, TRUE);
-	DLL_LOAD(Msvcrt.dll, __wgetmainargs, FALSE);
-	return 0;
-}
 
 // Log data with parent app through the pipe
 void plog_v(const char *format, va_list args)
@@ -114,6 +105,18 @@ void plog(const char *format, ...)
 	va_start (args, format);
 	plog_v(format, args);
 	va_end (args);
+}
+
+// Setup the Cfgmgr32 DLLs
+static BOOL init_dlls(void)
+{
+	PF_INIT_OR_OUT(CM_Locate_DevNodeA, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CM_Reenumerate_DevNode, Cfgmgr32.dll);
+	PF_INIT_OR_OUT(CM_Get_DevNode_Status, Cfgmgr32.dll);
+	PF_INIT(__wgetmainargs, Msvcrt.dll);
+	return TRUE;
+out:
+	return FALSE;
 }
 
 // Notify the parent app
@@ -234,13 +237,13 @@ int enumerate_device(char* device_id)
 	CONFIGRET status;
 
 	plog("re-enumerating driver node %s...", device_id?device_id:"<root>");
-	status = CM_Locate_DevNodeA(&dev_inst, device_id, 0);
+	status = pfCM_Locate_DevNodeA(&dev_inst, device_id, 0);
 	if (status != CR_SUCCESS) {
 		plog("failed to locate device_id %s: %x\n", device_id?device_id:"<root>", status);
 		return -1;
 	}
 
-	status = CM_Reenumerate_DevNode(dev_inst, CM_REENUMERATE_RETRY_INSTALLATION);
+	status = pfCM_Reenumerate_DevNode(dev_inst, CM_REENUMERATE_RETRY_INSTALLATION);
 	if (status != CR_SUCCESS) {
 		plog("failed to re-enumerate device node: CR code %X", status);
 		return -1;
@@ -290,7 +293,7 @@ void check_removed(char* device_hardware_id)
 		}
 
 		// Unplugged?
-		if (CM_Get_DevNode_Status(&status, &pbm_number, dev_info_data.DevInst, 0) != CR_NO_SUCH_DEVNODE) {
+		if (pfCM_Get_DevNode_Status(&status, &pbm_number, dev_info_data.DevInst, 0) != CR_NO_SUCH_DEVNODE) {
 			continue;
 		}
 
@@ -370,7 +373,7 @@ DWORD process_syslog(char* buffer, DWORD size)
 	DWORD i, junk, start = 0;
 	char* xbuffer;
 	char* ins_string = "<ins>";
-	char conversion_error[] = " ERROR: Unable to convert log entry to UTF-8";
+	char conversion_error[] = " <Garbled data>";
 
 	if (buffer == NULL) return 0;
 
@@ -424,6 +427,7 @@ void __cdecl syslog_reader_thread(void* param)
 	for (i=0; i<NB_SYSLOGS; i++) {
 		safe_strcpy(log_path, MAX_PATH_LENGTH, getenv("WINDIR"));	// Use %WINDIR% env variable
 		safe_strcat(log_path, MAX_PATH_LENGTH, syslog_name[i]);
+		// coverity[tainted_string]
 		log_handle = CreateFileA(log_path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE,
 			NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -506,6 +510,51 @@ out:
 	_endthread();
 }
 
+static char *windows_error_str(uint32_t retval)
+{
+static char err_string[STR_BUFFER_SIZE];
+
+	DWORD size;
+	ssize_t i;
+	uint32_t error_code, format_error;
+
+	error_code = retval?retval:GetLastError();
+
+	safe_sprintf(err_string, STR_BUFFER_SIZE, "[%u] ", error_code);
+
+	// Translate codes returned by SetupAPI. The ones we are dealing with are either
+	// in 0x0000xxxx or 0xE000xxxx and can be distinguished from standard error codes.
+	// See http://msdn.microsoft.com/en-us/library/windows/hardware/ff545011.aspx
+	switch (error_code & 0xE0000000) {
+	case 0:
+		error_code = HRESULT_FROM_WIN32(error_code);	// Still leaves ERROR_SUCCESS unmodified
+		break;
+	case 0xE0000000:
+		error_code =  0x80000000 | (FACILITY_SETUPAPI << 16) | (error_code & 0x0000FFFF);
+		break;
+	default:
+		break;
+	}
+
+	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[safe_strlen(err_string)],
+		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
+	if (size == 0) {
+		format_error = GetLastError();
+		if (format_error)
+			safe_sprintf(err_string, STR_BUFFER_SIZE,
+				"Windows error code %u (FormatMessage error code %u)", error_code, format_error);
+		else
+			safe_sprintf(err_string, STR_BUFFER_SIZE, "Unknown error code %u", error_code);
+	} else {
+		// Remove CR/LF terminators
+		for (i=safe_strlen(err_string)-1; (i>=0) && ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
+			err_string[i] = 0;
+		}
+	}
+	return err_string;
+}
+
 /*
  * Convert various installation errors to their WDI counterpart
  */
@@ -574,7 +623,8 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
 		return WDI_ERROR_UNSIGNED;
 	default:
-		plog("unhandled error %X", r);
+		plog("unhandled error 0x%X (%d)", r, r);
+		plog(windows_error_str(r));
 		return WDI_ERROR_OTHER;
 	}
 }
@@ -705,7 +755,7 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 		return WDI_ERROR_NOT_SUPPORTED;
 	}
 
-	if (init_dlls()) {
+	if (!init_dlls()) {
 		plog("could not init DLLs");
 		ret = WDI_ERROR_RESOURCE;
 		goto out;
@@ -715,9 +765,9 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 
 	// libwdi provides the arguments as UTF-16 => read them and convert to UTF-8
-	if (__wgetmainargs != NULL) {
-		__wgetmainargs(&argc, &wargv, &wenv, 1, &si);
-		argv = calloc(argc, sizeof(char*));
+	if (pf__wgetmainargs != NULL) {
+		pf__wgetmainargs(&argc, &wargv, &wenv, 1, &si);
+		argv = (char**)calloc(argc, sizeof(char*));
 		for (i=0; i<argc; i++) {
 			argv[i] = wchar_to_utf8(wargv[i]);
 		}

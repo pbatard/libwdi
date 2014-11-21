@@ -97,11 +97,11 @@ static int (WINAPI *pSetBkMode)(HDC, int) = NULL;
 
 #define INIT_GDI32 do {	\
 	pCreateFontA = (HFONT (WINAPI *)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR))	\
-		GetProcAddress(GetModuleHandleA("Gdi32"), "CreateFontA"); \
+		GetProcAddress(GetDLLHandle("gdi32.dll"), "CreateFontA"); \
 	pGetStockObject = (HGDIOBJ (WINAPI *)(int))	\
-		GetProcAddress(GetModuleHandleA("Gdi32"), "GetStockObject"); \
+		GetProcAddress(GetDLLHandle("gdi32.dll"), "GetStockObject"); \
 	pSetBkMode = (int (WINAPI *)(HDC, int))	\
-		GetProcAddress(GetModuleHandleA("Gdi32"), "SetBkMode"); \
+		GetProcAddress(GetDLLHandle("gdi32.dll"), "SetBkMode"); \
 	} while(0)
 
 extern char *windows_error_str(uint32_t retval);
@@ -359,6 +359,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	progress_mutex = CreateMutex(NULL, TRUE, NULL);
 	if ((progress_mutex == NULL) || (GetLastError() == ERROR_ALREADY_EXISTS)) {
 		wdi_err("could not obtain progress dialog mutex - is another dialog active?");
+		if (progress_mutex != NULL)
+			CloseHandle(progress_mutex);
 		progress_mutex = INVALID_HANDLE_VALUE;
 		return WDI_ERROR_BUSY;
 	}

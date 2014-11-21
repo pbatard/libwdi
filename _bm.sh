@@ -16,9 +16,9 @@ git clean -fdx
 ./autogen.sh --disable-shared --disable-debug --with-wdfver=1009
 
 cd libwdi
-make -j2
+make
 cd ../examples
-make -j2 zadig.exe
+make zadig.exe
 # For the app icon to show during UAC, the app needs to have SYSTEM access which MinGW may not grant by default
 # (NB this only matters for local apps - an app extracted from a 7z will always have SYSTEM access)
 # SetACL can be downloaded from http://helgeklein.com/
@@ -32,9 +32,9 @@ git clean -fdx
 ./autogen.sh --disable-shared --disable-debug --with-wdfver=1011
 
 cd libwdi
-make -j2
+make
 cd ../examples
-make -j2 zadig.exe
+make zadig.exe
 type -P SetACL &>/dev/null && { SetACL -on ./zadig.exe -ot file -actn ace -ace "n:S-1-5-18;p:read,read_ex;s:y"; }
 upx --lzma zadig.exe
 cp zadig.exe $target_dir/zadig_$zadig_version.exe

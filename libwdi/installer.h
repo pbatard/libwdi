@@ -98,32 +98,21 @@ enum WindowsVersion {
 	WINDOWS_MAX
 };
 
-/*
- * API macros - from libusb-win32 1.x
- */
-#define DLL_DECLARE(api, ret, name, args)                     \
-	typedef ret (api * __dll_##name##_t)args;                 \
-	static __dll_##name##_t name = NULL
-
-#define DLL_LOAD(dll, name, ret_on_failure)                   \
-	do {                                                      \
-		HMODULE h = GetModuleHandleA(#dll);                   \
-	if (!h)                                                   \
-		h = LoadLibraryA(#dll);                               \
-	if (!h) {                                                 \
-		if (ret_on_failure) { return -1; }                    \
-		else { break; }                                       \
-	}                                                         \
-	name = (__dll_##name##_t)GetProcAddress(h, #name);        \
-	if (name) break;                                          \
-	name = (__dll_##name##_t)GetProcAddress(h, #name "A");    \
-	if (name) break;                                          \
-	name = (__dll_##name##_t)GetProcAddress(h, #name "W");    \
-	if (name) break;                                          \
-	if(ret_on_failure)                                        \
-		return WDI_ERROR_NOT_SUPPORTED;                       \
-	} while(0)
-
+/* Helper functions to access DLLs */
+static __inline HMODULE GetDLLHandle(char* szDLLName)
+{
+	HANDLE h = GetModuleHandleA(szDLLName);
+	if (h == NULL) {
+		h = LoadLibraryA(szDLLName);
+	}
+	return h;
+}
+#define PF_TYPE(api, ret, proc, args) typedef ret (api *proc##_t)args
+#define PF_DECL(proc) static proc##_t pf##proc = NULL
+#define PF_TYPE_DECL(api, ret, proc, args) PF_TYPE(api, ret, proc, args);  PF_DECL(proc)
+#define PF_INIT(proc, dllname) if (pf##proc == NULL) pf##proc = (proc##_t) GetProcAddress(GetDLLHandle(#dllname), #proc)
+#define PF_INIT_OR_OUT(proc, dllname) PF_INIT(proc, dllname); if (pf##proc == NULL) { \
+	PF_ERR("Unable to locate %s() in %s\n", #proc, #dllname); goto out; }
 
 /*
  * Cfgmgr32.dll interface
@@ -131,7 +120,7 @@ enum WindowsVersion {
 typedef DWORD DEVNODE, DEVINST;
 typedef DEVNODE *PDEVNODE, *PDEVINST;
 typedef DWORD RETURN_TYPE;
-typedef RETURN_TYPE	CONFIGRET;
+typedef RETURN_TYPE CONFIGRET;
 
 #define CR_SUCCESS                        0x00000000
 #define CR_NO_SUCH_DEVNODE                0x0000000D
