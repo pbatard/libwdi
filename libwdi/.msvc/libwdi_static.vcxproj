@@ -175,6 +175,7 @@ embedder embedded.h</Command>
     <ClInclude Include="..\..\msvc\config.h" />
     <ClInclude Include="..\installer.h" />
     <ClInclude Include="..\libwdi.h" />
+    <ClInclude Include="..\libwdi_i.h" />
     <ClInclude Include="..\logging.h" />
     <ClInclude Include="..\msapi_utf8.h" />
     <ClInclude Include="..\mssign32.h" />

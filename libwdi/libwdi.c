@@ -41,194 +41,14 @@
 
 #include "installer.h"
 #include "libwdi.h"
+#include "libwdi_i.h"
 #include "logging.h"
 #include "tokenizer.h"
 #include "embedded.h"	// auto-generated during compilation
 #include "msapi_utf8.h"
 
-// Initial timeout delay to wait for the installer to run
-#define DEFAULT_TIMEOUT 10000
-#define PF_ERR          wdi_err
 
-// These warnings are taken care of in configure for other platforms
-#if defined(_MSC_VER)
-
-#define __STR2__(x) #x
-#define __STR1__(x) __STR2__(x)
-#if defined(_WIN64) && defined(OPT_M32)
-// a 64 bit application/library CANNOT be used on 32 bit platforms
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : library is compiled as 64 bit - disabling 32 bit support")
-#undef OPT_M32
-#endif
-
-#if !defined(OPT_M32) && !defined(OPT_M64)
-#error both 32 and 64 bit support have been disabled - check your config.h
-#endif
-#if defined(OPT_M64) && !defined(OPT_M32)
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : this library will be INCOMPATIBLE with 32 bit platforms")
-#endif
-#if defined(OPT_M32) && !defined(OPT_M64)
-#pragma message(__FILE__ "(" __STR1__(__LINE__) ") : warning : this library will be INCOMPATIBLE with 64 bit platforms")
-#endif
-
-#endif /* _MSC_VER */
-
-// These functions are defined in libwdi_dlg
-extern HWND find_security_prompt(void);
-extern int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist);
-// These ones are defined in pki
-extern BOOL AddCertToTrustedPublisher(BYTE* cert_data, DWORD cert_size, BOOL disable_warning, HWND hWnd);
-extern BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject);
-extern BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFileList, DWORD cFileList);
-
-/*
- * Structure used for the threaded call to install_driver_internal()
- */
-struct install_driver_params {
-	struct wdi_device_info* device_info;
-	const char* path;
-	const char* inf_name;
-	struct wdi_options_install_driver* options;
-};
-
-/*
- * Tokenizer data
- */
-enum INF_TAGS
-{
-	INF_FILENAME,
-	CAT_FILENAME,
-	DEVICE_DESCRIPTION,
-	DEVICE_HARDWARE_ID,
-	DEVICE_INTERFACE_GUID,
-	DEVICE_MANUFACTURER,
-	DRIVER_DATE,
-	DRIVER_VERSION,
-	USE_DEVICE_INTERFACE_GUID,
-	WDF_VERSION,
-	KMDF_VERSION,
-	LK_COMMA,
-	LK_DLL,
-	LK_X86_DLL,
-	LK_EQ_X86,
-	LK_EQ_X64,
-};
-
-token_entity_t inf_entities[]=
-{
-	{"INF_FILENAME",""},
-	{"CAT_FILENAME",""},
-	{"DEVICE_DESCRIPTION",""},
-	{"DEVICE_HARDWARE_ID",""},
-	{"DEVICE_INTERFACE_GUID",""},
-	{"DEVICE_MANUFACTURER",""},
-	{"DRIVER_DATE",""},
-	{"DRIVER_VERSION",""},
-	{"USE_DEVICE_INTERFACE_GUID",""},
-	{"WDF_VERSION",""},
-	{"KMDF_VERSION",""},
-	{"LK_COMMA",""},
-	{"LK_DLL",""},
-	{"LK_X86_DLL",""},
-	{"LK_EQ_X86",""},
-	{"LK_EQ_X64",""},
-	{NULL, ""} // DO NOT REMOVE!
-};
-
-/*
- * List of Android devices that need to be assigned a specific Device Interface GUID
- * so that they are recognized with Google's debug tools.
- * This list gets updated from https://github.com/gu1dry/android_winusb/ (Cyanogenmod)
- * and http://developer.android.com/sdk/win-usb.html (Google USB driver)
- * NB: We don't specify an MI, as the assumption is that the MTP driver has already been
- * installed automatically, which will only leave the driverless debug interface to pick
- * a driver for.
- */
-const char* android_device_guid = "{f72fe0d4-cbcb-407d-8814-9ed673d0dd6b}";
-const struct {uint16_t vid; uint16_t pid;} android_device[] = {
-	{0x0451, 0xD022},
-	{0x0451, 0xD101},
-	{0x0489, 0xC001},
-	{0x04E8, 0x685D},
-	{0x04E8, 0x685E},
-	{0x04E8, 0x6860},
-	{0x05C6, 0x9025},
-	{0x0955, 0x7100},
-	{0x0B05, 0x4D01},
-	{0x0B05, 0x4D03},
-	{0x0B05, 0x4E01},
-	{0x0B05, 0x4E03},
-	{0x0B05, 0x4E1F},
-	{0x0B05, 0x4E3F},
-	{0x0BB4, 0x0C01},
-	{0x0BB4, 0x0C02},
-	{0x0BB4, 0x0C03},
-	{0x0BB4, 0x0C87},
-	{0x0BB4, 0x0C8B},
-	{0x0BB4, 0x0C8D},
-	{0x0BB4, 0x0C91},
-	{0x0BB4, 0x0C92},
-	{0x0BB4, 0x0C96},
-	{0x0BB4, 0x0C97},
-	{0x0BB4, 0x0CA2},
-	{0x0BB4, 0x0CA4},
-	{0x0BB4, 0x0CA5},
-	{0x0BB4, 0x0CAC},
-	{0x0BB4, 0x0CAD},
-	{0x0BB4, 0x0CBA},
-	{0x0BB4, 0x0CED},
-	{0x0BB4, 0x0E03},
-	{0x0BB4, 0x0FF9},
-	{0x0BB4, 0x0FFF},
-	{0x0FCE, 0x0DDE},
-	{0x0FCE, 0x4E30},
-	{0x0FCE, 0x6860},
-	{0x0FCE, 0xD001},
-	{0x1004, 0x618E},
-	{0x12D1, 0x1501},
-	{0x18D1, 0x0D02},
-	{0x18D1, 0x0D02},
-	{0x18D1, 0x2C10},
-	{0x18D1, 0x2C11},
-	{0x18D1, 0x4E11},
-	{0x18D1, 0x4E12},
-	{0x18D1, 0x4E21},
-	{0x18D1, 0x4E22},
-	{0x18D1, 0x4E23},
-	{0x18D1, 0x4E24},
-	{0x18D1, 0x4E30},
-	{0x18D1, 0x4E40},
-	{0x18D1, 0x4E41},
-	{0x18D1, 0x4E42},
-	{0x18D1, 0x4E44},
-	{0x18D1, 0x4EE0},
-	{0x18D1, 0x4EE1},
-	{0x18D1, 0x4EE2},
-	{0x18D1, 0x4EE3},
-	{0x18D1, 0x4EE4},
-	{0x18D1, 0x4EE4},
-	{0x18D1, 0x4EE5},
-	{0x18D1, 0x4EE6},
-	{0x18D1, 0x708C},
-	{0x18D1, 0x708C},
-	{0x18D1, 0x9001},
-	{0x18D1, 0x9001},
-	{0x18D1, 0xD002},
-	{0x19D2, 0x1351},
-	{0x19D2, 0x1354},
-	{0x2080, 0x0002},
-	{0x22B8, 0x2D66},
-	{0x22B8, 0x41DB},
-	{0x22B8, 0x4286},
-	{0x22B8, 0x42A4},
-	{0x22B8, 0x42DA},
-	{0x22B8, 0x4331},
-	{0x22B8, 0x70A9},
-};
-
-/*
- * Global variables
- */
+// Global variables
 static struct wdi_device_info *current_device = NULL;
 static BOOL dlls_available = FALSE;
 static BOOL filter_driver = FALSE;
@@ -243,75 +63,20 @@ static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 static int windows_version = WINDOWS_UNDEFINED;
 
-/*
- * For the retrieval of the device description on Windows 7
- */
-#ifndef DEVPROPKEY_DEFINED
-typedef struct {
-    GUID  fmtid;
-    ULONG pid;
-} DEVPROPKEY;
-#endif
-
-const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
-	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
-
-// TODO: use the PF_ calls everywhere!
-
 // The following are only available on Vista and later
-static BOOL (WINAPI *pIsUserAnAdmin)(void) = NULL;
-static BOOL (WINAPI *pSetupDiGetDevicePropertyW)(HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD) = NULL;
-#define INIT_VISTA_SHELL32 if (pIsUserAnAdmin == NULL) {				\
-	pIsUserAnAdmin = (BOOL (WINAPI *)(void))							\
-		GetProcAddress(GetDLLHandle("shell32.dll"), "IsUserAnAdmin");	\
-	}
-#define INIT_VISTA_GET_DEV_PROP {														\
-	pSetupDiGetDevicePropertyW = (BOOL (WINAPI *)(HDEVINFO, PSP_DEVINFO_DATA,			\
-		const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD))						\
-		GetProcAddress(GetDLLHandle("setupapi.dll"), "SetupDiGetDevicePropertyW");	\
-	}
-#define IS_VISTA_SHELL32_AVAILABLE (pIsUserAnAdmin != NULL)
-#define IS_VISTA_GET_DEV_PROP_AVAILABLE (pSetupDiGetDevicePropertyW != NULL)
-
+PF_TYPE_DECL(WINAPI, BOOL, IsUserAnAdmin, (void));
+PF_TYPE_DECL(WINAPI, BOOL, SetupDiGetDevicePropertyW, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
 // Version
-static BOOL (WINAPI *pVerQueryValueA)(LPCVOID, LPCSTR, LPVOID, PUINT) = NULL;
-static BOOL (WINAPI *pGetFileVersionInfoA)(LPCSTR, DWORD, DWORD, LPVOID) = NULL;
-static BOOL (WINAPI *pGetFileVersionInfoSizeA)(LPCSTR, LPDWORD) = NULL;
-#define INIT_VERSION_DLL(h) do {											\
-	pVerQueryValueA = (BOOL (WINAPI *)(LPCVOID, LPCSTR, LPVOID, PUINT))		\
-		GetProcAddress(h, "VerQueryValueA");								\
-	pGetFileVersionInfoA = (BOOL (WINAPI *)(LPCSTR, DWORD, DWORD, LPVOID))	\
-		GetProcAddress(h, "GetFileVersionInfoA");							\
-	pGetFileVersionInfoSizeA = (BOOL (WINAPI *)(LPCSTR, LPDWORD))			\
-		GetProcAddress(h, "GetFileVersionInfoSizeA");						\
-	} while (0)
-#define IS_VERSION_API_AVAILABLE ((pVerQueryValueA != NULL) && (pGetFileVersionInfoA != NULL) && (pGetFileVersionInfoSizeA != NULL))
-
-/*
- * Cfgmgr32.dll, SetupAPI.dll interfaces
- */
+PF_TYPE_DECL(WINAPI, BOOL, VerQueryValueA, (LPCVOID, LPCSTR, LPVOID, PUINT));
+PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoA, (LPCSTR, DWORD, DWORD, LPVOID));
+PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoSizeA, (LPCSTR, LPDWORD));
+// Cfgmgr32 & SetupAPI interfaces
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 // This call is only available on XP and later
 PF_TYPE_DECL(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
-
-// Check the status of the installer process
-static int __inline check_completion(HANDLE process_handle) {
-	DWORD exit_code;
-	GetExitCodeProcess(process_handle, &exit_code);
-	return (exit_code==0)?WDI_SUCCESS:((exit_code==STILL_ACTIVE)?WDI_ERROR_TIMEOUT:WDI_ERROR_OTHER);
-}
-
-// Convert a UNIX timestamp to a MS FileTime one
-static int64_t __inline unixtime_to_msfiletime(time_t t)
-{
-	int64_t ret = (int64_t)t;
-	ret *= INT64_C(10000000);
-	ret += INT64_C(116444736000000000);
-	return ret;
-}
 
 // Detect Windows version
 #define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) windows_version = detect_version(); } while(0)
@@ -407,9 +172,8 @@ static char err_string[STR_BUFFER_SIZE];
 	return err_string;
 }
 
-/*
- * Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
- */
+
+// Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
 static PSID get_sid(void) {
 	TOKEN_USER* tu = NULL;
 	DWORD len;
@@ -600,9 +364,8 @@ static FILE *fcreate(const char *filename, const char *mode)
 	return _fdopen(lowlevel_fd, mode);
 }
 
-/*
- * Retrieve the version info from the WinUSB, libusbK or libusb0 drivers
- */
+
+// Retrieve the version info from the WinUSB, libusbK or libusb0 drivers
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	FILE *fd;
@@ -614,7 +377,6 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	void* version_buf;
 	UINT junk;
 	VS_FIXEDFILEINFO *file_info;
-	HMODULE h;
 
 	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
 		return WDI_ERROR_INVALID_PARAM;
@@ -627,15 +389,11 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	}
 
 	// Avoid the need for end user apps to link against version.lib
-	h = GetDLLHandle("Version.dll");
-	if (h == NULL) {
-		wdi_warn("unable to open version.dll");
-		return WDI_ERROR_RESOURCE;
-	}
-
-	INIT_VERSION_DLL(h);
-	if (!IS_VERSION_API_AVAILABLE) {
-		wdi_warn("unable to access version.dll");
+	PF_INIT(VerQueryValueA, version.dll);
+	PF_INIT(GetFileVersionInfoA, version.dll);
+	PF_INIT(GetFileVersionInfoSizeA, version.dll);
+	if ((pfVerQueryValueA == NULL) || (pfGetFileVersionInfoA == NULL) || (pfGetFileVersionInfoSizeA == NULL)) {
+		wdi_warn("unable to access version.dll: %p %p %p", pfVerQueryValueA, pfGetFileVersionInfoA, pfGetFileVersionInfoSizeA);
 		return WDI_ERROR_RESOURCE;
 	}
 
@@ -675,12 +433,12 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	fclose(fd);
 
 	// Read the version
-	version_size = pGetFileVersionInfoSizeA(filename, NULL);
+	version_size = pfGetFileVersionInfoSizeA(filename, NULL);
 	version_buf = malloc(version_size);
 	r = WDI_SUCCESS;
 	if ( (version_buf != NULL)
-	  && (pGetFileVersionInfoA(filename, 0, version_size, version_buf))
-	  && (pVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+	  && (pfGetFileVersionInfoA(filename, 0, version_size, version_buf))
+	  && (pfVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
 		// Fill the creation date of VS_FIXEDFILEINFO with the one from embedded.h
 		t = unixtime_to_msfiletime((time_t)resource[res].creation_time);
 		file_info->dwFileDateLS = (DWORD)t;
@@ -698,9 +456,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 }
 
 
-/*
- * Find out if the driver selected is actually embedded in this version of the library
- */
+// Find out if the driver selected is actually embedded in this version of the library
 BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	if (driver_info != NULL) {
@@ -745,7 +501,6 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 	}
 }
 
-
 /*
  * Find out if a file is embedded in the current libwdi resources
  * path is the relative path for
@@ -766,7 +521,6 @@ BOOL LIBWDI_API wdi_is_file_embedded(const char* path, const char* name)
 	}
 	return FALSE;
 }
-
 
 /*
  * Returns a constant string with an English short description of the given
@@ -1040,13 +794,11 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		} else {
 			// On Windows 7, the information we want ("Bus reported device description") is
 			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
-			if (!IS_VISTA_GET_DEV_PROP_AVAILABLE) {
-				INIT_VISTA_GET_DEV_PROP;
-			}
-			if (!IS_VISTA_GET_DEV_PROP_AVAILABLE) {
+			PF_INIT(SetupDiGetDevicePropertyW, setupapi.dll);
+			if (pfSetupDiGetDevicePropertyW == NULL) {
 				wdi_warn("failed to locate SetupDiGetDevicePropertyW() in Setupapi.dll");
 				desc[0] = 0;
-			} else if (!pSetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
+			} else if (!pfSetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
 				// fallback to SPDRP_DEVICEDESC (USB hubs still use it)
 				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
@@ -1450,8 +1202,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	wdi_info("successfully created '%s'", inf_path);
 
 	GET_WINDOWS_VERSION;
-	INIT_VISTA_SHELL32;
-	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin()) )  {
+	PF_INIT(IsUserAnAdmin, shell32.dll);
+	if ( (windows_version >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
 		// On Vista and later, try to create and self-sign the cat file to remove security prompts
 		if ((options != NULL) && (options->disable_cat)) {
 			wdi_info(".cat generation disabled by user");
@@ -1714,8 +1466,8 @@ static int install_driver_internal(void* arglist)
 	}
 
 	GET_WINDOWS_VERSION;
-	INIT_VISTA_SHELL32;
-	if ( (windows_version >= WINDOWS_VISTA) && IS_VISTA_SHELL32_AVAILABLE && (!pIsUserAnAdmin()) )  {
+	PF_INIT(IsUserAnAdmin, shell32.dll);
+	if ( (windows_version >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -1901,13 +1653,13 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 	BOOL disable_warning = FALSE;
 
 	GET_WINDOWS_VERSION;
-	INIT_VISTA_SHELL32;
 
 	if (safe_strlen(cert_name) == 0) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
 
-	if ( (windows_version < WINDOWS_VISTA) || (IS_VISTA_SHELL32_AVAILABLE && (pIsUserAnAdmin())) ) {
+	PF_INIT(IsUserAnAdmin, shell32.dll);
+	if ( (windows_version < WINDOWS_VISTA) || ((pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin())) ) {
 		for (i=0; i<nb_resources; i++) {
 			if (safe_strcmp(cert_name, resource[i].name) == 0) {
 				break;

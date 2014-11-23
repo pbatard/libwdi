@@ -47,19 +47,12 @@
 
 // The following is only available on Vista and later
 #if (_WIN32_WINNT >= 0x0600)
-static HRESULT (WINAPI *pSHCreateItemFromParsingName)(PCWSTR, IBindCtx*, REFIID, void **) = NULL;
+PF_TYPE_DECL(WINAPI, HRESULT, SHCreateItemFromParsingName, (PCWSTR, IBindCtx*, REFIID, void **));
 #endif
-#define INIT_VISTA_SHELL32 if (pSHCreateItemFromParsingName == NULL) {						\
-	pSHCreateItemFromParsingName = (HRESULT (WINAPI *)(PCWSTR, IBindCtx*, REFIID, void **))	\
-			GetProcAddress(GetDLLHandle("shell32.dll"), "SHCreateItemFromParsingName");		\
-	}
-#define IS_VISTA_SHELL32_AVAILABLE (pSHCreateItemFromParsingName != NULL)
-// And this one is simply not available in MinGW32
-static LPITEMIDLIST (WINAPI *pSHSimpleIDListFromPath)(PCWSTR pszPath) = NULL;
-#define INIT_XP_SHELL32 if (pSHSimpleIDListFromPath == NULL) {								\
-	pSHSimpleIDListFromPath = (LPITEMIDLIST (WINAPI *)(PCWSTR))								\
-			GetProcAddress(GetDLLHandle("shell32.dll"), "SHSimpleIDListFromPath");			\
-	}
+PF_TYPE_DECL(WINAPI, LPITEMIDLIST, SHSimpleIDListFromPath, (PCWSTR pszPath));
+#define INIT_VISTA_SHELL32         PF_INIT(SHCreateItemFromParsingName, Shell32)
+#define INIT_XP_SHELL32            PF_INIT(SHSimpleIDListFromPath, Shell32)
+#define IS_VISTA_SHELL32_AVAILABLE (pfSHCreateItemFromParsingName != NULL)
 
 /*
  * Globals
@@ -321,7 +314,7 @@ INT CALLBACK browseinfo_callback(HWND hDlg, UINT message, LPARAM lParam, LPARAM 
 		} else {
 			// On Windows 7, MinGW only properly selects the specified folder when using a pidl
 			wpath = utf8_to_wchar(extraction_path);
-			pidl = (*pSHSimpleIDListFromPath)(wpath);
+			pidl = (*pfSHSimpleIDListFromPath)(wpath);
 			safe_free(wpath);
 			// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
 			// for details as to why we send BFFM_SETSELECTION twice.
@@ -391,7 +384,7 @@ void browse_for_folder(void) {
 			}
 		}
 
-		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
+		hr = (*pfSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
 		if (SUCCEEDED(hr)) {
 			if (wpath != NULL) {
 				hr = pfod->lpVtbl->SetFolder(pfod, si_path);
@@ -570,7 +563,7 @@ char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_de
 
 		// Set the default directory
 		wpath = utf8_to_wchar(path);
-		hr = (*pSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+		hr = (*pfSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
 		if (SUCCEEDED(hr)) {
 			pfd->lpVtbl->SetFolder(pfd, si_path);
 		}

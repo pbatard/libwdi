@@ -91,7 +91,7 @@ int current_device_index = CB_ERR;
 char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
 int default_driver_type = WDI_WINUSB;
-int log_level = WDI_LOG_LEVEL_INFO;
+int log_level = WDI_LOG_LEVEL_DEBUG;
 int IDC_INSTALL = IDC_INSTALLVISTA;
 int nb_devices = -1;
 int dialog_showing = 0;
@@ -198,6 +198,10 @@ int display_devices(void)
 
 	for (dev = list; dev != NULL; dev = dev->next) {
 		// Compute the width needed to accommodate our text
+		if (dev->desc == NULL) {
+			dprintf("error: device description is empty");
+			break;
+		}
 		GetTextExtentPointU(hdc, dev->desc, &size);
 		max_width = max(max_width, size.cx);
 

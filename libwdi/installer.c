@@ -52,6 +52,11 @@
 #define INSTALLFLAG_NONINTERACTIVE        0x00000004
 #define INSTALLFLAG_BITS                  0x00000007
 
+// MinGW32 doesn't know this one apparently
+#if !defined(FACILITY_SETUPAP)
+#define FACILITY_SETUPAPI                 15
+#endif
+
 /*
  * Cfgmgr32.dll interface
  */
