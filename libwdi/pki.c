@@ -1095,7 +1095,7 @@ static BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 	HandleSeparators(szSrcCopy);
 	r = GetFullPathNameA(szSrcCopy, (DWORD)dwDstSize, szDst, NULL);
 	free(szSrcCopy);
-	if ((r != 0) || (r <= dwDstSize)) {
+	if ((r != 0) && (r <= dwDstSize)) {
 		return TRUE;
 	}
 	fprintf(stderr, "Unable to get full path for '%s'.\n", szSrc);

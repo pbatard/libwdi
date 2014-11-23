@@ -151,7 +151,7 @@ static char err_string[STR_BUFFER_SIZE];
 
 	error_code = retval?retval:GetLastError();
 
-	safe_sprintf(err_string, STR_BUFFER_SIZE, "[#%X] ", error_code);
+	safe_sprintf(err_string, STR_BUFFER_SIZE, "[#%08X] ", error_code);
 
 	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[safe_strlen(err_string)],
@@ -1078,7 +1078,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 
 	// Populate the inf and cat names & paths
-	if ( (safe_strlen(path) + safe_strlen(inf_name)) > (MAX_PATH - 2)) {
+	if ( (strlen(path) >= MAX_PATH) || (strlen(inf_name) >= MAX_PATH) || 
+		 ((strlen(path) + strlen(inf_name)) > (MAX_PATH - 2)) ) {
 		wdi_err("qualified path for inf file is too long: '%s\\%s", path, inf_name);
 		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 	}

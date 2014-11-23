@@ -103,6 +103,7 @@ static __inline HMODULE GetDLLHandle(char* szDLLName)
 {
 	HANDLE h = GetModuleHandleA(szDLLName);
 	if (h == NULL) {
+		// coverity[alloc_fn][var_assign]
 		h = LoadLibraryA(szDLLName);
 	}
 	return h;
