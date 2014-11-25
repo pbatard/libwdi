@@ -17,6 +17,7 @@ create_def()
   do
     sed -n -e "s/.*LIBWDI_API.*\([[:blank:]]\)\(wdi.*\)(.*/  \2@$i = \2/p" libwdi/libwdi.c libwdi/vid_data.c libwdi/logging.c >> libwdi/libwdi.def
   done
+  type -P unix2dos &>/dev/null && unix2dos -q libwdi/libwdi.def
 }
 
 set -e
