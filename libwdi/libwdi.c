@@ -393,7 +393,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	PF_INIT(GetFileVersionInfoA, version.dll);
 	PF_INIT(GetFileVersionInfoSizeA, version.dll);
 	if ((pfVerQueryValueA == NULL) || (pfGetFileVersionInfoA == NULL) || (pfGetFileVersionInfoSizeA == NULL)) {
-		wdi_warn("unable to access version.dll: %p %p %p", pfVerQueryValueA, pfGetFileVersionInfoA, pfGetFileVersionInfoSizeA);
+		wdi_warn("unable to access version.dll");
 		return WDI_ERROR_RESOURCE;
 	}
 
