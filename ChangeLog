@@ -1,6 +1,16 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.2.4 (2014.11.30)
+  Bugfixes
+  - fix multiple potential NULL derefs
+  - fix a Zadig crash when listing devices
+  Improvements
+  - upgrade solution files for Visual Studio 2013 Community Edition
+  - update the list of known Android devices
+  - add support for AMD USB 3.0 hub driver
+  - improve error reporting and external DLL handling
+
 o v1.2.3 (2014.02.05)
   Bugfixes
   - allow spaces and commas in paths and names used for installation

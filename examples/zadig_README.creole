@@ -1,10 +1,16 @@
+=== v2.1.1 (2014.11.30) ===
+* Fix a possible crash when listing devices
+* Set logging to debug by default
+* Improve auto-update feature
+* Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.7.0
+
 === v2.1.0 (2014.02.03) ===
 * Fix a crash when listing all devices on machines with intel USB 3.0 controllers
 * Fix multiple issues with paths containing spaces
 * Use the Google Device Interface GUID when an Android device is detected. This allows the use of Zadig to install the debug port driver for adb & fastboot.
 * Add auto-update feature
 * Update versioning scheme
-* embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.6.0
+* Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0 & libusbK v3.0.6.0
 
 === v2.0.1.162 (2013.11.20): ===
 * fix support for devices that have a comma in their description
