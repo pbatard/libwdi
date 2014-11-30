@@ -202,14 +202,17 @@ int display_devices(void)
 			dprintf("error: device description is empty");
 			break;
 		}
-		GetTextExtentPointU(hdc, dev->desc, &size);
+		if (!GetTextExtentPointU(hdc, dev->desc, &size)) {
+			dprintf("error: could not compute dropdown size of '%s' - %s", dev->desc, WindowsErrorString());
+			continue;
+		}
 		max_width = max(max_width, size.cx);
 
 		index = ComboBox_AddStringU(hDeviceList, dev->desc);
 		if ((index != CB_ERR) && (index != CB_ERRSPACE)) {
 			_IGNORE(ComboBox_SetItemData(hDeviceList, index, (LPARAM)dev));
 		} else {
-			dprintf("could not populate dropdown list past device #%d", index);
+			dprintf("error: could not populate dropdown list for device '%s'", dev->desc);
 		}
 
 		// Select by Hardware ID if one's available
