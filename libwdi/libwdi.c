@@ -378,7 +378,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	UINT junk;
 	VS_FIXEDFILEINFO *file_info;
 
-	if ((driver_type < 0) || (driver_type >= ARRAYSIZE(driver_version)) || (driver_info == NULL)) {
+	if ((driver_type < 0) || (driver_type >= WDI_USER) || (driver_info == NULL)) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
 
@@ -459,10 +459,12 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 // Find out if the driver selected is actually embedded in this version of the library
 BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
-	if (driver_info != NULL) {
-		memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
+	if (driver_type < WDI_USER) {	// github issue #40
+		if (driver_info != NULL) {
+			memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
+		}
+		get_version_info(driver_type, driver_info);
 	}
-	get_version_info(driver_type, driver_info);
 
 	switch (driver_type) {
 	case WDI_WINUSB:
@@ -1032,7 +1034,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 
 	// Ensure driver_type is what we expect
-	if ( (driver_type < 0) || (driver_type > 3) ) {
+	if ( (driver_type < 0) || (driver_type > WDI_USER) ) {
 		wdi_err("unknown type");
 		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
 	}
@@ -1156,7 +1158,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	static_sprintf(inf_entities[KMDF_VERSION].replace, "%d.%d", WDF_VER/1000, WDF_VER%1000);
 
 	// Extra check, in case somebody modifies our code
-	if ((driver_type < 0) && (driver_type > ARRAYSIZE(driver_version))) {
+	if ((driver_type < 0) && (driver_type >= WDI_USER)) {
 		wdi_err("program assertion failed - driver_version[] index out of range");
 		MUTEX_RETURN(WDI_ERROR_OTHER);
 	}
