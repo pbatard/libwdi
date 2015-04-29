@@ -1406,7 +1406,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case UM_LOGGER_EVENT:
 		r = wdi_read_logger(log_buf, sizeof(log_buf), &read_size);
 		if (r == WDI_SUCCESS) {
-			dprintf("%s", log_buf);
+			if (read_size > 0) dprintf("%s", log_buf);
 		} else {
 			dprintf("wdi_read_logger: error %s", wdi_strerror(r));
 		}

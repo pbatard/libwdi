@@ -42,16 +42,42 @@ static HWND logger_dest = NULL;
 static UINT logger_msg = 0;
 // Detect spurious log readouts
 static unsigned log_messages_pending = 0;
+// Keep track of how many bytes are in the pipe
+static DWORD log_messages_pipe_size = 0;
 // Global debug level
 static int global_log_level = WDI_LOG_LEVEL_INFO;
 
 extern char *windows_error_str(uint32_t retval);
 
+static void write_to_pipe(const char* buffer, DWORD size, enum wdi_log_level level)
+{
+	DWORD written;
+
+	// Earlier checks should ensure that this is never the case, but if it is
+	// drop the message
+	if (size > LOGGER_PIPE_SIZE)
+		return;
+
+	// Do not allow the pipe to outgrow its allocated size, as this freezes the app
+	// See http://msdn.microsoft.com/en-us/library/aa365150.aspx
+	// If we are about to overflow, we deplete the pipe queue by issuing a bunch of
+	// SendMessage, which forces the messages to be processed (as opposed to PostMessage)
+	if (((log_messages_pipe_size + size) > LOGGER_PIPE_SIZE) && (log_messages_pending > 0)) {
+		while (log_messages_pending > 0)
+			SendMessage(logger_dest, logger_msg, (WPARAM)level, 0);
+		// Just in case
+		log_messages_pipe_size = 0;
+	}
+	if (WriteFile(logger_wr_handle, buffer, size, &written, NULL))
+		log_messages_pipe_size += written;
+	log_messages_pending++;
+	PostMessage(logger_dest, logger_msg, (WPARAM)level, 0);
+}
+
 static void pipe_wdi_log_v(enum wdi_log_level level,
 	const char *function, const char *format, va_list args)
 {
 	char buffer[LOGBUF_SIZE];
-	DWORD junk;
 	int size1, size2;
 	BOOL truncated = FALSE;
 	const char* prefix;
@@ -99,26 +125,9 @@ static void pipe_wdi_log_v(enum wdi_log_level level,
 		}
 	}
 
-	// http://msdn.microsoft.com/en-us/library/aa365150%28VS.85%29.aspx:
-	// "if your specified buffer size is too small, the system will grow the
-	//  buffer as needed, but the downside is that the operation will block
-	//  until the (existing) data is read from the pipe."
-	// Existing pipe data should have produced a notification, but if the pipe
-	// is left to fill without readout, we might run into blocking log calls.
-	// TODO: address this potential issue if it is reported
-	WriteFile(logger_wr_handle, buffer, (DWORD)(size1+size2+1), &junk, NULL);
-
-	// Notify the destination window of a new log message
-	log_messages_pending++;
-	PostMessage(logger_dest, logger_msg, level, 0);
-
-	if (truncated) {
-		WriteFile(logger_wr_handle, truncation_notice,
-			(DWORD)strlen(truncation_notice)+1, &junk, NULL);
-		log_messages_pending++;
-		PostMessage(logger_dest, logger_msg, (WPARAM)level, 0);
-	}
-
+	write_to_pipe(buffer, size1+size2+1, level);
+	if (truncated)
+		write_to_pipe(truncation_notice, strlen(truncation_notice)+1, level);
 }
 
 static void console_wdi_log_v(enum wdi_log_level level,
@@ -230,7 +239,7 @@ static void destroy_logger(void)
 /*
  * Register a Window as destination for logging message
  * This Window will be notified with a message event and should call
- * wdi_read_logger() to retreive the message data
+ * wdi_read_logger() to retrieve the message data
  */
 int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 {
@@ -289,8 +298,13 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 	}
 
 	if (log_messages_pending == 0) {
+		if (log_messages_pipe_size == 0) {
+			buffer[0] = 0;
+			*message_size = 0;
+			MUTEX_RETURN(WDI_SUCCESS);
+		}
 		size = safe_snprintf(buffer, buffer_size, "ERROR: log buffer is empty");
-		if (size <0) {
+		if (size < 0) {
 			buffer[buffer_size-1] = 0;
 			MUTEX_RETURN(buffer_size);
 		}
@@ -300,9 +314,11 @@ int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_s
 	log_messages_pending--;
 
 	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
+		log_messages_pipe_size -= *message_size;
 		MUTEX_RETURN(WDI_SUCCESS);
 	}
 
+	log_messages_pipe_size -= *message_size;
 	*message_size = 0;
 	r = GetLastError();
 	if ((r == ERROR_INSUFFICIENT_BUFFER) || (r == ERROR_MORE_DATA)) {
