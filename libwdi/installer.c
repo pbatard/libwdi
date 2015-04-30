@@ -454,7 +454,7 @@ void __cdecl syslog_reader_thread(void* param)
 		goto out;
 	}
 
-	plog("sylog reader thread started");
+	plog("syslog reader thread started");
 	SetEvent(syslog_ready_event);
 	processed_size = 0;
 
