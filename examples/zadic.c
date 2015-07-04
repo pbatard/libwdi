@@ -59,6 +59,8 @@ int __cdecl main(int argc, char *argv[])
 	struct wdi_device_info *device, *list;
 	char* path = "usb_driver";
 	static struct wdi_options_create_list cl_options = { 0 };
+	static struct wdi_options_prepare_driver pd_options = { 0 };
+
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;
@@ -146,8 +148,6 @@ int __cdecl main(int argc, char *argv[])
 		device->pid = pid;
 		printf("Creating USB device: device: \"%s\" (%04X:%04X)\n", device->desc, device->vid, device->pid);
 		wdi_set_log_level(verbose_flag);
-		struct wdi_options_prepare_driver pd_options;
-		memset(&pd_options, 0, sizeof(pd_options));
 		if (wdi_prepare_driver(device, path, INF_NAME, &pd_options) == WDI_SUCCESS) {
 			printf("installing wdi driver with <%s> at <%s>\n", INF_NAME, path);
 			r = wdi_install_driver(device, path, INF_NAME, NULL);
@@ -194,7 +194,7 @@ int __cdecl main(int argc, char *argv[])
 	}
 		// Does the user want to use a supplied .inf
 		if (use_supplied_inf_flag == 0) {
-			if (wdi_prepare_driver(device, path,INF_NAME, NULL) == WDI_SUCCESS) {
+			if (wdi_prepare_driver(device, path, INF_NAME, &pd_options) == WDI_SUCCESS) {
 				printf("installing wdi driver with <%s> at <%s>\n",INF_NAME, path);
 				wdi_install_driver(device, path, INF_NAME, NULL);
 			}
