@@ -1,7 +1,8 @@
 
 /*
 * Zadic: Automated Driver Installer for USB devices (Console version)
-* Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2015 PhracturedBlue <6xtc2h7upj@snkmail.com>
 * Copyright (c) 2010 Joseph Marshall <jmarshall@gcdataconcepts.com>
 *
 * This library is free software; you can redistribute it and/or
@@ -44,10 +45,11 @@ void usage(void)
 	printf("\n");
 	printf("--noprompt         allows the program to end without prompting the user\n");
 	printf("--usealldevices    lists all usb devices instead of only driverless ones\n");
-	printf("--iface            sets the interface number\n");
-	printf("--vid              sets the VID number. You must put 0x infront of vid number\n");
-	printf("--pid              sets the PID number. You must put 0x infront of pid number\n");
+	printf("--iface <num>      sets the interface number\n");
+	printf("--vid <num>        sets the VID number. You must put 0x infront of vid number\n");
+	printf("--pid <num>        sets the PID number. You must put 0x infront of pid number\n");
 	printf("--useinf           use supplied .inf if it exists in the correct directory\n");
+	printf("--create <desc>    create device even if USB device is not attached. Requires a description\n");
 	printf("\n");
 }
 
@@ -58,11 +60,14 @@ int __cdecl main(int argc, char *argv[])
 	struct wdi_device_info *device, *list;
 	char* path = "usb_driver";
 	static struct wdi_options_create_list cl_options = { 0 };
+	static struct wdi_options_prepare_driver pd_options = { 0 };
+
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
 	static int vid = 0;
 	static unsigned short pid = 0;
 	static int verbose_flag = 3;
+	static char *desc = NULL;
 	static int use_supplied_inf_flag = 0;
 	int r, option_index = 0;
 
@@ -81,10 +86,11 @@ int __cdecl main(int argc, char *argv[])
 			{"pid", required_argument, 0, 'c'},
 			{"help", no_argument, 0, 'd'},
 			{"verbose", no_argument, &verbose_flag, 0},
+			{"create", required_argument,0, 'e'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "abc:d:f:",long_options, &option_index);
+		c = getopt_long(argc, argv, "abc:d:e:",long_options, &option_index);
 		//  Detect the end of the options.
 		if (c == -1)
 			break;
@@ -118,11 +124,42 @@ int __cdecl main(int argc, char *argv[])
 			usage();
 			exit(0);
 			break;
+		case 'e': //create requires a description argument
+			desc = optarg;
+			break;
 		default:
 			usage();
-			abort ();
+			abort();
 		}
 	}
+
+	if (desc) {
+		// If the device is created from scratch, override the existing device
+		if (vid == 0 || pid == 0) {
+			printf("Must specify both --vid and --pid with --create\n");
+			return 1;
+		}
+		device = (struct wdi_device_info*)calloc(1, sizeof(struct wdi_device_info));
+		if (device == NULL) {
+			printf("could not create new device_info struct for installation");
+			return 1;
+		}
+		device->desc = desc;
+		device->vid = vid;
+		device->pid = pid;
+		printf("Creating USB device: device: \"%s\" (%04X:%04X)\n", device->desc, device->vid, device->pid);
+		wdi_set_log_level(verbose_flag);
+		if (wdi_prepare_driver(device, path, INF_NAME, &pd_options) == WDI_SUCCESS) {
+			printf("installing wdi driver with <%s> at <%s>\n", INF_NAME, path);
+			r = wdi_install_driver(device, path, INF_NAME, NULL);
+			if (r != WDI_SUCCESS) {
+				printf("Failed to install driver: %s\n", wdi_strerror(r));
+			}
+		}
+		free(device);
+		return r == WDI_SUCCESS ? 0 : 1;
+	}
+
 	r = wdi_create_list(&list, &cl_options);
 	switch (r) {
 	case WDI_SUCCESS:
@@ -140,11 +177,11 @@ int __cdecl main(int argc, char *argv[])
 		wdi_set_log_level(verbose_flag);
 		// If vid and pid have not been initialized
 		// prompt user to install driver for each device
-		if(vid == 0 || pid == 0) {
+		if (vid == 0 || pid == 0) {
 			printf("Do you want to install a driver for this device (y/n)?\n");
 			c = (char) getchar();
 			FLUSHER;
-			if ((c!='y') && (c!='Y')) {
+			if ((c != 'y') && (c != 'Y')) {
 				continue;
 			}
 			// Otherwise a specific vid and pid have been given
@@ -158,7 +195,7 @@ int __cdecl main(int argc, char *argv[])
 		}
 		// Does the user want to use a supplied .inf
 		if (use_supplied_inf_flag == 0) {
-			if (wdi_prepare_driver(device, path,INF_NAME, NULL) == WDI_SUCCESS) {
+			if (wdi_prepare_driver(device, path, INF_NAME, &pd_options) == WDI_SUCCESS) {
 				printf("installing wdi driver with <%s> at <%s>\n",INF_NAME, path);
 				wdi_install_driver(device, path, INF_NAME, NULL);
 			}
