@@ -54,11 +54,11 @@ static BOOL dlls_available = FALSE;
 static BOOL filter_driver = FALSE;
 static DWORD timeout = DEFAULT_TIMEOUT;
 static HANDLE pipe_handle = INVALID_HANDLE_VALUE;
-static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0} };
-static const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys"};
-static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb0.inf.in", "libusbk.inf.in"};
-static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.cat.in", "libusbk.cat.in"};
-static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK"};
+static VS_FIXEDFILEINFO driver_version[WDI_NB_DRIVERS-1] = { {0}, {0}, {0}, {0} };
+static const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "libusb0.sys", "libusbK.sys", ""};
+static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb0.inf.in", "libusbk.inf.in", "usbser.inf.in"};
+static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.cat.in", "libusbk.cat.in", "usbser.cat.in"};
+static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "MS_COMP_USBSER"};
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 static int windows_version = WINDOWS_UNDEFINED;
@@ -460,10 +460,13 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	if (driver_type < WDI_USER) {	// github issue #40
-		if (driver_info != NULL) {
-			memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
+		if (driver_type != WDI_CDC) {
+			// The CDC driver does not have embedded binaries
+			if (driver_info != NULL) {
+				memset(driver_info, 0, sizeof(VS_FIXEDFILEINFO));
+			}
+			get_version_info(driver_type, driver_info);
 		}
-		get_version_info(driver_type, driver_info);
 	}
 
 	switch (driver_type) {
@@ -497,6 +500,8 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #else
 		return FALSE;
 #endif
+	case WDI_CDC:
+		return TRUE;
 	default:
 		wdi_err("unknown driver type");
 		return FALSE;
@@ -616,7 +621,7 @@ static void free_di(struct wdi_device_info *di)
 // Setup the Cfgmgr32 and SetupApi DLLs
 static BOOL init_dlls(void)
 {
-	if (dlls_available) 
+	if (dlls_available)
 		return TRUE;
 	PF_INIT_OR_OUT(CM_Get_Parent, Cfgmgr32.dll);
 	PF_INIT_OR_OUT(CM_Get_Child, Cfgmgr32.dll);
@@ -980,7 +985,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 {
 	const wchar_t bom = 0xFEFF;
 #if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
-	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "user driver" };
+	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "Generic USB CDC", "user driver" };
 #endif
 	const char* inf_ext = ".inf";
 	const char* vendor_name = NULL;
@@ -1080,7 +1085,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 
 	// Populate the inf and cat names & paths
-	if ( (strlen(path) >= MAX_PATH) || (strlen(inf_name) >= MAX_PATH) || 
+	if ( (strlen(path) >= MAX_PATH) || (strlen(inf_name) >= MAX_PATH) ||
 		 ((strlen(path) + strlen(inf_name)) > (MAX_PATH - 2)) ) {
 		wdi_err("qualified path for inf file is too long: '%s\\%s", path, inf_name);
 		MUTEX_RETURN(WDI_ERROR_RESOURCE);
@@ -1523,7 +1528,7 @@ static int install_driver_internal(void* arglist)
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
-		handle[2] = pi.hThread;		// MSDN indicates to also close this handle when done 
+		handle[2] = pi.hThread;		// MSDN indicates to also close this handle when done
 	}
 
 	r = WDI_SUCCESS;
