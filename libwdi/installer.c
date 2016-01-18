@@ -57,6 +57,10 @@
 #define FACILITY_SETUPAPI                 15
 #endif
 
+// Also MinGW doesn't have wuerror.h yet
+#define WU_E_WU_DISABLED                  0x8024002E
+#define WU_S_ALREADY_INSTALLED            0x00240006
+
 /*
  * Cfgmgr32.dll interface
  */
@@ -568,6 +572,7 @@ static __inline int process_error(DWORD r, char* path) {
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL or hardware_id empty string
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
 	// r = 5 ERROR_ACCESS_DENIED if needs admin elevation
+	// r = 1058 ERROR_SERVICE_DISABLED => WU service is disabled
 	// r = 0xD ERROR_INVALID_DATA => inf is missing some data
 	// r = 0xE0000003 ERROR_GENERAL_SYNTAX the syntax of the inf is invalid or the inf is empty
 	// r = 0xE0000217 ERROR_BAD_SERVICE_INSTALLSECT happens if referencing a non present sys in svc section
@@ -627,6 +632,17 @@ static __inline int process_error(DWORD r, char* path) {
 		plog("installation policy to default if you want to install this driver.");
 		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
 		return WDI_ERROR_UNSIGNED;
+	// From https://github.com/Microsoft/Windows-driver-samples/blob/master/general/installwdf/Install.cpp#L180-L193
+	case ERROR_SERVICE_DISABLED:
+	case WU_E_WU_DISABLED:
+		plog("the \"Windows Update\" service is disabled. Please enable that service.");
+		return WDI_ERROR_OTHER;
+	case WU_S_ALREADY_INSTALLED:
+		plog("the driver is already installed");
+		return WDI_SUCCESS;
+	case ERROR_SUCCESS_REBOOT_REQUIRED:
+		plog("the driver was installed successfully, but a reboot is required.");
+		return WDI_SUCCESS;
 	default:
 		plog("unhandled error 0x%X (%d)", r, r);
 		plog(windows_error_str(r));
@@ -645,9 +661,9 @@ BOOL disable_system_restore(BOOL enabled)
 	static DWORD original_val = -1;		// -1 = key doesn't exist
 	HKEY machine_key = NULL, disable_system_restore_key = NULL;
 	// MSVC is finicky about these ones => redefine them
-	const IID my_IID_IGroupPolicyObject = 
+	const IID my_IID_IGroupPolicyObject =
 		{ 0xea502723, 0xa23d, 0x11d1, { 0xa7, 0xd3, 0x0, 0x0, 0xf8, 0x75, 0x71, 0xe3 } };
-	const IID my_CLSID_GroupPolicyObject = 
+	const IID my_CLSID_GroupPolicyObject =
 		{ 0xea502722, 0xa23d, 0x11d1, { 0xa7, 0xd3, 0x0, 0x0, 0xf8, 0x75, 0x71, 0xe3 } };
 	GUID ext_guid = REGISTRY_EXTENSION_GUID;
 	// Can be anything really
