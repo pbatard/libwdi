@@ -146,13 +146,6 @@ if errorlevel 1 goto builderror
 del afxres.h
 copy obj%BUILD_ALT_DIR%\%ARCH_DIR%\zadig.exe . >NUL 2>&1
 
-copy .msvc\inf_wizard_sources sources >NUL 2>&1
-@echo on
-%BUILD_CMD%
-@echo off
-if errorlevel 1 goto builderror
-copy obj%BUILD_ALT_DIR%\%ARCH_DIR%\inf-wizard.exe . >NUL 2>&1
-
 copy .msvc\wdi-simple_sources sources >NUL 2>&1
 @echo on
 %BUILD_CMD%

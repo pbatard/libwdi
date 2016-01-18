@@ -5,7 +5,7 @@ if CREATE_IMPORT_LIB
 	@$(DLLTOOL) $(DLLTOOLFLAGS) --kill-at --input-def libwdi.def --dllname libwdi.dll --output-lib .libs/libwdi.dll.a
 endif
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 BUILT_SOURCES = embedded.h
 noinst_PROGRAMS =
@@ -60,7 +60,6 @@ embedded.h: embedder $(noinst_PROGRAMS)
 
 clean-local:
 	-rm -rf embedded.h embedder embedder.exe
-
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libwdi.pc

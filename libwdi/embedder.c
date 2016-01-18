@@ -97,7 +97,7 @@ void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 	fprintf(fd, "\n");
 }
 
-void __inline handle_separators(char* path)
+void handle_separators(char* path)
 {
 	size_t i;
 	if (path == NULL) return;

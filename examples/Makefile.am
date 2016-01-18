@@ -1,6 +1,6 @@
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
-noinst_PROGRAMS = zadic zadig inf-wizard wdi-simple
+noinst_PROGRAMS = zadic zadig wdi-simple
 
 pkg_v_rc = $(pkg_v_rc_$(V))
 pkg_v_rc_ = $(pkg_v_rc_$(AM_DEFAULT_VERBOSITY))
@@ -22,14 +22,6 @@ zadig_SOURCES = zadig.c zadig_net.c zadig_parser.c zadig_stdlg.c profile.c
 zadig_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(AM_CFLAGS)
 zadig_LDFLAGS = -mwindows $(AM_LDFLAGS) -static
 zadig_LDADD = zadig_rc.o -L../libwdi/.libs -lwdi -lwininet
-
-inf_wizard_rc.o: inf_wizard_rc.rc
-	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
-
-inf_wizard_SOURCES = inf_wizard.c
-inf_wizard_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(AM_CFLAGS)
-inf_wizard_LDFLAGS = -mwindows $(AM_LDFLAGS) -static
-inf_wizard_LDADD = inf_wizard_rc.o -L../libwdi/.libs -lwdi -lcomctl32
 
 wdi-simple_rc.o: wdi-simple.rc
 	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
