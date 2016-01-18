@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -80,8 +80,8 @@ extern int windows_version;
 WORD application_version[4];
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH];
-const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "Custom (extract only)" };
-const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK" };
+const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "USB Serial (CDC)", "Custom (extract only)" };
+const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK", "usbser" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
 struct wdi_options_install_cert ic_options = { 0 };
@@ -265,11 +265,11 @@ void __cdecl notification_delay_thread(void* param)
 int get_driver_type(struct wdi_device_info* dev)
 {
 	int i;
-	const char* libusb_name[] = { "WinUSB", "libusb0", "libusbK" };
+	const char* libusb_name[] = { "WinUSB", "libusb0", "libusbK", "usbser" };
 	const char* system_name[] = { "usbccgp", "usbstor", "uaspstor", "vusbstor", "etronstor", "hidusb",
 		// NOTE: The list of hubs below should match the one from libwdi.c
 		"usbhub", "usbhub3", "nusb3hub", "usbhub", "usbhub3", "usb3hub", "nusb3hub", "rusb3hub",
-		"flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub", "amdhub30" };
+		"flxhcih", "tihub3", "etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub", "amdhub30", "vhhub" };
 
 	if ((dev == NULL) || (dev->driver == NULL)) {
 		return DT_NONE;
@@ -485,7 +485,11 @@ void set_driver(void)
 	VS_FIXEDFILEINFO file_info;
 	char target_text[64];
 
-	if (pd_options.driver_type != WDI_USER) {
+	if ((pd_options.driver_type == WDI_CDC) || (pd_options.driver_type >= WDI_USER)) {
+		safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
+		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
+	} else {
 		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
 		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
 		wdi_is_driver_supported(pd_options.driver_type, &file_info);
@@ -497,10 +501,6 @@ void set_driver(void)
 			(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
 		pd_options.use_wcid_driver = (nb_devices < 0) ||
 			((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
-	} else {
-		safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
-		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
-		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
 	}
 	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
 }
@@ -664,7 +664,7 @@ void update_ui(void)
 		arrow_color = warn?ARROW_ORANGE:ARROW_GREEN;
 		InvalidateRect(hArrow, NULL, TRUE);
 		UpdateWindow(hArrow);
-	} 
+	}
 	destroy_tooltip(hArrowToolTip);
 	hArrowToolTip = create_tooltip(hArrow, warn?
 		"Driver installation may produce unwanted results":
@@ -1351,7 +1351,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	static HWND hDriver, hTarget;
 	static HBRUSH white_brush = (HBRUSH)FALSE;
 	static HBRUSH grey_brush = (HBRUSH)FALSE;
-#if defined(COLOURED_FIELDS)	
+#if defined(COLOURED_FIELDS)
 	static HBRUSH green_brush = (HBRUSH)FALSE;
 	static HBRUSH orange_brush = (HBRUSH)FALSE;
 	static HBRUSH driver_background[NB_DRIVER_TYPES];

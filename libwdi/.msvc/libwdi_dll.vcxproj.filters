@@ -75,6 +75,9 @@
     <None Include="..\winusb.inf.in">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\usbser.inf.in">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\libwdi.rc">

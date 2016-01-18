@@ -200,6 +200,7 @@ embedder embedded.h</Command>
   <ItemGroup>
     <None Include="..\libusb0.inf.in" />
     <None Include="..\libwdi.def" />
+    <None Include="..\usbser.inf.in" />
     <None Include="..\winusb.inf.in" />
     <None Include="..\libusbk.inf.in" />
   </ItemGroup>

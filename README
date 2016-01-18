@@ -10,7 +10,7 @@ Main features:
 - Automated driver files extraction, for both 32 and 64 bit platforms
 - Automated driver installation, including UAC elevation where necessary
 - Single library embedding all the required files
-- Supports all Windows platform from Windows XP to Windows 8.1
+- Supports all Windows platform from Windows XP to Windows 10
 
 Additional features:
 - Embedding of WinUSB, libusb0.sys or libusbK.sys (from libusb-win32) or your own

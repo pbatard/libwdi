@@ -1,6 +1,6 @@
 /*
 * wdi-simple.c: Console Driver Installer for a single USB device
-* Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ void usage(void)
 	printf("-p, --pid <id>             set the product ID (PID, use 0x prefix for hex)\n");
 	printf("-i, --iid <id>             set the interface ID (MI)\n");
 	printf("-t, --type <driver_type>   set the driver to install\n");
-	printf("                           (0=WinUSB, 1=libusb-win32, 2=libusbK, 3=custom)\n");
+	printf("                           (0=WinUSB, 1=libusb-win32, 2=libusbK, 3=usbser, 4=custom)\n");
 	printf("-w, --wcid                 use a WCID driver instead of a device-specific\n");
 	printf("                           one (WinUSB, libusb-win32 or libusbK only)\n");
 	printf("    --filter               use the libusb-win32 filter driver (requires -t1)\n");

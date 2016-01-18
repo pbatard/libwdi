@@ -81,5 +81,11 @@
     <None Include="..\libusbk.cat.in">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\usbser.cat.in">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\usbser.inf.in">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

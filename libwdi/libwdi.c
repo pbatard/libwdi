@@ -653,7 +653,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	struct wdi_device_info *start = NULL, *cur = NULL, *device_info = NULL;
 	// NOTE: Don't forget to update the list of hubs in zadig.c (system_name[]) when adding new entries below
 	const char* usbhub_name[] = { "usbhub", "usbhub3", "usb3hub", "nusb3hub", "rusb3hub", "flxhcih", "tihub3",
-		"etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub", "amdhub30" };
+		"etronhub3", "viahub3", "asmthub3", "iusb3hub", "vusb3hub", "amdhub30", "vhhub" };
 	const char usbccgp_name[] = "usbccgp";
 	BOOL is_hub, is_composite_parent, has_vid;
 
