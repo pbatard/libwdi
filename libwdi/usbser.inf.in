@@ -25,7 +25,7 @@ Class       = Ports
 ClassGuid   = {4D36E978-E325-11CE-BFC1-08002BE10318}
 Provider    = "Sensics, Inc."
 CatalogFile = #CAT_FILENAME#
-DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
+DriverVer   = #DRIVER_DATE#, 1.0.0.0
 
 ; Files do not differ between arches (using an in-box driver)
 ; so only a single cat is needed.
