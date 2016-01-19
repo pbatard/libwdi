@@ -69,7 +69,7 @@ int __cdecl main(int argc, char *argv[])
 	static int verbose_flag = 3;
 	static char *desc = NULL;
 	static int use_supplied_inf_flag = 0;
-	int r, option_index = 0;
+	int r = WDI_ERROR_OTHER, option_index = 0;
 
 	cl_options.trim_whitespaces = TRUE;
 
@@ -157,7 +157,7 @@ int __cdecl main(int argc, char *argv[])
 			}
 		}
 		free(device);
-		return r == WDI_SUCCESS ? 0 : 1;
+		return (r == WDI_SUCCESS) ? 0 : 1;
 	}
 
 	r = wdi_create_list(&list, &cl_options);

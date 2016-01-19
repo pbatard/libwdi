@@ -1,7 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Standard Dialog Routines (Browse for folder, About, etc)
- * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
