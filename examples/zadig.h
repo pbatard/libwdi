@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.1.2.682"
+#define APP_VERSION                 "Zadig 2.2.683"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
@@ -90,19 +90,6 @@ enum user_message_type {
 	UM_LOGGER_EVENT,
 	UM_DOWNLOAD_INIT,
 	UM_DOWNLOAD_EXIT,
-};
-
-// Windows versions
-enum WindowsVersion {
-	WINDOWS_UNDEFINED = -1,
-	WINDOWS_UNSUPPORTED = 0,
-	WINDOWS_XP = 0x51,
-	WINDOWS_2003 = 0x52,	// Also XP x64
-	WINDOWS_VISTA = 0x60,
-	WINDOWS_7 = 0x61,
-	WINDOWS_8 = 0x62,
-	WINDOWS_8_1_OR_LATER = 0x63,
-	WINDOWS_MAX
 };
 
 // WCID states

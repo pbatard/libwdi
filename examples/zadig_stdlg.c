@@ -44,6 +44,7 @@
 #include "zadig_license.h"
 #include "zadig_registry.h"
 #include "msapi_utf8.h"
+#include "stdfn.h"
 
 // The following is only available on Vista and later
 #if (_WIN32_WINNT >= 0x0600)
@@ -60,7 +61,6 @@ PF_TYPE_DECL(WINAPI, LPITEMIDLIST, SHSimpleIDListFromPath, (PCWSTR pszPath));
 static HICON hMessageIcon = (HICON)INVALID_HANDLE_VALUE;
 static char* szMessageText = NULL;
 static char* szMessageTitle = NULL;
-int windows_version = WINDOWS_UNSUPPORTED;
 extern HFONT bold_font;
 extern float fScale;
 static HWND browse_edit;
@@ -165,68 +165,6 @@ static char err_string[256] = {0};
 }
 
 /*
- * Detect Windows version
- */
-int detect_windows_version(void)
-{
-	OSVERSIONINFOEXA vi, vi2;
-	unsigned major, minor;
-	ULONGLONG major_equal, minor_equal;
-	int nWindowsVersion;
-
-	nWindowsVersion = WINDOWS_UNDEFINED;
-
-	memset(&vi, 0, sizeof(vi));
-	vi.dwOSVersionInfoSize = sizeof(vi);
-	if (!GetVersionExA((OSVERSIONINFOA *)&vi)) {
-		memset(&vi, 0, sizeof(vi));
-		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
-		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
-			return nWindowsVersion;
-	}
-
-	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-
-		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
-			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
-			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
-			// And starting with Windows 10 Preview 2, Windows enforces the use of the application/supportedOS
-			// manifest in order for VerSetConditionMask() to report the ACTUAL OS major and minor...
-
-			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
-			for (major = vi.dwMajorVersion; major <= 9; major++) {
-				memset(&vi2, 0, sizeof(vi2));
-				vi2.dwOSVersionInfoSize = sizeof(vi2); vi2.dwMajorVersion = major;
-				if (!VerifyVersionInfoA(&vi2, VER_MAJORVERSION, major_equal))
-					continue;
-				if (vi.dwMajorVersion < major) {
-					vi.dwMajorVersion = major; vi.dwMinorVersion = 0;
-				}
-
-				minor_equal = VerSetConditionMask(0, VER_MINORVERSION, VER_EQUAL);
-				for (minor = vi.dwMinorVersion; minor <= 9; minor++) {
-					memset(&vi2, 0, sizeof(vi2)); vi2.dwOSVersionInfoSize = sizeof(vi2);
-					vi2.dwMinorVersion = minor;
-					if (!VerifyVersionInfoA(&vi2, VER_MINORVERSION, minor_equal))
-						continue;
-					vi.dwMinorVersion = minor;
-					break;
-				}
-
-				break;
-			}
-		}
-
-		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
-			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
-			if (nWindowsVersion < 0x51)
-				nWindowsVersion = WINDOWS_UNSUPPORTED;;
-		}
-	}
-	return nWindowsVersion;
-}
-
-/*
  * Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
  */
 static PSID get_sid(void) {
@@ -311,7 +249,7 @@ INT CALLBACK browseinfo_callback(HWND hDlg, UINT message, LPARAM lParam, LPARAM 
 		SetFocus(browse_edit);
 		// On XP, BFFM_SETSELECTION can't be used with a Unicode Path in SendMessageW
 		// or a pidl (at least with MinGW) => must use SendMessageA
-		if (windows_version <= WINDOWS_XP) {
+		if (nWindowsVersion <= WINDOWS_XP) {
 			SendMessageLU(hDlg, BFFM_SETSELECTION, (WPARAM)TRUE, extraction_path);
 		} else {
 			// On Windows 7, MinGW only properly selects the specified folder when using a pidl

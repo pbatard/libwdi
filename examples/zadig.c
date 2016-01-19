@@ -47,6 +47,7 @@
 #include "zadig_registry.h"
 #include "zadig.h"
 #include "profile.h"
+#include "stdfn.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
 
@@ -76,7 +77,6 @@ HFONT hyperlink_font, bold_font;
 WNDPROC original_wndproc;
 COLORREF arrow_color = ARROW_GREEN;
 float fScale = 1.0f;
-extern int windows_version;
 WORD application_version[4];
 char app_dir[MAX_PATH], driver_text[64];
 char extraction_path[MAX_PATH];
@@ -804,127 +804,6 @@ void set_loglevel(DWORD menu_cmd)
 	wdi_set_log_level(log_level);
 }
 
-BOOL is_x64(void)
-{
-	BOOL ret = FALSE;
-	BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
-	// Detect if we're running a 32 or 64 bit system
-	if (sizeof(uintptr_t) < 8) {
-		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetDLLHandle("kernel32"), "IsWow64Process");
-		if (pIsWow64Process != NULL) {
-			(*pIsWow64Process)(GetCurrentProcess(), &ret);
-		}
-	} else {
-		ret = TRUE;
-	}
-	return ret;
-}
-
-// From smartmontools os_win32.cpp
-static const char* PrintWindowsVersion(void)
-{
-	OSVERSIONINFOEXA vi, vi2;
-	const char* w = 0;
-	const char* w64 = "32 bit";
-	char* vptr;
-	size_t vlen;
-	unsigned major, minor;
-	ULONGLONG major_equal, minor_equal;
-	BOOL ws;
-	int nWindowsVersion;
-	static char WindowsVersionStr[128] = "Windows ";
-
-	nWindowsVersion = WINDOWS_UNDEFINED;
-	safe_strcpy(WindowsVersionStr, sizeof(WindowsVersionStr), "Windows Undefined");
-
-	memset(&vi, 0, sizeof(vi));
-	vi.dwOSVersionInfoSize = sizeof(vi);
-	if (!GetVersionExA((OSVERSIONINFOA *)&vi)) {
-		memset(&vi, 0, sizeof(vi));
-		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
-		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
-			return WindowsVersionStr;
-	}
-
-	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-
-		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
-			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
-			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
-
-			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
-			for (major = vi.dwMajorVersion; major <= 9; major++) {
-				memset(&vi2, 0, sizeof(vi2));
-				vi2.dwOSVersionInfoSize = sizeof(vi2); vi2.dwMajorVersion = major;
-				if (!VerifyVersionInfoA(&vi2, VER_MAJORVERSION, major_equal))
-					continue;
-				if (vi.dwMajorVersion < major) {
-					vi.dwMajorVersion = major; vi.dwMinorVersion = 0;
-				}
-
-				minor_equal = VerSetConditionMask(0, VER_MINORVERSION, VER_EQUAL);
-				for (minor = vi.dwMinorVersion; minor <= 9; minor++) {
-					memset(&vi2, 0, sizeof(vi2)); vi2.dwOSVersionInfoSize = sizeof(vi2);
-					vi2.dwMinorVersion = minor;
-					if (!VerifyVersionInfoA(&vi2, VER_MINORVERSION, minor_equal))
-						continue;
-					vi.dwMinorVersion = minor;
-					break;
-				}
-
-				break;
-			}
-		}
-
-		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
-			ws = (vi.wProductType <= VER_NT_WORKSTATION);
-			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
-			switch (nWindowsVersion) {
-			case 0x51: w = "XP";
-				break;
-			case 0x52: w = (!GetSystemMetrics(89)?"2003":"2003_R2");
-				break;
-			case 0x60: w = (ws?"Vista":"2008");
-				break;
-			case 0x61: w = (ws?"7":"2008_R2");
-				break;
-			case 0x62: w = (ws?"8":"2012");
-				break;
-			case 0x63: w = (ws?"8.1":"2012_R2");
-				break;
-			case 0x64: w = (ws?"10 (Preview 1)":"Server 10 (Preview 1)");
-				break;
-			// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
-			case 0xA0: w = (ws?"10":"Server 10");
-				break;
-			default:
-				if (nWindowsVersion < 0x51)
-					nWindowsVersion = WINDOWS_UNSUPPORTED;
-				else
-					w = "11 or later";
-				break;
-			}
-		}
-	}
-
-	if (is_x64())
-		w64 = "64-bit";
-
-	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
-	vlen = sizeof(WindowsVersionStr) - sizeof("Windows ") - 1;
-	if (!w)
-		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId==VER_PLATFORM_WIN32_NT?"NT":"??"),
-			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, w64);
-	else if (vi.wServicePackMinor)
-		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
-	else if (vi.wServicePackMajor)
-		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
-	else
-		safe_sprintf(vptr, vlen, "%s %s", w, w64);
-	return WindowsVersionStr;
-}
-
 typedef HIMAGELIST (WINAPI *ImageList_Create_t)(
 	int cx,
 	int cy,
@@ -1097,7 +976,7 @@ void init_dialog(HWND hDlg)
 	SendMessage(GetDlgItem(hDlg, IDC_VID_REPORT), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 
 	// Setup the Install split button
-	if (windows_version < WINDOWS_VISTA) {
+	if (nWindowsVersion < WINDOWS_VISTA) {
 		IDC_INSTALL = IDC_INSTALLXP;
 		ShowWindow(GetDlgItem(hMain, IDC_INSTALLXP), TRUE);
 		ShowWindow(GetDlgItem(hMain, IDC_INSTALLVISTA), FALSE);
@@ -1122,7 +1001,7 @@ void init_dialog(HWND hDlg)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
 	dprintf(APP_VERSION);
-	dprintf(PrintWindowsVersion());
+	dprintf(WindowsVersionStr);
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
@@ -1898,10 +1777,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	// Set the Windows version
-	windows_version = detect_windows_version();
+	GetWindowsVersion();
 
 	// Alert users if they are running the non XP version on XP
-	if ((windows_version < WINDOWS_VISTA) && (wdi_get_wdf_version() >= 1011)) {
+	if ((nWindowsVersion < WINDOWS_VISTA) && (wdi_get_wdf_version() >= 1011)) {
 		MessageBoxA(NULL, "This version of Zadig can only be run on Windows Vista or later, as it "
 			"installs drivers using WDF framework 1.11, which is not compatible with older versions "
 			"of Windows.\nPlease use the XP version of Zadig, from " APPLICATION_URL ", if you want "

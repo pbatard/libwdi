@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2014 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -46,7 +46,7 @@
 #include "tokenizer.h"
 #include "embedded.h"	// auto-generated during compilation
 #include "msapi_utf8.h"
-
+#include "stdfn.h"
 
 // Global variables
 static struct wdi_device_info *current_device = NULL;
@@ -61,7 +61,8 @@ static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.c
 static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "MS_COMP_USBSER"};
 // for 64 bit platforms detection
 static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
-static int windows_version = WINDOWS_UNDEFINED;
+int nWindowsVersion = WINDOWS_UNDEFINED;
+char WindowsVersionStr[128] = "Windows ";
 
 // The following are only available on Vista and later
 PF_TYPE_DECL(WINAPI, BOOL, IsUserAnAdmin, (void));
@@ -79,15 +80,39 @@ PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG
 PF_TYPE_DECL(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 
 // Detect Windows version
-#define GET_WINDOWS_VERSION do{ if (windows_version == WINDOWS_UNDEFINED) windows_version = detect_version(); } while(0)
-static int detect_version(void)
+#define GET_WINDOWS_VERSION do{ if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
+
+BOOL is_x64(void)
+{
+	BOOL ret = FALSE;
+	PF_TYPE_DECL(WINAPI, BOOL, IsWow64Process, (HANDLE, PBOOL));
+	// Detect if we're running a 32 or 64 bit system
+	if (sizeof(uintptr_t) < 8) {
+		PF_INIT(IsWow64Process, Kernel32);
+		if (pfIsWow64Process != NULL) {
+			(*pfIsWow64Process)(GetCurrentProcess(), &ret);
+		}
+	}
+	else {
+		ret = TRUE;
+	}
+	return ret;
+}
+
+// From smartmontools os_win32.cpp
+void GetWindowsVersion(void)
 {
 	OSVERSIONINFOEXA vi, vi2;
+	const char* w = 0;
+	const char* w64 = "32 bit";
+	char *vptr, build_number[10] = "";
+	size_t vlen;
 	unsigned major, minor;
 	ULONGLONG major_equal, minor_equal;
-	int nWindowsVersion;
+	BOOL ws;
 
 	nWindowsVersion = WINDOWS_UNDEFINED;
+	safe_strcpy(WindowsVersionStr, sizeof(WindowsVersionStr), "Windows Undefined");
 
 	memset(&vi, 0, sizeof(vi));
 	vi.dwOSVersionInfoSize = sizeof(vi);
@@ -95,7 +120,7 @@ static int detect_version(void)
 		memset(&vi, 0, sizeof(vi));
 		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
 		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
-			return nWindowsVersion;
+			return;
 	}
 
 	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
@@ -103,6 +128,8 @@ static int detect_version(void)
 		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
 			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
 			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+			// And starting with Windows 10 Preview 2, Windows enforces the use of the application/supportedOS
+			// manifest in order for VerSetConditionMask() to report the ACTUAL OS major and minor...
 
 			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
 			for (major = vi.dwMajorVersion; major <= 9; major++) {
@@ -129,14 +156,62 @@ static int detect_version(void)
 		}
 
 		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
+			ws = (vi.wProductType <= VER_NT_WORKSTATION);
 			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
-			if (nWindowsVersion < 0x51)
-				nWindowsVersion = WINDOWS_UNSUPPORTED;;
+			switch (nWindowsVersion) {
+			case 0x51: w = "XP";
+				break;
+			case 0x52: w = (!GetSystemMetrics(89) ? "2003" : "2003_R2");
+				break;
+			case 0x60: w = (ws ? "Vista" : "2008");
+				break;
+			case 0x61: w = (ws ? "7" : "2008_R2");
+				break;
+			case 0x62: w = (ws ? "8" : "2012");
+				break;
+			case 0x63: w = (ws ? "8.1" : "2012_R2");
+				break;
+			case 0x64: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
+				break;
+				// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
+			case 0xA0: w = (ws ? "10" : "Server 10");
+				break;
+			default:
+				if (nWindowsVersion < 0x51)
+					nWindowsVersion = WINDOWS_UNSUPPORTED;
+				else
+					w = "11 or later";
+				break;
+			}
 		}
 	}
-	return nWindowsVersion;
-}
 
+	if (is_x64())
+		w64 = "64-bit";
+
+	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
+	vlen = sizeof(WindowsVersionStr) - sizeof("Windows ") - 1;
+	if (!w)
+		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId == VER_PLATFORM_WIN32_NT ? "NT" : "??"),
+			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, w64);
+	else if (vi.wServicePackMinor)
+		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
+	else if (vi.wServicePackMajor)
+		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
+	else
+		safe_sprintf(vptr, vlen, "%s %s", w, w64);
+
+	// Add the build number for Windows 8.0 and later
+	if (nWindowsVersion >= 0x62) {
+		ReadRegistryStr(REGKEY_HKLM, "Microsoft\\Windows NT\\CurrentVersion\\CurrentBuildNumber", build_number, sizeof(build_number));
+		if (build_number[0] != 0) {
+			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), " (Build ");
+			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), build_number);
+			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), ")");
+		}
+	}
+
+}
 /*
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
@@ -474,8 +549,8 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #if defined(DDK_DIR)
 		// WinUSB is not supported on Win2k/2k3
 		GET_WINDOWS_VERSION;
-		if ( (windows_version < WINDOWS_XP)
-		  || (windows_version == WINDOWS_2003) ) {
+		if ( (nWindowsVersion < WINDOWS_XP)
+		  || (nWindowsVersion == WINDOWS_2003) ) {
 			return FALSE;
 		}
 		return TRUE;
@@ -790,7 +865,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		device_info->device_id = safe_strdup(strbuf);
 
 		GET_WINDOWS_VERSION;
-		if (windows_version < WINDOWS_7) {
+		if (nWindowsVersion < WINDOWS_7) {
 			// On Vista and earlier, we can use SPDRP_DEVICEDESC
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
@@ -1211,7 +1286,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 
 	GET_WINDOWS_VERSION;
 	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (windows_version >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
+	if ( (nWindowsVersion >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
 		// On Vista and later, try to create and self-sign the cat file to remove security prompts
 		if ((options != NULL) && (options->disable_cat)) {
 			wdi_info(".cat generation disabled by user");
@@ -1475,7 +1550,7 @@ static int install_driver_internal(void* arglist)
 
 	GET_WINDOWS_VERSION;
 	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (windows_version >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
+	if ( (nWindowsVersion >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
 		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -1667,7 +1742,7 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 	}
 
 	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (windows_version < WINDOWS_VISTA) || ((pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin())) ) {
+	if ( (nWindowsVersion < WINDOWS_VISTA) || ((pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin())) ) {
 		for (i=0; i<nb_resources; i++) {
 			if (safe_strcmp(cert_name, resource[i].name) == 0) {
 				break;
