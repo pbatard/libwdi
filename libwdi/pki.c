@@ -1,6 +1,6 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2011-2016 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
@@ -220,7 +220,7 @@ typedef struct _CERT_POLICIES_INFO_ARRAY {
 #define CRYPTCAT_ATTR_NAMEOBJID			0x00000002
 #define CRYPTCAT_ATTR_DATAASCII			0x00010000
 #define CRYPTCAT_ATTR_DATABASE64		0x00020000
-#define CRYPTCAT_ATTR_DATAREPLACE		0x00040000 
+#define CRYPTCAT_ATTR_DATAREPLACE		0x00040000
 
 #define SPC_UUID_LENGTH					16
 #define SPC_URL_LINK_CHOICE				1
@@ -423,7 +423,7 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 	if (hSystemStore == NULL) {
 		wdi_warn("failed to open system store '%s': %s", szStoreName, windows_error_str(0));
 		goto out;
-	} 
+	}
 
 	if (!pfCertSetCertificateContextProperty(pCertContext, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
 		wdi_warn("coud not set friendly name: %s", windows_error_str(0));
@@ -455,7 +455,7 @@ BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	PCCERT_CONTEXT pCertContext;
 	CERT_NAME_BLOB certNameBlob = {0, NULL};
 	BOOL r = FALSE;
-	
+
 	PF_INIT_OR_OUT(CertOpenStore, crypt32);
 	PF_INIT_OR_OUT(CertFindCertificateInStore, crypt32);
 	PF_INIT_OR_OUT(CertDeleteCertificateFromStore, crypt32);
@@ -467,7 +467,7 @@ BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	if (hSystemStore == NULL) {
 		wdi_warn("failed to open system store '%s': %s", szStoreName, windows_error_str(0));
 		goto out;
-	} 
+	}
 
 	// Encode Cert Name
 	if ( (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, NULL, &certNameBlob.cbData, NULL))
@@ -671,7 +671,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) {
 		wdi_dbg("acquired existing key container");
-	} else if ( (GetLastError() == NTE_BAD_KEYSET) 
+	} else if ( (GetLastError() == NTE_BAD_KEYSET)
 			 && (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET|CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) ) {
 		wdi_dbg("created new key container");
 	} else {
@@ -766,7 +766,7 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 		wdi_warn("failed to delete private key: %s", windows_error_str(0));
 	}
 
-	// This is optional, but unless we don't reimport the cert data after having deleted the key
+	// This is optional, but unless we reimport the cert data after having deleted the key
 	// end users will still see a "You have a private key that corresponds to this certificate" message.
 	for (i=0; i<ARRAYSIZE(szStoresToUpdate); i++)
 	{
@@ -774,18 +774,16 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 			0, CERT_SYSTEM_STORE_LOCAL_MACHINE, szStoresToUpdate[i]);
 		if (hSystemStore == NULL) continue;
 
-		if (!pfCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING, pCertContext->pbCertEncoded, 
-			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, &pCertContextUpdate)) {
+		if ( (pfCertAddEncodedCertificateToStore(hSystemStore, X509_ASN_ENCODING, pCertContext->pbCertEncoded,
+			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, &pCertContextUpdate)) && (pCertContextUpdate != NULL) ) {
+			// The friendly name is lost in this operation - restore it
+			if (!pfCertSetCertificateContextProperty(pCertContextUpdate, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
+				wdi_warn("coud not set friendly name: %s", windows_error_str(0));
+			}
+			pfCertFreeCertificateContext(pCertContextUpdate);
+		} else {
 			wdi_warn("failed to update '%s': %s", szStoresToUpdate[i], windows_error_str(0));
 		}
-
-		// The friendly name is lost in this operation - restore it
-		if (!pfCertSetCertificateContextProperty(pCertContextUpdate, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
-			wdi_warn("coud not set friendly name: %s", windows_error_str(0));
-		}
-
-		pfCertFreeCertificateContext(pCertContextUpdate);
-
 		pfCertCloseStore(hSystemStore, 0);
 	}
 
@@ -1051,10 +1049,10 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 	}
 
 	// Add the "File" and "OSAttr" attributes to the newly created member
-	if ( (pfCryptCATPutAttrInfo(hCat, pCatMember, L"File", 
+	if ( (pfCryptCATPutAttrInfo(hCat, pCatMember, L"File",
 		  CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
 		  2*((DWORD)wcslen(wszFileName)+1), (BYTE*)wszFileName) == NULL)
-	  || (pfCryptCATPutAttrInfo(hCat, pCatMember, L"OSAttr", 
+	  || (pfCryptCATPutAttrInfo(hCat, pCatMember, L"OSAttr",
 		  CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
 		  2*((DWORD)wcslen(wszOSAttr)+1), (BYTE*)wszOSAttr) == NULL) ) {
 		wdi_warn("unable to create attributes for file '%s': %s", szFileName, windows_error_str(0));
