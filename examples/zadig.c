@@ -1369,7 +1369,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_VSCROLL:
 		if (LOWORD(wParam) == 4) {
-			select_next_driver( ((HIWORD(wParam) <= last_scroll))?+1:-1);
+			select_next_driver( ((HIWORD(wParam) <= last_scroll))?-1:+1);
 			update_ui();
 			set_install_button();
 			last_scroll = HIWORD(wParam);

@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2010-2016 libusb (GNU LGPL)
+; Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie> (GNU LGPL)
 [Strings]
 DeviceName = "#DEVICE_DESCRIPTION#"
 VendorName = "#DEVICE_MANUFACTURER#"
@@ -9,9 +9,9 @@ DeviceGUID = "#DEVICE_INTERFACE_GUID#"
 
 [Version]
 Signature   = "$Windows NT$"
-Class       = "Universal Serial Bus devices"
+Class       = "USBDevice"
 ClassGuid   = {88bae032-5a81-49f0-bc3d-a4ff138216d6}
-Provider    = "libusb.info"
+Provider    = "libwdi"
 CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, #DRIVER_VERSION#
 

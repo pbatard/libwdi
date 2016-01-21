@@ -706,7 +706,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	// Prepare algorithm structure for self-signed certificate
 	memset(&SignatureAlgorithm, 0, sizeof(SignatureAlgorithm));
-	SignatureAlgorithm.pszObjId = szOID_RSA_SHA1RSA;
+	SignatureAlgorithm.pszObjId = szOID_RSA_SHA256RSA;
 
 	// Create self-signed certificate
 	pCertContext = pfCertCreateSelfSignCertificate((ULONG_PTR)NULL,
@@ -892,7 +892,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 
 	// Prepare SIGNER_SIGNATURE_INFO struct
 	signerSignatureInfo.cbSize = sizeof(SIGNER_SIGNATURE_INFO);
-	signerSignatureInfo.algidHash = CALG_SHA1;
+	signerSignatureInfo.algidHash = CALG_SHA_256;
 	signerSignatureInfo.dwAttrChoice = SIGNER_NO_ATTR;
 	signerSignatureInfo.pAttrAuthcode = NULL;
 	signerSignatureInfo.psAuthenticated = &cryptAttributesArray;
@@ -1181,7 +1181,8 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	DWORD i;
 	LPWSTR wszCatPath = NULL;
 	LPWSTR wszHWID = NULL;
-	LPCWSTR wszOS = L"XPX86,XPX64,VistaX86,VistaX64,7X86,7X64";
+	// From the inf2cat /os parameter - doesn't seem to be used by the OS though...
+	LPCWSTR wszOS = L"XP_X86,XP_X64,Vista_X86,Vista_X64,7_X86,7_X64,8_X86,8_X64,8_ARM,10_X86,10_X64,10_ARM";
 	LPSTR * szLocalFileList;
 
 	PF_INIT_OR_OUT(CryptCATOpen, wintrust);

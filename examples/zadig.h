@@ -45,8 +45,8 @@
 #define LIBWDI_URL                  "http://libwdi.akeo.ie"
 #define LIBUSB_URL                  "http://windows.libusb.info"
 #define LIBUSB0_URL                 "http://sourceforge.net/apps/trac/libusb-win32/wiki"
-#define LIBUSBK_URL                 "http://code.google.com/p/usb-travis/"
-#define WINUSB_URL                  "http://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"
+#define LIBUSBK_URL                 "http://libusbk.sourceforge.net/UsbK3/index.html"
+#define WINUSB_URL                  "https://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"
 #define HELP_URL                    "https://github.com/pbatard/libwdi/wiki/Zadig"
 #define WCID_URL                    "https://github.com/pbatard/libwdi/wiki/WCID-Devices"
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.2.687"
+#define APP_VERSION                 "Zadig 2.2.688"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {

@@ -584,6 +584,7 @@ static __inline int process_error(DWORD r, char* path) {
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xE000022F ERROR_NO_CATALOG_FOR_OEM_INF => "reject unsigned driver" policy is enforced
 	// r = 0xE0000243 ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED => user doesn't trust the cert that signed the cat
+	// r = 0xE000024B ERROR_FILE_HASH_NOT_IN_CATALOG => can happen if the cat contains SHA-256 hashes, but its header says SHA-1
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
 	switch(r) {
 	case ERROR_NO_MORE_ITEMS:
@@ -597,6 +598,9 @@ static __inline int process_error(DWORD r, char* path) {
 		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
 		plog("the system can not find the file specified (%s)", path);
+		return WDI_ERROR_NOT_FOUND;
+	case ERROR_FILE_HASH_NOT_IN_CATALOG:
+		plog("unable to locate the file hashes in cat file");
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
 		plog("this process needs to be run with administrative privileges");
