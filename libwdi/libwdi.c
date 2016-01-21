@@ -1266,7 +1266,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 			MUTEX_RETURN(WDI_ERROR_ACCESS);
 		}
 		// Converting to UTF-16 is the only way to get devices using a
-		// non-english locale to display properly in device manager. UTF-8 will not do.
+		// non-English locale to display properly in device manager. UTF-8 will not do.
 		wdst = utf8_to_wchar(dst);
 		if (wdst == NULL) {
 			wdi_err("could not convert '%s' to UTF-16", dst);

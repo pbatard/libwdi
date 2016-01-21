@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2010-2014 libusb (GNU LGPL)
+; Copyright (c) 2010-2016 libusb (GNU LGPL)
 [Strings]
 DeviceName = "#DEVICE_DESCRIPTION#"
 VendorName = "#DEVICE_MANUFACTURER#"
@@ -23,7 +23,7 @@ HKR,,,0,"Universal Serial Bus devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
-%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTia64
+%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTarm
 
 [libusbDevice_WinUSB.NTx86]
 %DeviceName% = USB_Install, USB\%DeviceID%
@@ -31,7 +31,7 @@ HKR,,Icon,,-20
 [libusbDevice_WinUSB.NTamd64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbDevice_WinUSB.NTia64]
+[libusbDevice_WinUSB.NTarm]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
 [USB_Install]
@@ -82,13 +82,13 @@ CoInstallers_CopyFiles = 11
 1 = %SourceName%
 
 [SourceDisksFiles.x86]
-WinUSBCoInstaller2.dll  = 1,x86
+WinUSBCoInstaller2.dll = 1,x86
 WdfCoInstaller#WDF_VERSION#.dll = 1,x86
 
 [SourceDisksFiles.amd64]
-WinUSBCoInstaller2.dll  = 1,amd64
+WinUSBCoInstaller2.dll = 1,amd64
 WdfCoInstaller#WDF_VERSION#.dll = 1,amd64
 
-[SourceDisksFiles.ia64]
-WinUSBCoInstaller2.dll  = 1,ia64
-WdfCoInstaller#WDF_VERSION#.dll = 1,ia64
+[SourceDisksFiles.arm]
+WinUSBCoInstaller2.dll = 1,arm
+WdfCoInstaller#WDF_VERSION#.dll = 1,arm

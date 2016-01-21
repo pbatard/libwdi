@@ -1,113 +1,67 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; USB CDC serial port inf
 ; #INF_FILENAME#
+; Copyright (c) 2016 Pete Batard <pete@akeo.ie> (GNU LGPL)
+; Based on the USB CDC .inf sample file provided by James Stephanick
+; at https://community.freescale.com/message/493287#493287
+; With acknowledgement to Sensics, Inc. <http://sensics.com/osvr>,
+; for providing an original (yet no longer used) inf file.
 
-;
-; Authored by Sensics, Inc. <http://sensics.com/osvr>
-;
-; Copyright 2015 Sensics, Inc.
-;
-; Licensed under the Apache License, Version 2.0 (the "License");
-; you may not use this file except in compliance with the License.
-; You may obtain a copy of the License at
-;
-; 	http://www.apache.org/licenses/LICENSE-2.0
-;
-; Unless required by applicable law or agreed to in writing, software
-; distributed under the License is distributed on an "AS IS" BASIS,
-; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-; See the License for the specific language governing permissions and
-; limitations under the License.
+[Strings]
+DeviceName = "#DEVICE_DESCRIPTION#"
+VendorName = "#DEVICE_MANUFACTURER#"
+SourceName = "#DEVICE_DESCRIPTION# Install Disk"
+DeviceID   = "#DEVICE_HARDWARE_ID#"
+DeviceGUID = "#DEVICE_INTERFACE_GUID#"
+Service    = "USB COM Port"
 
 [Version]
 Signature   = "$Windows NT$"
 Class       = Ports
 ClassGuid   = {4D36E978-E325-11CE-BFC1-08002BE10318}
-Provider    = "Sensics, Inc."
+Provider    = "libwdi"
 CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, 1.0.0.0
 
-; Files do not differ between arches (using an in-box driver)
-; so only a single cat is needed.
-;CatalogFile.NTx86 = %filename%_x86.cat
-;CatalogFile.NTia64 = %filename%_ia64.cat
-;CatalogFile.NTamd64 = %filename%_amd64.cat
-;CatalogFile.NTarm = %filename%_arm.cat
-
-DriverPackageType = PlugAndPlay
-DriverPackageDisplayName = %PackageDisplayName%
-
 [Manufacturer]
-%Manufacturer% = UsbCDCMfg, NTx86, NTamd64, NTia64, NTarm
+%VendorName% = DeviceList,NTx86,NTamd64,NTarm
+
+[DeviceList.NTx86]
+%DeviceName% = UsbSer_Install, USB\%DeviceID%
+
+[DeviceList.NTamd64]
+%DeviceName% = UsbSer_Install, USB\%DeviceID%
+
+[DeviceList.NTarm]
+%DeviceName% = UsbSer_Install, USB\%DeviceID%
+
+[UsbSer_Install]
+; See https://support.microsoft.com/en-us/kb/837637
+include     = mdmcpq.inf
+CopyFiles   = FakeModemCopyFileSection ; defined in mdmcpq.inf
+AddReg      = UsbSer_Install.AddReg
+AddProperty = UsbSer_AddProperty
+
+[UsbSer_Install.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,usbser.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+[UsbSer_Install.Services]
+AddService = usbser,0x00000002,UsbSer_Service
+
+[UsbSer_Service]
+DisplayName   = %Service%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\usbser.sys
+
+[UsbSer_AddProperty]
+GenericDriverInstalled,,,,1
 
 [DestinationDirs]
-DefaultDestDir=12
+DefaultDestDir = 12
 
-;;;;;;;;;;;;;;;;;;;
-; "Models" sections
+[SourceDisksNames]
+1 = %SourceName%
 
-; This driver not needed on Windows 10 - in-box CDC driver/inf (usbser.inf) should work fine
-[UsbCDCMfg.NT.10]
-
-[UsbCDCMfg.NTx86.10]
-
-[UsbCDCMfg.NTia64.10]
-
-[UsbCDCMfg.NTamd64.10]
-
-[UsbCDCMfg.NTarm.10]
-
-; Windows 8.1 and below, all architectures
-[UsbCDCMfg.NT]
-%USBSER%=USBSER, USB\%DeviceID%
-
-[UsbCDCMfg.NTx86]
-%USBSER%=USBSER, USB\%DeviceID%
-
-[UsbCDCMfg.NTia64]
-%USBSER%=USBSER, USB\%DeviceID%
-
-[UsbCDCMfg.NTamd64]
-%USBSER%=USBSER, USB\%DeviceID%
-
-[UsbCDCMfg.NTarm]
-%USBSER%=USBSER, USB\%DeviceID%
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; "DDInstall" and related sections for CDC control port
-;
-; As recommended at https://support.microsoft.com/en-us/kb/837637
-; and https://msdn.microsoft.com/en-us/library/ff542605(v=vs.85).aspx
-;
-; Some additions required.
-[USBSER.NT]
-Include=mdmcpq.inf,msports.inf
-;Needs=SerialEnumerator.NT ; serenum - appears to not be needed
-CopyFiles=FakeModemCopyFileSection
-AddReg=ComPort.NT.AddReg ; for MsPorts.dll,SerialPortPropPageProvider
-
-[USBSER.NT.Services]
-Include=mdmcpq.inf
-AddService=usbser, %ServiceFlags%, LowerFilter_Service_Inst
-;Needs=SerialEnumerator.NT.Services ; serenum, add msports.inf to include
-
-[USBSER.NT.HW]
-Include=mdmcpq.inf
-;Needs=ComPort.NT.HW ; serenum, add msports.inf to include
-AddReg=LowerFilterAddReg
-
-;;;;;;;;;;;;;;;;;;;;;;;;;
-; Strings (and constants)
-
-[Strings]
-Manufacturer = "#DEVICE_MANUFACTURER#"
-USBSER       = "USB CDC Serial Device"
-SourceName   = "#DEVICE_DESCRIPTION# Install Disk"
-DeviceID     = "#DEVICE_HARDWARE_ID#"
-FILENAME     = "USBSER"
-
-; non-localizable
-; set as the default function driver for this device
-; (this is the difference from the MSDN sample that's required for just
-; a plain CDC serial port.)
-ServiceFlags = 0x00000002
+[SourceDisksFiles]
