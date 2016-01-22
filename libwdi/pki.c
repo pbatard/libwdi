@@ -39,10 +39,13 @@
 #include "libwdi.h"
 #include "logging.h"
 
-#define KEY_CONTAINER   L"libwdi key container"
-#define PF_ERR          wdi_err
+#define KEY_CONTAINER               L"libwdi key container"
+#define PF_ERR                      wdi_err
 #ifndef CERT_STORE_PROV_SYSTEM_A
-#define CERT_STORE_PROV_SYSTEM_A ((LPCSTR) 9)
+#define CERT_STORE_PROV_SYSTEM_A    ((LPCSTR) 9)
+#endif
+#ifndef szOID_RSA_SHA256RSA
+#define szOID_RSA_SHA256RSA         "1.2.840.113549.1.1.11"
 #endif
 
 /*

@@ -56,8 +56,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,5,688
- PRODUCTVERSION 1,2,5,688
+ FILEVERSION 1,2,5,689
+ PRODUCTVERSION 1,2,5,689
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -74,13 +74,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadic"
-            VALUE "FileVersion", "1.2.5.688"
+            VALUE "FileVersion", "1.2.5.689"
             VALUE "InternalName", "Zadic"
             VALUE "LegalCopyright", "© 2010-2014 Pete Batard (LGPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/lesser.html"
             VALUE "OriginalFilename", "zadic.exe"
             VALUE "ProductName", "Zadic"
-            VALUE "ProductVersion", "1.2.5.688"
+            VALUE "ProductVersion", "1.2.5.689"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
