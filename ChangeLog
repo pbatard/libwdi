@@ -1,6 +1,18 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.2.5 (2016.01.22)
+  Bugfixes:
+  - fix possible crash when deleting the self signing private key
+  - fix detection of modified file during embedding
+  Improvements:
+  - add USB Serial (CDC) driver installation (Courtesy of Sensics, Inc.)
+  - add Arm support provision for WinUSB inf (and remove Itanium support)
+  - use SHA-256 instead of SHA-1 where possible
+  - report an error when Windows Update is disabled
+  - update solution to Visual Studio 2015
+  - remove unmaintained inf-wizard sample
+
 o v1.2.4 (2014.11.30)
   Bugfixes
   - fix multiple potential NULL derefs
