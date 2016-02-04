@@ -248,8 +248,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,2,682,690
- PRODUCTVERSION 2,2,682,690
+ FILEVERSION 2,2,682,691
+ PRODUCTVERSION 2,2,682,691
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -266,13 +266,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig"
-            VALUE "FileVersion", "2.2.690"
+            VALUE "FileVersion", "2.2.691"
             VALUE "InternalName", "Zadig"
             VALUE "LegalCopyright", "© 2010-2016 Pete Batard (GPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/gpl.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
-            VALUE "ProductVersion", "2.2.690"
+            VALUE "ProductVersion", "2.2.691"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
