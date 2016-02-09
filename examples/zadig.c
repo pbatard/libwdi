@@ -1755,6 +1755,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int i, wait_for_mutex = 0;
 	BOOL r;
 
+	// Disable loading system DLLs from the current directory (DLL sideloading mitigation)
+	SetDllDirectoryA("");
+
 	// Retrieve the current application directory
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 

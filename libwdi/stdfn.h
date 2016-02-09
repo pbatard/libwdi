@@ -64,14 +64,14 @@ static __inline BOOL ReadRegistryStr(HKEY key_root, const char* key_name, char* 
 	if (key_name == NULL)
 		return FALSE;
 
-	for (i = safe_strlen(key_name); i>0; i--) {
+	for (i = strlen(key_name); i>0; i--) {
 		if (key_name[i] == '\\')
 			break;
 	}
 
 	if (i != 0) {
 		strcpy(long_key_name, "SOFTWARE\\");
-		safe_strcat(long_key_name, sizeof(long_key_name), key_name);
+		strncat(long_key_name, key_name, sizeof(long_key_name));
 		long_key_name[sizeof("SOFTWARE\\") + i - 1] = 0;
 		i++;
 		if (RegOpenKeyExA(key_root, long_key_name, 0, KEY_READ, &hApp) != ERROR_SUCCESS) {

@@ -1,7 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Networking functionality (web file download, check for update, etc.)
- * Copyright © 2012-2014 Pete Batard <pete@akeo.ie>
+ * Copyright © 2012-2016 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <inttypes.h>
 
 #include "msapi_utf8.h"
+#include "stdfn.h"
 #include "zadig.h"
 #include "zadig_registry.h"
 #include "zadig_resource.h"
@@ -286,8 +287,9 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		dprintf("Network is unavailable: %s\n", WinInetErrorString());
 		goto out;
 	}
-	_snprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d.%d",
-		application_version[0], application_version[1], application_version[2], application_version[3]);
+	safe_sprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
+		application_version[0], application_version[1], application_version[2],
+		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL) {
 		dprintf("Could not open internet session: %s\n", WinInetErrorString());
@@ -472,8 +474,9 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		goto out;
 	hostname[sizeof(hostname)-1] = 0;
 
-	safe_sprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d.%d",
-		application_version[0], application_version[1], application_version[2], application_version[3]);
+	safe_sprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
+		application_version[0], application_version[1], application_version[2],
+		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL)
 		goto out;
@@ -518,7 +521,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 			dwSize = sizeof(dwStatus);
 			dwStatus = 404;
 			HttpQueryInfoA(hRequest, HTTP_QUERY_STATUS_CODE|HTTP_QUERY_FLAG_NUMBER, (LPVOID)&dwStatus, &dwSize, NULL);
-			if (dwStatus == 200) 
+			if (dwStatus == 200)
 				break;
 			InternetCloseHandle(hRequest);
 			hRequest = NULL;
@@ -553,7 +556,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		if (!force_update_check) {
 			if ((local_time > server_time + 600) || (local_time < server_time - 600)) {
 				dprintf("IMPORTANT: Your local clock is more than 10 minutes in the %s. Unless you fix this, "
-					APPLICATION_NAME " may not be able to check for updates...", 
+					APPLICATION_NAME " may not be able to check for updates...",
 					(local_time > server_time + 600)?"future":"past");
 			}
 		}
@@ -576,7 +579,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		parse_update(buf, dwTotalSize+1);
 
 		vuprintf("UPDATE DATA:\n");
-		vuprintf("  version: %d.%d.%d.%d (%s)\n", update.version[0], update.version[1], 
+		vuprintf("  version: %d.%d.%d.%d (%s)\n", update.version[0], update.version[1],
 			update.version[2], update.version[3], channel[k]);
 		vuprintf("  platform_min: %d.%d\n", update.platform_min[0], update.platform_min[1]);
 		vuprintf("  url: %s\n", update.download_url);
