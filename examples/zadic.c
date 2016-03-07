@@ -64,8 +64,7 @@ int __cdecl main(int argc, char *argv[])
 
 	static int prompt_flag = 1;
 	static unsigned char iface = 0;
-	static int vid = 0;
-	static unsigned short pid = 0;
+	static unsigned short vid = 0, pid = 0;
 	static int verbose_flag = 3;
 	static char *desc = NULL;
 	static int use_supplied_inf_flag = 0;

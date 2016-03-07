@@ -1756,7 +1756,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	BOOL r;
 
 	// Disable loading system DLLs from the current directory (DLL sideloading mitigation)
+#ifndef DDKBUILD	// WDK doesn't know about that one
 	SetDllDirectoryA("");
+#endif
 
 	// Retrieve the current application directory
 	GetCurrentDirectoryU(MAX_PATH, app_dir);

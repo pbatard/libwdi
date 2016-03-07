@@ -26,6 +26,11 @@
 
 #include <windows.h>
 #include <setupapi.h>
+// CALG_SHA_256 requires XP SP3
+#if defined(NTDDI_VERSION) && (NTDDI_VERSION < NTDDI_WINXPSP3)
+#undef NTDDI_VERSION
+#define NTDDI_VERSION NTDDI_WINXPSP3
+#endif
 #include <wincrypt.h>
 #include <stdio.h>
 #include <conio.h>
