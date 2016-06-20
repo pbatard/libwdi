@@ -683,7 +683,7 @@ INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		if (reg_commcheck)
 			ShowWindow(GetDlgItem(hDlg, IDC_ABOUT_UPDATES), SW_SHOW);
 		safe_sprintf(about_blurb, sizeof(about_blurb), about_blurb_format,
-			application_version[0], application_version[1], application_version[2], application_version[3]);
+			application_version[0], application_version[1], application_version[2]);
 		for (i=0; i<ARRAYSIZE(hEdit); i++) {
 			hEdit[i] = GetDlgItem(hDlg, edit_id[i]);
 			SendMessage(hEdit[i], EM_AUTOURLDETECT, 1, 0);

@@ -19,7 +19,7 @@
 const char* about_blurb_format =
 "{\\rtf1\\ansi\n"
 "{\\b\\fs20Zadig - The Automated Driver Installer}\\line\n"
-"\\fs18Version %d.%d.%d (Build %d)\\line\n"
+"\\fs18Version %d.%d (Build %d)\\line\n"
 "\\line\n"
 "Copyright © 2010-2014 Pete Batard / Akeo\\line\n"
 APPLICATION_URL "\\line\n"
