@@ -1,6 +1,9 @@
 libwdi: A Windows Driver Installation library for USB devices
 =============================================================
 
+[![Build status](https://ci.appveyor.com/api/projects/status/j85bn7r8sds2coda?svg=true)](https://ci.appveyor.com/project/haata/libwdi)
+
+
 Main features
 -------------
 

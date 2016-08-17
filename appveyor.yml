@@ -1,0 +1,59 @@
+# appveyor file for libwdi
+
+# General Build Configuration
+version: "{build}"
+
+os: Visual Studio 2015
+
+init:
+  - git config --global core.autocrlf input
+
+# Build Setup
+build:
+  project: libwdi.sln
+  parallel: true
+
+
+# Build Matrix
+platform:
+  - Win32
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+
+# Build Dependencies
+install:
+  - curl -o libusb-win32-bin-1.2.6.0.zip -L "http://downloads.sourceforge.net/project/libusb-win32/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Flibusb-win32%2F&ts=1471420545&use_mirror=pilotfiber"
+  - curl -o libusbK-3.0.7.0-bin.7z -L "http://downloads.sourceforge.net/project/libusbk/libusbK-release/3.0.7.0/libusbK-3.0.7.0-bin.7z?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Flibusbk%2Ffiles%2FlibusbK-release%2F3.0.7.0%2F&ts=1471420694&use_mirror=pilotfiber"
+  - 7z x libusb-win32-bin-1.2.6.0.zip
+  - 7z x libusbK-3.0.7.0-bin.7z
+  - dir
+
+
+# Build Steps
+build_script:
+  - msbuild "libwdi.sln" /m /p:BuildMacros="LIBUSB0_DIR=\"c:/projects/libwdi/libusb-win32-bin-1.2.6.0\";LIBUSBK_DIR=\"c:/projects/libwdi/libusbK-3.0.7.0-bin/bin\"" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+
+# Package Artifacts
+artifacts:
+  - path: '$(platform)/$(configuration)/examples/*.exe'
+  - path: $(platform)/$(configuration)/dll/libwdi.dll
+
+
+# Build Artifact Push (tagged releases only)
+deploy:
+  # GitHub Releases
+  - provider: GitHub
+    artifact: /.*\.exe/
+    draft: false
+    prerelease: false
+    # Conditions for uploading release
+    on:
+      branch: master
+      appveyor_repo_tag: true
+      configuration: Release
+      platform: Win32
