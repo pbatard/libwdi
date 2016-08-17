@@ -1,6 +1,10 @@
 libwdi: A Windows Driver Installation library for USB devices
 =============================================================
 
+[![Build status](https://ci.appveyor.com/api/projects/status/p9q869jayrnbfkkt?svg=true)](https://ci.appveyor.com/project/pbatard/libwdi)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/2174/badge.svg)](https://scan.coverity.com/projects/pbatard-libwdi)
+[![Licence](https://img.shields.io/badge/license-LGPLv3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
+
 Main features
 -------------
 
