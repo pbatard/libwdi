@@ -13,7 +13,7 @@ echo Building Zadig v$zadig_version...
 
 # Build Zadig for XP (KMDF v1.09)
 git clean -fdx
-./autogen.sh --disable-shared --disable-debug --with-wdfver=1009
+./autogen.sh --disable-shared --with-wdfver=1009
 
 cd libwdi
 make
@@ -29,7 +29,7 @@ cd ..
 
 # Build Zadig for Vista and later (KMDF v1.11)
 git clean -fdx
-./autogen.sh --disable-shared --disable-debug --with-wdfver=1011
+./autogen.sh --disable-shared --with-wdfver=1011
 
 cd libwdi
 make
