@@ -49,3 +49,7 @@ install:
 build_script:
   - if [%COMPILER%]==[MSVC15] msbuild libwdi.sln /m /p:Configuration=%CONFIGURATION%,Platform=%PLATFORM%,BuildMacros="LIBUSB0_DIR=\"c:/projects/libwdi/libusb-win32-bin-1.2.6.0\";LIBUSBK_DIR=\"c:/projects/libwdi/libusbK-3.0.7.0-bin/bin\"" /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
   - if [%COMPILER%]==[MinGW] C:\msys64\usr\bin\bash -lc "export PATH=/mingw%BITS%/bin:$PATH; cd /c/projects/libwdi; ./bootstrap.sh; ./configure --build=%PLATFORM%-w64-mingw32 --host=%PLATFORM%-w64-mingw32 --enable-toggable-debug --enable-examples-build --disable-debug --disable-shared %EXTRA_OPTS% --with-ddkdir=\"C:/Program Files (x86)/Windows Kits/10\" --with-wdfver=1011 --with-libusb0=\"C:/Projects/libwdi/libusb-win32-bin-1.2.6.0\" --with-libusbk=\"C:/Projects/libwdi/libusbK-3.0.7.0-bin/bin\"; make -j4"
+
+artifacts:
+  - path: examples\zadig.exe
+  - path: examples\wdi-simple.exe
