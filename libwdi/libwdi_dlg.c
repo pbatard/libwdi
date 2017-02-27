@@ -56,7 +56,7 @@ static const char* progress_message[] = {
 	"Microsoft offers no means of checking progress...",
 	"...so we can't say how long it'll take...",			// 2 mins
 	"Please continue to be patient...",
-	"There's a 5 minutes timeout enventually...",
+	"There's a 5 minutes timeout eventually...",
 	"...so if there's a problem, the process will abort.",
 	"I've really seen an installation take 5 minutes...",	// 3 mins
 	"...on a Vista 64 machine with a very large disk.",
