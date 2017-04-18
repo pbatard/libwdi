@@ -1,6 +1,12 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.3.0 (2017.04.18)
+  Bugfixes:
+  - fix issues with extended characters in current user directory
+  Improvements:
+  - drop Windows XP and Vista support
+
 o v1.2.5 (2016.01.22)
   Bugfixes:
   - fix possible crash when deleting the self signing private key
