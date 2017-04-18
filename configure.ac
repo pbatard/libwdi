@@ -25,7 +25,7 @@ if test "x$DDK_DIR" != "x"; then
 fi
 
 AC_ARG_WITH([wdfver],
-	[AS_HELP_STRING([--with-wdfver], [WDF/KDMF version to use - either 1011 or 1009. Use 1009 if you need XP compatibility])],
+	[AS_HELP_STRING([--with-wdfver], [WDF/KDMF version to use (default 1011)])],
 	[WDF_VER=$withval],
 	[WDF_VER=1011])
 AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF/KMDF coinstaller version])
@@ -72,7 +72,7 @@ case $host in
 	AC_MSG_ERROR([unsupported development environment])
 esac
 
-AM_CFLAGS="${AM_CFLAGS} -DWINVER=0x500 -D_WIN32_IE=0x500"
+AM_CFLAGS="${AM_CFLAGS} -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0700"
 AM_LDFLAGS="${AM_LDFLAGS} -no-undefined -avoid-version"
 AM_CONDITIONAL([CREATE_IMPORT_LIB], [test "x$create_import_lib" = "xyes"])
 

@@ -70,7 +70,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_ZADIG               ICON                    "zadig.ico"
-IDI_SPLIT               ICON                    "split.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -135,8 +134,7 @@ MENU IDR_MENU1
 FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
     GROUPBOX        "",IDC_STATIC,6,2,369,35
-    PUSHBUTTON      "Install Driver",IDC_INSTALLXP,162,66,94,29,BS_MULTILINE | NOT WS_VISIBLE
-    CONTROL         "Install Driver",IDC_INSTALLVISTA,"Button",BS_SPLITBUTTON | BS_MULTILINE | WS_TABSTOP,162,66,94,29
+    CONTROL         "Install Driver",IDC_INSTALL,"Button",BS_SPLITBUTTON | BS_MULTILINE | WS_TABSTOP,162,66,94,29
     PUSHBUTTON      "",IDC_BROWSE,256,66,15,29
     COMBOBOX        IDC_DEVICELIST,12,15,332,88,CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
     EDITTEXT        IDC_DEVICEEDIT,12,15,332,13,NOT WS_VISIBLE | NOT WS_TABSTOP
@@ -248,8 +246,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,2,682,699
- PRODUCTVERSION 2,2,682,699
+ FILEVERSION 2,2,682,700
+ PRODUCTVERSION 2,2,682,700
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -266,13 +264,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig"
-            VALUE "FileVersion", "2.2.699"
+            VALUE "FileVersion", "2.2.700"
             VALUE "InternalName", "Zadig"
             VALUE "LegalCopyright", "© 2010-2016 Pete Batard (GPL v3)"
             VALUE "LegalTrademarks", "http://www.gnu.org/copyleft/gpl.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
-            VALUE "ProductVersion", "2.2.699"
+            VALUE "ProductVersion", "2.2.700"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END

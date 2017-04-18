@@ -1,7 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Networking functionality (web file download, check for update, etc.)
- * Copyright © 2012-2016 Pete Batard <pete@akeo.ie>
+ * Copyright © 2012-2017 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -228,7 +228,7 @@ const char* WinInetErrorString(void)
 		InternetGetLastResponseInfoA(&error_code, error_string, &size);
 		return error_string;
 	default:
-		safe_sprintf(error_string, sizeof(error_string), "Unknown internet error 0x%08X", error_code);
+		safe_sprintf(error_string, sizeof(error_string), "Unknown internet error 0x%08lX", error_code);
 		return error_string;
 	}
 }
@@ -494,7 +494,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		// and then remove each each of the <os_> components until we find our match. For instance, we may first
 		// look for <app_name>_win_x64_6.2.ver (Win8 x64) but only get a match for <app_name>_win_x64_6.ver (Vista x64 or later)
 		// This allows sunsetting OS versions (eg XP) or providing different downloads for different archs/groups.
-		safe_sprintf(urlpath, sizeof(urlpath), "%s%s%s_%s_%d.%d.ver", APPLICATION_NAME, (k==0)?"":"_",
+		safe_sprintf(urlpath, sizeof(urlpath), "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k==0)?"":"_",
 			(k==0)?"":channel[k], archname[is_x64()?1:0], os_version.dwMajorVersion, os_version.dwMinorVersion);
 		vuprintf("Base update check: %s\n", urlpath);
 		for (i=0, j=(int)safe_strlen(urlpath)-5; (j>0)&&(i<ARRAYSIZE(verpos)); j--) {

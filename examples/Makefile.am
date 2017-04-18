@@ -21,7 +21,7 @@ zadig_rc.o: zadig.rc zadig_resource.h
 zadig_SOURCES = zadig.c zadig_net.c zadig_parser.c zadig_stdlg.c profile.c
 zadig_CFLAGS = -I../libwdi $(ARCH_CFLAGS) $(AM_CFLAGS)
 zadig_LDFLAGS = -mwindows $(AM_LDFLAGS) -static
-zadig_LDADD = zadig_rc.o -L../libwdi/.libs -lwdi -lwininet
+zadig_LDADD = zadig_rc.o -L../libwdi/.libs -lwdi -lwininet -luuid
 
 wdi-simple_rc.o: wdi-simple.rc
 	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@

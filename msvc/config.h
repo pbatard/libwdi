@@ -24,7 +24,7 @@
 #define DDK_DIR "C:/Program Files (x86)/Windows Kits/10"
 #endif
 
-/* DDK WDF coinstaller version */
+/* WDK WDF coinstaller version */
 #define WDF_VER 1011
 
 /* CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf") */

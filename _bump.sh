@@ -14,8 +14,8 @@ if [ ! -n "$1" ]; then
 else
   TAG=$1
 fi
-if [ ! ${TAG:0:1} = 'w' ]; then
-  echo Tag "$TAG" does not start with 'w' - aborting
+if [ ! ${TAG:0:1} = 'b' ]; then
+  echo Tag "$TAG" does not start with 'b' - aborting
   exit 1
 fi
 TAGVER=${TAG:1}
@@ -62,4 +62,4 @@ cd libwdi
 cd ..
 
 git commit -a -m "[internal] bumped internal version" -e
-git tag "w$TAGVER"
+git tag "b$TAGVER"

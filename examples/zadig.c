@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 
 /*
  * WARNING: if any part of the resulting executable name contains "setup" or "instal(l)"
- * it will require UAC elevation on Vista and later, and, when run from a MSYS shell,
- * will produce a "sh: Bad file number" message.
+ * it will require UAC elevation, and, when run from a MSYS shell, will produce a
+ * "sh: Bad file number" message.
  * See the paragraph on Automatic Elevation at http://helpware.net/VistaCompat.htm
  */
 
@@ -92,7 +92,6 @@ char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
 int default_driver_type = WDI_WINUSB;
 int log_level = WDI_LOG_LEVEL_DEBUG;
-int IDC_INSTALL = IDC_INSTALLVISTA;
 int nb_devices = -1;
 int dialog_showing = 0;
 // Application states
@@ -821,7 +820,6 @@ void init_dialog(HWND hDlg)
 {
 	int i, err;
 	HINSTANCE hDllInst;
-	HICON hIcon;
 	HFONT hf;
 	HDC hdc;
 	long lfHeight;
@@ -974,20 +972,6 @@ void init_dialog(HWND hDlg)
 	SetRect(&bi.margin, 0, 1, 0, 0);
 	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_VID_REPORT), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
-
-	// Setup the Install split button
-	if (nWindowsVersion < WINDOWS_VISTA) {
-		IDC_INSTALL = IDC_INSTALLXP;
-		ShowWindow(GetDlgItem(hMain, IDC_INSTALLXP), TRUE);
-		ShowWindow(GetDlgItem(hMain, IDC_INSTALLVISTA), FALSE);
-		// Load a bitmap to emulate split on XP
-		hIcon = (HICON)LoadImage(main_instance, MAKEINTRESOURCE(IDI_SPLIT), IMAGE_ICON, 16, 40, LR_DEFAULTCOLOR);
-		bi.himl = pImageList_Create(16, 40, ILC_COLOR32 | ILC_MASK, 1, 0);
-		pImageList_ReplaceIcon(bi.himl, -1, hIcon);
-		SetRect(&bi.margin, 0, 1, 0, 0);
-		bi.uAlign = 1;	// BUTTON_IMAGELIST_ALIGN_RIGHT
-		SendMessage(GetDlgItem(hDlg, IDC_INSTALLXP), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
-	}
 
 	// The application always starts in advanced mode
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
@@ -1221,7 +1205,6 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	PROCESS_INFORMATION pi;
 	NMBCDROPDOWN* pDropDown;
 	POINT pt;
-	RECT rect;
 	DRAWITEMSTRUCT* di;
 
 	// The following local variables are used to change the visual aspect of the fields
@@ -1390,7 +1373,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	// Set background colour of read only fields as well as the colour of the text arrow
 	case WM_CTLCOLORSTATIC:
 		hCtrl = (HWND)lParam;
-		// Must be transparent for XP and non Aero Vista/7
+		// Must be transparent for non Aero Windows 7
 		SetBkMode((HDC)wParam, TRANSPARENT);
 		if ( (hCtrl == hVid) || (hCtrl == hPid) || (hCtrl == hMi) || (hCtrl == hWcid) ) {
 			return (INT_PTR)grey_brush;
@@ -1448,10 +1431,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		break;
 
-	// Display the Install button split menu (Vista or later)
+	// Display the Install button split menu
 	case WM_NOTIFY:
 		switch (LOWORD(wParam)) {
-		case IDC_INSTALLVISTA:
+		case IDC_INSTALL:
 			switch (((LPNMHDR)lParam)->code) {
 			case BCN_DROPDOWN:
 				pDropDown = (LPNMBCDROPDOWN)lParam;
@@ -1586,17 +1569,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		// Install button
-		case IDC_INSTALLXP:
-			// if we're on the split part, display the menu
-			GetCursorPos(&pt);
-			ScreenToClient(GetDlgItem(hMain, IDC_INSTALLXP), &pt);
-			GetWindowRect(GetDlgItem(hMain, IDC_INSTALLXP), &rect);
-			if (pt.x > (rect.right - rect.left - 16)) {
-				TrackPopupMenuEx(hMenuSplit, TPM_LEFTALIGN | TPM_TOPALIGN, rect.left, rect.bottom, hMain, NULL);
-				break;
-			}
-			// else, fall through
-		case IDC_INSTALLVISTA:
+		case IDC_INSTALL:
 			r = install_driver();
 			if (id_options.install_filter_driver) {
 				dsprintf("Driver Installation: %s", (r==WDI_SUCCESS)?"SUCCESS":"FAILED");
@@ -1784,12 +1757,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Set the Windows version
 	GetWindowsVersion();
 
-	// Alert users if they are running the non XP version on XP
-	if ((nWindowsVersion < WINDOWS_VISTA) && (wdi_get_wdf_version() >= 1011)) {
-		MessageBoxA(NULL, "This version of Zadig can only be run on Windows Vista or later, as it "
-			"installs drivers using WDF framework 1.11, which is not compatible with older versions "
-			"of Windows.\nPlease use the XP version of Zadig, from " APPLICATION_URL ", if you want "
-			"to install USB drivers on this platform.", "Incompatible version", MB_ICONSTOP);
+	// Alert users if they are running versions older than Windows 7
+	if (nWindowsVersion < WINDOWS_7) {
+		MessageBoxA(NULL, "This version of Zadig can only be run on Windows 7 or later",
+			"Incompatible version", MB_ICONSTOP);
 		CloseHandle(mutex);
 		return 0;
 	}

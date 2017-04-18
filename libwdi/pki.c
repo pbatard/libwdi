@@ -1,6 +1,6 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011-2016 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2011-2017 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
@@ -1190,7 +1190,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	LPWSTR wszCatPath = NULL;
 	LPWSTR wszHWID = NULL;
 	// From the inf2cat /os parameter - doesn't seem to be used by the OS though...
-	LPCWSTR wszOS = L"XP_X86,XP_X64,Vista_X86,Vista_X64,7_X86,7_X64,8_X86,8_X64,8_ARM,10_X86,10_X64,10_ARM";
+	LPCWSTR wszOS = L"7_X86,7_X64,8_X86,8_X64,8_ARM,10_X86,10_X64,10_ARM";
 	LPSTR * szLocalFileList;
 
 	PF_INIT_OR_OUT(CryptCATOpen, wintrust);

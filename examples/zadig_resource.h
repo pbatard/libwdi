@@ -18,8 +18,7 @@
 #define IDC_STATUS                      1006
 #define IDC_EDITNAME                    1007
 #define IDC_DRIVER                      1008
-#define IDC_INSTALLXP                   1009
-#define IDC_INSTALLVISTA                1010
+#define IDC_INSTALL                     1009
 #define IDC_TARGET                      1011
 #define IDC_VID_REPORT                  1012
 #define IDC_GROUPLOG                    1013

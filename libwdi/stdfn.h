@@ -1,6 +1,6 @@
 /*
 * Library for USB automated driver installation
-* Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -32,12 +32,9 @@
 enum WindowsVersion {
 	WINDOWS_UNDEFINED = -1,
 	WINDOWS_UNSUPPORTED = 0,
-	WINDOWS_XP = 0x51,
-	WINDOWS_2003 = 0x52,	// Also XP x64
-	WINDOWS_VISTA = 0x60,
 	WINDOWS_7 = 0x61,
 	WINDOWS_8 = 0x62,
-	WINDOWS_8_1_OR_LATER = 0x63,
+	WINDOWS_8_1 = 0x63,
 	WINDOWS_10_PREVIEW1 = 0x64,
 	WINDOWS_10 = 0xA0,
 	WINDOWS_MAX

@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -59,41 +59,30 @@ static const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "l
 static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb0.inf.in", "libusbk.inf.in", "usbser.inf.in"};
 static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.cat.in", "libusbk.cat.in", "usbser.cat.in"};
 static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "MS_COMP_USBSER"};
-// for 64 bit platforms detection
-static BOOL (__stdcall *pIsWow64Process)(HANDLE, PBOOL) = NULL;
 int nWindowsVersion = WINDOWS_UNDEFINED;
 char WindowsVersionStr[128] = "Windows ";
 
-// The following are only available on Vista and later
-PF_TYPE_DECL(WINAPI, BOOL, IsUserAnAdmin, (void));
-PF_TYPE_DECL(WINAPI, BOOL, SetupDiGetDevicePropertyW, (HDEVINFO, PSP_DEVINFO_DATA, const DEVPROPKEY*, ULONG*, PBYTE, DWORD, PDWORD, DWORD));
-// Version
-PF_TYPE_DECL(WINAPI, BOOL, VerQueryValueA, (LPCVOID, LPCSTR, LPVOID, PUINT));
-PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoA, (LPCSTR, DWORD, DWORD, LPVOID));
-PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoSizeA, (LPCSTR, LPDWORD));
-// Cfgmgr32 & SetupAPI interfaces
+// Version (avoids linking against version.lib)
+PF_TYPE_DECL(WINAPI, BOOL, VerQueryValueW, (LPCVOID, LPWSTR, LPVOID, PUINT));
+PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoW, (LPWSTR, DWORD, DWORD, LPVOID));
+PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoSizeW, (LPWSTR, LPDWORD));
+// Cfgmgr32 interfaces
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Parent, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Child, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Sibling, (PDEVINST, DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
-// This call is only available on XP and later
 PF_TYPE_DECL(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 
 // Detect Windows version
-#define GET_WINDOWS_VERSION do{ if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
+#define GET_WINDOWS_VERSION do { if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
 
 BOOL is_x64(void)
 {
 	BOOL ret = FALSE;
-	PF_TYPE_DECL(WINAPI, BOOL, IsWow64Process, (HANDLE, PBOOL));
 	// Detect if we're running a 32 or 64 bit system
 	if (sizeof(uintptr_t) < 8) {
-		PF_INIT(IsWow64Process, Kernel32);
-		if (pfIsWow64Process != NULL) {
-			(*pfIsWow64Process)(GetCurrentProcess(), &ret);
-		}
-	}
-	else {
+		IsWow64Process(GetCurrentProcess(), &ret);
+	} else {
 		ret = TRUE;
 	}
 	return ret;
@@ -159,12 +148,6 @@ void GetWindowsVersion(void)
 			ws = (vi.wProductType <= VER_NT_WORKSTATION);
 			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
 			switch (nWindowsVersion) {
-			case 0x51: w = "XP";
-				break;
-			case 0x52: w = (!GetSystemMetrics(89) ? "2003" : "2003_R2");
-				break;
-			case 0x60: w = (ws ? "Vista" : "2008");
-				break;
 			case 0x61: w = (ws ? "7" : "2008_R2");
 				break;
 			case 0x62: w = (ws ? "8" : "2012");
@@ -177,7 +160,7 @@ void GetWindowsVersion(void)
 			case 0xA0: w = (ws ? "10" : "Server 10");
 				break;
 			default:
-				if (nWindowsVersion < 0x51)
+				if (nWindowsVersion < 0x61)
 					nWindowsVersion = WINDOWS_UNSUPPORTED;
 				else
 					w = "11 or later";
@@ -383,9 +366,9 @@ static int check_dir(const char* path, BOOL create)
 
 /*
  * fopen equivalent, that uses CreateFile with security attributes
- * to create file as the user of the application
+ * to create file as the user of the application. Supports UTF-8.
  */
-static FILE *fcreate(const char *filename, const char *mode)
+static FILE *fopen_as_userU(const char *filename, const char *mode)
 {
 	HANDLE handle;
 	size_t i;
@@ -447,6 +430,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	int res, r;
 	char* tmpdir;
 	char filename[MAX_PATH];
+	wchar_t *wfilename;
 	int64_t t;
 	DWORD version_size;
 	void* version_buf;
@@ -464,10 +448,10 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	}
 
 	// Avoid the need for end user apps to link against version.lib
-	PF_INIT(VerQueryValueA, version.dll);
-	PF_INIT(GetFileVersionInfoA, version.dll);
-	PF_INIT(GetFileVersionInfoSizeA, version.dll);
-	if ((pfVerQueryValueA == NULL) || (pfGetFileVersionInfoA == NULL) || (pfGetFileVersionInfoSizeA == NULL)) {
+	PF_INIT(VerQueryValueW, version.dll);
+	PF_INIT(GetFileVersionInfoW, version.dll);
+	PF_INIT(GetFileVersionInfoSizeW, version.dll);
+	if ((pfVerQueryValueW == NULL) || (pfGetFileVersionInfoW == NULL) || (pfGetFileVersionInfoSizeW == NULL)) {
 		wdi_warn("unable to access version.dll");
 		return WDI_ERROR_RESOURCE;
 	}
@@ -498,7 +482,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	if (resource[res].name != NULL)	// Stupid Clang!
 		safe_strcat(filename, MAX_PATH, resource[res].name);
 
-	fd = fcreate(filename, "w");
+	fd = fopen_as_userU(filename, "w");
 	if (fd == NULL) {
 		wdi_warn("failed to create file '%s' (%s)", filename, windows_error_str(0));
 		return WDI_ERROR_RESOURCE;
@@ -508,12 +492,13 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	fclose(fd);
 
 	// Read the version
-	version_size = pfGetFileVersionInfoSizeA(filename, NULL);
+	wfilename = utf8_to_wchar(filename);
+	version_size = pfGetFileVersionInfoSizeW(wfilename, NULL);
 	version_buf = malloc(version_size);
 	r = WDI_SUCCESS;
 	if ( (version_buf != NULL)
-	  && (pfGetFileVersionInfoA(filename, 0, version_size, version_buf))
-	  && (pfVerQueryValueA(version_buf, "\\", (void*)&file_info, &junk)) ) {
+	  && (pfGetFileVersionInfoW(wfilename, 0, version_size, version_buf))
+	  && (pfVerQueryValueW(version_buf, L"\\", (void*)&file_info, &junk)) ) {
 		// Fill the creation date of VS_FIXEDFILEINFO with the one from embedded.h
 		t = unixtime_to_msfiletime((time_t)resource[res].creation_time);
 		file_info->dwFileDateLS = (DWORD)t;
@@ -524,6 +509,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 		wdi_warn("unable to allocate buffer for version info");
 		r = WDI_ERROR_RESOURCE;
 	}
+	safe_free(wfilename);
 	safe_free(version_buf);
 	DeleteFileU(filename);
 
@@ -547,12 +533,6 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 	switch (driver_type) {
 	case WDI_WINUSB:
 #if defined(DDK_DIR)
-		// WinUSB is not supported on Win2k/2k3
-		GET_WINDOWS_VERSION;
-		if ( (nWindowsVersion < WINDOWS_XP)
-		  || (nWindowsVersion == WINDOWS_2003) ) {
-			return FALSE;
-		}
 		return TRUE;
 #else
 		return FALSE;
@@ -733,6 +713,13 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	BOOL is_hub, is_composite_parent, has_vid;
 
 	MUTEX_START;
+
+	GET_WINDOWS_VERSION;
+	if (nWindowsVersion < WINDOWS_7) {
+		wdi_err("this version of Windows is no longer supported");
+		MUTEX_RETURN(WDI_ERROR_NOT_SUPPORTED);
+	}
+
 	*list = NULL;
 
 	if (!init_dlls())
@@ -864,31 +851,16 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 		}
 		device_info->device_id = safe_strdup(strbuf);
 
-		GET_WINDOWS_VERSION;
-		if (nWindowsVersion < WINDOWS_7) {
-			// On Vista and earlier, we can use SPDRP_DEVICEDESC
+		// The information we want ("Bus reported device description") is accessed
+		// through DEVPKEY_Device_BusReportedDeviceDesc
+		if (!SetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
+			&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
+			// fallback to SPDRP_DEVICEDESC (USB hubs still use it)
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-				wdi_warn("could not read device description for %d: %s",
+				wdi_dbg("could not read device description for %d: %s",
 					i, windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
-			}
-		} else {
-			// On Windows 7, the information we want ("Bus reported device description") is
-			// accessed through DEVPKEY_Device_BusReportedDeviceDesc
-			PF_INIT(SetupDiGetDevicePropertyW, setupapi.dll);
-			if (pfSetupDiGetDevicePropertyW == NULL) {
-				wdi_warn("failed to locate SetupDiGetDevicePropertyW() in Setupapi.dll");
-				desc[0] = 0;
-			} else if (!pfSetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
-				&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
-				// fallback to SPDRP_DEVICEDESC (USB hubs still use it)
-				if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
-					&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
-					wdi_dbg("could not read device description for %d: %s",
-						i, windows_error_str(0));
-					safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
-				}
 			}
 		}
 
@@ -1020,7 +992,7 @@ static int extract_binaries(const char* path)
 			return WDI_ERROR_RESOURCE;
 		}
 
-		fd = fcreate(filename, "w");
+		fd = fopen_as_userU(filename, "w");
 		if (fd == NULL) {
 			wdi_err("failed to create file '%s' (%s)", filename, windows_error_str(0));
 			return WDI_ERROR_RESOURCE;
@@ -1077,6 +1049,12 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	FILETIME file_time, local_time;
 
 	MUTEX_START;
+
+	GET_WINDOWS_VERSION;
+	if (nWindowsVersion < WINDOWS_7) {
+		wdi_err("this version of Windows is no longer supported");
+		MUTEX_RETURN(WDI_ERROR_NOT_SUPPORTED);
+	}
 
 	if ((device_info == NULL) || (inf_name == NULL)) {
 		wdi_err("one of the required parameter is NULL");
@@ -1260,7 +1238,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	// Tokenize the file
 	if ((inf_file_size = tokenize_internal(inf_template[driver_type],
 		&dst, inf_entities, "#", "#", 0)) > 0) {
-		fd = fcreate(inf_path, "w");
+		fd = fopen_as_userU(inf_path, "w");
 		if (fd == NULL) {
 			wdi_err("failed to create file: %s", inf_path);
 			MUTEX_RETURN(WDI_ERROR_ACCESS);
@@ -1284,15 +1262,13 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 	wdi_info("successfully created '%s'", inf_path);
 
-	GET_WINDOWS_VERSION;
-	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (nWindowsVersion >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
-		// On Vista and later, try to create and self-sign the cat file to remove security prompts
+	if (IsUserAnAdmin()) {
+		// Try to create and self-sign the cat file to remove security prompts
 		if ((options != NULL) && (options->disable_cat)) {
 			wdi_info(".cat generation disabled by user");
 			MUTEX_RETURN(WDI_SUCCESS);
 		}
-		wdi_info("Vista or later detected - creating and self-signing a .cat file...");
+		wdi_info("Creating and self-signing a .cat file...");
 
 		// Tokenize the cat file (for WDF version)
 		if ((cat_file_size = tokenize_internal(cat_template[driver_type],
@@ -1335,7 +1311,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		safe_free(cat_in_copy);
 		safe_free(dst);
 	} else {
-		wdi_info("No .cat file generated (not running Vista or later, or missing elevated privileges)");
+		wdi_info("No .cat file generated (missing elevated privileges)");
 	}
 	MUTEX_RETURN(WDI_SUCCESS);
 }
@@ -1453,6 +1429,12 @@ static int install_driver_internal(void* arglist)
 
 	MUTEX_START;
 
+	GET_WINDOWS_VERSION;
+	if (nWindowsVersion < WINDOWS_7) {
+		wdi_err("this version of Windows is no longer supported");
+		MUTEX_RETURN(WDI_ERROR_NOT_SUPPORTED);
+	}
+
 	if (!init_dlls())
 		MUTEX_RETURN(WDI_ERROR_RESOURCE);
 
@@ -1489,11 +1471,7 @@ static int install_driver_internal(void* arglist)
 	if (sizeof(uintptr_t) < 8) {
 		// This application is not 64 bit, but it might be 32 bit
 		// running in WOW64
-		pIsWow64Process = (BOOL (__stdcall *)(HANDLE, PBOOL))
-			GetProcAddress(GetDLLHandle("kernel32.dll"), "IsWow64Process");
-		if (pIsWow64Process != NULL) {
-			(*pIsWow64Process)(GetCurrentProcess(), &is_x64);
-		}
+		IsWow64Process(GetCurrentProcess(), &is_x64);
 	} else {
 		is_x64 = TRUE;
 	}
@@ -1548,10 +1526,8 @@ static int install_driver_internal(void* arglist)
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
-	GET_WINDOWS_VERSION;
-	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (nWindowsVersion >= WINDOWS_VISTA) && (pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin()) )  {
-		// On Vista and later, we must take care of UAC with ShellExecuteEx + runas
+	if (IsUserAnAdmin()) {
+		// Take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = NULL;
@@ -1584,7 +1560,7 @@ static int install_driver_internal(void* arglist)
 
 		handle[1] = shExecInfo.hProcess;
 	} else {
-		// On XP and earlier, or if app is already elevated, simply use CreateProcess
+		// If app is already elevated, simply use CreateProcess()
 		memset(&si, 0, sizeof(si));
 		si.cb = sizeof(si);
 		if (filter_driver) {
@@ -1736,13 +1712,16 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 	BOOL disable_warning = FALSE;
 
 	GET_WINDOWS_VERSION;
+	if (nWindowsVersion < WINDOWS_7) {
+		wdi_err("this version of Windows is no longer supported");
+		return WDI_ERROR_NOT_SUPPORTED;
+	}
 
 	if (safe_strlen(cert_name) == 0) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
 
-	PF_INIT(IsUserAnAdmin, shell32.dll);
-	if ( (nWindowsVersion < WINDOWS_VISTA) || ((pfIsUserAnAdmin != NULL) && (pfIsUserAnAdmin())) ) {
+	if (IsUserAnAdmin()) {
 		for (i=0; i<nb_resources; i++) {
 			if (safe_strcmp(cert_name, resource[i].name) == 0) {
 				break;
@@ -1766,7 +1745,7 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 		return WDI_SUCCESS;
 	}
 
-	wdi_err("this call must be run with elevated privileges on Vista and later");
+	wdi_err("this call must be run with elevated privileges");
 	return WDI_ERROR_NEEDS_ADMIN;
 }
 

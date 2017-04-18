@@ -34,7 +34,6 @@
 #include "msapi_utf8.h"
 #include "zadig.h"
 
-static const char space[] = " \t";
 static const wchar_t wspace[] = L" \t";
 
 /*

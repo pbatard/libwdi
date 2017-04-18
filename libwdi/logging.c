@@ -1,7 +1,7 @@
 /*
  * libwdi logging functions
  * Copyright (c) Johannes Erdfelt, Daniel Drake et al.
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -127,7 +127,7 @@ static void pipe_wdi_log_v(enum wdi_log_level level,
 
 	write_to_pipe(buffer, size1+size2+1, level);
 	if (truncated)
-		write_to_pipe(truncation_notice, strlen(truncation_notice)+1, level);
+		write_to_pipe(truncation_notice, (DWORD)strlen(truncation_notice)+1, level);
 }
 
 static void console_wdi_log_v(enum wdi_log_level level,

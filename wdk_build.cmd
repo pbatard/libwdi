@@ -4,6 +4,8 @@ rem you can pass the following arguments (case insensitive):
 rem - "DLL" to build a DLL instead of a static library
 rem - "no_samples" to build the library only
 
+if not Test%DDK_TARGET_OS%==TestWin7 goto unsupported
+
 if Test%BUILD_ALT_DIR%==Test goto usage
 rem /M 2 for multiple cores
 set BUILD_CMD=build -bcwgZ -M2
@@ -126,7 +128,7 @@ cd ..
 
 del Makefile.hide >NUL 2>&1
 if EXIST Makefile ren Makefile Makefile.hide
-rem Work around MS's VC++ and DDK weird icompatibilities with regards to rc files
+rem Work around MS's VC++ and WDK weird icompatibilities with regards to rc files
 echo #include ^<windows.h^> > afxres.h
 echo #ifndef IDC_STATIC >> afxres.h
 echo #define IDC_STATIC -1 >> afxres.h
@@ -165,7 +167,7 @@ echo Build failed
 goto done
 
 :usage
-echo ddk_build must be run in a Windows Driver Kit build environment
+echo wdk_build must be run in a Windows Driver Kit build environment
 pause
 goto done
 
@@ -174,15 +176,10 @@ set BUILD_ALT_DIR=%ORG_BUILD_ALT_DIR%
 set _BUILDARCH=%ORG_BUILDARCH%
 set PATH=%ORG_PATH%
 set BUILD_DEFAULT_TARGETS=%ORG_BUILD_DEFAULT_TARGETS%
-
-if Test%DDK_TARGET_OS%==TestWinXP goto nowarn
-
-echo.
-echo.
-echo WARNING: You do not seem to use the Windows XP DDK build environment.
-echo Be mindful that using the Windows Vista or Windows 7 DDK build environments
-echo will result in library and applications that do NOT run on Windows XP.
-echo.
-
-:nowarn
 cd %PWD%
+goto out
+
+:unsupported
+echo Only Windows 7 or later is supported
+
+:out

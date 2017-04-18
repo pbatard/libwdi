@@ -1,7 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Standard Dialog Routines (Browse for folder, About, etc)
- * Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,15 +45,6 @@
 #include "zadig_registry.h"
 #include "msapi_utf8.h"
 #include "stdfn.h"
-
-// The following is only available on Vista and later
-#if (_WIN32_WINNT >= 0x0600)
-PF_TYPE_DECL(WINAPI, HRESULT, SHCreateItemFromParsingName, (PCWSTR, IBindCtx*, REFIID, void **));
-#endif
-PF_TYPE_DECL(WINAPI, LPITEMIDLIST, SHSimpleIDListFromPath, (PCWSTR pszPath));
-#define INIT_VISTA_SHELL32         PF_INIT(SHCreateItemFromParsingName, Shell32)
-#define INIT_XP_SHELL32            PF_INIT(SHSimpleIDListFromPath, Shell32)
-#define IS_VISTA_SHELL32_AVAILABLE (pfSHCreateItemFromParsingName != NULL)
 
 /*
  * Globals
@@ -146,7 +137,7 @@ static char err_string[256] = {0};
 
 	error_code = GetLastError();
 
-	safe_sprintf(err_string, sizeof(err_string), "[0x%08X] ", error_code);
+	safe_sprintf(err_string, sizeof(err_string), "[0x%08lX] ", error_code);
 
 	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS, NULL, HRESULT_CODE(error_code),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[strlen(err_string)],
@@ -155,9 +146,9 @@ static char err_string[256] = {0};
 		format_error = GetLastError();
 		if ((format_error) && (format_error != 0x13D))		// 0x13D, decode error, is returned for unknown codes
 			safe_sprintf(err_string, sizeof(err_string),
-				"Windows error code 0x%08X (FormatMessage error code 0x%08X)", error_code, format_error);
+				"Windows error code 0x%08lX (FormatMessage error code 0x%08lX)", error_code, format_error);
 		else
-			safe_sprintf(err_string, sizeof(err_string), "Unknown error 0x%08X", error_code);
+			safe_sprintf(err_string, sizeof(err_string), "Unknown error 0x%08lX", error_code);
 	}
 
 	SetLastError(error_code);	// Make sure we don't change the errorcode on exit
@@ -247,21 +238,15 @@ INT CALLBACK browseinfo_callback(HWND hDlg, UINT message, LPARAM lParam, LPARAM 
 		browse_edit = FindWindowExA(hDlg, NULL, "Edit", NULL);
 		SetWindowTextU(browse_edit, extraction_path);
 		SetFocus(browse_edit);
-		// On XP, BFFM_SETSELECTION can't be used with a Unicode Path in SendMessageW
-		// or a pidl (at least with MinGW) => must use SendMessageA
-		if (nWindowsVersion <= WINDOWS_XP) {
-			SendMessageLU(hDlg, BFFM_SETSELECTION, (WPARAM)TRUE, extraction_path);
-		} else {
-			// On Windows 7, MinGW only properly selects the specified folder when using a pidl
-			wpath = utf8_to_wchar(extraction_path);
-			pidl = (*pfSHSimpleIDListFromPath)(wpath);
-			safe_free(wpath);
-			// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
-			// for details as to why we send BFFM_SETSELECTION twice.
-			SendMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
-			Sleep(100);
-			PostMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
-		}
+		// On Windows 7, MinGW only properly selects the specified folder when using a pidl
+		wpath = utf8_to_wchar(extraction_path);
+		pidl = SHSimpleIDListFromPath(wpath);
+		safe_free(wpath);
+		// NB: see http://connect.microsoft.com/VisualStudio/feedback/details/518103/bffm-setselection-does-not-work-with-shbrowseforfolder-on-windows-7
+		// for details as to why we send BFFM_SETSELECTION twice.
+		SendMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
+		Sleep(100);
+		PostMessageW(hDlg, BFFM_SETSELECTION, (WPARAM)FALSE, (LPARAM)pidl);
 		break;
 	case BFFM_SELCHANGED:
 		// Update the status
@@ -275,15 +260,10 @@ INT CALLBACK browseinfo_callback(HWND hDlg, UINT message, LPARAM lParam, LPARAM 
 }
 
 /*
- * Browse for a folder and update the folder edit box
- * Will use the newer IFileOpenDialog if *compiled* for Vista or later
+ * Browse for a folder and update the folder edit box using IFileOpenDialog
  */
 void browse_for_folder(void) {
 
-	BROWSEINFOW bi;
-	LPITEMIDLIST pidl;
-
-#if (_WIN32_WINNT >= 0x0600)	// Vista and later
 	WCHAR *wpath;
 	size_t i;
 	HRESULT hr;
@@ -294,91 +274,66 @@ void browse_for_folder(void) {
 	char* tmp_path = NULL;
 
 	dialog_showing++;
-	// Even if we have Vista support with the compiler,
-	// it does not mean we have the Vista API available
-	INIT_VISTA_SHELL32;
-	if (IS_VISTA_SHELL32_AVAILABLE) {
-		hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
-			&IID_IFileOpenDialog, (LPVOID)&pfod);
-		if (FAILED(hr)) {
-			dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
-			pfod = NULL;	// Just in case
-			goto fallback;
-		}
-		hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
-		if (FAILED(hr)) {
-			dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
-			goto fallback;
-		}
-		// Set the initial folder (if the path is invalid, will simply use last)
-		wpath = utf8_to_wchar(extraction_path);
-		// The new IFileOpenDialog makes us split the path
-		fname = NULL;
-		if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
-			for (i=wcslen(wpath)-1; i!=0; i--) {
-				if (wpath[i] == L'\\') {
-					wpath[i] = 0;
-					fname = &wpath[i+1];
-					break;
-				}
+	hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
+		&IID_IFileOpenDialog, (LPVOID)&pfod);
+	if (FAILED(hr)) {
+		dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
+		pfod = NULL;	// Just in case
+		goto out;
+	}
+	hr = pfod->lpVtbl->SetOptions(pfod, FOS_PICKFOLDERS);
+	if (FAILED(hr)) {
+		dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+		goto out;
+	}
+	// Set the initial folder (if the path is invalid, will simply use last)
+	wpath = utf8_to_wchar(extraction_path);
+	// The new IFileOpenDialog makes us split the path
+	fname = NULL;
+	if ((wpath != NULL) && (wcslen(wpath) >= 1)) {
+		for (i=wcslen(wpath)-1; i!=0; i--) {
+			if (wpath[i] == L'\\') {
+				wpath[i] = 0;
+				fname = &wpath[i+1];
+				break;
 			}
 		}
+	}
 
-		hr = (*pfSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
-		if (SUCCEEDED(hr)) {
-			if (wpath != NULL) {
-				hr = pfod->lpVtbl->SetFolder(pfod, si_path);
-			}
-			if (fname != NULL) {
-				hr = pfod->lpVtbl->SetFileName(pfod, fname);
-			}
+	hr = SHCreateItemFromParsingName(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
+	if (SUCCEEDED(hr)) {
+		if (wpath != NULL) {
+			hr = pfod->lpVtbl->SetFolder(pfod, si_path);
 		}
-		safe_free(wpath);
+		if (fname != NULL) {
+			hr = pfod->lpVtbl->SetFileName(pfod, fname);
+		}
+	}
+	safe_free(wpath);
 
-		hr = pfod->lpVtbl->Show(pfod, hMain);
+	hr = pfod->lpVtbl->Show(pfod, hMain);
+	if (SUCCEEDED(hr)) {
+		hr = pfod->lpVtbl->GetResult(pfod, &psi);
 		if (SUCCEEDED(hr)) {
-			hr = pfod->lpVtbl->GetResult(pfod, &psi);
-			if (SUCCEEDED(hr)) {
-				psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
-				tmp_path = wchar_to_utf8(wpath);
-				CoTaskMemFree(wpath);
-				if (tmp_path == NULL) {
-					dprintf("Could not convert path");
-				} else {
-					safe_strcpy(extraction_path, MAX_PATH, tmp_path);
-					safe_free(tmp_path);
-				}
+			psi->lpVtbl->GetDisplayName(psi, SIGDN_FILESYSPATH, &wpath);
+			tmp_path = wchar_to_utf8(wpath);
+			CoTaskMemFree(wpath);
+			if (tmp_path == NULL) {
+				dprintf("Could not convert path");
 			} else {
-				dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
+				safe_strcpy(extraction_path, MAX_PATH, tmp_path);
+				safe_free(tmp_path);
 			}
-		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
-			// If it's not a user cancel, assume the dialog didn't show and fallback
-			dprintf("could not show FileOpenDialog: error %X", hr);
-			goto fallback;
+		} else {
+			dprintf("Failed to set folder option for FileOpenDialog: error %X", hr);
 		}
+	} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
+		// If it's not a user cancel, assume the dialog didn't show and fallback
+		dprintf("could not show FileOpenDialog: error %X", hr);
+	}
+out:
+	if ((pfod != NULL) && (pfod->lpVtbl != NULL))
 		pfod->lpVtbl->Release(pfod);
-		dialog_showing--;
-		return;
-	}
-fallback:
-	if (pfod != NULL) {
-		pfod->lpVtbl->Release(pfod);
-	}
-#else
-	dialog_showing++;
-#endif
-	INIT_XP_SHELL32;
-	memset(&bi, 0, sizeof(BROWSEINFOW));
-	bi.hwndOwner = hMain;
-	bi.lpszTitle = L"Please select the installation folder:";
-	bi.lpfn = browseinfo_callback;
-	// BIF_NONEWFOLDERBUTTON = 0x00000200 is unknown on MinGW
-	bi.ulFlags = BIF_RETURNFSANCESTORS | BIF_RETURNONLYFSDIRS |
-		BIF_DONTGOBELOWDOMAIN | BIF_EDITBOX | 0x00000200;
-	pidl = SHBrowseForFolderW(&bi);
-	if (pidl != NULL) {
-		CoTaskMemFree(pidl);
-	}
 	dialog_showing--;
 }
 
@@ -453,143 +408,83 @@ out:
 
 /*
  * Return the UTF8 path of a file selected through a load or save dialog
- * Will use the newer IFileOpenDialog if *compiled* for Vista or later
- * All string parameters are UTF-8
+ * using the newer IFileOpenDialog. All string parameters are UTF-8.
  */
 char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_desc)
 {
-	DWORD tmp;
-	OPENFILENAMEA ofn;
-	char selected_name[STR_BUFFER_SIZE];
-	char* ext_string = NULL;
-	size_t i, ext_strlen;
-	BOOL r;
-	char* filepath = NULL;
-
-#if (_WIN32_WINNT >= 0x0600)	// Vista and later
+	char *ext_filter, *filepath = NULL;
+	wchar_t *wpath = NULL, *wfilename = NULL;
 	HRESULT hr = FALSE;
 	IFileDialog *pfd = NULL;
 	IShellItem *psiResult;
 	COMDLG_FILTERSPEC filter_spec[2];
-	char* ext_filter;
-	wchar_t *wpath = NULL, *wfilename = NULL;
 	IShellItem *si_path = NULL;	// Automatically freed
 
 	dialog_showing++;
-	INIT_VISTA_SHELL32;
-	if (IS_VISTA_SHELL32_AVAILABLE) {
-		// Setup the file extension filter table
-		ext_filter = (char*)malloc(strlen(ext)+3);
-		if (ext_filter != NULL) {
-			safe_sprintf(ext_filter, strlen(ext)+3, "*.%s", ext);
-			filter_spec[0].pszSpec = utf8_to_wchar(ext_filter);
-			safe_free(ext_filter);
-			filter_spec[0].pszName = utf8_to_wchar(ext_desc);
-			filter_spec[1].pszSpec = L"*.*";
-			filter_spec[1].pszName = L"All files";
-		}
-
-		hr = CoCreateInstance(save?&CLSID_FileSaveDialog:&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
-			&IID_IFileDialog, (LPVOID)&pfd);
-
-		if (FAILED(hr)) {
-			dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
-			pfd = NULL;	// Just in case
-			goto fallback;
-		}
-
-		// Set the file extension filters
-		pfd->lpVtbl->SetFileTypes(pfd, 2, filter_spec);
-
-		// Set the default directory
-		wpath = utf8_to_wchar(path);
-		hr = (*pfSHCreateItemFromParsingName)(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
-		if (SUCCEEDED(hr)) {
-			pfd->lpVtbl->SetFolder(pfd, si_path);
-		}
-		safe_free(wpath);
-
-		// Set the default filename
-		wfilename = utf8_to_wchar(filename);
-		if (wfilename != NULL) {
-			pfd->lpVtbl->SetFileName(pfd, wfilename);
-		}
-
-		// Display the dialog
-		hr = pfd->lpVtbl->Show(pfd, hMain);
-
-		// Cleanup
-		safe_free(wfilename);
-		safe_free(filter_spec[0].pszSpec);
-		safe_free(filter_spec[0].pszName);
-
-		if (SUCCEEDED(hr)) {
-			// Obtain the result of the user's interaction with the dialog.
-			hr = pfd->lpVtbl->GetResult(pfd, &psiResult);
-			if (SUCCEEDED(hr)) {
-				hr = psiResult->lpVtbl->GetDisplayName(psiResult, SIGDN_FILESYSPATH, &wpath);
-				if (SUCCEEDED(hr)) {
-					filepath = wchar_to_utf8(wpath);
-					CoTaskMemFree(wpath);
-				}
-				psiResult->lpVtbl->Release(psiResult);
-			}
-		} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
-			// If it's not a user cancel, assume the dialog didn't show and fallback
-			dprintf("could not show FileOpenDialog: error %X", hr);
-			goto fallback;
-		}
-		pfd->lpVtbl->Release(pfd);
-		dialog_showing--;
-		return filepath;
+	// Setup the file extension filter table
+	ext_filter = (char*)malloc(strlen(ext)+3);
+	if (ext_filter != NULL) {
+		safe_sprintf(ext_filter, strlen(ext)+3, "*.%s", ext);
+		filter_spec[0].pszSpec = utf8_to_wchar(ext_filter);
+		safe_free(ext_filter);
+		filter_spec[0].pszName = utf8_to_wchar(ext_desc);
+		filter_spec[1].pszSpec = L"*.*";
+		filter_spec[1].pszName = L"All files";
 	}
 
-fallback:
-	if (pfd != NULL) {
-		pfd->lpVtbl->Release(pfd);
-	}
-#else
-	dialog_showing++;
-#endif
+	hr = CoCreateInstance(save?&CLSID_FileSaveDialog:&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC,
+		&IID_IFileDialog, (LPVOID)&pfd);
 
-	memset(&ofn, 0, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = hMain;
-	// File name
-	safe_strcpy(selected_name, STR_BUFFER_SIZE, filename);
-	ofn.lpstrFile = selected_name;
-	ofn.nMaxFile = STR_BUFFER_SIZE;
+	if (FAILED(hr)) {
+		dprintf("CoCreateInstance for FileOpenDialog failed: error %X", hr);
+		pfd = NULL;	// Just in case
+		goto out;
+	}
+
 	// Set the file extension filters
-	ext_strlen = strlen(ext_desc) + 2*strlen(ext) + sizeof(" (*.)\0*.\0All Files (*.*)\0*.*\0\0");
-	ext_string = (char*)malloc(ext_strlen);
-	if (ext_string == NULL)
-		return NULL;
-	safe_sprintf(ext_string, ext_strlen, "%s (*.%s)\r*.%s\rAll Files (*.*)\r*.*\r\0", ext_desc, ext, ext);
-	// Microsoft could really have picked a better delimiter!
-	for (i=0; i<ext_strlen; i++) {
-		if (ext_string[i] == '\r') {
-			ext_string[i] = 0;
+	pfd->lpVtbl->SetFileTypes(pfd, 2, filter_spec);
+
+	// Set the default directory
+	wpath = utf8_to_wchar(path);
+	hr = SHCreateItemFromParsingName(wpath, NULL, &IID_IShellItem, (LPVOID) &si_path);
+	if (SUCCEEDED(hr)) {
+		pfd->lpVtbl->SetFolder(pfd, si_path);
+	}
+	safe_free(wpath);
+
+	// Set the default filename
+	wfilename = utf8_to_wchar(filename);
+	if (wfilename != NULL) {
+		pfd->lpVtbl->SetFileName(pfd, wfilename);
+	}
+
+	// Display the dialog
+	hr = pfd->lpVtbl->Show(pfd, hMain);
+
+	// Cleanup
+	safe_free(wfilename);
+	safe_free(filter_spec[0].pszSpec);
+	safe_free(filter_spec[0].pszName);
+
+	if (SUCCEEDED(hr)) {
+		// Obtain the result of the user's interaction with the dialog.
+		hr = pfd->lpVtbl->GetResult(pfd, &psiResult);
+		if (SUCCEEDED(hr)) {
+			hr = psiResult->lpVtbl->GetDisplayName(psiResult, SIGDN_FILESYSPATH, &wpath);
+			if (SUCCEEDED(hr)) {
+				filepath = wchar_to_utf8(wpath);
+				CoTaskMemFree(wpath);
+			}
+			psiResult->lpVtbl->Release(psiResult);
 		}
+	} else if ((hr & 0xFFFF) != ERROR_CANCELLED) {
+		// If it's not a user cancel, assume the dialog didn't show and fallback
+		dprintf("could not show FileOpenDialog: error %X", hr);
 	}
-	ofn.lpstrFilter = ext_string;
-	// Initial dir
-	ofn.lpstrInitialDir = path;
-	ofn.Flags = OFN_OVERWRITEPROMPT;
-	// Show Dialog
-	if (save) {
-		r = GetSaveFileNameU(&ofn);
-	} else {
-		r = GetOpenFileNameU(&ofn);
-	}
-	if (r) {
-		filepath = safe_strdup(selected_name);
-	} else {
-		tmp = CommDlgExtendedError();
-		if (tmp != 0) {
-			dprintf("Could not selected file for %s. Error %X", save?"save":"open", tmp);
-		}
-	}
-	safe_free(ext_string);
+
+out:
+	if ((pfd != NULL) && (pfd->lpVtbl != NULL))
+		pfd->lpVtbl->Release(pfd);
 	dialog_showing--;
 	return filepath;
 }

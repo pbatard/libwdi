@@ -55,9 +55,6 @@
     <None Include="..\zadig.ico">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\split.ico">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="..\zadig.bmp">
       <Filter>Resource Files</Filter>
     </None>
