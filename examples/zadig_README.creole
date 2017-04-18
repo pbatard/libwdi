@@ -1,3 +1,8 @@
+=== v2.3 (2017.04.18) ===
+* Fix issues with extended characters in current user directory
+* Drop Windows XP and Windows Vista support
+* Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.0.7.0 & usbser (native)
+
 === v2.2 (2016.01.22) ===
 * Add USB Serial (CDC) support (**EXPERIMENTAL**)
 * Use SHA-256 instead of SHA-1 wherever possible
