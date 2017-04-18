@@ -57,6 +57,7 @@
 #include <limits.h>
 
 #include "profile.h"
+#include "msapi_utf8.h"
 
 #if defined(_MSC_VER)
 #define strcasecmp _stricmp 
@@ -243,7 +244,7 @@ long profile_open_file(const char * filespec,
 
 	len = (unsigned int)strlen(filespec)+1;
 	if (filespec[0] == '~' && filespec[1] == '/') {
-		home_env = getenv("HOME");
+		home_env = getenvU("HOME");
 		if (home_env)
 			len += (unsigned int)strlen(home_env);
 	}
@@ -291,7 +292,7 @@ long profile_update_file(prf_file_t prf)
 	if (retval)
 		return retval;
 	errno = 0;
-	f = fopen(prf->filespec, "r");
+	f = fopenU(prf->filespec, "r");
 	if (f == NULL) {
 		retval = errno;
 		if (retval == 0)

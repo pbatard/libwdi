@@ -649,8 +649,17 @@ static __inline FILE* fopenU(const char* filename, const char* mode)
 static __inline char* getenvU(const char* varname)
 {
 	wconvert(varname);
-	char* ret;
-	ret = wchar_to_utf8(_wgetenv(wvarname));
+	char* ret = NULL;
+	wchar_t* wbuf = NULL;
+	// _wgetenv() is *BROKEN* in MS compilers => use GetEnvironmentVariableW()
+	DWORD dwSize = GetEnvironmentVariableW(wvarname, wbuf, 0);
+	wbuf = calloc(dwSize, sizeof(wchar_t));
+	if (wbuf == NULL)
+		return NULL;
+	dwSize = GetEnvironmentVariableW(wvarname, wbuf, dwSize);
+	if (dwSize != 0)
+		ret = wchar_to_utf8(wbuf);
+	free(wbuf);
 	wfree(varname);
 	return ret;
 }

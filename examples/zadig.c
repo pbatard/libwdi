@@ -1793,7 +1793,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
 			for (r = TRUE, i = 0; i<ARRAYSIZE(system_dir); i++) {
 				path[0] = 0;
-				safe_strcpy(path, MAX_PATH, getenv("WINDIR"));
+				safe_strcpy(path, MAX_PATH, getenvU("WINDIR"));
 				safe_strcat(path, MAX_PATH, "\\");
 				safe_strcat(path, MAX_PATH, system_dir[i]);
 				safe_strcat(path, MAX_PATH, "\\libusb-1.0.dll");

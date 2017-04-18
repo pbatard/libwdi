@@ -467,7 +467,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	}
 
 	// First, we need a physical file => extract it
-	tmpdir = getenv("TEMP");
+	tmpdir = getenvU("TEMP");
 	if (tmpdir == NULL) {
 		wdi_warn("unable to use TEMP to extract file");
 		return WDI_ERROR_RESOURCE;
@@ -1072,7 +1072,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 
 	// Try to use the user's temp dir if no path is provided
 	if ((path == NULL) || (path[0] == 0)) {
-		path = getenv("TEMP");
+		path = getenvU("TEMP");
 		if (path == NULL) {
 			wdi_err("no path provided and unable to use TEMP");
 			MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
@@ -1445,7 +1445,7 @@ static int install_driver_internal(void* arglist)
 
 	// Try to use the user's temp dir if no path is provided
 	if ((params->path == NULL) || (params->path[0] == 0)) {
-		static_strcpy(path, getenv("TEMP"));
+		static_strcpy(path, getenvU("TEMP"));
 		wdi_info("no path provided - installing from '%s'", path);
 	} else {
 		static_strcpy(path, params->path);
