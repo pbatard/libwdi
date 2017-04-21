@@ -251,10 +251,12 @@ long profile_open_file(const char * filespec,
 	expanded_filename = malloc(len);
 	if (expanded_filename == 0) {
 	    profile_free_file(prf);
+	    free(home_env);
 	    return errno;
 	}
 	if (home_env) {
 	    strcpy(expanded_filename, home_env);
+	    free(home_env);
 	    strcat(expanded_filename, filespec+1);
 	} else
 	    memcpy(expanded_filename, filespec, len);

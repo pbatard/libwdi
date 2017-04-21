@@ -1045,11 +1045,11 @@ INT_PTR CALLBACK new_version_callback(HWND hDlg, UINT message, WPARAM wParam, LP
 		SendMessageA(hNotes, EM_SETTEXTEX, (WPARAM)&friggin_microsoft_unicode_amateurs, (LPARAM)update.release_notes);
 		SendMessage(hNotes, EM_SETSEL, -1, -1);
 		SendMessage(hNotes, EM_SETEVENTMASK, 0, ENM_LINK);
-		safe_sprintf(tmp, sizeof(tmp), "Your version: %d.%d.%d (Build %d)",
-			application_version[0], application_version[1], application_version[2], application_version[3]);
+		safe_sprintf(tmp, sizeof(tmp), "Your version: %d.%d (Build %d)",
+			application_version[0], application_version[1], application_version[2]);
 		SetWindowTextU(GetDlgItem(hDlg, IDC_YOUR_VERSION), tmp);
-		safe_sprintf(tmp, sizeof(tmp), "Latest version: %d.%d.%d (Build %d)",
-			update.version[0], update.version[1], update.version[2], update.version[3]);
+		safe_sprintf(tmp, sizeof(tmp), "Latest version: %d.%d (Build %d)",
+			update.version[0], update.version[1], update.version[2]);
 		SetWindowTextU(GetDlgItem(hDlg, IDC_LATEST_VERSION), tmp);
 		SetWindowTextU(GetDlgItem(hDlg, IDC_DOWNLOAD_URL), update.download_url);
 		SendMessage(GetDlgItem(hDlg, IDC_PROGRESS), PBM_SETRANGE, 0, (MAX_PROGRESS<<16) & 0xFFFF0000);
@@ -1090,7 +1090,6 @@ INT_PTR CALLBACK new_version_callback(HWND hDlg, UINT message, WPARAM wParam, LP
 				si.cb = sizeof(si);
 				if (!CreateProcessU(filepath, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
 					print_status(0, TRUE, "Failed to launch new application");
-					// TODO: produce a message box and add a retry in case the file is in use
 					dprintf("Failed to launch new application: %s\n", WindowsErrorString());
 				} else {
 					print_status(0, FALSE, "Launching new application...");

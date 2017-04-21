@@ -1275,6 +1275,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		return (INT_PTR)TRUE;
 
+	case UM_NO_UPDATE:
+		notification(MSG_INFO, NULL, "Update check", "No new version of Zadig was found");
+		break;
+
 	case WM_INITDIALOG:
 		SetUpdateCheck();
 		// Setup options
@@ -1793,7 +1797,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
 			for (r = TRUE, i = 0; i<ARRAYSIZE(system_dir); i++) {
 				path[0] = 0;
-				safe_strcpy(path, MAX_PATH, getenvU("WINDIR"));
+				tmp = getenvU("WINDIR");
+				safe_strcpy(path, MAX_PATH, tmp);
+				safe_free(tmp);
 				safe_strcat(path, MAX_PATH, "\\");
 				safe_strcat(path, MAX_PATH, system_dir[i]);
 				safe_strcat(path, MAX_PATH, "\\libusb-1.0.dll");
@@ -1823,6 +1829,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		DispatchMessage(&msg);
 	}
 
+	safe_free(update.download_url);
+	safe_free(update.release_notes);
 	CloseHandle(mutex);
 #ifdef _CRTDBG_MAP_ALLOC
 	_CrtDumpMemoryLeaks();
