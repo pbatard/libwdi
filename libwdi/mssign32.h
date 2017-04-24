@@ -1,7 +1,7 @@
 /*
  * mssign32.h: MSSign32 interface for code signing
  *
- * Copyright (c) 2011-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2011-2017 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -154,15 +154,7 @@ typedef struct _SIGNER_CONTEXT {
 } SIGNER_CONTEXT, *PSIGNER_CONTEXT;
 
 /*
- * typedefs for the function prototypes. Use the something like:
- *   PF_DELC(SignerSignEx);
- * which translates to:
- *  SignerSignEx_t pfSignerSignEx = NULL;
- * in your code, to declare the entrypoint and then use:
- *   PF_INIT(SignerSignEx, mssign32);
- * which translates to:
- *   pfSignerSignEx = (SignerSignEx_t) GetProcAddress(GetDLLHandle("mssign32"), "SignerSignEx");
- * to make it accessible.
+ * typedefs for the function prototypes.
  */
 typedef HRESULT (WINAPI *SignerFreeSignerContext_t)(
 	SIGNER_CONTEXT *pSignerContext

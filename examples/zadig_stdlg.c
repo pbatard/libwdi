@@ -303,10 +303,10 @@ void browse_for_folder(void) {
 	hr = SHCreateItemFromParsingName(wpath, NULL, &IID_IShellItem, (LPVOID)&si_path);
 	if (SUCCEEDED(hr)) {
 		if (wpath != NULL) {
-			hr = pfod->lpVtbl->SetFolder(pfod, si_path);
+			pfod->lpVtbl->SetFolder(pfod, si_path);
 		}
 		if (fname != NULL) {
-			hr = pfod->lpVtbl->SetFileName(pfod, fname);
+			pfod->lpVtbl->SetFileName(pfod, fname);
 		}
 	}
 	safe_free(wpath);

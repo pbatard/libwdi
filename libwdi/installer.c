@@ -74,6 +74,11 @@ typedef DEVNODEID_A DEVNODEID;
 typedef DEVINSTID_A DEVINSTID;
 #endif
 
+/*
+ * DLL procedures
+ */
+PF_LIBRARY(Cfgmgr32);
+PF_LIBRARY(Msvcrt);
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
@@ -116,13 +121,13 @@ void plog(const char *format, ...)
 	va_end (args);
 }
 
-// Setup the Cfgmgr32 DLLs
+// Setup the DLLs
 static BOOL init_dlls(void)
 {
-	PF_INIT_OR_OUT(CM_Locate_DevNodeA, Cfgmgr32.dll);
-	PF_INIT_OR_OUT(CM_Reenumerate_DevNode, Cfgmgr32.dll);
-	PF_INIT_OR_OUT(CM_Get_DevNode_Status, Cfgmgr32.dll);
-	PF_INIT(__wgetmainargs, Msvcrt.dll);
+	PF_INIT_OR_OUT(CM_Locate_DevNodeA, Cfgmgr32);
+	PF_INIT_OR_OUT(CM_Reenumerate_DevNode, Cfgmgr32);
+	PF_INIT_OR_OUT(CM_Get_DevNode_Status, Cfgmgr32);
+	PF_INIT(__wgetmainargs, Msvcrt);
 	return TRUE;
 out:
 	return FALSE;
@@ -793,6 +798,10 @@ int __cdecl main(int argc_ansi, char** argv_ansi)
 	if (pf__wgetmainargs != NULL) {
 		pf__wgetmainargs(&argc, &wargv, &wenv, 1, &si);
 		argv = (char**)calloc(argc, sizeof(char*));
+		if (argv == NULL) {
+			ret = WDI_ERROR_RESOURCE;
+			goto out;
+		}
 		for (i=0; i<argc; i++) {
 			argv[i] = wchar_to_utf8(wargv[i]);
 		}
@@ -884,10 +893,10 @@ out:
 	pstat(ret);
 	// Restore the system restore point creation original settings
 	disable_system_restore(FALSE);
-	// TODO: have libwi send an ACK?
+	// TODO: have libwdi send an ACK?
 	Sleep(1000);
 	SetEvent(syslog_terminate_event);
-	if (argv != argv_ansi) {
+	if ((argv != NULL) && (argv != argv_ansi)) {
 		for (i=0; i<argc; i++) {
 			safe_free(argv[i]);
 		}
@@ -897,5 +906,7 @@ out:
 	CloseHandle(syslog_terminate_event);
 	CloseHandle((HANDLE)syslog_reader_thid);
 	CloseHandle(pipe_handle);
+	PF_FREELIBRARY(Msvcrt);
+	PF_FREELIBRARY(Cfgmgr32);
 	return ret;
 }

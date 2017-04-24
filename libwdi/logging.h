@@ -1,7 +1,7 @@
 /*
  * libwdi logging functions
  * Copyright (c) Johannes Erdfelt, Daniel Drake et al.
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,12 +24,11 @@
 #define LOGBUF_SIZE                512
 
 // Prevent two exclusive libwdi calls from running at the same time
-#define MUTEX_RETURN(errcode) do { CloseHandle(mutex); return errcode; } while (0)
 #define MUTEX_START char mutex_name[10+sizeof(__FUNCTION__)]; HANDLE mutex;                \
 	safe_snprintf(mutex_name, 10+sizeof(__FUNCTION__), "Global\\%s", __FUNCTION__);        \
 	mutex = CreateMutexA(NULL, TRUE, mutex_name);                                          \
 	if (mutex == NULL) return WDI_ERROR_RESOURCE;                                          \
-	if (GetLastError() == ERROR_ALREADY_EXISTS) { MUTEX_RETURN(WDI_ERROR_BUSY); }
+	if (GetLastError() == ERROR_ALREADY_EXISTS) { CloseHandle(mutex); return WDI_ERROR_BUSY; }
 
 #if defined(_MSC_VER)
 #define safe_vsnprintf(buf, size, format, arg) _vsnprintf_s(buf, size, _TRUNCATE, format, arg)

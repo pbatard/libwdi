@@ -48,28 +48,40 @@ void GetWindowsVersion(void);
 /* Read a string registry key value */
 static __inline BOOL ReadRegistryStr(HKEY key_root, const char* key_name, char* str, DWORD len)
 {
+	const char software_prefix[] = "SOFTWARE\\";
+	char long_key_name[MAX_PATH] = { 0 };
 	BOOL r = FALSE;
 	size_t i = 0;
 	LONG s;
 	HKEY hApp = NULL;
 	DWORD dwType = -1, dwSize = len;
 	LPBYTE dest = (LPBYTE)str;
-	// VS Code Analysis complains if we don't break our initialization into chars
-	char long_key_name[256] = { 0 };
+
 	memset(dest, 0, len);
 
 	if (key_name == NULL)
 		return FALSE;
 
-	for (i = strlen(key_name); i>0; i--) {
+	for (i = strlen(key_name); i > 0; i--) {
 		if (key_name[i] == '\\')
 			break;
 	}
 
 	if (i != 0) {
-		strcpy(long_key_name, "SOFTWARE\\");
-		strncat(long_key_name, key_name, sizeof(long_key_name));
-		long_key_name[sizeof("SOFTWARE\\") + i - 1] = 0;
+		// Prefix with "SOFTWARE" if needed
+		if (_strnicmp(key_name, software_prefix, sizeof(software_prefix) - 1) != 0) {
+			if (i + sizeof(software_prefix) >= sizeof(long_key_name))
+				return FALSE;
+			strcpy(long_key_name, software_prefix);
+			strncat(long_key_name, key_name,
+				min(strlen(key_name) + 1, sizeof(long_key_name) - sizeof(software_prefix) - 1));
+			long_key_name[sizeof(software_prefix) + i - 1] = 0;
+		} else {
+			if (i >= sizeof(long_key_name))
+				return FALSE;
+			strncpy(long_key_name, key_name, sizeof(long_key_name));
+			long_key_name[i] = 0;
+		}
 		i++;
 		if (RegOpenKeyExA(key_root, long_key_name, 0, KEY_READ, &hApp) != ERROR_SUCCESS) {
 			hApp = NULL;

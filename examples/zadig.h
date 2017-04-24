@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.3.703"
+#define APP_VERSION                 "Zadig 2.3.704"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
@@ -180,22 +180,46 @@ extern int dialog_showing;
 extern BOOL installation_running;
 extern APPLICATION_UPDATE update;
 
-/* Helper functions to access DLLs */
-static __inline HMODULE GetDLLHandle(char* szDLLName)
-{
-	HANDLE h = GetModuleHandleA(szDLLName);
-	if (h == NULL) {
-		// coverity[alloc_fn][var_assign]
-		h = LoadLibraryA(szDLLName);
+/*
+ * typedefs for the function prototypes. Use the something like:
+ *   PF_DECL(FormatEx);
+ * which translates to:
+ *   FormatEx_t pfFormatEx = NULL;
+ * in your code, to declare the entrypoint and then use:
+ *   PF_INIT(FormatEx, Fmifs);
+ * which translates to:
+ *   pfFormatEx = (FormatEx_t) GetProcAddress(GetLibraryHandle("fmifs"), "FormatEx");
+ * to make it accessible.
+ */
+#define         MAX_LIBRARY_HANDLES 32
+extern HMODULE  OpenedLibrariesHandle[MAX_LIBRARY_HANDLES];
+extern WORD     OpenedLibrariesHandleSize;
+#define         OPENED_LIBRARIES_VARS HMODULE OpenedLibrariesHandle[MAX_LIBRARY_HANDLES]; WORD OpenedLibrariesHandleSize = 0
+static __inline void FreeAllLibraries(void) {
+	while (OpenedLibrariesHandleSize > 0)
+		FreeLibrary(OpenedLibrariesHandle[--OpenedLibrariesHandleSize]);
+}
+static __inline HMODULE GetLibraryHandle(char* szLibraryName) {
+	HMODULE h = NULL;
+	if ((h = GetModuleHandleA(szLibraryName)) == NULL) {
+		if (OpenedLibrariesHandleSize >= MAX_LIBRARY_HANDLES) {
+			dprintf("Error: MAX_LIBRARY_HANDLES is too small\n");
+		} else {
+			h = LoadLibraryA(szLibraryName);
+			if (h != NULL)
+				OpenedLibrariesHandle[OpenedLibrariesHandleSize++] = h;
+		}
 	}
 	return h;
 }
-#define PF_TYPE(api, ret, proc, args) typedef ret (api *proc##_t)args
-#define PF_DECL(proc) static proc##_t pf##proc = NULL
-#define PF_TYPE_DECL(api, ret, proc, args) PF_TYPE(api, ret, proc, args);  PF_DECL(proc)
-#define PF_INIT(proc, dllname) if (pf##proc == NULL) pf##proc = (proc##_t) GetProcAddress(GetDLLHandle(#dllname), #proc)
-#define PF_INIT_OR_OUT(proc, dllname) PF_INIT(proc, dllname); if (pf##proc == NULL) { \
-	dprintf("Unable to locate %s() in %s\n", #proc, #dllname); goto out; }
+#define PF_TYPE(api, ret, proc, args)		typedef ret (api *proc##_t)args
+#define PF_DECL(proc)						static proc##_t pf##proc = NULL
+#define PF_TYPE_DECL(api, ret, proc, args)	PF_TYPE(api, ret, proc, args); PF_DECL(proc)
+#define PF_INIT(proc, name)					if (pf##proc == NULL) pf##proc = \
+	(proc##_t) GetProcAddress(GetLibraryHandle(#name), #proc)
+#define PF_INIT_OR_OUT(proc, name)			do {PF_INIT(proc, name);         \
+	if (pf##proc == NULL) {dprintf("Unable to locate %s() in %s.dll: %s\n",  \
+	#proc, #name, WindowsErrorString()); goto out;} } while(0)
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))

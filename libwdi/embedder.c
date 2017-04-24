@@ -344,6 +344,7 @@ main (int argc, char *argv[])
 #endif
 	// Check if any of the embedded files have changed
 	rebuild = 0;
+	// coverity[fs_check_call]
 	if (NATIVE_STAT(argv[1], &stbuf) == 0) {
 		header_time = stbuf.st_mtime;	// make sure to use modification time!
 		for (i=0; i<nb_embeddables; i++) {

@@ -248,7 +248,8 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 	MUTEX_START;
 
 	if (logger_dest != NULL) {
-		MUTEX_RETURN(WDI_ERROR_EXISTS);
+		r = WDI_ERROR_EXISTS;
+		goto out;
 	}
 
 	r = create_logger(buffsize);
@@ -257,7 +258,9 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
 		logger_msg = message;
 	}
 
-	MUTEX_RETURN(r);
+out:
+	CloseHandle(mutex); 
+	return r;
 }
 
 /*
@@ -265,21 +268,25 @@ int LIBWDI_API wdi_register_logger(HWND hWnd, UINT message, DWORD buffsize)
  */
 int LIBWDI_API wdi_unregister_logger(HWND hWnd)
 {
+	int r = WDI_SUCCESS;
 	MUTEX_START;
 
 	if (logger_dest == NULL) {
-		MUTEX_RETURN(WDI_SUCCESS);
+		goto out;
 	}
 
 	if (logger_dest != hWnd) {
-		MUTEX_RETURN(WDI_ERROR_INVALID_PARAM);
+		r = WDI_ERROR_INVALID_PARAM;
+		goto out;
 	}
 
 	destroy_logger();
 	logger_dest = NULL;
 	logger_msg = 0;
 
-	MUTEX_RETURN(WDI_SUCCESS);
+out:
+	CloseHandle(mutex);
+	return r;
 }
 
 /*
@@ -287,44 +294,54 @@ int LIBWDI_API wdi_unregister_logger(HWND hWnd)
  */
 int LIBWDI_API wdi_read_logger(char* buffer, DWORD buffer_size, DWORD* message_size)
 {
-	int size;
-	DWORD r;
+	int size, r;
+	DWORD err;
 
 	MUTEX_START;
 
 	if ( (logger_rd_handle == INVALID_HANDLE_VALUE) && (create_logger(0) != WDI_SUCCESS) ) {
 		*message_size = 0;
-		MUTEX_RETURN(WDI_ERROR_NOT_FOUND);
+		r = WDI_ERROR_NOT_FOUND;
+		goto out;
 	}
 
 	if (log_messages_pending == 0) {
 		if (log_messages_pipe_size == 0) {
 			buffer[0] = 0;
 			*message_size = 0;
-			MUTEX_RETURN(WDI_SUCCESS);
+			r = WDI_SUCCESS;
+			goto out;
 		}
 		size = safe_snprintf(buffer, buffer_size, "ERROR: log buffer is empty");
 		if (size < 0) {
 			buffer[buffer_size-1] = 0;
-			MUTEX_RETURN(buffer_size);
+			r = buffer_size;
+			goto out;
 		}
 		*message_size = (DWORD)size;
-		MUTEX_RETURN(WDI_SUCCESS);
+		r = WDI_SUCCESS;
+		goto out;
 	}
 	log_messages_pending--;
 
 	if (ReadFile(logger_rd_handle, (void*)buffer, buffer_size, message_size, NULL)) {
 		log_messages_pipe_size -= *message_size;
-		MUTEX_RETURN(WDI_SUCCESS);
+		r = WDI_SUCCESS;
+		goto out;
 	}
 
 	log_messages_pipe_size -= *message_size;
 	*message_size = 0;
-	r = GetLastError();
-	if ((r == ERROR_INSUFFICIENT_BUFFER) || (r == ERROR_MORE_DATA)) {
-		MUTEX_RETURN(WDI_ERROR_OVERFLOW);
+	err = GetLastError();
+	if ((err == ERROR_INSUFFICIENT_BUFFER) || (err == ERROR_MORE_DATA)) {
+		r = WDI_ERROR_OVERFLOW;
+		goto out;
 	}
-	MUTEX_RETURN(WDI_ERROR_IO);
+
+	r = WDI_ERROR_IO;
+out:
+	CloseHandle(mutex);
+	return r;
 }
 
 /*

@@ -579,8 +579,8 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		parse_update(buf, dwTotalSize+1);
 
 		vuprintf("UPDATE DATA:\n");
-		vuprintf("  version: %d.%d.%d.%d (%s)\n", update.version[0], update.version[1],
-			update.version[2], update.version[3], channel[k]);
+		vuprintf("  version: %d.%d.%d (%s)\n", update.version[0], update.version[1],
+			update.version[2], channel[k]);
 		vuprintf("  platform_min: %d.%d\n", update.platform_min[0], update.platform_min[1]);
 		vuprintf("  url: %s\n", update.download_url);
 

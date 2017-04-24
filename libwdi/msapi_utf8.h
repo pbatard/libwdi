@@ -2,7 +2,7 @@
  * MSAPI_UTF8: Common API calls using UTF-8 strings
  * Compensating for what Microsoft should have done a long long time ago.
  *
- * Copyright © 2010-2014 Pete Batard <pete@akeo.ie>
+ * Copyright © 2010-2017 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,6 +111,7 @@ static __inline DWORD FormatMessageU(DWORD dwFlags, LPCVOID lpSource, DWORD dwMe
 									 DWORD dwLanguageId, char* lpBuffer, DWORD nSize, va_list *Arguments)
 {
 	DWORD ret = 0, err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(lpBuffer, nSize);
 	ret = FormatMessageW(dwFlags, lpSource, dwMessageId, dwLanguageId, wlpBuffer, nSize, Arguments);
 	err = GetLastError();
@@ -152,6 +153,7 @@ static __inline BOOL SHGetPathFromIDListU(LPCITEMIDLIST pidl, char* pszPath)
 {
 	BOOL ret = FALSE;
 	DWORD err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(pszPath, MAX_PATH);
 	ret = SHGetPathFromIDListW(pidl, wpszPath);
 	err = GetLastError();
@@ -198,6 +200,7 @@ static __inline int GetWindowTextU(HWND hWnd, char* lpString, int nMaxCount)
 {
 	int ret = 0;
 	DWORD err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(lpString, nMaxCount);
 	ret = GetWindowTextW(hWnd, wlpString, nMaxCount);
 	err = GetLastError();
@@ -257,6 +260,7 @@ static __inline UINT GetDlgItemTextU(HWND hDlg, int nIDDlgItem, char* lpString, 
 {
 	UINT ret = 0;
 	DWORD err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(lpString, nMaxCount);
 	ret = GetDlgItemTextW(hDlg, nIDDlgItem, wlpString, nMaxCount);
 	err = GetLastError();
@@ -345,6 +349,7 @@ static __inline BOOL GetTextExtentPointU(HDC hdc, const char* lpString, LPSIZE l
 static __inline DWORD GetCurrentDirectoryU(DWORD nBufferLength, char* lpBuffer)
 {
 	DWORD ret = 0, err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(lpBuffer, nBufferLength);
 	ret = GetCurrentDirectoryW(nBufferLength, wlpBuffer);
 	err = GetLastError();
@@ -359,6 +364,7 @@ static __inline DWORD GetCurrentDirectoryU(DWORD nBufferLength, char* lpBuffer)
 static __inline DWORD GetModuleFileNameU(HMODULE hModule, char* lpFilename, DWORD nSize)
 {
 	DWORD ret = 0, err = ERROR_INVALID_DATA;
+	// coverity[returned_null]
 	walloc(lpFilename, nSize);
 	ret = GetModuleFileNameW(hModule, wlpFilename, nSize);
 	err = GetLastError();
@@ -375,6 +381,7 @@ static __inline DWORD GetFullPathNameU(const char* lpFileName, DWORD nBufferLeng
 	DWORD ret = 0, err = ERROR_INVALID_DATA;
 	wchar_t* wlpFilePart;
 	wconvert(lpFileName);
+	// coverity[returned_null]
 	walloc(lpBuffer, nBufferLength);
 
 	// lpFilePart is not supported
@@ -606,6 +613,7 @@ static __inline BOOL SetupCopyOEMInfU(const char* SourceInfFileName, const char*
 	DWORD err = ERROR_INVALID_DATA;
 	wconvert(SourceInfFileName);
 	wconvert(OEMSourceMediaLocation);
+	// coverity[returned_null]
 	walloc(DestinationInfFileName, DestinationInfFileNameSize);
 
 	// DestinationInfFileNameComponent is not supported

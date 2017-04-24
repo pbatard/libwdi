@@ -84,21 +84,23 @@ enum installer_code {
 };
 
 /* Helper functions to access DLLs */
-static __inline HMODULE GetDLLHandle(char* szDLLName)
+static __inline HMODULE GetLibraryHandle(char* szDLLName)
 {
 	HANDLE h = GetModuleHandleA(szDLLName);
-	if (h == NULL) {
-		// coverity[alloc_fn][var_assign]
+	if (h == NULL)
 		h = LoadLibraryA(szDLLName);
-	}
 	return h;
 }
+
+#define PF_LIBRARY(name) HANDLE h##name = NULL
+#define PF_FREELIBRARY(name) FreeLibrary(h##name); h##name = NULL
 #define PF_TYPE(api, ret, proc, args) typedef ret (api *proc##_t)args
-#define PF_DECL(proc) static proc##_t pf##proc = NULL
-#define PF_TYPE_DECL(api, ret, proc, args) PF_TYPE(api, ret, proc, args);  PF_DECL(proc)
-#define PF_INIT(proc, dllname) if (pf##proc == NULL) pf##proc = (proc##_t) GetProcAddress(GetDLLHandle(#dllname), #proc)
-#define PF_INIT_OR_OUT(proc, dllname) PF_INIT(proc, dllname); if (pf##proc == NULL) { \
-	PF_ERR("Unable to locate %s() in %s\n", #proc, #dllname); goto out; }
+#define PF_DECL(proc) proc##_t pf##proc = NULL
+#define PF_TYPE_DECL(api, ret, proc, args) PF_TYPE(api, ret, proc, args); PF_DECL(proc)
+#define PF_INIT(proc, name) if (h##name == NULL) h##name = GetLibraryHandle(#name); \
+	pf##proc = (proc##_t) GetProcAddress(h##name, #proc)
+#define PF_INIT_OR_OUT(proc, name) PF_INIT(proc, name); if (pf##proc == NULL) { \
+	PF_ERR("Unable to locate %s() in %s\n", #proc, #name); goto out; }
 
 /*
  * Cfgmgr32.dll interface

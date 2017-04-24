@@ -58,6 +58,7 @@ BOOL parse_ini(void);
 /*
  * Globals
  */
+OPENED_LIBRARIES_VARS;
 HINSTANCE main_instance;
 HWND hDeviceList;
 HWND hMain;
@@ -491,15 +492,18 @@ void set_driver(void)
 	} else {
 		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
 		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
-		wdi_is_driver_supported(pd_options.driver_type, &file_info);
-		target_driver_version = file_info.dwFileVersionMS;
-		target_driver_version <<= 32;
-		target_driver_version += file_info.dwFileVersionLS;
-		safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
-			(int)file_info.dwFileVersionMS>>16, (int)file_info.dwFileVersionMS&0xFFFF,
-			(int)file_info.dwFileVersionLS>>16, (int)file_info.dwFileVersionLS&0xFFFF);
-		pd_options.use_wcid_driver = (nb_devices < 0) ||
-			((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
+		if (wdi_is_driver_supported(pd_options.driver_type, &file_info)) {
+			target_driver_version = file_info.dwFileVersionMS;
+			target_driver_version <<= 32;
+			target_driver_version += file_info.dwFileVersionLS;
+			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+				(int)file_info.dwFileVersionMS >> 16, (int)file_info.dwFileVersionMS & 0xFFFF,
+				(int)file_info.dwFileVersionLS >> 16, (int)file_info.dwFileVersionLS & 0xFFFF);
+			pd_options.use_wcid_driver = (nb_devices < 0) ||
+				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
+		} else {
+			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+		}
 	}
 	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
 }
@@ -803,19 +807,6 @@ void set_loglevel(DWORD menu_cmd)
 	wdi_set_log_level(log_level);
 }
 
-typedef HIMAGELIST (WINAPI *ImageList_Create_t)(
-	int cx,
-	int cy,
-	UINT flags,
-	int cInitial,
-	int cGrow
-);
-typedef int (WINAPI *ImageList_ReplaceIcon_t)(
-	HIMAGELIST himl,
-	int i,
-	HICON hicon
-);
-
 void init_dialog(HWND hDlg)
 {
 	int i, err;
@@ -832,9 +823,6 @@ void init_dialog(HWND hDlg)
 		RECT margin;
 		UINT uAlign;
 	} bi = {0};	// BUTTON_IMAGELIST
-	// MinGW fails to link those
-	ImageList_Create_t pImageList_Create = NULL;
-	ImageList_ReplaceIcon_t pImageList_ReplaceIcon = NULL;
 
 	// Quite a burden to carry around as parameters
 	hMain = hDlg;
@@ -900,36 +888,36 @@ void init_dialog(HWND hDlg)
 		"Find out more about WinUSB online", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
-	hDllInst = GetDLLHandle("shell32.dll");
+	hDllInst = GetLibraryHandle("shell32");
 	// These shell32 icons should be available on any Windows system
 	hIconFolder = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(4), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconTickNOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(240), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	hIconReport = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(244), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	// Try to locate a green checkmark icon
-	hDllInst = GetDLLHandle("urlmon.dll");
+	hDllInst = GetLibraryHandle("urlmon");
 	hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(100), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconTickOK == NULL)) {
 		// No luck, fallback to next best thing in shell32
-		hDllInst = GetDLLHandle("shell32.dll");
+		hDllInst = GetLibraryHandle("shell32");
 		hIconTickOK = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(246), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	// Try to locate a funnel icon
-	hDllInst = GetDLLHandle("admtmpl.dll");
+	hDllInst = GetLibraryHandle("admtmpl");
 	hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(6), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
-		hDllInst = GetDLLHandle("wmploc.dll");
+		hDllInst = GetLibraryHandle("wmploc");
 		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(475), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	if ((hDllInst == NULL) || (hIconFilter == NULL)) {
 		// No luck, fallback to next best thing in shell32
-		hDllInst = GetDLLHandle("shell32.dll");
+		hDllInst = GetLibraryHandle("shell32");
 		hIconFilter = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(278), IMAGE_ICON, i16, i16, LR_DEFAULTCOLOR|LR_SHARED);
 	}
 	SendMessage(GetDlgItem(hDlg, IDC_FILTER_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconFilter);
 	do {
-		if ((hDllInst = GetDLLHandle("ieframe.dll")) == NULL) break;	// Green right arrow
+		if ((hDllInst = GetLibraryHandle("ieframe")) == NULL) break;	// Green right arrow
 		hIconArrowGreen = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(42025), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
-		if ((hDllInst = GetDLLHandle("netshell.dll")) == NULL) break;	// Orange right arrow
+		if ((hDllInst = GetLibraryHandle("netshell")) == NULL) break;	// Orange right arrow
 		hIconArrowOrange = (HICON)LoadImage(hDllInst, MAKEINTRESOURCE(1607), IMAGE_ICON, i24, i24, LR_DEFAULTCOLOR|LR_SHARED);
 		if ( (hIconArrowGreen == NULL) || (hIconArrowOrange == NULL) ) break;
 		use_arrow_icons = TRUE;
@@ -958,17 +946,14 @@ void init_dialog(HWND hDlg)
 	}
 
 	// Set a folder icon on the select folder button
-	pImageList_Create = (ImageList_Create_t) GetProcAddress(GetDLLHandle("comctl32.dll"), "ImageList_Create");
-	pImageList_ReplaceIcon = (ImageList_ReplaceIcon_t) GetProcAddress(GetDLLHandle("comctl32.dll"), "ImageList_ReplaceIcon");
-
-	bi.himl = pImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
-	pImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
+	bi.himl = ImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
+	ImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
 	SetRect(&bi.margin, 0, 0, 0, 0);
 	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_BROWSE), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
 
-	bi.himl = pImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
-	pImageList_ReplaceIcon(bi.himl, -1, hIconReport);
+	bi.himl = ImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
+	ImageList_ReplaceIcon(bi.himl, -1, hIconReport);
 	SetRect(&bi.margin, 0, 1, 0, 0);
 	bi.uAlign = 4;	// BUTTON_IMAGELIST_ALIGN_CENTER
 	SendMessage(GetDlgItem(hDlg, IDC_VID_REPORT), BCM_SETIMAGELIST, 0, (LPARAM)&bi);
@@ -1776,7 +1761,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 
 	// Some dialogs have Rich Edit controls and won't display without this
-	GetDLLHandle("Riched20.dll");
+	GetLibraryHandle("Riched20");
 
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
@@ -1831,6 +1816,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	safe_free(update.download_url);
 	safe_free(update.release_notes);
+	FreeAllLibraries();
 	CloseHandle(mutex);
 #ifdef _CRTDBG_MAP_ALLOC
 	_CrtDumpMemoryLeaks();

@@ -87,25 +87,13 @@ static int (*progress_function)(void*);
 static void* progress_arglist;
 static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
-// Work around for GDI calls on DDK (would require end user apps linking with Gdi32 othwerwise)
-static HFONT (WINAPI *pCreateFontA)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR) = NULL;
-static HGDIOBJ (WINAPI *pGetStockObject)(int) = NULL;
-static int (WINAPI *pSetBkMode)(HDC, int) = NULL;
-
-#define IS_CREATEFONT_AVAILABLE (pCreateFontA != NULL)
-#define IS_BACKGROUND_AVAILABLE ((pGetStockObject != NULL) && (pSetBkMode != NULL))
-
-#define INIT_GDI32 do {	\
-	pCreateFontA = (HFONT (WINAPI *)(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR))	\
-		GetProcAddress(GetDLLHandle("gdi32.dll"), "CreateFontA"); \
-	pGetStockObject = (HGDIOBJ (WINAPI *)(int))	\
-		GetProcAddress(GetDLLHandle("gdi32.dll"), "GetStockObject"); \
-	pSetBkMode = (int (WINAPI *)(HDC, int))	\
-		GetProcAddress(GetDLLHandle("gdi32.dll"), "SetBkMode"); \
-	} while(0)
+// Work around for GDI calls (would require end user apps linking with Gdi32 othwerwise)
+PF_LIBRARY(Gdi32);
+PF_TYPE_DECL(WINAPI, HFONT, CreateFontA, (int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR));
+PF_TYPE_DECL(WINAPI, HGDIOBJ, GetStockObject, (int));
+PF_TYPE_DECL(WINAPI, int, SetBkMode, (HDC, int));
 
 extern char *windows_error_str(uint32_t retval);
-
 
 /*
  * Detect if a Windows Security prompt is active, by enumerating the
@@ -188,9 +176,10 @@ static void center_dialog(HWND dialog)
 /*
  * Dialog sub-elements
  */
-static void init_children(HWND hDlg) {
-
+static void init_children(HWND hDlg)
+{
 	HFONT hFont;
+
 	// Progress Bar
 	hProgressBar = CreateWindowExA(WS_EX_NOPARENTNOTIFY, PROGRESS_CLASSA,
 		NULL,
@@ -221,10 +210,9 @@ static void init_children(HWND hDlg) {
 	}
 
 	// Set the font to MS Dialog default
-	INIT_GDI32;
-	if (IS_CREATEFONT_AVAILABLE) {
-		hFont = pCreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-			DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
+	if (pfCreateFontA != NULL) {
+		hFont = pfCreateFontA(-11, 0, 0, 0, FW_DONTCARE, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
+			CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, "MS Shell Dlg 2");
 		SendMessage(hProgressText, WM_SETFONT, (WPARAM)hFont, (LPARAM)TRUE);
 	}
 }
@@ -333,8 +321,11 @@ static LRESULT CALLBACK progress_callback(HWND hDlg, UINT message, WPARAM wParam
 		return (INT_PTR)FALSE;
 
 	case WM_CTLCOLORSTATIC:
-		pSetBkMode((HDC)wParam, TRANSPARENT);
-		return (INT_PTR)pGetStockObject(NULL_BRUSH);
+		if ((pfSetBkMode != NULL) && (pfGetStockObject != NULL)) {
+			pfSetBkMode((HDC)wParam, TRANSPARENT);
+			return (INT_PTR)pfGetStockObject(NULL_BRUSH);
+		}
+		return (INT_PTR)FALSE;
 	}
 	return DefWindowProc(hDlg, message, wParam, lParam);
 }
@@ -351,6 +342,10 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	if ( (function == NULL) || (hWnd == NULL) ) {
 		return WDI_ERROR_INVALID_PARAM;
 	}
+
+	PF_INIT(CreateFontA, Gdi32);
+	PF_INIT(GetStockObject, Gdi32);
+	PF_INIT(SetBkMode, Gdi32);
 
 	app_instance = (HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 
@@ -417,6 +412,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		}
 	}
 
+	PF_FREELIBRARY(Gdi32);
 	safe_closehandle(progress_mutex);
 
 	return (int)msg.wParam;
