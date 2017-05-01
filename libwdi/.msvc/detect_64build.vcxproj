@@ -74,13 +74,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Message>detected 32 bit build</Message>
-      <Command>echo #define NO_BUILD64&gt; $(ProjectDir)\..\build64.h</Command>
+      <Command>echo #define NO_BUILD64&gt; "$(ProjectDir)\..\build64.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
       <Message>detected 64 bit build</Message>
-      <Command>echo #define BUILD64&gt; $(ProjectDir)\..\build64.h</Command>
+      <Command>echo #define BUILD64&gt; "$(ProjectDir)\..\build64.h"</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
@@ -89,13 +89,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Message>detected 32 bit build</Message>
-      <Command>echo #define NO_BUILD64&gt; $(ProjectDir)\..\build64.h</Command>
+      <Command>echo #define NO_BUILD64&gt; "$(ProjectDir)\..\build64.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
       <Message>detected 64 bit build</Message>
-      <Command>echo #define BUILD64&gt; $(ProjectDir)\..\build64.h</Command>
+      <Command>echo #define BUILD64&gt; "$(ProjectDir)\..\build64.h"</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
