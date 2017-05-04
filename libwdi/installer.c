@@ -77,8 +77,8 @@ typedef DEVINSTID_A DEVINSTID;
 /*
  * DLL procedures
  */
-PF_LIBRARY(Cfgmgr32);
-PF_LIBRARY(Msvcrt);
+PF_DECL_LIBRARY(Cfgmgr32);
+PF_DECL_LIBRARY(Msvcrt);
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Locate_DevNodeA, (PDEVINST, DEVINSTID_A, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Reenumerate_DevNode, (DEVINST, ULONG));
 PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_DevNode_Status, (PULONG, PULONG, DEVINST, ULONG));
@@ -124,6 +124,8 @@ void plog(const char *format, ...)
 // Setup the DLLs
 static BOOL init_dlls(void)
 {
+	PF_LOAD_LIBRARY(Cfgmgr32);
+	PF_LOAD_LIBRARY(Msvcrt);
 	PF_INIT_OR_OUT(CM_Locate_DevNodeA, Cfgmgr32);
 	PF_INIT_OR_OUT(CM_Reenumerate_DevNode, Cfgmgr32);
 	PF_INIT_OR_OUT(CM_Get_DevNode_Status, Cfgmgr32);
@@ -906,7 +908,7 @@ out:
 	CloseHandle(syslog_terminate_event);
 	CloseHandle((HANDLE)syslog_reader_thid);
 	CloseHandle(pipe_handle);
-	PF_FREELIBRARY(Msvcrt);
-	PF_FREELIBRARY(Cfgmgr32);
+	PF_FREE_LIBRARY(Msvcrt);
+	PF_FREE_LIBRARY(Cfgmgr32);
 	return ret;
 }

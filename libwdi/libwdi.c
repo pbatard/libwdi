@@ -415,7 +415,7 @@ static FILE *fopen_as_userU(const char *filename, const char *mode)
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 	// Version (avoids linking against version.lib)
-	PF_LIBRARY(Version);
+	PF_DECL_LOAD_LIBRARY(Version);
 	PF_TYPE_DECL(WINAPI, BOOL, VerQueryValueW, (LPCVOID, LPWSTR, LPVOID, PUINT));
 	PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoW, (LPWSTR, DWORD, DWORD, LPVOID));
 	PF_TYPE_DECL(WINAPI, BOOL, GetFileVersionInfoSizeW, (LPWSTR, LPDWORD));
@@ -431,13 +431,15 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	VS_FIXEDFILEINFO *file_info;
 
 	if ((driver_type < 0) || (driver_type >= WDI_USER) || (driver_info == NULL)) {
-		return WDI_ERROR_INVALID_PARAM;
+		r = WDI_ERROR_INVALID_PARAM;
+		goto out;
 	}
 
 	// No need to extract the version again if available
 	if (driver_version[driver_type].dwSignature != 0) {
 		memcpy(driver_info, &driver_version[driver_type], sizeof(VS_FIXEDFILEINFO));
-		return WDI_SUCCESS;
+		r = WDI_SUCCESS;
+		goto out;
 	}
 
 	// Avoid the need for end user apps to link against version.lib
@@ -509,7 +511,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 	DeleteFileU(filename);
 
 out:
-	PF_FREELIBRARY(Version);
+	PF_FREE_LIBRARY(Version);
 	return r;
 }
 
@@ -674,7 +676,7 @@ static void free_di(struct wdi_device_info *di)
 int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 							   struct wdi_options_create_list* options)
 {
-	PF_LIBRARY(Cfgmgr32);
+	PF_DECL_LIBRARY(Cfgmgr32);
 	PF_TYPE_DECL(WINAPI, CONFIGRET, CM_Get_Device_IDA, (DEVINST, PCHAR, ULONG, ULONG));
 
 	int r;
@@ -708,6 +710,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 	*list = NULL;
 
+	PF_LOAD_LIBRARY(Cfgmgr32);
 	r = WDI_ERROR_RESOURCE;
 	PF_INIT_OR_OUT(CM_Get_Device_IDA, Cfgmgr32);
 
@@ -936,7 +939,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 	*list = start;
 	r = (*list == NULL) ? WDI_ERROR_NO_DEVICE : WDI_SUCCESS;
 out:
-	PF_FREELIBRARY(Cfgmgr32);
+	PF_FREE_LIBRARY(Cfgmgr32);
 	CloseHandle(mutex);
 	return r;
 }
@@ -1430,7 +1433,7 @@ static int process_message(char* buffer, DWORD size)
 // Run the elevated installer
 static int install_driver_internal(void* arglist)
 {
-	PF_LIBRARY(SetupAPI);
+	PF_DECL_LIBRARY(SetupAPI);
 	PF_TYPE_DECL(WINAPI, DWORD, CMP_WaitNoPendingInstallEvents, (DWORD));
 	struct install_driver_params* params = (struct install_driver_params*)arglist;
 	SHELLEXECUTEINFOA shExecInfo;
@@ -1456,6 +1459,7 @@ static int install_driver_internal(void* arglist)
 		goto out;
 	}
 
+	PF_LOAD_LIBRARY(SetupAPI);
 	r = WDI_ERROR_RESOURCE;
 	PF_INIT_OR_OUT(CMP_WaitNoPendingInstallEvents, SetupAPI);
 
@@ -1713,7 +1717,7 @@ out:
 	safe_closehandle(handle[0]);
 	safe_closehandle(pipe_handle);
 	safe_closehandle(stdout_w);
-	PF_FREELIBRARY(SetupAPI);
+	PF_FREE_LIBRARY(SetupAPI);
 	CloseHandle(mutex);
 	return r;
 }

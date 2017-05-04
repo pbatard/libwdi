@@ -88,7 +88,6 @@ static void* progress_arglist;
 static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
 // Work around for GDI calls (would require end user apps linking with Gdi32 othwerwise)
-PF_LIBRARY(Gdi32);
 PF_TYPE_DECL(WINAPI, HFONT, CreateFontA, (int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR));
 PF_TYPE_DECL(WINAPI, HGDIOBJ, GetStockObject, (int));
 PF_TYPE_DECL(WINAPI, int, SetBkMode, (HDC, int));
@@ -338,8 +337,10 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 	MSG msg;
 	WNDCLASSEX wc;
 	BOOL r;
+	PF_DECL_LOAD_LIBRARY(Gdi32);
 
 	if ( (function == NULL) || (hWnd == NULL) ) {
+		PF_FREE_LIBRARY(Gdi32);
 		return WDI_ERROR_INVALID_PARAM;
 	}
 
@@ -357,7 +358,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		if (progress_mutex != NULL)
 			CloseHandle(progress_mutex);
 		progress_mutex = INVALID_HANDLE_VALUE;
-		return WDI_ERROR_BUSY;
+		msg.wParam = WDI_ERROR_BUSY;
+		goto out;
 	}
 	progress_function = function;
 	progress_arglist = arglist;
@@ -382,8 +384,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 
 		if (!RegisterClassEx(&wc)) {
 			wdi_err("can't register class %s", windows_error_str(0));
-			safe_closehandle(progress_mutex);
-			return WDI_ERROR_RESOURCE;
+			msg.wParam = WDI_ERROR_RESOURCE;
+			goto out;
 		}
 	}
 
@@ -394,8 +396,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		100, 100, 287, 102, hWnd, NULL, app_instance, NULL);
 	if (hDlg == NULL) {
 		wdi_err("Unable to create progress dialog: %s", windows_error_str(0));
-		safe_closehandle(progress_mutex);
-		return WDI_ERROR_RESOURCE;
+		msg.wParam = WDI_ERROR_RESOURCE;
+		goto out;
 	}
 
 	// Finally we Display the dialog...
@@ -412,7 +414,8 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		}
 	}
 
-	PF_FREELIBRARY(Gdi32);
+out:
+	PF_FREE_LIBRARY(Gdi32);
 	safe_closehandle(progress_mutex);
 
 	return (int)msg.wParam;

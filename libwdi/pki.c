@@ -408,7 +408,7 @@ static __inline LPWSTR UTF8toWCHAR(LPCSTR szStr)
  */
 BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 {
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertSetCertificateContextProperty);
 	PF_DECL(CertAddCertificateContextToStore);
@@ -443,7 +443,7 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 out:
 	if (hSystemStore != NULL)
 		pfCertCloseStore(hSystemStore, 0);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -452,7 +452,7 @@ out:
  */
 BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 {
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertFindCertificateInStore);
 	PF_DECL(CertDeleteCertificateFromStore);
@@ -496,7 +496,7 @@ out:
 	free(certNameBlob.pbData);
 	if (hSystemStore != NULL)
 		pfCertCloseStore(hSystemStore, 0);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -506,7 +506,7 @@ out:
  */
 BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisableWarning, HWND hWnd)
 {
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertCreateCertificateContext);
 	PF_DECL(CertFindCertificateInStore);
@@ -586,7 +586,7 @@ out:
 		pfCertFreeCertificateContext(pStoreCertContext);
 	if (hSystemStore)
 		pfCertCloseStore(hSystemStore, 0);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -595,7 +595,7 @@ out:
  */
 PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 {
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CryptEncodeObject);
 	PF_DECL(CertStrToNameA);
 	PF_DECL(CertCreateSelfSignCertificate);
@@ -742,7 +742,7 @@ out:
 		CryptDestroyKey(hKey);
 	if (hCSP)
 		CryptReleaseContext(hCSP, 0);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(Crypt32);
 	return pCertContext;
 }
 
@@ -751,7 +751,7 @@ out:
  */
 BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 {
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CryptAcquireCertificatePrivateKey);
 	PF_DECL(CertOpenStore);
 	PF_DECL(CertCloseStore);
@@ -812,7 +812,7 @@ out:
 	if ((bFreeCSP) && (hCSP)) {
 		CryptReleaseContext(hCSP, 0);
 	}
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -825,8 +825,8 @@ out:
  */
 BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 {
-	PF_LIBRARY(MSSign32);
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(MSSign32);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(SignerSignEx);
 	PF_DECL(SignerFreeSignerContext);
 	PF_DECL(CertFreeCertificateContext);
@@ -944,8 +944,8 @@ out:
 		pfSignerFreeSignerContext(pSignerContext);
 	if (pCertContext != NULL)
 		pfCertFreeCertificateContext(pCertContext);
-	PF_FREELIBRARY(MSSign32);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(MSSign32);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -954,7 +954,7 @@ out:
  */
 static BOOL CalcHash(BYTE* pbHash, LPCSTR szfilePath)
 {
-	PF_LIBRARY(WinTrust);
+	PF_DECL_LOAD_LIBRARY(WinTrust);
 	PF_DECL(CryptCATAdminCalcHashFromFileHandle);
 	BOOL r = FALSE;
 	HANDLE hFile = NULL;
@@ -974,7 +974,7 @@ out:
 	free(wszFilePath);
 	if (hFile)
 		CloseHandle(hFile);
-	PF_FREELIBRARY(WinTrust);
+	PF_FREE_LIBRARY(WinTrust);
 	return r;
 }
 
@@ -988,8 +988,8 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 	const BYTE fImageData = 0xA0;		// Flags used for the SPC_PE_IMAGE_DATA "<<<Obsolete>>>" link
 	LPCWSTR wszOSAttr = L"2:5.1,2:5.2,2:6.0,2:6.1";
 
-	PF_LIBRARY(WinTrust);
-	PF_LIBRARY(Crypt32);
+	PF_DECL_LOAD_LIBRARY(WinTrust);
+	PF_DECL_LOAD_LIBRARY(Crypt32);
 	PF_DECL(CryptCATPutMemberInfo);
 	PF_DECL(CryptCATPutAttrInfo);
 	PF_DECL(CryptEncodeObject);
@@ -1093,8 +1093,8 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 out:
 	free(szExtCopy);
 	free(wszFileName);
-	PF_FREELIBRARY(WinTrust);
-	PF_FREELIBRARY(Crypt32);
+	PF_FREE_LIBRARY(WinTrust);
+	PF_FREE_LIBRARY(Crypt32);
 	return r;
 }
 
@@ -1201,7 +1201,7 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
  */
 BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFileList, DWORD cFileList)
 {
-	PF_LIBRARY(WinTrust);
+	PF_DECL_LOAD_LIBRARY(WinTrust);
 	PF_DECL(CryptCATOpen);
 	PF_DECL(CryptCATClose);
 	PF_DECL(CryptCATPersistStore);
@@ -1286,6 +1286,6 @@ out:
 		(CryptReleaseContext(hProv, 0));
 	if (hCat)
 		pfCryptCATClose(hCat);
-	PF_FREELIBRARY(WinTrust);
+	PF_FREE_LIBRARY(WinTrust);
 	return r;
 }

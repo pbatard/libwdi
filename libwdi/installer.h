@@ -92,8 +92,10 @@ static __inline HMODULE GetLibraryHandle(char* szDLLName)
 	return h;
 }
 
-#define PF_LIBRARY(name) HANDLE h##name = NULL
-#define PF_FREELIBRARY(name) FreeLibrary(h##name); h##name = NULL
+#define PF_DECL_LIBRARY(name) HANDLE h##name = NULL
+#define PF_LOAD_LIBRARY(name) h##name = LoadLibraryA(#name)
+#define PF_DECL_LOAD_LIBRARY(name) HANDLE PF_LOAD_LIBRARY(name)
+#define PF_FREE_LIBRARY(name) FreeLibrary(h##name); h##name = NULL
 #define PF_TYPE(api, ret, proc, args) typedef ret (api *proc##_t)args
 #define PF_DECL(proc) proc##_t pf##proc = NULL
 #define PF_TYPE_DECL(api, ret, proc, args) PF_TYPE(api, ret, proc, args); PF_DECL(proc)
