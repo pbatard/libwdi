@@ -23,7 +23,7 @@ HKR,,,0,"libusb-win32 devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
-%VendorName% = Devices, NT, NTAMD64, NTIA64
+%VendorName% = Devices, NT, NTAMD64
 
 ;--------------------------------------------------------------------------
 ; libusb-win32 files
@@ -43,10 +43,6 @@ libusb0.dll     = 1,amd64
 #LK_DLL#     #LK_EQ_X64#
 libusb0_x86.dll = 1,x86
 #LK_X86_DLL# #LK_EQ_X86#
-
-[SourceDisksFiles.ia64]
-libusb0.sys     = 1,ia64
-libusb0.dll     = 1,ia64
 
 [DestinationDirs]
 libusb_files_sys       = 10,system32\drivers
@@ -77,9 +73,6 @@ CopyFiles = libusb_files_sys, libusb_files_dll_x86
 [LIBUSB_WIN32_DEV.NTAMD64]
 CopyFiles = libusb_files_sys, libusb_files_dll, libusb_files_dll_wow64
 
-[LIBUSB_WIN32_DEV.NTIA64]
-CopyFiles = libusb_files_sys, libusb_files_dll, libusb_files_dll_wow64
-
 [LIBUSB_WIN32_DEV.NT.HW]
 DelReg = libusb_del_reg_hw
 AddReg = libusb_add_reg_hw
@@ -88,17 +81,10 @@ AddReg = libusb_add_reg_hw
 DelReg = libusb_del_reg_hw
 AddReg = libusb_add_reg_hw
 
-[LIBUSB_WIN32_DEV.NTIA64.HW]
-DelReg = libusb_del_reg_hw
-AddReg = libusb_add_reg_hw
-
 [LIBUSB_WIN32_DEV.NT.Services]
 AddService = libusb0, 0x00000002, libusb_add_service
 
 [LIBUSB_WIN32_DEV.NTAMD64.Services]
-AddService = libusb0, 0x00000002, libusb_add_service
-
-[LIBUSB_WIN32_DEV.NTIA64.Services]
 AddService = libusb0, 0x00000002, libusb_add_service
 
 ; Older versions of this .inf file installed filter drivers. They are not
@@ -143,6 +129,3 @@ ServiceBinary = %12%\libusb0.sys
 
 [Devices.NTAMD64]
 %DeviceName% = LIBUSB_WIN32_DEV.NTAMD64, USB\%DeviceID%
-
-[Devices.NTIA64]
-%DeviceName% = LIBUSB_WIN32_DEV.NTIA64, USB\%DeviceID%

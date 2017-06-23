@@ -16,19 +16,19 @@ AC_C_INLINE
 AM_PROG_CC_C_O
 AC_DEFINE([_GNU_SOURCE], [], [Use GNU extensions])
 
-AC_ARG_WITH([ddkdir],
-	[AS_HELP_STRING([--with-ddkdir], [embed WinUSB driver files from the following DDK location])],
-	[DDK_DIR=$withval],
-	[DDK_DIR=""])
-if test "x$DDK_DIR" != "x"; then
-	AC_DEFINE_UNQUOTED([DDK_DIR], ["${DDK_DIR}"], [embed WinUSB driver files from the following DDK location])
+AC_ARG_WITH([wdkdir],
+	[AS_HELP_STRING([--with-wdkdir], [embed WinUSB driver files from the following WDK location])],
+	[WDK_DIR=$withval],
+	[WDK_DIR=""])
+if test "x$WDK_DIR" != "x"; then
+	AC_DEFINE_UNQUOTED([WDK_DIR], ["${WDK_DIR}"], [embed WinUSB driver files from the following WDK location])
 fi
 
 AC_ARG_WITH([wdfver],
 	[AS_HELP_STRING([--with-wdfver], [WDF/KDMF version to use (default 1011)])],
 	[WDF_VER=$withval],
 	[WDF_VER=1011])
-AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [DDK WDF/KMDF coinstaller version])
+AC_DEFINE_UNQUOTED([WDF_VER], [${WDF_VER}], [WDK WDF/KMDF coinstaller version])
 
 AC_ARG_WITH([libusb0],
 	[AS_HELP_STRING([--with-libusb0], [embed libusb0 driver files from the following location])],
@@ -54,8 +54,8 @@ if test "x$USER_DIR" != "x"; then
 	AC_DEFINE_UNQUOTED([USER_DIR], ["${USER_DIR}"], [embed user defined driver files from the following location])
 fi
 
-if test "x$USER_DIR" == "x" -a "x$DDK_DIR" == "x" -a "x$LIBUSB0_DIR" == "x" -a "x$LIBUSBK_DIR" == "x"; then
-	AC_MSG_ERROR([One of --with-ddkdir, --with-libusb0, --with-libusbk or --with-userdir options MUST be provided.])
+if test "x$USER_DIR" == "x" -a "x$WDK_DIR" == "x" -a "x$LIBUSB0_DIR" == "x" -a "x$LIBUSBK_DIR" == "x"; then
+	AC_MSG_ERROR([One of --with-wdkdir, --with-libusb0, --with-libusbk or --with-userdir options MUST be provided.])
 fi
 
 AC_MSG_CHECKING([development environment])
@@ -155,10 +155,6 @@ AC_ARG_ENABLE([64bit], [AS_HELP_STRING([--enable-64bit],
 	[build 64 bit compatible library (default y)])],
 	[enable_64bit='$enableval'],
 	[enable_64bit='yes'])
-AC_ARG_ENABLE([ia64], [AS_HELP_STRING([--enable-ia64],
-	[embed IA64/Itanium driver files (default n)])],
-	[enable_ia64='$enableval'],
-	[enable_ia64='no'])
 if test "x$enable_64bit" == "xno" -a "x$enable_32bit" == "xno"; then
 	AC_MSG_ERROR([you cannot disable both 32 and 64 bit support])
 fi
@@ -191,10 +187,6 @@ if test "x$enable_64bit" != "xno"; then
 	AC_SUBST([OPT_M64])
 fi
 AM_CONDITIONAL([OPT_M64], [test "x$enable_64bit" != "xno"])
-if test "x$enable_ia64" != "xno"; then
-	AC_DEFINE([OPT_IA64], [], [embed IA64 driver files])
-	AC_SUBST([OPT_IA64])
-fi
 
 if test "x$enable_64bit" != "xno"; then
 	# the default is to produce 32 bit, when both 64 and 32 bit support are available
@@ -221,29 +213,25 @@ AC_SUBST([ARCH_RCFLAGS])
 # AC_CHECK_FILES only works when not cross compiling
 if test "$cross_compiling" != "yes"
 then
-	if test "x$DDK_DIR" != "x"; then
-		# check that the required WinUSB DDK files are available
-		AC_CHECK_FILES([$DDK_DIR/redist/winusb/], [COINSTALLER_DIR="winusb"], [COINSTALLER_DIR="wdf"])
+	if test "x$WDK_DIR" != "x"; then
+		# check that the required WinUSB WDK files are available
+		AC_CHECK_FILES([$WDK_DIR/redist/winusb/], [COINSTALLER_DIR="winusb"], [COINSTALLER_DIR="wdf"])
 		AC_DEFINE_UNQUOTED([COINSTALLER_DIR], ["${COINSTALLER_DIR}"], [CoInstaller subdirectory for WinUSB redist files ("winusb" or "wdf")])
 		AC_SUBST([COINSTALLER_DIR])
 		if test "x$enable_64bit" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x64/], [X64_DIR="x64"], [X64_DIR="amd64"])
+		AC_CHECK_FILES([$WDK_DIR/redist/wdf/x64/], [X64_DIR="x64"], [X64_DIR="amd64"])
 		AC_DEFINE_UNQUOTED([X64_DIR], ["${X64_DIR}"], [64bit subdirectory for WinUSB redist files ("x64" or "amd64")])
 		AC_SUBST([X64_DIR])
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/${X64_DIR}/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/${X64_DIR}/winusbcoinstaller2.dll], [],
-			[AC_MSG_ERROR([the WinUSB x64 driver files could not be detected (--with-ddkdir)])])
+		AC_CHECK_FILES([$WDK_DIR/redist/wdf/${X64_DIR}/WdfCoInstaller0${WDF_VER}.dll $WDK_DIR/redist/${COINSTALLER_DIR}/${X64_DIR}/winusbcoinstaller2.dll], [],
+			[AC_MSG_ERROR([the WinUSB x64 driver files could not be detected (--with-wdkdir)])])
 		fi
 		if test "x$enable_32bit" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/x86/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/x86/winusbcoinstaller2.dll], [],
-			[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-ddkdir)])])
+		AC_CHECK_FILES([$WDK_DIR/redist/wdf/x86/WdfCoInstaller0${WDF_VER}.dll $WDK_DIR/redist/${COINSTALLER_DIR}/x86/winusbcoinstaller2.dll], [],
+			[AC_MSG_ERROR([the WinUSB x86 driver files could not be detected (--with-wdkdir)])])
 		fi
-		if test "x$enable_ia64" != "xno"; then
-		AC_CHECK_FILES([$DDK_DIR/redist/wdf/ia64/WdfCoInstaller0${WDF_VER}.dll $DDK_DIR/redist/${COINSTALLER_DIR}/ia64/winusbcoinstaller2.dll], [],
-			[AC_MSG_ERROR([the WinUSB ia64 driver files could not be detected (--with-ddkdir)])])
-		fi
-		case "$DDK_DIR" in
+		case "$WDK_DIR" in
 			[[\\/]]*|?:[[\\/]]*) ;;
-			*) AC_DEFINE_UNQUOTED([DDK_DIR], "../$DDK_DIR");;
+			*) AC_DEFINE_UNQUOTED([WDK_DIR], "../$WDK_DIR");;
 		esac
 	fi
 
@@ -254,10 +242,6 @@ then
 		if test "x$enable_64bit" != "xno"; then
 		AC_CHECK_FILES([$LIBUSB0_DIR/bin/amd64/libusb0.sys $LIBUSB0_DIR/bin/amd64/libusb0.dll],,
 			[AC_MSG_ERROR([the libusb0 amd64 driver files could not be detected (--with-libusb0)])])
-		fi
-		if test "x$enable_ia64" != "xno"; then
-		AC_CHECK_FILES([$LIBUSB0_DIR/bin/ia64/libusb0.sys $LIBUSB0_DIR/bin/ia64/libusb0.dll],,
-			[AC_MSG_ERROR([the libusb0 ia64 driver files could not be detected (--with-libusb0)])])
 		fi
 		case "$LIBUSB0_DIR" in
 			[[\\/]]*|?:[[\\/]]*) ;;
@@ -272,10 +256,6 @@ then
 		if test "x$enable_64bit" != "xno"; then
 		AC_CHECK_FILES([$LIBUSBK_DIR/sys/amd64/libusbK.sys $LIBUSBK_DIR/dll/amd64/libusbK.dll $LIBUSBK_DIR/dll/amd64/libusb0.dll],,
 			[AC_MSG_ERROR([the libusbK amd64 driver files could not be detected (--with-libusbk)])])
-		fi
-		if test "x$enable_ia64" != "xno"; then
-		AC_CHECK_FILES([$LIBUSBK_DIR/sys/ia64/libusbK.sys $LIBUSBK_DIR/dll/ia64/libusbK.dll $LIBUSBK_DIR/dll/ia64/libusb0.dll],,
-			[AC_MSG_ERROR([the libusbK ia64 driver files could not be detected (--with-libusbk)])])
 		fi
 		case "$LIBUSBK_DIR" in
 			[[\\/]]*|?:[[\\/]]*) ;;

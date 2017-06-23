@@ -24,8 +24,8 @@ fi
 echo "setting nano to $TAGVER"
 
 cat > cmd.sed <<\_EOF
-s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ FILEVERSION \1,\2,\3,@@TAGVER@@/
-s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@TAGVER@@/
+s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),.*,0/ FILEVERSION \1,\2,@@TAGVER@@,0/
+s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),.*,0/ PRODUCTVERSION \1,\2,@@TAGVER@@,0/
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@TAGVER@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@TAGVER@@"/
 s/^\(.*\)"Zadig \(.*\)\..*"\(.*\)/\1"Zadig \2.@@TAGVER@@"\3/

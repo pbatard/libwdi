@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,8 +23,8 @@
 #error both 32 and 64 bit support have been disabled - check your config.h
 #endif
 
-#if !defined(DDK_DIR) && !defined(LIBUSB0_DIR) && !defined(USER_DIR) && !defined(LIBUSBK_DIR)
-#error at least one of DDK_DIR, LIBUSB0_DIR, LIBUSBK_DIR or USER_DIR must be defined - check your config.h
+#if !defined(WDK_DIR) && !defined(LIBUSB0_DIR) && !defined(USER_DIR) && !defined(LIBUSBK_DIR)
+#error at least one of WDK_DIR, LIBUSB0_DIR, LIBUSBK_DIR or USER_DIR must be defined - check your config.h
 #endif
 
 // Some adjustment is needed for MSVC

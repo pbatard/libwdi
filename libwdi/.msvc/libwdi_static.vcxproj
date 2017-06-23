@@ -177,6 +177,7 @@ embedder embedded.h</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\msvc\config.h" />
+    <ClInclude Include="..\embedder_files.h" />
     <ClInclude Include="..\stdfn.h" />
     <ClInclude Include="..\installer.h" />
     <ClInclude Include="..\libwdi.h" />

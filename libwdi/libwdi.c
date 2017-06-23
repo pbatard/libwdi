@@ -531,7 +531,7 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 
 	switch (driver_type) {
 	case WDI_WINUSB:
-#if defined(DDK_DIR)
+#if defined(WDK_DIR)
 		return TRUE;
 #else
 		return FALSE;

@@ -1,8 +1,11 @@
 *.aps
+*.db*
 *.dep
 *.exe
 *.htm
 *.idb
+*.ilk
+*.ipch
 *.la
 *.lib
 *.lo
@@ -13,6 +16,7 @@
 *.ncb
 *.o
 *.obj
+*.opendb
 *.opt
 *.pc
 *.pdb

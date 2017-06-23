@@ -16,12 +16,12 @@
 #endif
 
 /*
- * Embed WinUSB driver files from the following DDK location
+ * Embed WinUSB driver files from the following WDK location
  * NB: You must also make sure the WDF_VER, COINSTALLER_DIR and X64_DIR
  * match your WinUSB redist directrories
  */
-#ifndef DDK_DIR
-#define DDK_DIR "C:/Program Files (x86)/Windows Kits/10"
+#ifndef WDK_DIR
+#define WDK_DIR "C:/Program Files (x86)/Windows Kits/10"
 #endif
 
 /* WDK WDF coinstaller version */
@@ -53,9 +53,6 @@
 
 /* 64 bit support */
 #define OPT_M64
-
-/* embed IA64 driver files */
-//#define OPT_IA64
 
 /* Debug message logging */
 //#define ENABLE_DEBUG_LOGGING
