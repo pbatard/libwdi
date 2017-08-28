@@ -200,6 +200,8 @@ const char* WinInetErrorString(void)
 		return "The header could not be added because it already exists.";
 	case ERROR_HTTP_REDIRECT_FAILED:
 		return "The redirection failed because either the scheme changed or all attempts made to redirect failed.";
+	case ERROR_INTERNET_SECURITY_CHANNEL_ERROR:
+		return "This system's SSL library is too old to be able to access this website.";
 	case ERROR_INTERNET_CLIENT_AUTH_CERT_NEEDED:
 		return "Client Authentication certificate needed";
 	case ERROR_INTERNET_BAD_AUTO_PROXY_SCRIPT:
