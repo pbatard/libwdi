@@ -152,7 +152,7 @@ long tokenize_string(const char* src, // text to bo tokenized
 		while ((next_match=&token_entities[match_replace_pos++]))
 		{
 			// the match and replace fields must both be set
-			if (!next_match->match || next_match->replace[0] == 0)
+			if (!next_match->match || (match_replace_pos == 0 && next_match->replace[0] == 0))
 			{
 				break;
 			}
