@@ -63,6 +63,7 @@ int __cdecl main(int argc, char *argv[])
 	static struct wdi_options_prepare_driver pd_options = { 0 };
 
 	static int prompt_flag = 1;
+	static unsigned char use_iface = 0;
 	static unsigned char iface = 0;
 	static unsigned short vid = 0, pid = 0;
 	static int verbose_flag = 3;
@@ -109,6 +110,7 @@ int __cdecl main(int argc, char *argv[])
 			break;
 		case 'a':
 			iface = (unsigned char)atoi(optarg);
+			use_iface = 1;
 			printf("OPT: interface number %d\n", iface);
 			break;
 		case 'b':
@@ -146,6 +148,10 @@ int __cdecl main(int argc, char *argv[])
 		device->desc = desc;
 		device->vid = vid;
 		device->pid = pid;
+		if (use_iface) {
+			device->is_composite = 1;
+			device->mi = iface;
+		}
 		printf("Creating USB device: device: \"%s\" (%04X:%04X)\n", device->desc, device->vid, device->pid);
 		wdi_set_log_level(verbose_flag);
 		if (wdi_prepare_driver(device, path, INF_NAME, &pd_options) == WDI_SUCCESS) {
