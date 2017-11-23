@@ -223,7 +223,8 @@ int __cdecl main(int argc, char** argv)
 	if (wdi_create_list(&ldev, &ocl) == WDI_SUCCESS) {
 		r = WDI_SUCCESS;
 		for (; (ldev != NULL) && (r == WDI_SUCCESS); ldev = ldev->next) {
-			if ( (ldev->vid == dev.vid) && (ldev->pid == dev.pid) && (ldev->mi == dev.mi) ) {
+			if ( (ldev->vid == dev.vid) && (ldev->pid == dev.pid) && (ldev->mi == dev.mi) &&(ldev->is_composite == dev.is_composite) ) {
+				
 				dev.hardware_id = ldev->hardware_id;
 				dev.device_id = ldev->device_id;
 				matching_device_found = TRUE;
