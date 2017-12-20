@@ -261,7 +261,7 @@ typedef struct {
 } DEVPROPKEY;
 #endif
 
-const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
+static const DEVPROPKEY DEVPKEY_Device_BusReportedDeviceDesc = {
 	{ 0x540b947e, 0x8b40, 0x45bc, {0xa8, 0xa2, 0x6a, 0x0b, 0x89, 0x4c, 0xbd, 0xa2} }, 4 };
 
 // Check the status of the installer process
