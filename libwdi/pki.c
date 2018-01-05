@@ -768,8 +768,9 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 		goto out;
 	}
 
-	// Generate key pair (0x0400XXXX = RSA 1024 bit)
-	if (!CryptGenKey(hCSP, AT_SIGNATURE, 0x04000000 | CRYPT_EXPORTABLE, &hKey)) {
+	// Generate key pair using RSA 4096
+	// (Key_size <<16) because key size is in upper 16 bits
+	if (!CryptGenKey(hCSP, AT_SIGNATURE, (4096U<<16) | CRYPT_EXPORTABLE, &hKey)) {
 		wdi_dbg("could not generate keypair: %s", winpki_error_str(0));
 		goto out;
 	}
