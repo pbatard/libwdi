@@ -89,7 +89,7 @@ enum INF_TAGS
 	LK_EQ_X64,
 };
 
-token_entity_t inf_entities[]=
+static token_entity_t inf_entities[]=
 {
 	{"INF_FILENAME",""},
 	{"CAT_FILENAME",""},
@@ -120,8 +120,8 @@ token_entity_t inf_entities[]=
  * installed automatically, which will only leave the driverless debug interface to pick
  * a driver for.
  */
-const char* android_device_guid = "{f72fe0d4-cbcb-407d-8814-9ed673d0dd6b}";
-const struct {uint16_t vid; uint16_t pid;} android_device[] = {
+static const char* android_device_guid = "{f72fe0d4-cbcb-407d-8814-9ed673d0dd6b}";
+static const struct {uint16_t vid; uint16_t pid;} android_device[] = {
 	{0x0451, 0xD022},
 	{0x0451, 0xD101},
 	{0x0489, 0xC001},

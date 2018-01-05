@@ -190,7 +190,7 @@ int __cdecl main(int argc, char** argv)
 			log_level = WDI_LOG_LEVEL_NONE;
 			break;
 		case 'b':
-			oid.hWnd = (optarg)?(HWND)strtol(optarg, NULL, 0):GetConsoleHwnd();
+			oid.hWnd = (optarg)?(HWND)(uintptr_t)strtol(optarg, NULL, 0):GetConsoleHwnd();
 			oic.hWnd = oid.hWnd;
 			break;
 		case 'l':
