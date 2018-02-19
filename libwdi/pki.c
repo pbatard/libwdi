@@ -38,6 +38,7 @@
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
+#include "stdfn.h"
 
 #define KEY_CONTAINER               L"libwdi key container"
 #define PF_ERR                      wdi_err
@@ -46,6 +47,9 @@
 #endif
 #ifndef szOID_RSA_SHA256RSA
 #define szOID_RSA_SHA256RSA         "1.2.840.113549.1.1.11"
+#endif
+#ifndef szOID_RSA_SHA1RSA
+#define szOID_RSA_SHA1RSA           "1.2.840.113549.1.1.5"
 #endif
 
 /*
@@ -796,7 +800,15 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	// Prepare algorithm structure for self-signed certificate
 	memset(&SignatureAlgorithm, 0, sizeof(SignatureAlgorithm));
-	SignatureAlgorithm.pszObjId = szOID_RSA_SHA256RSA;
+
+	// Set the Windows version
+	GetWindowsVersion();
+	// Using sha1 on Windows 7 prevents Windows from showing a "Trusted Publisher" dialog
+	if (nWindowsVersion == WINDOWS_7) {
+		SignatureAlgorithm.pszObjId = szOID_RSA_SHA1RSA;
+	} else {
+		SignatureAlgorithm.pszObjId = szOID_RSA_SHA256RSA;
+	}
 
 	// Create self-signed certificate
 	pCertContext = pfCertCreateSelfSignCertificate((ULONG_PTR)NULL,
