@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # rebuilds the Windows def file by exporting all LIBDWI API calls
 create_def()
