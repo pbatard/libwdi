@@ -1,5 +1,5 @@
 === v2.4 (2018.07.26) ===
-* Update URLs
+* Fix HTTPS download and update URLs
 * Improve error reporting
 * Fix Windows 7 showing a "Trusted Publisher" dialog
 * Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.0.7.0 & usbser (native)

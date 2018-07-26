@@ -220,7 +220,7 @@ static char err_string[STR_BUFFER_SIZE];
 
 
 // Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
-static PSID get_sid(void) {
+static PSID GetSid(void) {
 	TOKEN_USER* tu = NULL;
 	DWORD len;
 	HANDLE token;
@@ -308,7 +308,7 @@ static int check_dir(const char* path, BOOL create)
 	}
 
 	// Change the owner from admin to regular user
-	sid = get_sid();
+	sid = GetSid();
 	if ( (sid != NULL)
 	  && InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION)
 	  && SetSecurityDescriptorOwner(&s_desc, sid, FALSE) ) {
@@ -385,7 +385,7 @@ static FILE *fopen_as_userU(const char *filename, const char *mode)
 	}
 
 	// Change the owner from admin to regular user
-	sid = get_sid();
+	sid = GetSid();
 	if ( (sid != NULL)
 	  && InitializeSecurityDescriptor(&s_desc, SECURITY_DESCRIPTOR_REVISION)
 	  && SetSecurityDescriptorOwner(&s_desc, sid, FALSE) ) {
@@ -1415,7 +1415,7 @@ static int process_message(char* buffer, DWORD size)
 		wdi_dbg("installer process completed");
 		break;
 	case IC_GET_USER_SID:
-		if (ConvertSidToStringSidA(get_sid(), &sid_str)) {
+		if (ConvertSidToStringSidA(GetSid(), &sid_str)) {
 			WriteFile(pipe_handle, sid_str, (DWORD)safe_strlen(sid_str), &tmp, NULL);
 			LocalFree(sid_str);
 		} else {

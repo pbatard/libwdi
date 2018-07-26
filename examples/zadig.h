@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.4.719"
+#define APP_VERSION                 "Zadig 2.4.720"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
@@ -110,11 +110,35 @@ typedef struct {
 	char* release_notes;
 } APPLICATION_UPDATE;
 
+/*
+ * Structure and macros used for the extensions specification of FileDialog()
+ * You can use:
+ *   EXT_DECL(my_extensions, "default.std", __VA_GROUP__("*.std", "*.other"), __VA_GROUP__("Standard type", "Other Type"));
+ * to define an 'ext_t my_extensions' variable initialized with the relevant attributes.
+ */
+typedef struct ext_t {
+	const size_t count;
+	const char* filename;
+	const char** extension;
+	const char** description;
+} ext_t;
+
+#ifndef __VA_GROUP__
+#define __VA_GROUP__(...)  __VA_ARGS__
+#endif
+#define EXT_X(prefix, ...) const char* _##prefix##_x[] = { __VA_ARGS__ }
+#define EXT_D(prefix, ...) const char* _##prefix##_d[] = { __VA_ARGS__ }
+#define EXT_DECL(var, filename, extensions, descriptions)                   \
+	EXT_X(var, extensions);                                                 \
+	EXT_D(var, descriptions);                                               \
+	ext_t var = { ARRAYSIZE(_##var##_x), filename, _##var##_x, _##var##_d }
+
 #define safe_free(p) do {if ((void*)p != NULL) {free((void*)p); p = NULL;}} while(0)
 #define safe_min(a, b) min((size_t)(a), (size_t)(b))
 #define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, src, safe_min(count, dst_max)); \
 	((char*)dst)[safe_min(count, dst_max)-1] = 0;} while(0)
 #define safe_strcpy(dst, dst_max, src) safe_strcp(dst, dst_max, src, safe_strlen(src)+1)
+#define static_strcpy(dst, src) safe_strcpy(dst, sizeof(dst), src)
 #define safe_strncat(dst, dst_max, src, count) strncat(dst, src, safe_min(count, dst_max - safe_strlen(dst) - 1))
 #define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, safe_strlen(src)+1)
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
@@ -122,6 +146,7 @@ typedef struct {
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)
 #define safe_closehandle(h) do {if (h != INVALID_HANDLE_VALUE) {CloseHandle(h); h = INVALID_HANDLE_VALUE;}} while(0)
 #define safe_sprintf(dst, count, ...) do {_snprintf(dst, count, __VA_ARGS__); (dst)[(count)-1] = 0; } while(0)
+#define static_sprintf(dst, ...) safe_sprintf(dst, sizeof(dst), __VA_ARGS__)
 #define safe_strlen(str) ((((char*)str)==NULL)?0:strlen(str))
 #define safe_strdup _strdup
 #define MF_CHECK(cond) ((cond)?MF_CHECKED:MF_UNCHECKED)
@@ -143,9 +168,9 @@ typedef struct {
 void print_status(unsigned int duration, BOOL debug, const char* message);
 int detect_windows_version(void);
 void w_printf(BOOL update_status, const char *format, ...);
-void browse_for_folder(void);
-char* file_dialog(BOOL save, char* path, char* filename, char* ext, char* ext_desc);
-BOOL file_io(BOOL save, char* path, char** buffer, DWORD* size);
+void BrowseForFolder(void);
+char* FileDialog(BOOL save, char* path, const ext_t* ext, DWORD options);
+BOOL FileIo(BOOL save, char* path, char** buffer, DWORD* size);
 INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void create_status_bar(void);
@@ -160,7 +185,7 @@ void set_title_bar_icon(HWND hDlg);
 const char *WindowsErrorString(void);
 void download_new_version(void);
 void parse_update(char* buf, size_t len);
-BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog);
+DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog);
 HANDLE DownloadFileThreaded(const char* url, const char* file, HWND hProgressDialog);
 BOOL SetUpdateCheck(void);
 BOOL CheckForUpdates(BOOL force);
@@ -170,12 +195,12 @@ BOOL CheckForUpdates(BOOL force);
  */
 extern HINSTANCE main_instance;
 extern HWND hDeviceList;
-extern HWND hMain;
+extern HWND hMainDialog;
 extern HWND hInfo;
 extern HWND hStatus;
 extern WORD application_version[4];
-extern DWORD download_error;
-extern char extraction_path[MAX_PATH], app_dir[MAX_PATH];
+extern DWORD error_code;
+extern char szFolderPath[MAX_PATH], app_dir[MAX_PATH];
 extern int dialog_showing;
 extern BOOL installation_running;
 extern APPLICATION_UPDATE update;

@@ -41,12 +41,12 @@
 /* Default delay between update checks (1 day) */
 #define DEFAULT_UPDATE_INTERVAL (24*3600)
 
-BOOL force_update;
-DWORD download_error;
+DWORD error_code;
 APPLICATION_UPDATE update = { {0,0,0,0}, {0,0}, NULL, NULL };
 
-static BOOL update_check_in_progress = FALSE;
+static BOOL force_update = FALSE;
 static BOOL force_update_check = FALSE;
+static BOOL update_check_in_progress = FALSE;
 
 /* MinGW is missing some of those */
 #if !defined(ERROR_INTERNET_DISCONNECTED)
@@ -79,12 +79,12 @@ static BOOL force_update_check = FALSE;
 
 /*
  * FormatMessage does not handle internet errors
- * http://support.microsoft.com/kb/193625
+ * https://docs.microsoft.com/en-us/windows/desktop/wininet/wininet-errors
  */
 const char* WinInetErrorString(void)
 {
 	static char error_string[256];
-	DWORD error_code, size = sizeof(error_string);
+	DWORD size = sizeof(error_string);
 
 	error_code = HRESULT_CODE(GetLastError());
 
@@ -123,7 +123,7 @@ const char* WinInetErrorString(void)
 	case ERROR_INTERNET_INVALID_OPERATION:
 		return "The requested operation is invalid.";
 	case ERROR_INTERNET_OPERATION_CANCELLED:
-		return "The operation was canceled, usually because the handle on which the request was operating was closed before the operation completed.";
+		return "The operation was cancelled, usually because the handle on which the request was operating was closed before the operation completed.";
 	case ERROR_INTERNET_INCORRECT_HANDLE_TYPE:
 		return "The type of handle supplied is incorrect for this operation.";
 	case ERROR_INTERNET_INCORRECT_HANDLE_STATE:
@@ -158,10 +158,18 @@ const char* WinInetErrorString(void)
 		return "The request to the proxy was invalid.";
 	case ERROR_INTERNET_HANDLE_EXISTS:
 		return "The request failed because the handle already exists.";
+	case ERROR_INTERNET_SEC_INVALID_CERT:
+		return "The SSL certificate is invalid.";
 	case ERROR_INTERNET_SEC_CERT_DATE_INVALID:
 		return "SSL certificate date that was received from the server is bad. The certificate is expired.";
 	case ERROR_INTERNET_SEC_CERT_CN_INVALID:
 		return "SSL certificate common name (host name field) is incorrect.";
+	case ERROR_INTERNET_SEC_CERT_ERRORS:
+		return "The SSL certificate contains errors.";
+	case ERROR_INTERNET_SEC_CERT_NO_REV:
+		return "The SSL certificate was not revoked.";
+	case ERROR_INTERNET_SEC_CERT_REV_FAILED:
+		return "The revocation check of the SSL certificate failed.";
 	case ERROR_INTERNET_HTTP_TO_HTTPS_ON_REDIR:
 		return "The application is moving from a non-SSL to an SSL connection because of a redirect.";
 	case ERROR_INTERNET_HTTPS_TO_HTTP_ON_REDIR:
@@ -230,7 +238,7 @@ const char* WinInetErrorString(void)
 		InternetGetLastResponseInfoA(&error_code, error_string, &size);
 		return error_string;
 	default:
-		safe_sprintf(error_string, sizeof(error_string), "Unknown internet error 0x%08lX", error_code);
+		static_sprintf(error_string, "Unknown internet error 0x%08lX", error_code);
 		return error_string;
 	}
 }
@@ -242,21 +250,24 @@ const char* WinInetErrorString(void)
  * to the dialog in question, with WPARAM being set to nonzero for EXIT on success
  * and also attempt to indicate progress using an IDC_PROGRESS control
  */
-BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
+DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 {
 	HWND hProgressBar = NULL;
 	BOOL r = FALSE;
-	DWORD dwFlags, dwSize, dwDownloaded, dwTotalSize, dwStatus;
-	FILE* fd = NULL;
 	LONG progress_style;
+	DWORD dwFlags, dwSize, dwWritten, dwDownloaded, dwTotalSize;
+	DWORD DownloadStatus;
+	HANDLE hFile = INVALID_HANDLE_VALUE;
+	const char* accept_types[] = {"*/*\0", NULL};
 	unsigned char buf[DOWNLOAD_BUFFER_SIZE];
-	char agent[64], hostname[64], urlpath[128];
+	char agent[64], hostname[64], urlpath[128], msg[MAX_PATH];
 	HINTERNET hSession = NULL, hConnection = NULL, hRequest = NULL;
 	URL_COMPONENTSA UrlParts = {sizeof(URL_COMPONENTSA), NULL, 1, (INTERNET_SCHEME)0,
 		hostname, sizeof(hostname), 0, NULL, 1, urlpath, sizeof(urlpath), NULL, 1};
+	size_t last_slash;
 	int i;
-	char msg[MAX_PATH];
 
+	DownloadStatus = 404;
 	if (hProgressDialog != NULL) {
 		// Use the progress control provided, if any
 		hProgressBar = GetDlgItem(hProgressDialog, IDC_PROGRESS);
@@ -268,13 +279,23 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		SendMessage(hProgressDialog, UM_DOWNLOAD_INIT, 0, 0);
 	}
 
+	if (file == NULL)
+		goto out;
+
+	for (last_slash = safe_strlen(file); last_slash != 0; last_slash--) {
+		if ((file[last_slash] == '/') || (file[last_slash] == '\\')) {
+			last_slash++;
+			break;
+		}
+	}
+
 	safe_sprintf(msg, sizeof(msg), "Downloading %s: Connecting...", file);
 	print_status(0, FALSE, msg);
 	dprintf("Downloading %s from %s\n", file, url);
 
 	if ( (!InternetCrackUrlA(url, (DWORD)safe_strlen(url), 0, &UrlParts))
 	  || (UrlParts.lpszHostName == NULL) || (UrlParts.lpszUrlPath == NULL)) {
-		dprintf("Unable to decode URL: %s\n", WindowsErrorString());
+		dprintf("Unable to decode URL: %s\n", WinInetErrorString());
 		goto out;
 	}
 	hostname[sizeof(hostname)-1] = 0;
@@ -289,12 +310,12 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		dprintf("Network is unavailable: %s\n", WinInetErrorString());
 		goto out;
 	}
-	safe_sprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
+	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
+		nWindowsVersion>>4, nWindowsVersion&0x0F, is_x64()?"; WOW64":"");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL) {
-		dprintf("Could not open internet session: %s\n", WinInetErrorString());
+		dprintf("Could not open Internet session: %s\n", WinInetErrorString());
 		goto out;
 	}
 
@@ -304,11 +325,12 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		goto out;
 	}
 
-	hRequest = HttpOpenRequestA(hConnection, "GET", UrlParts.lpszUrlPath, NULL, NULL, (const char**)"*/*\0",
-		INTERNET_FLAG_HYPERLINK|INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP|INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS|INTERNET_FLAG_NO_COOKIES|
-		INTERNET_FLAG_NO_UI|INTERNET_FLAG_NO_CACHE_WRITE, (DWORD_PTR)NULL);
+	hRequest = HttpOpenRequestA(hConnection, "GET", UrlParts.lpszUrlPath, NULL, NULL, accept_types,
+		INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP|INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS|
+		INTERNET_FLAG_NO_COOKIES|INTERNET_FLAG_NO_UI|INTERNET_FLAG_NO_CACHE_WRITE|INTERNET_FLAG_HYPERLINK|
+		((UrlParts.nScheme==INTERNET_SCHEME_HTTPS)?INTERNET_FLAG_SECURE:0), (DWORD_PTR)NULL);
 	if (hRequest == NULL) {
-		dprintf("Could not open url %s: %s\n", url, WindowsErrorString());
+		dprintf("Could not open URL %s: %s\n", url, WinInetErrorString());
 		goto out;
 	}
 
@@ -318,12 +340,11 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	}
 
 	// Get the file size
-	dwSize = sizeof(dwStatus);
-	dwStatus = 404;
-	HttpQueryInfoA(hRequest, HTTP_QUERY_STATUS_CODE|HTTP_QUERY_FLAG_NUMBER, (LPVOID)&dwStatus, &dwSize, NULL);
-	if (dwStatus != 200) {
-		download_error = ERROR_SEVERITY_ERROR|ERROR_INTERNET_ITEM_NOT_FOUND;
-		dprintf("Unable to access file: Server status %d\n", dwStatus);
+	dwSize = sizeof(DownloadStatus);
+	HttpQueryInfoA(hRequest, HTTP_QUERY_STATUS_CODE|HTTP_QUERY_FLAG_NUMBER, (LPVOID)&DownloadStatus, &dwSize, NULL);
+	if (DownloadStatus != 200) {
+		error_code = ERROR_SEVERITY_ERROR|ERROR_INTERNET_ITEM_NOT_FOUND;
+		dprintf("Unable to access file: %d\n", DownloadStatus);
 		goto out;
 	}
 	dwSize = sizeof(dwTotalSize);
@@ -333,16 +354,16 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	}
 	dprintf("File length: %d bytes\n", dwTotalSize);
 
-	fd = fopenU(file, "wb");
-	if (fd == NULL) {
-		dprintf("Unable to create file '%s': %s\n", file, WinInetErrorString());
+	hFile = CreateFileU(file, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		dprintf("Unable to create file '%s': %s\n", &file[last_slash], WinInetErrorString());
 		goto out;
 	}
 
 	// Keep checking for data until there is nothing left.
 	dwSize = 0;
 	while (1) {
-		if (download_error)
+		if (IS_ERROR(error_code))
 			goto out;
 
 		if (!InternetReadFile(hRequest, buf, sizeof(buf), &dwDownloaded) || (dwDownloaded == 0))
@@ -351,36 +372,47 @@ BOOL DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		SendMessage(hProgressBar, PBM_SETPOS, (WPARAM)(MAX_PROGRESS*((1.0f*dwSize)/(1.0f*dwTotalSize))), 0);
 		safe_sprintf(msg, sizeof(msg), "Downloading: %0.1f%%", (100.0f*dwSize)/(1.0f*dwTotalSize));
 		print_status(0, FALSE, msg);
-		if (fwrite(buf, 1, dwDownloaded, fd) != dwDownloaded) {
-			dprintf("Error writing file '%s': %s\n", file, WinInetErrorString());
+		if (!WriteFile(hFile, buf, dwDownloaded, &dwWritten, NULL)) {
+			dprintf("Error writing file '%s': %s\n", &file[last_slash], WinInetErrorString());
+			goto out;
+		} else if (dwDownloaded != dwWritten) {
+			dprintf("Error writing file '%s': Only %d/%d bytes written\n", dwWritten, dwDownloaded);
 			goto out;
 		}
 	}
 
 	if (dwSize != dwTotalSize) {
 		dprintf("Could not download complete file - read: %d bytes, expected: %d bytes\n", dwSize, dwTotalSize);
-		download_error = ERROR_WRITE_FAULT;
+		error_code = ERROR_SEVERITY_ERROR|ERROR_WRITE_FAULT;
 		goto out;
 	} else {
 		r = TRUE;
-		dprintf("Successfully downloaded '%s'\n", file);
+		dprintf("Successfully downloaded '%s'\n", &file[last_slash]);
 	}
 
 out:
 	if (hProgressDialog != NULL)
 		SendMessage(hProgressDialog, UM_DOWNLOAD_EXIT, (WPARAM)r, 0);
-	if (fd != NULL) fclose(fd);
-	if (!r) {
-		_unlink(file);
-		print_status(0, FALSE, "Failed to download file.");
-		SetLastError(download_error);
-		MessageBoxU(hMain, WinInetErrorString(), "File download", MB_OK|MB_ICONERROR);
+	if (hFile != INVALID_HANDLE_VALUE) {
+		// Force a flush - May help with the PKI API trying to process downloaded updates too early...
+		FlushFileBuffers(hFile);
+		CloseHandle(hFile);
 	}
-	if (hRequest) InternetCloseHandle(hRequest);
-	if (hConnection) InternetCloseHandle(hConnection);
-	if (hSession) InternetCloseHandle(hSession);
+	if (!r) {
+		if (file != NULL)
+			_unlinkU(file);
+		print_status(0, FALSE, "Failed to download file.");
+		SetLastError(error_code);
+		MessageBoxU(hMainDialog, WinInetErrorString(), "File download", MB_OK|MB_ICONERROR);
+	}
+	if (hRequest)
+		InternetCloseHandle(hRequest);
+	if (hConnection)
+		InternetCloseHandle(hConnection);
+	if (hSession)
+		InternetCloseHandle(hSession);
 
-	return r;
+	return r?dwSize:0;
 }
 
 /* Threaded download */
@@ -432,6 +464,8 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 
 	update_check_in_progress = TRUE;
 	verbose = ReadRegistryKey32(REGKEY_HKCU, REGKEY_VERBOSE_UPDATES);
+	// Without this the FileDialog will produce error 0x8001010E when compiled for Vista or later
+	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED));
 	// Unless the update was forced, wait a while before performing the update check
 	if (!force_update_check) {
 		// TODO: Also check on inactivity
@@ -514,8 +548,9 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		for (i=0; i<ARRAYSIZE(verpos); i++) {
 			vvuprintf("Trying %s\n", UrlParts.lpszUrlPath);
 			hRequest = HttpOpenRequestA(hConnection, "GET", UrlParts.lpszUrlPath, NULL, NULL, accept_types,
-				INTERNET_FLAG_HYPERLINK|INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP|INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS|INTERNET_FLAG_NO_COOKIES|
-				INTERNET_FLAG_NO_UI|INTERNET_FLAG_NO_CACHE_WRITE, (DWORD_PTR)NULL);
+				INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS |
+				INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_NO_UI | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_HYPERLINK |
+				((UrlParts.nScheme == INTERNET_SCHEME_HTTPS) ? INTERNET_FLAG_SECURE : 0), (DWORD_PTR)NULL);
 			if ((hRequest == NULL) || (!HttpSendRequestA(hRequest, NULL, 0, NULL, 0)))
 				goto out;
 
@@ -619,7 +654,7 @@ out:
 		}
 		download_new_version();
 	} else if (force_update_check) {
-		PostMessage(hMain, UM_NO_UPDATE, 0, 0);
+		PostMessage(hMainDialog, UM_NO_UPDATE, 0, 0);
 	}
 	force_update_check = FALSE;
 	update_check_in_progress = FALSE;

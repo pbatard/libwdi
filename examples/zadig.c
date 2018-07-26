@@ -61,7 +61,7 @@ BOOL parse_ini(void);
 OPENED_LIBRARIES_VARS;
 HINSTANCE main_instance;
 HWND hDeviceList;
-HWND hMain;
+HWND hMainDialog;
 HWND hInfo;
 HWND hStatus;
 HWND hVIDToolTip = NULL, hArrowToolTip = NULL;
@@ -80,7 +80,7 @@ COLORREF arrow_color = ARROW_GREEN;
 float fScale = 1.0f;
 WORD application_version[4];
 char app_dir[MAX_PATH], driver_text[64];
-char extraction_path[MAX_PATH];
+char szFolderPath[MAX_PATH];
 const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "USB Serial (CDC)", "Custom (extract only)" };
 const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK", "usbser" };
 struct wdi_options_create_list cl_options = { 0 };
@@ -109,6 +109,8 @@ BOOL exit_on_success = FALSE;
 enum wcid_state has_wcid = WCID_NONE;
 int wcid_type = WDI_USER;
 UINT64 target_driver_version = 0;
+EXT_DECL(log_ext, "Zadig.log", __VA_GROUP__("*.log"), __VA_GROUP__("Zadig log"));
+EXT_DECL(cfg_ext, "sample.cfg", __VA_GROUP__("*.cfg"), __VA_GROUP__("Zadig device config"));
 
 /*
  * On screen logging and status
@@ -137,7 +139,7 @@ void w_printf_v(BOOL update_status, const char *format, va_list args)
 	Edit_SetSel(hInfo, MAX_LOG_SIZE, MAX_LOG_SIZE);
 	Edit_ReplaceSelU(hInfo, str);
 	if (update_status) {
-		SetDlgItemTextU(hMain, IDC_STATUS, str);
+		SetDlgItemTextU(hMainDialog, IDC_STATUS, str);
 	}
 }
 
@@ -160,8 +162,8 @@ static void CALLBACK PrintStatusTimeout(HWND hwnd, UINT uMsg, UINT_PTR idEvent, 
 {
 	bStatusTimerArmed = FALSE;
 	// potentially display lower priority message that was overridden
-	SetDlgItemTextU(hMain, IDC_STATUS, szStatusMessage);
-	KillTimer(hMain, TID_MESSAGE);
+	SetDlgItemTextU(hMainDialog, IDC_STATUS, szStatusMessage);
+	KillTimer(hMainDialog, TID_MESSAGE);
 }
 
 void print_status(unsigned int duration, BOOL debug, const char* message)
@@ -173,11 +175,11 @@ void print_status(unsigned int duration, BOOL debug, const char* message)
 		dprintf("%s\n", szStatusMessage);
 
 	if ((duration) || (!bStatusTimerArmed)) {
-		SetDlgItemTextU(hMain, IDC_STATUS, szStatusMessage);
+		SetDlgItemTextU(hMainDialog, IDC_STATUS, szStatusMessage);
 	}
 
 	if (duration) {
-		SetTimer(hMain, TID_MESSAGE, duration, PrintStatusTimeout);
+		SetTimer(hMainDialog, TID_MESSAGE, duration, PrintStatusTimeout);
 		bStatusTimerArmed = TRUE;
 	}
 }
@@ -257,7 +259,7 @@ void __cdecl notification_delay_thread(void* param)
 {
 	DWORD delay = (DWORD)(uintptr_t)param;
 	Sleep(delay);
-	PostMessage(hMain, UM_DEVICE_EVENT, 0, 0);
+	PostMessage(hMainDialog, UM_DEVICE_EVENT, 0, 0);
 	_endthread();
 }
 
@@ -323,24 +325,24 @@ int install_driver(void)
 			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 		} else {
 			// Retrieve the various device parameters
-			if (ComboBox_GetTextU(GetDlgItem(hMain, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
+			if (ComboBox_GetTextU(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
 				notification(MSG_ERROR, NULL, "Driver Installation", "The description string cannot be empty.");
 				r = WDI_ERROR_INVALID_PARAM; goto out;
 			}
 			dev->desc = safe_strdup(str_buf);
-			GetDlgItemTextA(hMain, IDC_VID, str_buf, STR_BUFFER_SIZE);
+			GetDlgItemTextA(hMainDialog, IDC_VID, str_buf, STR_BUFFER_SIZE);
 			if (sscanf(str_buf, "%4x", &tmp) != 1) {
 				dprintf("could not convert VID string - aborting");
 				r = WDI_ERROR_INVALID_PARAM; goto out;
 			}
 			dev->vid = (unsigned short)tmp;
-			GetDlgItemTextA(hMain, IDC_PID, str_buf, STR_BUFFER_SIZE);
+			GetDlgItemTextA(hMainDialog, IDC_PID, str_buf, STR_BUFFER_SIZE);
 			if (sscanf(str_buf, "%4x", &tmp) != 1) {
 				dprintf("could not convert PID string - aborting");
 				r = WDI_ERROR_INVALID_PARAM; goto out;
 			}
 			dev->pid = (unsigned short)tmp;
-			GetDlgItemTextA(hMain, IDC_MI, str_buf, STR_BUFFER_SIZE);
+			GetDlgItemTextA(hMainDialog, IDC_MI, str_buf, STR_BUFFER_SIZE);
 			if ( (safe_strlen(str_buf) != 0)
 			  && (sscanf(str_buf, "%2x", &tmp) == 1) ) {
 				dev->is_composite = TRUE;
@@ -364,7 +366,7 @@ int install_driver(void)
 
 	// Perform extraction/installation
 	if (id_options.install_filter_driver) {
-		if ((!has_filter_driver) && (MessageBoxA(hMain, "WARNING:\n"
+		if ((!has_filter_driver) && (MessageBoxA(hMainDialog, "WARNING:\n"
 			"Improper use of the filter driver can cause devices to malfunction\n"
 			"and, in some cases, complete system failure.\n\n"
 			"THE AUTHOR(S) OF THIS SOFTWARE ACCEPT NO LIABILITY FOR\n"
@@ -374,26 +376,26 @@ int install_driver(void)
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 	}
-	r = wdi_prepare_driver(dev, extraction_path, inf_name, &pd_options);
+	r = wdi_prepare_driver(dev, szFolderPath, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
 		dsprintf("Successfully extracted driver files.");
 		// Perform the install if not extracting the files only
 		if ((pd_options.driver_type != WDI_USER) && (!extract_only)) {
 			if ( (get_driver_type(dev) == DT_SYSTEM)
-			  && (MessageBoxA(hMain, "You are about to modify a system driver.\n"
+			  && (MessageBoxA(hMainDialog, "You are about to modify a system driver.\n"
 					"Are you sure this is what you want?", "Warning - System Driver",
 					MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO) ) {
 				r = WDI_ERROR_USER_CANCEL; goto out;
 			}
 			dsprintf("Installing driver. Please wait...");
-			id_options.hWnd = hMain;
-			r = wdi_install_driver(dev, extraction_path, inf_name, &id_options);
+			id_options.hWnd = hMainDialog;
+			r = wdi_install_driver(dev, szFolderPath, inf_name, &id_options);
 			// Switch to non driverless-only mode and set hw ID to show the newly installed device
 			current_device_hardware_id = (dev != NULL)?safe_strdup(dev->hardware_id):NULL;
 			if ((r == WDI_SUCCESS) && (!cl_options.list_all) && (!pd_options.use_wcid_driver)) {
 				toggle_driverless(FALSE);
 			}
-			PostMessage(hMain, WM_DEVICECHANGE, 0, 0);	// Force a refresh
+			PostMessage(hMainDialog, WM_DEVICECHANGE, 0, 0);	// Force a refresh
 		}
 	} else {
 		dsprintf("Could not extract files");
@@ -417,11 +419,11 @@ out:
 void combo_breaker(BOOL edit)
 {
 	if (edit) {
-		ShowWindow(GetDlgItem(hMain, IDC_DEVICELIST), SW_HIDE);
-		ShowWindow(GetDlgItem(hMain, IDC_DEVICEEDIT), SW_SHOW);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICELIST), SW_HIDE);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), SW_SHOW);
 	} else {
-		ShowWindow(GetDlgItem(hMain, IDC_DEVICEEDIT), SW_HIDE);
-		ShowWindow(GetDlgItem(hMain, IDC_DEVICELIST), SW_SHOW);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), SW_HIDE);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICELIST), SW_SHOW);
 	}
 }
 
@@ -437,7 +439,7 @@ void set_filter_menu(BOOL display)
 
 	// Find if a filter driver is in use
 	has_filter_driver = (device != NULL) && (safe_stricmp(driver_name[WDI_LIBUSB0], device->upper_filter) == 0);
-	ShowWindow(GetDlgItem(hMain, IDC_FILTER_ICON), has_filter_driver?TRUE:FALSE);
+	ShowWindow(GetDlgItem(hMainDialog, IDC_FILTER_ICON), has_filter_driver?TRUE:FALSE);
 
 	mi_filter.dwTypeData = itemddesc[has_filter_driver?1:0];
 	mi_filter.cch = (UINT)strlen(itemddesc[has_filter_driver?1:0]);
@@ -472,7 +474,7 @@ void set_default_driver(void) {
 		if (i==WDI_NB_DRIVERS) {
 			notification(MSG_ERROR, NULL, "No Driver Available", "No driver is available for installation with this application.\n"
 				"The application will close");
-			EndDialog(hMain, 0);
+			EndDialog(hMainDialog, 0);
 		}
 		dprintf("falling back to '%s' for default driver", driver_display_name[default_driver_type]);
 	} else {
@@ -505,7 +507,7 @@ void set_driver(void)
 			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
 		}
 	}
-	SetDlgItemTextA(hMain, IDC_TARGET, target_text);
+	SetDlgItemTextA(hMainDialog, IDC_TARGET, target_text);
 }
 
 
@@ -539,14 +541,14 @@ void display_mi(BOOL show)
 	POINT point, origin;
 
 	if (show == mi_shown) return;
-	ShowWindow(GetDlgItem(hMain, IDC_MI), cmd);
+	ShowWindow(GetDlgItem(hMainDialog, IDC_MI), cmd);
 	// Move the VID report button if MI is not shown
-	GetWindowRect(GetDlgItem(hMain, IDC_VID_REPORT), &rect);
+	GetWindowRect(GetDlgItem(hMainDialog, IDC_VID_REPORT), &rect);
 	origin.x = rect.left; origin.y = rect.top;
-	ScreenToClient(hMain, &origin);
+	ScreenToClient(hMainDialog, &origin);
 	point.x = (rect.right - rect.left);
 	point.y = (rect.bottom - rect.top);
-	MoveWindow(GetDlgItem(hMain, IDC_VID_REPORT), origin.x  - (show?-report_shift:+report_shift),
+	MoveWindow(GetDlgItem(hMainDialog, IDC_VID_REPORT), origin.x  - (show?-report_shift:+report_shift),
 		origin.y, point.x, point.y, TRUE);
 	mi_shown = show;
 }
@@ -568,36 +570,36 @@ void toggle_advanced(void)
 	advanced_mode = !(GetMenuState(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED) & MF_CHECKED);
 
 	// Increase or decrease the Install button size
-	GetWindowRect(GetDlgItem(hMain, IDC_INSTALL), &rect);
+	GetWindowRect(GetDlgItem(hMainDialog, IDC_INSTALL), &rect);
 	origin.x = rect.left; origin.y = rect.top;
-	ScreenToClient(hMain, &origin);
+	ScreenToClient(hMainDialog, &origin);
 	point.x = (rect.right - rect.left);
 	point.y = (rect.bottom - rect.top);
-	MoveWindow(GetDlgItem(hMain, IDC_INSTALL), origin.x, origin.y,
+	MoveWindow(GetDlgItem(hMainDialog, IDC_INSTALL), origin.x, origin.y,
 		point.x + (int)(fScale*(advanced_mode?-install_widen:+install_widen)),
 		point.y, TRUE);
 
 	// Increase or decrease the Window size
-	GetWindowRect(hMain, &rect);
+	GetWindowRect(hMainDialog, &rect);
 	point.x = (rect.right - rect.left);
 	point.y = (rect.bottom - rect.top);
-	MoveWindow(hMain, rect.left, rect.top, point.x,
+	MoveWindow(hMainDialog, rect.left, rect.top, point.x,
 		point.y + (int)(fScale*(advanced_mode?dialog_shift:-dialog_shift)), TRUE);
 
 	// Move the status bar up or down
 	GetWindowRect(hStatus, &rect);
 	point.x = rect.left;
 	point.y = rect.top;
-	ScreenToClient(hMain, &point);
+	ScreenToClient(hMainDialog, &point);
 	GetClientRect(hStatus, &rect);
 	MoveWindow(hStatus, point.x, point.y + (int)(fScale*(advanced_mode?dialog_shift:-dialog_shift)),
 		(rect.right - rect.left), (rect.bottom - rect.top), TRUE);
 
 	// Hide or show the various advanced options
 	toggle = advanced_mode?SW_SHOW:SW_HIDE;
-	ShowWindow(GetDlgItem(hMain, IDC_BROWSE), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_GROUPLOG), toggle);
-	ShowWindow(GetDlgItem(hMain, IDC_INFO), toggle);
+	ShowWindow(GetDlgItem(hMainDialog, IDC_BROWSE), toggle);
+	ShowWindow(GetDlgItem(hMainDialog, IDC_GROUPLOG), toggle);
+	ShowWindow(GetDlgItem(hMainDialog, IDC_INFO), toggle);
 
 	// Toggle the menu checkmark
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, advanced_mode?MF_CHECKED:MF_UNCHECKED);
@@ -606,7 +608,7 @@ void toggle_advanced(void)
 // Toggle edit description
 void toggle_edit(void)
 {
-	if ((IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) && (device != NULL)) {
+	if ((IsDlgButtonChecked(hMainDialog, IDC_EDITNAME) == BST_CHECKED) && (device != NULL)) {
 		combo_breaker(TRUE);
 		if (editable_desc != NULL) {
 			dprintf("program assertion failed - editable_desc != NULL");
@@ -615,15 +617,15 @@ void toggle_edit(void)
 		editable_desc = (char*)malloc(STR_BUFFER_SIZE);
 		if (editable_desc == NULL) {
 			dprintf("could not allocate buffer to edit description");
-			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+			CheckDlgButton(hMainDialog, IDC_EDITNAME, BST_UNCHECKED);
 			combo_breaker(FALSE);
 			return;
 		}
 		safe_strcpy(editable_desc, STR_BUFFER_SIZE, device->desc);
 		free(device->desc);	// No longer needed
 		device->desc = editable_desc;
-		SetDlgItemTextU(hMain, IDC_DEVICEEDIT, editable_desc);
-		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
+		SetDlgItemTextU(hMainDialog, IDC_DEVICEEDIT, editable_desc);
+		SetFocus(GetDlgItem(hMainDialog, IDC_DEVICEEDIT));
 	} else {
 		combo_breaker(FALSE);
 		display_devices();
@@ -639,16 +641,16 @@ void update_ui(void)
 
 	switch (has_wcid) {
 	case WCID_TRUE:
-		ShowWindow(GetDlgItem(hMain, IDC_WCID), TRUE);
-		SendMessage(GetDlgItem(hMain, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickOK);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_WCID), TRUE);
+		SendMessage(GetDlgItem(hMainDialog, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickOK);
 		break;
 	case WCID_FALSE:
-		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
-		SendMessage(GetDlgItem(hMain, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickNOK);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_WCID), FALSE);
+		SendMessage(GetDlgItem(hMainDialog, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickNOK);
 		break;
 	case WCID_NONE:
-		ShowWindow(GetDlgItem(hMain, IDC_WCID), FALSE);
-		SendMessage(GetDlgItem(hMain, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)NULL);
+		ShowWindow(GetDlgItem(hMainDialog, IDC_WCID), FALSE);
+		SendMessage(GetDlgItem(hMainDialog, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)NULL);
 		break;
 	}
 
@@ -681,34 +683,34 @@ void toggle_create(BOOL refresh)
 	if (create_device) {
 		device = NULL;
 		// Disable Edit Desc. if selected
-		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
-			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+		if (IsDlgButtonChecked(hMainDialog, IDC_EDITNAME) == BST_CHECKED) {
+			CheckDlgButton(hMainDialog, IDC_EDITNAME, BST_UNCHECKED);
 			toggle_edit();
 		}
 		combo_breaker(TRUE);
 		has_wcid = WCID_NONE;
 		update_ui();
-		EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), FALSE);
-		SetDlgItemTextA(hMain, IDC_VID, "");
-		SetDlgItemTextA(hMain, IDC_PID, "");
-		SetDlgItemTextA(hMain, IDC_MI, "");
-		SetDlgItemTextA(hMain, IDC_DRIVER, "");
-		SetDlgItemTextA(hMain, IDC_DEVICEEDIT, "");
-		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
-		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
-		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		EnableWindow(GetDlgItem(hMainDialog, IDC_EDITNAME), FALSE);
+		SetDlgItemTextA(hMainDialog, IDC_VID, "");
+		SetDlgItemTextA(hMainDialog, IDC_PID, "");
+		SetDlgItemTextA(hMainDialog, IDC_MI, "");
+		SetDlgItemTextA(hMainDialog, IDC_DRIVER, "");
+		SetDlgItemTextA(hMainDialog, IDC_DEVICEEDIT, "");
+		PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		destroy_tooltip(hVIDToolTip);
 		hVIDToolTip = NULL;
 		unknown_vid = FALSE;
 		display_mi(TRUE);
-		SetFocus(GetDlgItem(hMain, IDC_DEVICEEDIT));
+		SetFocus(GetDlgItem(hMainDialog, IDC_DEVICEEDIT));
 	} else {
 		combo_breaker(FALSE);
-		PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETREADONLY, (WPARAM)TRUE, 0);
-		PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETREADONLY, (WPARAM)TRUE, 0);
-		PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_PID), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_MI), EM_SETREADONLY, (WPARAM)TRUE, 0);
 		if (refresh) {
-			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+			PostMessage(hMainDialog, UM_REFRESH_LIST, 0, 0);
 		}
 	}
 	CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
@@ -728,11 +730,11 @@ void toggle_hubs(BOOL refresh)
 
 	CheckMenuItem(hMenuOptions, IDM_IGNOREHUBS, cl_options.list_hubs?MF_UNCHECKED:MF_CHECKED);
 	// Reset Edit button
-	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+	CheckDlgButton(hMainDialog, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
 	combo_breaker(FALSE);
 	if (refresh) {
-		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+		PostMessage(hMainDialog, UM_REFRESH_LIST, 0, 0);
 	}
 }
 
@@ -748,11 +750,11 @@ void toggle_driverless(BOOL refresh)
 
 	CheckMenuItem(hMenuOptions, IDM_LISTALL, cl_options.list_all?MF_CHECKED:MF_UNCHECKED);
 	// Reset Edit button
-	CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+	CheckDlgButton(hMainDialog, IDC_EDITNAME, BST_UNCHECKED);
 	// Reset Combo
 	combo_breaker(FALSE);
 	if (refresh) {
-		PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+		PostMessage(hMainDialog, UM_REFRESH_LIST, 0, 0);
 	}
 }
 
@@ -795,7 +797,7 @@ void set_install_button(void)
 	}
 	qualifier = pd_options.use_wcid_driver?"WCID ":(id_options.install_filter_driver?"Filter ":"");
 	safe_sprintf(label, 64, "%s %s%s", action, qualifier, object);
-	SetDlgItemTextA(hMain, IDC_INSTALL, label);
+	SetDlgItemTextA(hMainDialog, IDC_INSTALL, label);
 }
 
 // Change the log level
@@ -825,10 +827,10 @@ void init_dialog(HWND hDlg)
 	} bi = {0};	// BUTTON_IMAGELIST
 
 	// Quite a burden to carry around as parameters
-	hMain = hDlg;
+	hMainDialog = hDlg;
 	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
 	hInfo = GetDlgItem(hDlg, IDC_INFO);
-	hArrow = GetDlgItem(hMain, IDC_RARR);
+	hArrow = GetDlgItem(hMainDialog, IDC_RARR);
 	hMenuDevice = GetSubMenu(GetMenu(hDlg), 0);
 	hMenuOptions = GetSubMenu(GetMenu(hDlg), 1);
 	hMenuLogLevel = GetSubMenu(hMenuOptions, 7);
@@ -856,35 +858,35 @@ void init_dialog(HWND hDlg)
 	SendMessageA(GetDlgItem(hDlg, IDC_STATUS), SB_SETTEXTA, SBT_OWNERDRAW | 1, (LPARAM)APP_VERSION);
 
 	// Create various tooltips
-	create_tooltip(GetDlgItem(hMain, IDC_EDITNAME),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_EDITNAME),
 		"Change the device name", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_VIDPID),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_VIDPID),
 		"VID:PID[:MI]", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_DRIVER),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_DRIVER),
 		"Current Driver", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_TARGET),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_TARGET),
 		"Target Driver", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_STATIC_WCID),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_STATIC_WCID),
 		"Windows Compatible ID\nClick '?' for more info.", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_WCID_BOX),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_WCID_BOX),
 		"Windows Compatible ID\nClick '?' for more info.", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_WCID_ICON),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_WCID_ICON),
 		"Windows Compatible ID\nClick '?' for more info.", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_BROWSE),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_BROWSE),
 		"Directory to extract/install files to", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_WCID_URL),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_WCID_URL),
 		"Online information about WCID", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_VID_REPORT),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_VID_REPORT),
 		"Submit Vendor to the USB ID Repository", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_FILTER_ICON),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_FILTER_ICON),
 		"This device also has the\nlibusb-win32 filter driver", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB_URL),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_LIBUSB_URL),
 		"Find out more about libusb online", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_LIBUSB0_URL),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_LIBUSB0_URL),
 		"Find out more about libusb-win32 online", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_LIBUSBK_URL),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_LIBUSBK_URL),
 		"Find out more about libusbK online", -1);
-	create_tooltip(GetDlgItem(hMain, IDC_WINUSB_URL),
+	create_tooltip(GetDlgItem(hMainDialog, IDC_WINUSB_URL),
 		"Find out more about WinUSB online", -1);
 
 	// Load system icons for various items (NB: Use the excellent http://www.nirsoft.net/utils/iconsext.html to find icon IDs)
@@ -925,13 +927,13 @@ void init_dialog(HWND hDlg)
 		GetWindowRect(hArrow, &rect);
 		arrow_origin.x = rect.left; arrow_origin.y = rect.top;
 		arrow_width = rect.right - rect.left; arrow_height = i24;
-		ScreenToClient(hMain, &arrow_origin);
+		ScreenToClient(hMainDialog, &arrow_origin);
 		arrow_origin.x += 1;	// Some fixup is needed
 		DestroyWindow(hArrow);
 		// We need SS_CENTERIMAGE to be able to increase the control height by two and achieve pixel positioning
 		hArrow = CreateWindowExA(0, "STATIC", NULL,
 			SS_ICON | SS_NOTIFY | SS_CENTERIMAGE | SS_REALSIZEIMAGE | WS_GROUP | WS_CHILD | WS_VISIBLE,
-			arrow_origin.x, arrow_origin.y, arrow_width, arrow_height, hMain, NULL, main_instance, NULL);
+			arrow_origin.x, arrow_origin.y, arrow_width, arrow_height, hMainDialog, NULL, main_instance, NULL);
 		SendMessage(hArrow, STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconArrowGreen);
 	} while (0);
 	if (!use_arrow_icons) {
@@ -962,7 +964,7 @@ void init_dialog(HWND hDlg)
 	CheckMenuItem(hMenuOptions, IDM_ADVANCEDMODE, MF_CHECKED);
 
 	// Setup logging
-	err = wdi_register_logger(hMain, UM_LOGGER_EVENT, 0);
+	err = wdi_register_logger(hMainDialog, UM_LOGGER_EVENT, 0);
 	if (err != WDI_SUCCESS) {
 		dprintf("Unable to access log output - logging will be disabled (%s)", wdi_strerror(err));
 	}
@@ -973,9 +975,9 @@ void init_dialog(HWND hDlg)
 	dprintf(WindowsVersionStr);
 
 	// Limit the input size of VID, PID, MI
-	PostMessage(GetDlgItem(hMain, IDC_VID), EM_SETLIMITTEXT, 4, 0);
-	PostMessage(GetDlgItem(hMain, IDC_PID), EM_SETLIMITTEXT, 4, 0);
-	PostMessage(GetDlgItem(hMain, IDC_MI), EM_SETLIMITTEXT, 2, 0);
+	PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETLIMITTEXT, 4, 0);
+	PostMessage(GetDlgItem(hMainDialog, IDC_PID), EM_SETLIMITTEXT, 4, 0);
+	PostMessage(GetDlgItem(hMainDialog, IDC_MI), EM_SETLIMITTEXT, 2, 0);
 
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
@@ -1035,14 +1037,14 @@ BOOL parse_ini(void) {
 
 	// Set the default extraction dir
 	if ((profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) && (tmp != NULL)) {
-		safe_strcpy(extraction_path, sizeof(extraction_path), tmp);
+		safe_strcpy(szFolderPath, sizeof(szFolderPath), tmp);
 	}
 
 	// Set the certificate name to install, if any
 	if ( (profile_get_string(profile, "security", "install_cert", NULL, NULL, &tmp) == 0)
 	  && (tmp != NULL) ) {
 		if (wdi_is_file_embedded(NULL, (char*)tmp)) {
-			ic_options.hWnd = hMain;
+			ic_options.hWnd = hMainDialog;
 			wdi_install_trusted_certificate((char*)tmp, &ic_options);
 		} else {
 			dprintf("certificate '%s' not found in this application", tmp);
@@ -1094,23 +1096,23 @@ BOOL parse_preset(char* filename)
 	}
 
 	safe_sprintf(str_tmp, 5, "%04X", tmp);
-	SetDlgItemTextA(hMain, IDC_VID, str_tmp);
+	SetDlgItemTextA(hMainDialog, IDC_VID, str_tmp);
 
 	profile_get_string(profile, "device", "Description", NULL, NULL, &desc);
 	if (desc != NULL) {
-		SetDlgItemTextU(hMain, IDC_DEVICEEDIT, (char*)desc);
+		SetDlgItemTextU(hMainDialog, IDC_DEVICEEDIT, (char*)desc);
 	}
 
 	profile_get_uint(profile, "device", "PID", NULL, 0x10000, &tmp);
 	if (tmp <= 0xFFFF) {
 		safe_sprintf(str_tmp, 5, "%04X", tmp);
-		SetDlgItemTextA(hMain, IDC_PID, str_tmp);
+		SetDlgItemTextA(hMainDialog, IDC_PID, str_tmp);
 	}
 
 	profile_get_uint(profile, "device", "MI", NULL, 0x100, &tmp);
 	if (tmp <= 0xFF) {
 		safe_sprintf(str_tmp, 5, "%02X", tmp);
-		SetDlgItemTextA(hMain, IDC_MI, str_tmp);
+		SetDlgItemTextA(hMainDialog, IDC_MI, str_tmp);
 	}
 
 	profile_get_string(profile, "device", "GUID", NULL, NULL, &pd_options.device_guid);
@@ -1236,7 +1238,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		NOT_DURING_INSTALL;
 		notification_delay_thid = -1L;
 		if (create_device) {
-			if (MessageBoxA(hMain, "The USB device list has been modified.\n"
+			if (MessageBoxA(hMainDialog, "The USB device list has been modified.\n"
 				"Do you want to refresh the application?\n(you will lose all your modifications)",
 				"USB Event Notification", MB_YESNO | MB_ICONINFORMATION) == IDYES) {
 				if (create_device) {
@@ -1244,10 +1246,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				}
 				CheckMenuItem(hMenuDevice, IDM_CREATE, MF_UNCHECKED);
 				combo_breaker(FALSE);
-				PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+				PostMessage(hMainDialog, UM_REFRESH_LIST, 0, 0);
 			}
 		} else {
-			PostMessage(hMain, UM_REFRESH_LIST, 0, 0);
+			PostMessage(hMainDialog, UM_REFRESH_LIST, 0, 0);
 		}
 		return (INT_PTR)TRUE;
 
@@ -1300,9 +1302,9 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case UM_REFRESH_LIST:
 		NOT_DURING_INSTALL;
 		// Reset edit mode if selected
-		if (IsDlgButtonChecked(hMain, IDC_EDITNAME) == BST_CHECKED) {
+		if (IsDlgButtonChecked(hMainDialog, IDC_EDITNAME) == BST_CHECKED) {
 			combo_breaker(FALSE);
-			CheckDlgButton(hMain, IDC_EDITNAME, BST_UNCHECKED);
+			CheckDlgButton(hMainDialog, IDC_EDITNAME, BST_UNCHECKED);
 		}
 		id_options.install_filter_driver = FALSE;
 		if (list != NULL) wdi_destroy_list(list);
@@ -1315,16 +1317,16 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if (r == WDI_SUCCESS) {
 			nb_devices = display_devices();
 			// Send a dropdown selection message to update fields
-			PostMessage(hMain, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
+			PostMessage(hMainDialog, WM_COMMAND, MAKELONG(IDC_DEVICELIST, CBN_SELCHANGE),
 				(LPARAM)hDeviceList);
 		} else {
 			nb_devices = -1;
 			_IGNORE(ComboBox_ResetContent(hDeviceList));
-			SetDlgItemTextA(hMain, IDC_VID, "");
-			SetDlgItemTextA(hMain, IDC_PID, "");
-			SetDlgItemTextA(hMain, IDC_DRIVER, "");
+			SetDlgItemTextA(hMainDialog, IDC_VID, "");
+			SetDlgItemTextA(hMainDialog, IDC_PID, "");
+			SetDlgItemTextA(hMainDialog, IDC_DRIVER, "");
 			display_mi(FALSE);
-			EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), FALSE);
+			EnableWindow(GetDlgItem(hMainDialog, IDC_EDITNAME), FALSE);
 			has_wcid = WCID_NONE;
 			pd_options.use_wcid_driver = TRUE;
 			update_ui();
@@ -1380,28 +1382,28 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			SetTextColor((HDC)wParam, arrow_color);
 			return (INT_PTR)CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
 		}
-		if ( (hCtrl == GetDlgItem(hMain, IDC_LIBUSB0_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSB_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_LIBUSBK_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_WINUSB_URL))
-		  || (hCtrl == GetDlgItem(hMain, IDC_WCID_URL)) ) {
+		if ( (hCtrl == GetDlgItem(hMainDialog, IDC_LIBUSB0_URL))
+		  || (hCtrl == GetDlgItem(hMainDialog, IDC_LIBUSB_URL))
+		  || (hCtrl == GetDlgItem(hMainDialog, IDC_LIBUSBK_URL))
+		  || (hCtrl == GetDlgItem(hMainDialog, IDC_WINUSB_URL))
+		  || (hCtrl == GetDlgItem(hMainDialog, IDC_WCID_URL)) ) {
 			create_static_fonts((HDC)wParam);
 			SelectObject((HDC)wParam, hyperlink_font);
 			SetTextColor((HDC)wParam, DARK_BLUE);
 			return (INT_PTR)GetStockObject(NULL_BRUSH);
 		}
-		if (hCtrl == GetDlgItem(hMain, IDC_LINKS)) {
+		if (hCtrl == GetDlgItem(hMainDialog, IDC_LINKS)) {
 			create_static_fonts((HDC)wParam);
 			SelectObject((HDC)wParam, bold_font);
 			SetTextColor((HDC)wParam, GetSysColor(COLOR_3DDKSHADOW));
 			return (INT_PTR)GetStockObject(NULL_BRUSH);
 		}
-		if (hCtrl == GetDlgItem(hMain, IDC_WCID_ICON)) {
+		if (hCtrl == GetDlgItem(hMainDialog, IDC_WCID_ICON)) {
 			// Ensures that the WCID background field is not drawn on top of the WCID icon
-			SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, TRUE, 0);
-			InvalidateRect(GetDlgItem(hMain, IDC_WCID_BOX), NULL, TRUE);
-			UpdateWindow(GetDlgItem(hMain, IDC_WCID_BOX));
-			SendMessage(GetDlgItem(hMain, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, FALSE, 0);
+			SendMessage(GetDlgItem(hMainDialog, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, TRUE, 0);
+			InvalidateRect(GetDlgItem(hMainDialog, IDC_WCID_BOX), NULL, TRUE);
+			UpdateWindow(GetDlgItem(hMainDialog, IDC_WCID_BOX));
+			SendMessage(GetDlgItem(hMainDialog, IDC_WCID_BOX), (WPARAM)WM_SETREDRAW, FALSE, 0);
 		}
 		// Restore transparency if we don't change the background
 		SetBkMode((HDC)wParam, OPAQUE);
@@ -1430,7 +1432,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				pt.x = pDropDown->rcButton.left;
 				pt.y = pDropDown->rcButton.bottom;
 				ClientToScreen(pDropDown->hdr.hwndFrom, &pt);
-				TrackPopupMenuEx(hMenuSplit, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, hMain, NULL);
+				TrackPopupMenuEx(hMenuSplit, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, hMainDialog, NULL);
 				break;
 			}
 			break;
@@ -1463,7 +1465,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDC_DEVICEEDIT:		// edit: device description
 			switch (HIWORD(wParam)) {
 			case EN_CHANGE:
-				GetDlgItemTextU(hMain, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
+				GetDlgItemTextU(hMainDialog, IDC_DEVICEEDIT, editable_desc, STR_BUFFER_SIZE);
 				break;
 			default:
 				return (INT_PTR)FALSE;
@@ -1498,10 +1500,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					} else {
 						safe_strcpy(driver_text, sizeof(driver_text), "(NONE)");
 					}
-					SetDlgItemTextU(hMain, IDC_DRIVER, driver_text);
+					SetDlgItemTextU(hMainDialog, IDC_DRIVER, driver_text);
 					// Display the VID,PID,MI
 					safe_sprintf(str_tmp, 5, "%04X", device->vid);
-					SetDlgItemTextA(hMain, IDC_VID, str_tmp);
+					SetDlgItemTextA(hMainDialog, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
 					destroy_tooltip(hVIDToolTip);
 					vid_string = wdi_get_vendor_name(device->vid);
@@ -1511,13 +1513,13 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							"the name of this vendor, please consider submitting it to "
 							"the USB ID Repository, by clicking the button on the right.";
 					};
-					hVIDToolTip = create_tooltip(GetDlgItem(hMain, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
-					ShowWindow(GetDlgItem(hMain, IDC_VID_REPORT), unknown_vid?SW_SHOW:SW_HIDE);
+					hVIDToolTip = create_tooltip(GetDlgItem(hMainDialog, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
+					ShowWindow(GetDlgItem(hMainDialog, IDC_VID_REPORT), unknown_vid?SW_SHOW:SW_HIDE);
 					safe_sprintf(str_tmp, 5, "%04X", device->pid);
-					SetDlgItemTextA(hMain, IDC_PID, str_tmp);
+					SetDlgItemTextA(hMainDialog, IDC_PID, str_tmp);
 					if (device->is_composite) {
 						safe_sprintf(str_tmp, 5, "%02X", device->mi);
-						SetDlgItemTextA(hMain, IDC_MI, str_tmp);
+						SetDlgItemTextA(hMainDialog, IDC_MI, str_tmp);
 						display_mi(TRUE);
 					} else {
 						display_mi(FALSE);
@@ -1526,7 +1528,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
 					has_wcid = (pd_options.use_wcid_driver)?WCID_TRUE:WCID_FALSE;
 					if (has_wcid == WCID_TRUE) {
-						SetDlgItemTextA(hMain, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
+						SetDlgItemTextA(hMainDialog, IDC_WCID, device->compatible_id + safe_strlen(ms_comp_hdr));
 						// Select the driver according to the WCID (will be set to WDI_USER = unsupported if no match)
 						for (wcid_type=WDI_WINUSB; wcid_type<WDI_LIBUSBK; wcid_type++) {
 							if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_name[wcid_type]) == 0) {
@@ -1546,7 +1548,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 							}
 						}
 					}
-					EnableWindow(GetDlgItem(hMain, IDC_EDITNAME), TRUE);
+					EnableWindow(GetDlgItem(hMainDialog, IDC_EDITNAME), TRUE);
 				} else {
 					has_wcid = WCID_NONE;
 				}
@@ -1570,7 +1572,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					notification(MSG_INFO, NULL, "Driver Installation", "The driver was installed successfully.");
 				}
 				if (exit_on_success)
-					PostMessage(hMain, WM_CLOSE, 0, 0);
+					PostMessage(hMainDialog, WM_CLOSE, 0, 0);
 			} else if (r == WDI_ERROR_USER_CANCEL) {
 				dsprintf("Driver Installation: Cancelled by User");
 				notification(MSG_WARNING, NULL, "Driver Installation", "Driver installation cancelled by user.");
@@ -1580,8 +1582,8 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			}
 			break;
 		case IDC_BROWSE:	// button: "Browse..."
-			browse_for_folder();
-			dprintf("Using '%s' as extraction directory.", extraction_path);
+			BrowseForFolder();
+			dprintf("Using '%s' as extraction directory.", szFolderPath);
 			break;
 		case IDC_CLEAR:		// button: "Clear Log"
 			SetWindowTextA(hInfo, "");
@@ -1592,14 +1594,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				break;
 			log_buffer = (char*)malloc(log_size);
 			if (log_buffer != NULL) {
-				log_size = GetDlgItemTextU(hMain, IDC_INFO, log_buffer, log_size);
+				log_size = GetDlgItemTextU(hMainDialog, IDC_INFO, log_buffer, log_size);
 				if (log_size == 0) {
 					dprintf("unable to read log text");
 				} else {
 					log_size--;	// remove NULL terminator
-					filepath = file_dialog(TRUE, app_dir, "zadig.log", "log", "Zadig log");
+					filepath = FileDialog(TRUE, app_dir, &log_ext, 0);
 					if (filepath != NULL) {
-						file_io(TRUE, filepath, &log_buffer, &log_size);
+						FileIo(TRUE, filepath, &log_buffer, &log_size);
 					}
 					safe_free(filepath);
 				}
@@ -1610,7 +1612,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_WCID_BOX:	// prevent focus
 			if (HIWORD(wParam) == EN_SETFOCUS) {
-				SetFocus(hMain);
+				SetFocus(hMainDialog);
 				return (INT_PTR)TRUE;
 			}
 			break;
@@ -1624,14 +1626,14 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			toggle_create(TRUE);
 			break;
 		case IDM_OPEN:
-			filepath = file_dialog(FALSE, app_dir, "sample.cfg", "cfg", "Zadig device config");
+			filepath = FileDialog(FALSE, app_dir, &cfg_ext, 0);
 			parse_preset(filepath);
 			break;
 		case IDM_ABOUT:
-			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_ABOUTBOX), hMain, about_callback);
+			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_ABOUTBOX), hMainDialog, about_callback);
 			break;
 		case IDM_UPDATES:
-			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_UPDATE_POLICY), hMain, UpdateCallback);
+			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_UPDATE_POLICY), hMainDialog, UpdateCallback);
 			break;
 		case IDM_CERTMGR:
 			memset(&si, 0, sizeof(si));
@@ -1766,7 +1768,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 	tmp = getenvU("USERPROFILE");
-	safe_sprintf(extraction_path, sizeof(extraction_path), "%s\\usb_driver", tmp);
+	safe_sprintf(szFolderPath, sizeof(szFolderPath), "%s\\usb_driver", tmp);
 	safe_free(tmp);
 
 	// Create the main Window
