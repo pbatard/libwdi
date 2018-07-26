@@ -1,3 +1,9 @@
+=== v2.4 (2018.07.26) ===
+* Update URLs
+* Improve error reporting
+* Fix Windows 7 showing a "Trusted Publisher" dialog
+* Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.0.7.0 & usbser (native)
+
 === v2.3 (2017.04.18) ===
 * Fix issues with extended characters in current user directory
 * Drop Windows XP and Windows Vista support

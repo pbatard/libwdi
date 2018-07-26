@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2018 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,18 +35,18 @@
 
 #define APPLICATION_NAME            "Zadig"
 #define COMPANY_NAME                "Akeo Consulting"
-#define APPLICATION_URL             "http://zadig.akeo.ie"
+#define APPLICATION_URL             "https://zadig.akeo.ie"
 #define STR_BUFFER_SIZE             512
 #define NOTIFICATION_DELAY          1000
 #define MAX_TOOLTIPS                32
 #define MAX_LOG_SIZE                0x7FFFFFFE
 #define MAX_PROGRESS                (0xFFFF-1)
 #define INI_NAME                    "zadig.ini"
-#define LIBWDI_URL                  "http://libwdi.akeo.ie"
-#define LIBUSB_URL                  "http://windows.libusb.info"
-#define LIBUSB0_URL                 "http://sourceforge.net/apps/trac/libusb-win32/wiki"
+#define LIBWDI_URL                  "https://github.com/pbatard/libwdi"
+#define LIBUSB_URL                  "https://github.com/libusb/libusb/wiki/Windows"
+#define LIBUSB0_URL                 "https://sourceforge.net/p/libusb-win32/wiki/Home/"
 #define LIBUSBK_URL                 "http://libusbk.sourceforge.net/UsbK3/index.html"
-#define WINUSB_URL                  "https://msdn.microsoft.com/en-us/library/windows/hardware/ff540174.aspx"
+#define WINUSB_URL                  "https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/winusb"
 #define HELP_URL                    "https://github.com/pbatard/libwdi/wiki/Zadig"
 #define WCID_URL                    "https://github.com/pbatard/libwdi/wiki/WCID-Devices"
 #define USB_IDS_URL                 "http://www.linux-usb.org/usb-ids.html"
@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.3.718"
+#define APP_VERSION                 "Zadig 2.4.719"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
