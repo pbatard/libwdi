@@ -141,25 +141,25 @@ const char *WindowsErrorString(void)
 	static char err_string[256] = { 0 };
 
 	DWORD size;
-	DWORD error_code, format_error;
+	DWORD errcode, format_error;
 
-	error_code = GetLastError();
+	errcode = GetLastError();
 
-	static_sprintf(err_string, "[0x%08lX] ", error_code);
+	static_sprintf(err_string, "[0x%08lX] ", errcode);
 
-	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, HRESULT_CODE(error_code),
+	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, HRESULT_CODE(errcode),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[strlen(err_string)],
 		sizeof(err_string) - (DWORD)strlen(err_string), NULL);
 	if (size == 0) {
 		format_error = GetLastError();
 		if ((format_error) && (format_error != 0x13D))		// 0x13D, decode error, is returned for unknown codes
 			static_sprintf(err_string, "Windows error code 0x%08lX (FormatMessage error code 0x%08lX)",
-				error_code, format_error);
+				errcode, format_error);
 		else
-			static_sprintf(err_string, "Unknown error 0x%08lX", error_code);
+			static_sprintf(err_string, "Unknown error 0x%08lX", errcode);
 	}
 
-	SetLastError(error_code);	// Make sure we don't change the errorcode on exit
+	SetLastError(errcode);	// Make sure we don't change the errorcode on exit
 	return err_string;
 }
 

@@ -575,6 +575,7 @@ static char err_string[STR_BUFFER_SIZE];
  * Convert various installation errors to their WDI counterpart
  */
 static __inline int process_error(DWORD r, char* path) {
+	// https://download.microsoft.com/download/9/c/5/9c5b2167-8017-4bae-9fde-d599bac8184a/DrvPkg_Errors.doc
 	// Will fail if inf not signed, unless DRIVER_PACKAGE_LEGACY_MODE is specified.
 	// r = 87 ERROR_INVALID_PARAMETER on path == NULL or hardware_id empty string
 	// r = 2 ERROR_FILE_NOT_FOUND => failed to open inf
@@ -591,71 +592,88 @@ static __inline int process_error(DWORD r, char* path) {
 	// r = 0x800B0100 ERROR_WRONG_INF_STYLE => missing cat entry in inf
 	// r = 0xE000022F ERROR_NO_CATALOG_FOR_OEM_INF => "reject unsigned driver" policy is enforced
 	// r = 0xE0000243 ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED => user doesn't trust the cert that signed the cat
+	// r = 0xE0000246 ERROR_DEVICE_INSTALLER_NOT_READY => Windows is already running an installer.
 	// r = 0xE000024B ERROR_FILE_HASH_NOT_IN_CATALOG => can happen if the cat contains SHA-256 hashes, but its header says SHA-1
 	// r = 0xB7 => missing DRIVER_PACKAGE_REPAIR flag
 	switch(r) {
 	case ERROR_NO_MORE_ITEMS:
-		plog("more recent driver was found (force option required)");
+		plog("A more recent driver was found (force option required).");
 		return WDI_ERROR_EXISTS;
 	case ERROR_NO_SUCH_DEVINST:
-		plog("device not detected (copying driver files for next time device is plugged in)");
+		plog("Device was not detected (Copying driver files for next time device is plugged in).");
 		return WDI_SUCCESS;
 	case ERROR_INVALID_PARAMETER:
-		plog("invalid path or hardware ID (%s)", path);
+		plog("Invalid path or hardware ID (%s).", path);
 		return WDI_ERROR_INVALID_PARAM;
 	case ERROR_FILE_NOT_FOUND:
-		plog("the system can not find the file specified (%s)", path);
+	case ERROR_PATH_NOT_FOUND:
+	case ERROR_OPEN_FAILED:
+		plog("The system can not find the file or path specified (%s).", path);
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_FILE_HASH_NOT_IN_CATALOG:
-		plog("unable to locate the file hashes in cat file");
+		plog("Unable to locate the file hashes in the CAT file.");
 		return WDI_ERROR_NOT_FOUND;
 	case ERROR_ACCESS_DENIED:
-		plog("this process needs to be run with administrative privileges");
+		plog("This process needs to be run with administrative privileges.");
 		return WDI_ERROR_NEEDS_ADMIN;
 	case ERROR_IN_WOW64:
-		plog("attempted to use a 32 bit installer on a 64 bit machine");
+		plog("Attempted to use a 32 bit installer on a 64 bit machine.");
 		return WDI_ERROR_WOW64;
 	case ERROR_INVALID_DATA:
 	case ERROR_WRONG_INF_STYLE:
 	case ERROR_GENERAL_SYNTAX:
-		plog("the syntax of the inf is invalid");
+	case SPAPI_E_INVALID_TARGET:
+		plog("The syntax of the INF file is invalid.");
 		return WDI_ERROR_INF_SYNTAX;
 	case ERROR_BAD_SERVICE_INSTALLSECT:
-		plog("a section of the inf has a problem");
+	case SPAPI_E_BAD_SERVICE_INSTALLSECT:
+	case SPAPI_E_NO_ASSOCIATED_SERVICE:
+		plog("A section of the INF file has a problem.");
 		return WDI_ERROR_INF_SYNTAX;
 	case ERROR_INVALID_CATALOG_DATA:
-		plog("unable to locate cat file");
+		plog("Unable to locate the CAT file");
 		return WDI_ERROR_CAT_MISSING;
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
 	case ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED:
-		plog("operation cancelled by the user");
+		plog("Operation was cancelled by the user.");
 		return WDI_ERROR_USER_CANCEL;
 	case ERROR_NO_DRIVER_SELECTED:
-		plog("the driver is not compatible with this version of Windows");
+		plog("The driver is not compatible with this version of Windows.");
 		return WDI_ERROR_NOT_SUPPORTED;
 	case ERROR_ALREADY_EXISTS:
-		plog("driver already exists");
+		plog("This driver already exists.");
 		return WDI_ERROR_EXISTS;
 	case ERROR_NO_CATALOG_FOR_OEM_INF:
-		plog("your system policy has been modified from Windows defaults, and");
+		plog("Your system policy has been modified from Windows defaults, and");
 		plog("is set to reject unsigned drivers. You must revert the driver");
 		plog("installation policy to default if you want to install this driver.");
-		plog("see http://articles.techrepublic.com.com/5100-10878_11-5875443.html");
 		return WDI_ERROR_UNSIGNED;
 	// From https://github.com/Microsoft/Windows-driver-samples/blob/master/general/installwdf/Install.cpp#L180-L193
 	case ERROR_SERVICE_DISABLED:
 	case WU_E_WU_DISABLED:
-		plog("the \"Windows Update\" service is disabled. Please enable that service.");
+		plog("The \"Windows Update\" service is disabled. Please enable that service.");
 		return WDI_ERROR_OTHER;
 	case WU_S_ALREADY_INSTALLED:
-		plog("the driver is already installed");
+		plog("This driver is already installed.");
 		return WDI_SUCCESS;
 	case ERROR_SUCCESS_REBOOT_REQUIRED:
-		plog("the driver was installed successfully, but a reboot is required.");
+		plog("The driver was installed successfully, but a reboot is required.");
 		return WDI_SUCCESS;
+	case ERROR_DEVICE_INSTALLER_NOT_READY:
+		plog("Another system installer is running. Please wait for that installer to complete.");
+		return WDI_ERROR_PENDING_INSTALLATION;
+	case ERROR_TIMEOUT:
+		plog("The driver installation timed out");
+		return WDI_ERROR_TIMEOUT;
+	case ERROR_DRIVER_NONNATIVE:
+		plog("A driver component being installed does not match this platform's architecture.");
+		return WDI_ERROR_NOT_SUPPORTED;
+	case ERROR_REQUIRES_INTERACTIVE_WINDOWSTATION:
+		plog("The driver installation requires an interactive window.");
+		return WDI_ERROR_OTHER;
 	default:
-		plog("unhandled error 0x%X (%d)", r, r);
+		plog("Unhandled error 0x%X (%d)", r, r);
 		plog(windows_error_str(r));
 		return WDI_ERROR_OTHER;
 	}
