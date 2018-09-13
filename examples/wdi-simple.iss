@@ -54,8 +54,9 @@ Name: "{group}\Uninstall YourApplication"; Filename: "{uninstallexe}"
 ; -s, --silent               silent mode
 ; -b, --progressbar=[HWND]   display a progress bar during install
 ;                            an optional HWND can be specified
+; -o, --timeout              timeout (in millis) to wait for any pending installations
 ; -l, --log                  set log level (0 = debug, 4 = none)
 ; -h, --help                 display usage
 ;
-Filename: "{app}\wdi-simple.exe"; Flags: "runhidden"; Parameters: " --name ""XBox Controller"" --vid 0x045e --pid 0x0289 --progressbar={wizardhwnd}"; StatusMsg: "Installing YourApplication driver (this may take a few seconds) ...";
+Filename: "{app}\wdi-simple.exe"; Flags: "runhidden"; Parameters: " --name ""XBox Controller"" --vid 0x045e --pid 0x0289 --progressbar={wizardhwnd} --timeout 120000"; StatusMsg: "Installing YourApplication driver (this may take a few seconds) ...";
 
