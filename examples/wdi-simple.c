@@ -1,6 +1,6 @@
 /*
 * wdi-simple.c: Console Driver Installer for a single USB device
-* Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2018 Pete Batard <pete@akeo.ie>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -69,8 +69,8 @@ void usage(void)
 	printf("-s, --silent               silent mode\n");
 	printf("-b, --progressbar=[HWND]   display a progress bar during install\n");
 	printf("                           an optional HWND can be specified\n");
-	printf("-o, --timeout              timeout (in millis) to wait for any pending installations\n");
-	printf("-l, --log                  set log level (0 = debug, 4 = none)\n");
+	printf("-o, --timeout              set a timeout (in ms) to wait for any pending installations\n");
+	printf("-l, --log                  set log level (0=debug, 4=none)\n");
 	printf("-h, --help                 display usage\n");
 	printf("\n");
 }

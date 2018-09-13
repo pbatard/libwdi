@@ -53,7 +53,7 @@ SectionEnd
 ; -p, --pid <id>             set the product ID (PID)
 ; -i, --iid <id>             set the interface ID (MI)
 ; -t, --type <driver_type>   set the driver to install
-;                            (0=WinUSB, 1=libusb0, 2=libusbK, 3=custom)
+;                            (0=WinUSB, 1=libusb0, 2=libusbK, 3=usbser, 4=custom)
 ; -d, --dest <dir>           set the extraction directory
 ; -x, --extract              extract files only (don't install)
 ; -c, --cert <certname>      install certificate <certname> from the
@@ -62,11 +62,13 @@ SectionEnd
 ; -s, --silent               silent mode
 ; -b, --progressbar=[HWND]   display a progress bar during install
 ;                            an optional HWND can be specified
-; -l, --log                  set log level (0 = debug, 4 = none)
+; -o, --timeout              set timeout (in ms) to wait for any 
+;                            pending installations
+; -l, --log                  set log level (0=debug, 4=none)
 ; -h, --help                 display usage
 Section "wdi-simple"
   DetailPrint "Running $INSTDIR\wdi-simple.exe"
-  nsExec::ExecToLog '"$INSTDIR\wdi-simple.exe" --name "XBox Controller" --vid 0x045e --pid 0x0289 --progressbar=$HWNDPARENT'
+  nsExec::ExecToLog '"$INSTDIR\wdi-simple.exe" --name "XBox Controller" --vid 0x045e --pid 0x0289 --progressbar=$HWNDPARENT --timeout 120000'
 SectionEnd
 
 ; Uninstaller
