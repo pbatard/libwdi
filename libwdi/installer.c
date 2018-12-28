@@ -636,7 +636,7 @@ static __inline int process_error(DWORD r, char* path) {
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
 	case ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED:
-		plog("Operation was cancelled by the user.");
+		plog("Invalid CAT file signature or operation cancelled by user.");
 		return WDI_ERROR_USER_CANCEL;
 	case ERROR_NO_DRIVER_SELECTED:
 		plog("The driver is not compatible with this version of Windows.");

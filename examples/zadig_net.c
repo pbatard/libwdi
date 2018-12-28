@@ -572,11 +572,6 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		}
 		vuprintf("Found match for %s on server %s", urlpath, server_url);
 
-		dwSize = sizeof(mime);
-		HttpQueryInfoA(hRequest, HTTP_QUERY_CONTENT_TYPE, (LPVOID)&mime, &dwSize, NULL);
-		if (strncmp(mime, "text/plain", sizeof("text/plain")-1) != 0)
-			goto out;
-
 		// We also get a date from Apache, which we'll use to avoid out of sync check,
 		// in case some set their clock way into the future and back.
 		// On the other hand, if local clock is set way back in the past, we will never check.
