@@ -488,7 +488,7 @@ void set_driver(void)
 	char target_text[64];
 
 	if ((pd_options.driver_type == WDI_CDC) || (pd_options.driver_type >= WDI_USER)) {
-		safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+		static_sprintf(target_text, "%s", driver_display_name[pd_options.driver_type]);
 		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
 		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
 	} else {
@@ -498,13 +498,13 @@ void set_driver(void)
 			target_driver_version = file_info.dwFileVersionMS;
 			target_driver_version <<= 32;
 			target_driver_version += file_info.dwFileVersionLS;
-			safe_sprintf(target_text, 64, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
+			static_sprintf(target_text, "%s (v%d.%d.%d.%d)", driver_display_name[pd_options.driver_type],
 				(int)file_info.dwFileVersionMS >> 16, (int)file_info.dwFileVersionMS & 0xFFFF,
 				(int)file_info.dwFileVersionLS >> 16, (int)file_info.dwFileVersionLS & 0xFFFF);
 			pd_options.use_wcid_driver = (nb_devices < 0) ||
 				((has_wcid == WCID_TRUE) && (pd_options.driver_type == wcid_type));
 		} else {
-			safe_sprintf(target_text, 64, "%s", driver_display_name[pd_options.driver_type]);
+			static_sprintf(target_text, "%s", driver_display_name[pd_options.driver_type]);
 		}
 	}
 	SetDlgItemTextA(hMainDialog, IDC_TARGET, target_text);
@@ -796,7 +796,7 @@ void set_install_button(void)
 		}
 	}
 	qualifier = pd_options.use_wcid_driver?"WCID ":(id_options.install_filter_driver?"Filter ":"");
-	safe_sprintf(label, 64, "%s %s%s", action, qualifier, object);
+	static_sprintf(label, "%s %s%s", action, qualifier, object);
 	SetDlgItemTextA(hMainDialog, IDC_INSTALL, label);
 }
 
@@ -1095,7 +1095,7 @@ BOOL parse_preset(char* filename)
 		toggle_create(FALSE);
 	}
 
-	safe_sprintf(str_tmp, 5, "%04X", tmp);
+	static_sprintf(str_tmp, "%04X", tmp);
 	SetDlgItemTextA(hMainDialog, IDC_VID, str_tmp);
 
 	profile_get_string(profile, "device", "Description", NULL, NULL, &desc);
@@ -1105,13 +1105,13 @@ BOOL parse_preset(char* filename)
 
 	profile_get_uint(profile, "device", "PID", NULL, 0x10000, &tmp);
 	if (tmp <= 0xFFFF) {
-		safe_sprintf(str_tmp, 5, "%04X", tmp);
+		static_sprintf(str_tmp, "%04X", tmp);
 		SetDlgItemTextA(hMainDialog, IDC_PID, str_tmp);
 	}
 
 	profile_get_uint(profile, "device", "MI", NULL, 0x100, &tmp);
 	if (tmp <= 0xFF) {
-		safe_sprintf(str_tmp, 5, "%02X", tmp);
+		static_sprintf(str_tmp, "%02X", tmp);
 		SetDlgItemTextA(hMainDialog, IDC_MI, str_tmp);
 	}
 
@@ -1493,7 +1493,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						if (device->driver_version == 0) {
 							safe_strcpy(driver_text, sizeof(driver_text), device->driver);
 						} else {
-							safe_sprintf(driver_text, sizeof(driver_text), "%s (v%d.%d.%d.%d)", device->driver,
+							static_sprintf(driver_text, "%s (v%d.%d.%d.%d)", device->driver,
 								(int)((device->driver_version>>48)&0xffff), (int)((device->driver_version>>32)&0xffff),
 								(int)((device->driver_version>>16)&0xffff), (int)(device->driver_version & 0xffff));
 						}
@@ -1502,7 +1502,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					}
 					SetDlgItemTextU(hMainDialog, IDC_DRIVER, driver_text);
 					// Display the VID,PID,MI
-					safe_sprintf(str_tmp, 5, "%04X", device->vid);
+					static_sprintf(str_tmp, "%04X", device->vid);
 					SetDlgItemTextA(hMainDialog, IDC_VID, str_tmp);
 					// Display the vendor string as a tooltip
 					destroy_tooltip(hVIDToolTip);
@@ -1515,10 +1515,10 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					};
 					hVIDToolTip = create_tooltip(GetDlgItem(hMainDialog, IDC_VID), (char*)vid_string, unknown_vid?20000:-1);
 					ShowWindow(GetDlgItem(hMainDialog, IDC_VID_REPORT), unknown_vid?SW_SHOW:SW_HIDE);
-					safe_sprintf(str_tmp, 5, "%04X", device->pid);
+					static_sprintf(str_tmp, "%04X", device->pid);
 					SetDlgItemTextA(hMainDialog, IDC_PID, str_tmp);
 					if (device->is_composite) {
-						safe_sprintf(str_tmp, 5, "%02X", device->mi);
+						static_sprintf(str_tmp, "%02X", device->mi);
 						SetDlgItemTextA(hMainDialog, IDC_MI, str_tmp);
 						display_mi(TRUE);
 					} else {
@@ -1768,7 +1768,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 	tmp = getenvU("USERPROFILE");
-	safe_sprintf(szFolderPath, sizeof(szFolderPath), "%s\\usb_driver", tmp);
+	static_sprintf(szFolderPath, "%s\\usb_driver", tmp);
 	safe_free(tmp);
 
 	// Create the main Window

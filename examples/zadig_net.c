@@ -289,7 +289,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		}
 	}
 
-	safe_sprintf(msg, sizeof(msg), "Downloading %s: Connecting...", file);
+	static_sprintf(msg, "Downloading %s: Connecting...", file);
 	print_status(0, FALSE, msg);
 	dprintf("Downloading %s from %s\n", file, url);
 
@@ -370,7 +370,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 			break;
 		dwSize += dwDownloaded;
 		SendMessage(hProgressBar, PBM_SETPOS, (WPARAM)(MAX_PROGRESS*((1.0f*dwSize)/(1.0f*dwTotalSize))), 0);
-		safe_sprintf(msg, sizeof(msg), "Downloading: %0.1f%%", (100.0f*dwSize)/(1.0f*dwTotalSize));
+		static_sprintf(msg, "Downloading: %0.1f%%", (100.0f*dwSize)/(1.0f*dwTotalSize));
 		print_status(0, FALSE, msg);
 		if (!WriteFile(hFile, buf, dwDownloaded, &dwWritten, NULL)) {
 			dprintf("Error writing file '%s': %s\n", &file[last_slash], WinInetErrorString());
@@ -453,7 +453,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 	const char* accept_types[] = {"*/*\0", NULL};
 	DWORD dwFlags, dwSize, dwDownloaded, dwTotalSize, dwStatus;
 	char* buf = NULL;
-	char agent[64], hostname[64], urlpath[128], mime[32];
+	char agent[64], hostname[64], urlpath[128];
 	OSVERSIONINFOA os_version = {sizeof(OSVERSIONINFOA), 0, 0, 0, 0, ""};
 	HINTERNET hSession = NULL, hConnection = NULL, hRequest = NULL;
 	URL_COMPONENTSA UrlParts = {sizeof(URL_COMPONENTSA), NULL, 1, (INTERNET_SCHEME)0,
@@ -510,7 +510,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		goto out;
 	hostname[sizeof(hostname)-1] = 0;
 
-	safe_sprintf(agent, ARRAYSIZE(agent), APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
+	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
 		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
@@ -530,7 +530,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		// and then remove each each of the <os_> components until we find our match. For instance, we may first
 		// look for <app_name>_win_x64_6.2.ver (Win8 x64) but only get a match for <app_name>_win_x64_6.ver (Vista x64 or later)
 		// This allows sunsetting OS versions (eg XP) or providing different downloads for different archs/groups.
-		safe_sprintf(urlpath, sizeof(urlpath), "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k==0)?"":"_",
+		static_sprintf(urlpath, "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k==0)?"":"_",
 			(k==0)?"":channel[k], archname[is_x64()?1:0], os_version.dwMajorVersion, os_version.dwMinorVersion);
 		vuprintf("Base update check: %s\n", urlpath);
 		for (i=0, j=(int)safe_strlen(urlpath)-5; (j>0)&&(i<ARRAYSIZE(verpos)); j--) {

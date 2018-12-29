@@ -635,7 +635,7 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 			org[0] = 0; org_unit[0] = 0;
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATION_NAME, org, sizeof(org));
 			pfCertGetNameStringA(pCertContext, CERT_NAME_ATTR_TYPE, 0, szOID_ORGANIZATIONAL_UNIT_NAME, org_unit, sizeof(org_unit));
-			safe_sprintf(msg_string, sizeof(msg_string), "Warning: this software is about to install the following organization\n"
+			static_sprintf(msg_string, "Warning: this software is about to install the following organization\n"
 				"as a Trusted Publisher on your system:\n\n '%s%s%s%s'\n\n"
 				"This will allow this Publisher to run software with elevated privileges,\n"
 				"as well as install driver packages, without further security notices.\n\n"
@@ -1233,7 +1233,7 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
 		wdi_warn("path overflow");
 		return;
 	}
-	sprintf(szDir, "%s%c%s", szInitialDir, '\\', szDirName);
+	static_sprintf(szDir, "%s%c%s", szInitialDir, '\\', szDirName);
 
 	// Get the first file
 	strcat(szDir, "\\*");
@@ -1254,14 +1254,14 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
 					FindClose(hList);
 					return;
 				}
-				sprintf(szSubDir, "%s%c%s", szDirName, '\\', szEntry);
+				static_sprintf(szSubDir, "%s%c%s", szDirName, '\\', szEntry);
 				ScanDirAndHash(hCat, szSubDir, szFileList, cFileList);
 			}
 		} else {
 			for (i=0; i<cFileList; i++) {
 				_strlwr(szEntry);	// must be lowercase for comparison
 				if (strcmp(szEntry, szFileList[i]) == 0) {
-					sprintf(szFilePath, "%s%s%c%s", szInitialDir, szDirName, '\\', szEntry);
+					static_sprintf(szFilePath, "%s%s%c%s", szInitialDir, szDirName, '\\', szEntry);
 					// TODO: check return value
 					if ( (CalcHash(pbHash, szFilePath)) && AddFileHash(hCat, szEntry, pbHash) ) {
 						wdi_info("added hash for '%s'",  szFilePath);
