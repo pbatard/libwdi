@@ -391,6 +391,25 @@ char* winpki_error_str(uint32_t retval)
 	switch (error_code) {
 	case NTE_BAD_UID:
 		return "Bad UID.";
+	case NTE_BAD_KEYSET:
+		return "The key container could not be opened.";
+	case NTE_KEYSET_ENTRY_BAD:
+		return "The requested key container is corrupted.";
+	case NTE_BAD_FLAGS:
+	case NTE_BAD_KEYSET_PARAM:
+	case NTE_BAD_PROV_TYPE:
+	case NTE_EXISTS:
+		return "Invalid parameter.";
+	case NTE_BAD_SIGNATURE:
+		return "This system's cryptographic DLL has been tampered with.";
+	case NTE_PROVIDER_DLL_FAIL:
+	case NTE_SIGNATURE_FILE_BAD:
+	case NTE_PROV_DLL_NOT_FOUND:
+		return "This system's cryptographic DLL can not be loaded.";
+	case NTE_KEYSET_NOT_DEF:
+		return "The requested provider does not exist.";
+	case NTE_NO_MEMORY:
+		return "Out of memory.";
 	case CRYPT_E_MSG_ERROR:
 		return "An error occurred while performing an operation on a cryptographic message.";
 	case CRYPT_E_UNKNOWN_ALGO:
@@ -503,17 +522,17 @@ BOOL AddCertToStore(PCCERT_CONTEXT pCertContext, LPCSTR szStoreName)
 	hSystemStore = pfCertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING,
 		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, szStoreName);
 	if (hSystemStore == NULL) {
-		wdi_warn("failed to open system store '%s': %s", szStoreName, winpki_error_str(0));
+		wdi_warn("Failed to open system store '%s': %s", szStoreName, winpki_error_str(0));
 		goto out;
 	}
 
 	if (!pfCertSetCertificateContextProperty(pCertContext, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
-		wdi_warn("coud not set friendly name: %s", winpki_error_str(0));
+		wdi_warn("Could not set friendly name: %s", winpki_error_str(0));
 		goto out;
 	}
 
 	if (!pfCertAddCertificateContextToStore(hSystemStore, pCertContext, CERT_STORE_ADD_REPLACE_EXISTING, NULL)) {
-		wdi_warn("failed to add certificate to system store '%s': %s", szStoreName, winpki_error_str(0));
+		wdi_warn("Failed to add certificate to system store '%s': %s", szStoreName, winpki_error_str(0));
 		goto out;
 	}
 	r = TRUE;
@@ -558,7 +577,7 @@ BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	if ( (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, NULL, &certNameBlob.cbData, NULL))
 	  || ((certNameBlob.pbData = (BYTE*)malloc(certNameBlob.cbData)) == NULL)
 	  || (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, certNameBlob.pbData, &certNameBlob.cbData, NULL)) ) {
-		wdi_warn("failed to encode'%s': %s", szCertSubject, winpki_error_str(0));
+		wdi_warn("Failed to encode'%s': %s", szCertSubject, winpki_error_str(0));
 		goto out;
 	}
 
@@ -566,7 +585,7 @@ BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	while ((pCertContext = pfCertFindCertificateInStore(hSystemStore, X509_ASN_ENCODING, 0,
 		CERT_FIND_SUBJECT_NAME, (const void*)&certNameBlob, NULL)) != NULL) {
 		pfCertDeleteCertificateFromStore(pCertContext);
-		wdi_info("deleted existing certificate '%s' from '%s' store", szCertSubject, szStoreName);
+		wdi_info("Deleted existing certificate '%s' from '%s' store", szCertSubject, szStoreName);
 	}
 	r = TRUE;
 
@@ -611,7 +630,7 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 		0, CERT_SYSTEM_STORE_LOCAL_MACHINE, "TrustedPublisher");
 
 	if (hSystemStore == NULL) {
-		wdi_warn("unable to open system store: %s", winpki_error_str(0));
+		wdi_warn("Unable to open system store: %s", winpki_error_str(0));
 		goto out;
 	}
 
@@ -622,7 +641,7 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 	pCertContext = pfCertCreateCertificateContext(X509_ASN_ENCODING, pbCertData, dwCertSize);
 
 	if (pCertContext == NULL) {
-		wdi_warn("could not create context for certificate: %s", winpki_error_str(0));
+		wdi_warn("Could not create context for certificate: %s", winpki_error_str(0));
 		pfCertCloseStore(hSystemStore, 0);
 		goto out;
 	}
@@ -645,10 +664,10 @@ BOOL AddCertToTrustedPublisher(BYTE* pbCertData, DWORD dwCertSize, BOOL bDisable
 					"Warning: Trusted Certificate installation", MB_OKCANCEL | MB_ICONWARNING);
 		}
 		if (user_input != IDOK) {
-			wdi_info("operation cancelled by the user");
+			wdi_info("Operation cancelled by the user");
 		} else {
 			if (!pfCertAddCertificateContextToStore(hSystemStore, pCertContext, CERT_STORE_ADD_NEWER, NULL)) {
-				wdi_warn("could not add certificate: %s", winpki_error_str(0));
+				wdi_warn("Could not add certificate: %s", winpki_error_str(0));
 			} else {
 				r = TRUE;
 			}
@@ -713,7 +732,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, (LPVOID)&certEnhKeyUsage, NULL, &dwSize))
 	  || ((pbEnhKeyUsage = (BYTE*)malloc(dwSize)) == NULL)
 	  || (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, (LPVOID)&certEnhKeyUsage, pbEnhKeyUsage, &dwSize)) ) {
-		wdi_warn("could not setup EKU for code signing: %s", winpki_error_str(0));
+		wdi_warn("Could not setup EKU for code signing: %s", winpki_error_str(0));
 		goto out;
 	}
 	certExtension[0].pszObjId = szOID_ENHANCED_KEY_USAGE;
@@ -725,7 +744,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, NULL, &dwSize))
 	  || ((pbAltNameInfo = (BYTE*)malloc(dwSize)) == NULL)
 	  || (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, pbAltNameInfo, &dwSize)) ) {
-		wdi_warn("could not setup URL: %s", winpki_error_str(0));
+		wdi_warn("Could not setup URL: %s", winpki_error_str(0));
 		goto out;
 	}
 	certExtension[1].pszObjId = szOID_SUBJECT_ALT_NAME;
@@ -740,7 +759,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_NAME_VALUE, (LPVOID)&certCPSValue, NULL, &dwSize))
 		|| ((pbCPSNotice = (BYTE*)malloc(dwSize)) == NULL)
 		|| (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_NAME_VALUE, (LPVOID)&certCPSValue, pbCPSNotice, &dwSize)) ) {
-		wdi_warn("could not setup CPS: %s", winpki_error_str(0));
+		wdi_warn("Could not setup CPS: %s", winpki_error_str(0));
 		goto out;
 	}
 
@@ -750,7 +769,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_CERT_POLICIES, (LPVOID)&certPolicyInfoArray, NULL, &dwSize))
 		|| ((pbPolicyInfo = (BYTE*)malloc(dwSize)) == NULL)
 		|| (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_CERT_POLICIES, (LPVOID)&certPolicyInfoArray, pbPolicyInfo, &dwSize)) ) {
-		wdi_warn("could not setup Certificate Policies: %s", winpki_error_str(0));
+		wdi_warn("Could not setup Certificate Policies: %s", winpki_error_str(0));
 		goto out;
 	}
 	certExtension[2].pszObjId = szOID_CERT_POLICIES;
@@ -760,31 +779,31 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	certExtensionsArray.cExtension = ARRAYSIZE(certExtension);
 	certExtensionsArray.rgExtension = certExtension;
-	wdi_dbg("set Enhanced Key Usage, URL and CPS");
+	wdi_dbg("Set Enhanced Key Usage, URL and CPS");
 
 	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) {
-		wdi_dbg("acquired existing key container");
+		wdi_dbg("Acquired existing key container");
 	} else if ( (GetLastError() == NTE_BAD_KEYSET)
 			 && (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET|CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) ) {
-		wdi_dbg("created new key container");
+		wdi_dbg("Created new key container");
 	} else {
-		wdi_warn("could not obtain a key container: %s", winpki_error_str(0));
+		wdi_warn("Could not obtain a key container: %s", winpki_error_str(0));
 		goto out;
 	}
 
 	// Generate key pair using RSA 4096
 	// (Key_size <<16) because key size is in upper 16 bits
 	if (!CryptGenKey(hCSP, AT_SIGNATURE, (4096U<<16) | CRYPT_EXPORTABLE, &hKey)) {
-		wdi_dbg("could not generate keypair: %s", winpki_error_str(0));
+		wdi_dbg("Could not generate keypair: %s", winpki_error_str(0));
 		goto out;
 	}
-	wdi_dbg("generated new keypair");
+	wdi_dbg("Generated new keypair...");
 
 	// Set the subject
 	if ( (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, NULL, &SubjectIssuerBlob.cbData, NULL))
 	  || ((SubjectIssuerBlob.pbData = (BYTE*)malloc(SubjectIssuerBlob.cbData)) == NULL)
 	  || (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, SubjectIssuerBlob.pbData, &SubjectIssuerBlob.cbData, NULL)) ) {
-		wdi_warn("could not encode subject name for self signed cert: %s", winpki_error_str(0));
+		wdi_warn("Could not encode subject name for self signed cert: %s", winpki_error_str(0));
 		goto out;
 	}
 
@@ -809,10 +828,10 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	pCertContext = pfCertCreateSelfSignCertificate((ULONG_PTR)NULL,
 		&SubjectIssuerBlob, 0, &KeyProvInfo, &SignatureAlgorithm, NULL, &sExpirationDate, &certExtensionsArray);
 	if (pCertContext == NULL) {
-		wdi_warn("could not create self signed certificate: %s", winpki_error_str(0));
+		wdi_warn("Could not create self signed certificate: %s", winpki_error_str(0));
 		goto out;
 	}
-	wdi_info("created new self-signed certificate '%s'", szCertSubject);
+	wdi_info("Created new self-signed certificate '%s'", szCertSubject);
 
 out:
 	free(pbEnhKeyUsage);
@@ -859,12 +878,12 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 	PF_INIT_OR_OUT(CertFreeCertificateContext, Crypt32);
 
 	if (!pfCryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_SILENT_FLAG, NULL, &hCSP, &dwKeySpec, &bFreeCSP)) {
-		wdi_warn("error getting CSP: %s", winpki_error_str(0));
+		wdi_warn("Error getting CSP: %s", winpki_error_str(0));
 		goto out;
 	}
 
 	if (!CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT|CRYPT_DELETEKEYSET)) {
-		wdi_warn("failed to delete private key: %s", winpki_error_str(0));
+		wdi_warn("Failed to delete private key: %s", winpki_error_str(0));
 	}
 
 	// This is optional, but unless we reimport the cert data after having deleted the key
@@ -879,11 +898,11 @@ BOOL DeletePrivateKey(PCCERT_CONTEXT pCertContext)
 			pCertContext->cbCertEncoded, CERT_STORE_ADD_REPLACE_EXISTING, &pCertContextUpdate)) && (pCertContextUpdate != NULL) ) {
 			// The friendly name is lost in this operation - restore it
 			if (!pfCertSetCertificateContextProperty(pCertContextUpdate, CERT_FRIENDLY_NAME_PROP_ID, 0, &libwdiNameBlob)) {
-				wdi_warn("coud not set friendly name: %s", winpki_error_str(0));
+				wdi_warn("Could not set friendly name: %s", winpki_error_str(0));
 			}
 			pfCertFreeCertificateContext(pCertContextUpdate);
 		} else {
-			wdi_warn("failed to update '%s': %s", szStoresToUpdate[i], winpki_error_str(0));
+			wdi_warn("Failed to update '%s': %s", szStoresToUpdate[i], winpki_error_str(0));
 		}
 		pfCertCloseStore(hSystemStore, 0);
 	}
@@ -944,18 +963,18 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	if (pCertContext == NULL) {
 		goto out;
 	}
-	wdi_dbg("successfully created certificate '%s'", szCertSubject);
+	wdi_dbg("Successfully created certificate '%s'", szCertSubject);
 	if ( (!AddCertToStore(pCertContext, "Root"))
 	  || (!AddCertToStore(pCertContext, "TrustedPublisher")) ) {
 		goto out;
 	}
-	wdi_info("added certificate '%s' to 'Root' and 'TrustedPublisher' stores", szCertSubject);
+	wdi_info("Added certificate '%s' to 'Root' and 'TrustedPublisher' stores", szCertSubject);
 
 	// Setup SIGNER_FILE_INFO struct
 	signerFileInfo.cbSize = sizeof(SIGNER_FILE_INFO);
 	wszFileName = UTF8toWCHAR(szFileName);
 	if (wszFileName == NULL) {
-		wdi_warn("unable to convert '%s' to UTF16");
+		wdi_warn("Unable to convert '%s' to UTF16");
 		goto out;
 	}
 	signerFileInfo.pwszFileName = wszFileName;
@@ -1009,7 +1028,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 		goto out;
 	}
 	r = TRUE;
-	wdi_info("successfully signed file '%s'", szFileName);
+	wdi_info("Successfully signed file '%s'", szFileName);
 
 	// Clean up
 out:
@@ -1019,7 +1038,7 @@ out:
 	 * by an attacker to self sign a malicious applications.
 	 */
 	if ((pCertContext != NULL) && (DeletePrivateKey(pCertContext))) {
-		wdi_info("successfully deleted private key");
+		wdi_info("Successfully deleted private key");
 	}
 	free((void*)wszFileName);
 	if (pSignerContext != NULL)
@@ -1107,7 +1126,7 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 	// Set the PE or CAB/INF type according to the extension
 	for (szExt = &szFileName[strlen(szFileName)]; (szExt > szFileName) && (*szExt!='.'); szExt--);
 	if (szExt == szFileName) {
-		wdi_warn("unhandled file type: '%s' - ignoring", szFileName);
+		wdi_warn("Unhandled file type: '%s' - ignoring", szFileName);
 		goto out;
 	}
 	szExt++;
@@ -1119,7 +1138,7 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 		wdi_dbg("'%s': INF type", szFileName);
 		bPEType = FALSE;
 	} else {
-		wdi_warn("unhandled file type: '%s' - ignoring", szFileName);
+		wdi_warn("Unhandled file type: '%s' - ignoring", szFileName);
 		goto out;
 	}
 
@@ -1134,12 +1153,12 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 		sSPCImageData.Flags.pbData = (BYTE*)&fImageData;
 		sSPCImageData.pFile = &sSPCLink;
 		if (!pfCryptEncodeObject(X509_ASN_ENCODING, SPC_PE_IMAGE_DATA_OBJID, &sSPCImageData, pbEncoded, &cbEncoded)) {
-			wdi_warn("unable to encode SPC Image Data: %s", winpki_error_str(0));
+			wdi_warn("Unable to encode SPC Image Data: %s", winpki_error_str(0));
 			goto out;
 		}
 	} else {
 		if (!pfCryptEncodeObject(X509_ASN_ENCODING, SPC_CAB_DATA_OBJID, &sSPCLink, pbEncoded, &cbEncoded)) {
-			wdi_warn("unable to encode SPC Image Data: %s", winpki_error_str(0));
+			wdi_warn("Unable to encode SPC Image Data: %s", winpki_error_str(0));
 			goto out;
 		}
 	}
@@ -1156,7 +1175,7 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 	// Create the new member
 	if ((pCatMember = pfCryptCATPutMemberInfo(hCat, NULL, wszHash, (GUID*)((bPEType)?&pe_guid:&inf_guid),
 		0x200, sizeof(sSIPData), (BYTE*)&sSIPData)) == NULL) {
-		wdi_warn("unable to create cat entry for file '%s': %s", szFileName, winpki_error_str(0));
+		wdi_warn("Unable to create cat entry for file '%s': %s", szFileName, winpki_error_str(0));
 		goto out;
 	}
 
@@ -1167,7 +1186,7 @@ static BOOL AddFileHash(HANDLE hCat, LPCSTR szFileName, BYTE* pbFileHash)
 	  || (pfCryptCATPutAttrInfo(hCat, pCatMember, L"OSAttr",
 		  CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
 		  2*((DWORD)wcslen(wszOSAttr)+1), (BYTE*)wszOSAttr) == NULL) ) {
-		wdi_warn("unable to create attributes for file '%s': %s", szFileName, winpki_error_str(0));
+		wdi_warn("Unable to create attributes for file '%s': %s", szFileName, winpki_error_str(0));
 		goto out;
 	}
 	r = TRUE;
@@ -1230,7 +1249,7 @@ static void ScanDirAndHash(HANDLE hCat, LPCSTR szDirName, LPSTR* szFileList, DWO
 
 	// Get the proper directory path
 	if ( (strlen(szInitialDir) + strlen(szDirName) + 4) > sizeof(szDir) ) {
-		wdi_warn("path overflow");
+		wdi_warn("Path overflow");
 		return;
 	}
 	static_sprintf(szDir, "%s%c%s", szInitialDir, '\\', szDirName);
@@ -1307,7 +1326,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	PF_INIT_OR_OUT(CryptCATPutCatAttrInfo, WinTrust);
 
 	if (!CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-		wdi_warn("unable to acquire crypt context for cat creation");
+		wdi_warn("Unable to acquire crypt context for cat creation");
 		goto out;
 	}
 	wszCatPath = UTF8toWCHAR(szCatPath);
@@ -1315,19 +1334,19 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	_wcslwr(wszHWID);	// Most of the cat strings are converted to lowercase
 	hCat= pfCryptCATOpen(wszCatPath, CRYPTCAT_OPEN_CREATENEW, hProv, 0, 0);
 	if (hCat == INVALID_HANDLE_VALUE) {
-		wdi_warn("unable to create file '%s': %s", szCatPath, winpki_error_str(0));
+		wdi_warn("Unable to create file '%s': %s", szCatPath, winpki_error_str(0));
 		goto out;
 	}
 
 	// Setup the general Cat attributes
 	if (pfCryptCATPutCatAttrInfo(hCat, L"HWID1", CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
 		2*((DWORD)wcslen(wszHWID)+1), (BYTE*)wszHWID) ==  NULL) {
-		wdi_warn("failed to set HWID1 cat attribute: %s", winpki_error_str(0));
+		wdi_warn("Failed to set HWID1 cat attribute: %s", winpki_error_str(0));
 		goto out;
 	}
 	if (pfCryptCATPutCatAttrInfo(hCat, L"OS", CRYPTCAT_ATTR_AUTHENTICATED|CRYPTCAT_ATTR_NAMEASCII|CRYPTCAT_ATTR_DATAASCII,
 		2*((DWORD)wcslen(wszOS)+1), (BYTE*)wszOS) == NULL) {
-		wdi_warn("failed to set OS cat attribute: %s", winpki_error_str(0));
+		wdi_warn("Failed to set OS cat attribute: %s", winpki_error_str(0));
 		goto out;
 	}
 
@@ -1338,7 +1357,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	// Make sure the list entries are all lowercase
 	szLocalFileList = (LPSTR *)malloc(cFileList*sizeof(LPSTR));
 	if (szLocalFileList == NULL) {
-		wdi_warn("unable allocate local file list");
+		wdi_warn("Unable allocate local file list");
 		goto out;
 	}
 	for (i=0; i<cFileList; i++){
@@ -1355,10 +1374,10 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 	free(szLocalFileList);
 	// The cat needs to be sorted before being saved
 	if (!pfCryptCATPersistStore(hCat)) {
-		wdi_warn("unable to sort file: %s",  winpki_error_str(0));
+		wdi_warn("Unable to sort file: %s",  winpki_error_str(0));
 		goto out;
 	}
-	wdi_info("successfully created file '%s'", szCatPath);
+	wdi_info("Successfully created file '%s'", szCatPath);
 	r = TRUE;
 
 out:
