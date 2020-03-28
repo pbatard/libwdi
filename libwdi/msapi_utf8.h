@@ -1,9 +1,9 @@
 /*
  * MSAPI_UTF8: Common API calls using UTF-8 strings
  * Compensating for what Microsoft should have done a long long time ago.
- * Also see http://utf8everywhere.org/
+ * Also see https://utf8everywhere.org
  *
- * Copyright © 2010-2017 Pete Batard <pete@akeo.ie>
+ * Copyright © 2010-2019 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -85,6 +85,10 @@ static __inline char* wchar_to_utf8(const wchar_t* wstr)
 	int size = 0;
 	char* str = NULL;
 
+	// Convert the empty string too
+	if (wstr[0] == 0)
+		return calloc(1, 1);
+
 	// Find out the size we need to allocate for our converted string
 	size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
 	if (size <= 1)	// An empty string would be size 1
@@ -112,6 +116,10 @@ static __inline wchar_t* utf8_to_wchar(const char* str)
 
 	if (str == NULL)
 		return NULL;
+
+	// Convert the empty string too
+	if (str[0] == 0)
+		return calloc(1, sizeof(wchar_t));
 
 	// Find out the size we need to allocate for our converted string
 	size = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
@@ -321,10 +329,14 @@ static __inline int GetWindowTextU(HWND hWnd, char* lpString, int nMaxCount)
 {
 	int ret = 0;
 	DWORD err = ERROR_INVALID_DATA;
+	// Handle the empty string as GetWindowTextW() returns 0 then
+	if ((lpString != NULL) && (nMaxCount > 0))
+		lpString[0] = 0;
 	// coverity[returned_null]
 	walloc(lpString, nMaxCount);
 	ret = GetWindowTextW(hWnd, wlpString, nMaxCount);
 	err = GetLastError();
+	// coverity[var_deref_model]
 	if ( (ret != 0) && ((ret = wchar_to_utf8_no_alloc(wlpString, lpString, nMaxCount)) == 0) ) {
 		err = GetLastError();
 	}
@@ -452,7 +464,7 @@ static __inline DWORD CharUpperBuffU(char* lpString, DWORD len)
 
 static __inline HANDLE CreateFileU(const char* lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 								   LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
-								   DWORD dwFlagsAndAttributes,  HANDLE hTemplateFile)
+								   DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
 {
 	HANDLE ret = INVALID_HANDLE_VALUE;
 	DWORD err = ERROR_INVALID_DATA;
@@ -461,6 +473,18 @@ static __inline HANDLE CreateFileU(const char* lpFileName, DWORD dwDesiredAccess
 		dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 	err = GetLastError();
 	wfree(lpFileName);
+	SetLastError(err);
+	return ret;
+}
+
+static __inline BOOL CreateDirectoryU(const char* lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+	BOOL ret = FALSE;
+	DWORD err = ERROR_INVALID_DATA;
+	wconvert(lpPathName);
+	ret = CreateDirectoryW(wlpPathName, lpSecurityAttributes);
+	err = GetLastError();
+	wfree(lpPathName);
 	SetLastError(err);
 	return ret;
 }
@@ -687,6 +711,23 @@ static __inline DWORD GetFileAttributesU(const char* lpFileName)
 		ret = GetFileAttributesW(&wlpFileName[1]);
 	} else {
 		ret = GetFileAttributesW(wlpFileName);
+	}
+	err = GetLastError();
+	wfree(lpFileName);
+	SetLastError(err);
+	return ret;
+}
+
+static __inline BOOL SetFileAttributesU(const char* lpFileName, DWORD dwFileAttributes)
+{
+	BOOL ret = FALSE, err = ERROR_INVALID_DATA;
+	wconvert(lpFileName);
+	// Unlike Microsoft's version, ours doesn't fail if the string is quoted
+	if ((wlpFileName[0] == L'"') && (wlpFileName[wcslen(wlpFileName) - 1] == L'"')) {
+		wlpFileName[wcslen(wlpFileName) - 1] = 0;
+		ret = SetFileAttributesW(&wlpFileName[1], dwFileAttributes);
+	} else {
+		ret = SetFileAttributesW(wlpFileName, dwFileAttributes);
 	}
 	err = GetLastError();
 	wfree(lpFileName);
@@ -1010,8 +1051,10 @@ static __inline char* getenvU(const char* varname)
 	// _wgetenv() is *BROKEN* in MS compilers => use GetEnvironmentVariableW()
 	DWORD dwSize = GetEnvironmentVariableW(wvarname, wbuf, 0);
 	wbuf = calloc(dwSize, sizeof(wchar_t));
-	if (wbuf == NULL)
+	if (wbuf == NULL) {
+		wfree(varname);
 		return NULL;
+	}
 	dwSize = GetEnvironmentVariableW(wvarname, wbuf, dwSize);
 	if (dwSize != 0)
 		ret = wchar_to_utf8(wbuf);
