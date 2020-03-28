@@ -1,3 +1,9 @@
+=== v2.5 (2020.03.28) ===
+* Fix cat generation for some user directories with non western characters
+* Fix update check
+* Improve error reporting
+* Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.0.7.0 & usbser (native)
+
 === v2.4 (2018.07.26) ===
 * Fix HTTPS download and update URLs
 * Improve error reporting

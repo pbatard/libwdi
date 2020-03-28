@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2018 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2020 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ const char* about_blurb_format =
 "{\\b\\fs20Zadig - The Automated Driver Installer}\\line\n"
 "\\fs18Version %d.%d (Build %d)\\line\n"
 "\\line\n"
-"Copyright © 2010-2018 Pete Batard / Akeo\\line\n"
+"Copyright Â© 2010-2020 Pete Batard / Akeo\\line\n"
 APPLICATION_URL "\\line\n"
 "\\line\n"
 "Report bugs or request enhancements at:\\line\n"
@@ -32,21 +32,21 @@ APPLICATION_URL "\\line\n"
 const char* additional_copyrights =
 "{\\rtf1\\ansi\n"
 "Windows Driver Installer library, libwdi:\\line\n"
-"Copyright © 2010-2018 by Pete Batard et al.\\line\n"
+"Copyright Â© 2010-2020 by Pete Batard et al.\\line\n"
 "GNU Lesser General Public License (LGPL) v3 or later\\line\n"
 "https://github.com/pbatard/libwdi/wiki\\line\n"
 "\\line\n"
 "Configuration file parsing based on profile.c:\\line\n"
-"Copyright © 2005-2006, Theodore Ts'o.\\line\n"
-"Copyright © 2006-2011, the Kerberos Team.\\line\n"
+"Copyright Â© 2005-2006, Theodore Ts'o.\\line\n"
+"Copyright Â© 2006-2011, the Kerberos Team.\\line\n"
 "Redistributable under the GNU General Public License (GPL)\\line\n"
 "\\line\n"
 "VID identification from the USB ID Repository\\line\n"
-"Copyright © Stephen J. Gowdy et al., Public Domain\\line\n"
+"Copyright Â© Stephen J. Gowdy et al., Public Domain\\line\n"
 "http://www.linux-usb.org/usb-ids.html\\line\n"
 "\\line\n"
 "About and License dialogs inspired by WinSCP\\line\n"
-"Copyright © 2000-2013 Martin Prikryl.\\line\n"
+"Copyright Â© 2000-2013 Martin Prikryl.\\line\n"
 "GNU General Public License (GPL) v3 or later\\line\n"
 "\\line\n"
 "All other references can be found in the source.\\line\n}";
