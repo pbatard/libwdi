@@ -1302,7 +1302,8 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 			while (isspace(*token)) token++;
 			while (strlen(token) && isspace(token[strlen(token)-1]))
 				token[strlen(token)-1] = 0;
-			if ((*token == '#') || (*token == 0)) continue;
+			if ((*token == '#') || (*token == 0))
+				continue;
 			cat_list[nb_entries++] = token;
 			if (nb_entries >= CAT_LIST_MAX_ENTRIES) {
 				wdi_warn("more than %d cat entries - ignoring the rest", CAT_LIST_MAX_ENTRIES);

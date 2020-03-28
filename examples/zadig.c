@@ -1007,7 +1007,7 @@ BOOL parse_ini(void) {
 
 	// Check if the ini file exists
 	if (GetFileAttributesU(INI_NAME) == INVALID_FILE_ATTRIBUTES) {
-		dprintf("ini file '%s' not found - default parameters will be used", INI_NAME);
+		dprintf("ini file '%s' not found in '%s' - default parameters will be used", INI_NAME, app_dir);
 		return FALSE;
 	}
 

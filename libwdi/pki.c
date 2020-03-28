@@ -35,6 +35,7 @@
 #include "mssign32.h"
 
 #include <config.h>
+#include "msapi_utf8.h"
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
@@ -1224,13 +1225,9 @@ static BOOL GetFullPath(LPCSTR szSrc, LPSTR szDst, DWORD dwDstSize)
 	if ((szSrcCopy = (LPSTR)malloc(strlen(szSrc) + 1)) == NULL) return 1;
 	memcpy(szSrcCopy, szSrc, strlen(szSrc) + 1);
 	HandleSeparators(szSrcCopy);
-	r = GetFullPathNameA(szSrcCopy, (DWORD)dwDstSize, szDst, NULL);
+	r = GetFullPathNameU(szSrcCopy, (DWORD)dwDstSize, szDst, NULL);
 	free(szSrcCopy);
-	if ((r != 0) && (r <= dwDstSize)) {
-		return TRUE;
-	}
-	fprintf(stderr, "Unable to get full path for '%s'.\n", szSrc);
-	return FALSE;
+	return ((r != 0) && (r <= dwDstSize));
 }
 
 // Modified from http://www.zemris.fer.hr/predmeti/os1/misc/Unix2Win.htm
@@ -1352,6 +1349,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 
 	// Setup the hash file members
 	if (!GetFullPath(szSearchDir, szInitialDir, sizeof(szInitialDir))) {
+		wdi_warn("Unable to get full path for '%s'.\n", szSearchDir);
 		goto out;
 	}
 	// Make sure the list entries are all lowercase
