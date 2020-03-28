@@ -1038,6 +1038,7 @@ BOOL parse_ini(void) {
 	// Set the default extraction dir
 	if ((profile_get_string(profile, "driver", "default_dir", NULL, NULL, &tmp) == 0) && (tmp != NULL)) {
 		safe_strcpy(szFolderPath, sizeof(szFolderPath), tmp);
+		free(tmp);
 	}
 
 	// Set the certificate name to install, if any
@@ -1049,6 +1050,7 @@ BOOL parse_ini(void) {
 		} else {
 			dprintf("certificate '%s' not found in this application", tmp);
 		}
+		free(tmp);
 	}
 
 	// Set the default driver
@@ -1101,6 +1103,7 @@ BOOL parse_preset(char* filename)
 	profile_get_string(profile, "device", "Description", NULL, NULL, &desc);
 	if (desc != NULL) {
 		SetDlgItemTextU(hMainDialog, IDC_DEVICEEDIT, (char*)desc);
+		free(desc);
 	}
 
 	profile_get_uint(profile, "device", "PID", NULL, 0x10000, &tmp);
