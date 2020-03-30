@@ -8,6 +8,9 @@
 *.inf.in        eol=crlf
 *.rc            eol=crlf
 *.def           eol=crlf
+*.creole        export-ignore
 .gitattributes  export-ignore
 .gitignore      export-ignore
-*.creole        export-ignore
+_*.sh           export-ignore
+_*.cmd          export-ignore
+appveyor.yml    export-ignore

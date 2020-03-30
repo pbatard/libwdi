@@ -1,6 +1,17 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.3.1 (2020.03.30)
+  Bugfixes:
+  - fix handling of non western paths during cat file generation
+  - fix Windows 7 showing a "Trusted Publisher" dialog
+  - fix memory leaks
+  Improvements:
+  - update project files to VS2019
+  - improve error reporting
+  - allow interface 0 for wdi-simple
+  - increase RSA bit key size
+
 o v1.3.0 (2017.04.18)
   Bugfixes:
   - fix issues with extended characters in current user directory
