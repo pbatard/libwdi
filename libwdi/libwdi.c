@@ -753,6 +753,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 			size = sizeof(drv_version);
 			if (key != INVALID_HANDLE_VALUE) {
 				RegQueryValueExA(key, "DriverVersion", NULL, &reg_type, (BYTE*)drv_version, &size);
+				RegCloseKey(key);
 			}
 		}
 
