@@ -1290,7 +1290,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		// Tokenize the cat file (for WDF version)
 		if ((cat_file_size = tokenize_internal(cat_template[driver_type],
 			&dst, inf_entities, "#", "#", 0)) <= 0) {
-			wdi_err("could not tokenize inf file (%d)", inf_file_size);
+			wdi_err("could not tokenize cat file (%d)", inf_file_size);
 			r = WDI_ERROR_ACCESS;
 			goto out;
 		}
