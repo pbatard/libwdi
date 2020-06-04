@@ -632,7 +632,7 @@ out:
 		print_status(3000, TRUE, "Updates: Unable to connect to the internet");
 		break;
 	case 2:
-		print_status(3000, TRUE, "Updates: Unable to acces version data");
+		print_status(3000, TRUE, "Updates: Unable to access version data");
 		break;
 	case 3:
 	case 4:
