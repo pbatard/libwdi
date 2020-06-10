@@ -200,7 +200,7 @@ static char err_string[STR_BUFFER_SIZE];
 	static_sprintf(err_string, "[#%08X] ", error_code);
 
 	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &err_string[safe_strlen(err_string)],
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), &err_string[safe_strlen(err_string)],
 		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
 	if (size == 0) {
 		format_error = GetLastError();

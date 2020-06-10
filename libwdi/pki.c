@@ -386,6 +386,9 @@ char* winpki_error_str(uint32_t retval)
 	static char error_string[64];
 	uint32_t error_code = retval ? retval : GetLastError();
 
+	if (error_code == 0x800706D9)
+		return "This system is missing required cryptographic services";
+
 	if ((error_code >> 16) != 0x8009)
 		return windows_error_str(error_code);
 
@@ -456,7 +459,7 @@ char* winpki_error_str(uint32_t retval)
 	case CRYPT_E_INVALID_PRINTABLE_STRING:
 	case CRYPT_E_INVALID_IA5_STRING:
 	case CRYPT_E_INVALID_X500_STRING:
-	case  CRYPT_E_NOT_CHAR_STRING:
+	case CRYPT_E_NOT_CHAR_STRING:
 		return "Invalid string.";
 	case CRYPT_E_SECURITY_SETTINGS:
 		return "The cryptographic operation failed due to a local security option setting.";
