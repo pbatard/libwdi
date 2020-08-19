@@ -844,11 +844,12 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 		// The information we want ("Bus reported device description") is accessed
 		// through DEVPKEY_Device_BusReportedDeviceDesc
+		desc[0] = 0;
 		if (!SetupDiGetDevicePropertyW(dev_info, &dev_info_data, &DEVPKEY_Device_BusReportedDeviceDesc,
 			&devprop_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size, 0)) {
 			// fallback to SPDRP_DEVICEDESC (USB hubs still use it)
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
-				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size)) {
+				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size) || (desc[0] == 0)) {
 				wdi_dbg("Could not read device description for %d: %s",
 					i, windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
