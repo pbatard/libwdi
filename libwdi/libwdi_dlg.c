@@ -87,7 +87,7 @@ static int (*progress_function)(void*);
 static void* progress_arglist;
 static HANDLE progress_mutex = INVALID_HANDLE_VALUE;
 
-// Work around for GDI calls (would require end user apps linking with Gdi32 othwerwise)
+// Work around for GDI calls (would require end user apps linking with Gdi32 otherwise)
 PF_TYPE_DECL(WINAPI, HFONT, CreateFontA, (int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPCSTR));
 PF_TYPE_DECL(WINAPI, HGDIOBJ, GetStockObject, (int));
 PF_TYPE_DECL(WINAPI, int, SetBkMode, (HDC, int));
