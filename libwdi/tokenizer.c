@@ -77,8 +77,8 @@ long tokenize_string(const char* src, // text to bo tokenized
 				   long src_count, // length of src
 				   char** dst, // destination buffer (must be freed)
 				   const token_entity_t* token_entities, // match/replace token list
-				   const char* tok_prefix, // the token prefix exmpl:"$("
-				   const char* tok_suffix, // the token suffix exmpl:")"
+				   const char* tok_prefix, // the token prefix example:"$("
+				   const char* tok_suffix, // the token suffix example:")"
 				   int recursive) // allows tokenzing tokens in tokens
 {
 	const token_entity_t* next_match;

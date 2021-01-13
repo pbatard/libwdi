@@ -330,7 +330,7 @@ main (int argc, char *argv[])
 	wchar_t wfullpath[MAX_PATH];
 #endif
 
-	// Disable stdout bufferring
+	// Disable stdout buffering
 	setvbuf(stdout, NULL, _IONBF, 0);
 
 	if (argc != 2) {

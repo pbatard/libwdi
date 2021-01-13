@@ -1,5 +1,5 @@
 ; This examples demonstrates how libwdi can be used in an installer script
-; to automatically intall USB drivers along with your application.
+; to automatically install USB drivers along with your application.
 ;
 ; Requirements: Inno Setup (http://www.jrsoftware.org/isdl.php)
 ;
@@ -23,7 +23,7 @@ SolidCompression = yes
 ; Win2000 or higher
 MinVersion = 5,5
 
-; This installation requires admin priviledges. This is needed to install
+; This installation requires admin privileges. This is needed to install
 ; drivers on windows vista and later.
 PrivilegesRequired = admin
 

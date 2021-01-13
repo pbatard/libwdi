@@ -770,7 +770,7 @@ long profile_create_node(const char *name, const char *value,
 }
 
 /*
- * This function verifies that all of the representation invarients of
+ * This function verifies that all of the representation invariants of
  * the profile are true.  If not, we have a programming bug somewhere,
  * probably in this file.
  */
@@ -849,7 +849,7 @@ long profile_add_node(struct profile_node *section, const char *name,
 
 /*
  * Iterate through the section, returning the nodes which match
- * the given name.  If name is NULL, then interate through all the
+ * the given name.  If name is NULL, then iterate through all the
  * nodes in the section.  If section_flag is non-zero, only return the
  * section which matches the name; don't return relations.  If value
  * is non-NULL, then only return relations which match the requested
@@ -1382,7 +1382,7 @@ const char* profile_errtostr(long error_code)
 	case PROF_BAD_LINK_LIST:
 		return "Bad linked list in profile structures";
 	case PROF_BAD_GROUP_LVL:
-		return "Bad group level in profile strctures";
+		return "Bad group level in profile structures";
 	case PROF_BAD_PARENT_PTR:
 		return "Bad parent pointer in profile structures";
 	case PROF_MAGIC_ITERATOR:

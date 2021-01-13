@@ -18,7 +18,7 @@
 /*
  * Embed WinUSB driver files from the following WDK location
  * NB: You must also make sure the WDF_VER, COINSTALLER_DIR and X64_DIR
- * match your WinUSB redist directrories
+ * match your WinUSB redist directories
  */
 #ifndef WDK_DIR
 #define WDK_DIR "C:/Program Files (x86)/Windows Kits/10"

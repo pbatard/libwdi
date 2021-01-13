@@ -445,7 +445,7 @@ void set_filter_menu(BOOL display)
 	mi_filter.cch = (UINT)strlen(itemddesc[has_filter_driver?1:0]);
 
 	if (filter_is_displayed) {
-		// Always perform delete + display for Delete <-> Install toggle after successfull install/delete
+		// Always perform delete + display for Delete <-> Install toggle after successful install/delete
 		DeleteMenu(hMenuSplit, IDM_SPLIT_FILTER, MF_BYCOMMAND);
 		if (display) {
 			InsertMenuItemA(hMenuSplit, IDM_SPLIT_EXTRACT, FALSE, &mi_filter);

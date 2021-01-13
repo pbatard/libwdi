@@ -3,7 +3,7 @@
 # rebuilds the Windows def file by exporting all LIBDWI API calls
 create_def()
 {
-  echo "rebuidling libwdi.def file"
+  echo "rebuilding libwdi.def file"
   echo 'LIBRARY "libwdi.dll"' > libwdi/libwdi.def
   echo "EXPORTS" >> libwdi/libwdi.def
   sed -n -e "s/.*LIBWDI_API.*\([[:blank:]]\)\(wdi.*\)(.*/  \2/p" libwdi/libwdi.c libwdi/vid_data.c libwdi/logging.c >> libwdi/libwdi.def
