@@ -849,7 +849,7 @@ long profile_add_node(struct profile_node *section, const char *name,
 
 /*
  * Iterate through the section, returning the nodes which match
- * the given name.  If name is NULL, then interate through all the
+ * the given name.  If name is NULL, then iterate through all the
  * nodes in the section.  If section_flag is non-zero, only return the
  * section which matches the name; don't return relations.  If value
  * is non-NULL, then only return relations which match the requested
