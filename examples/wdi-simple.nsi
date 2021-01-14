@@ -1,5 +1,5 @@
 ; This examples demonstrates how libwdi can be used in an installer script
-; to automatically intall USB drivers along with your application.
+; to automatically install USB drivers along with your application.
 ;
 ; Requirements: Nullsoft Scriptable Install System (http://nsis.sourceforge.net/)
 ;
