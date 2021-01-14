@@ -23,7 +23,7 @@ SolidCompression = yes
 ; Win2000 or higher
 MinVersion = 5,5
 
-; This installation requires admin priviledges. This is needed to install
+; This installation requires admin privileges. This is needed to install
 ; drivers on windows vista and later.
 PrivilegesRequired = admin
 
