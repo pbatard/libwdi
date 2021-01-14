@@ -1382,7 +1382,7 @@ const char* profile_errtostr(long error_code)
 	case PROF_BAD_LINK_LIST:
 		return "Bad linked list in profile structures";
 	case PROF_BAD_GROUP_LVL:
-		return "Bad group level in profile strctures";
+		return "Bad group level in profile structures";
 	case PROF_BAD_PARENT_PTR:
 		return "Bad parent pointer in profile structures";
 	case PROF_MAGIC_ITERATOR:
