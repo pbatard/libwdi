@@ -69,7 +69,7 @@ extern "C" {
 #define isdigitU(c) isdigit((unsigned char)(c))
 #define isspaceU(c) isspace((unsigned char)(c))
 #define isxdigitU(c) isxdigit((unsigned char)(c))
-// NB: other issomething() calls are not implemented as they may require multibyte UTF-8 sequences to be converted
+// NB: other is*() calls are not implemented as they may require multibyte UTF-8 sequences to be converted
 
 #define sfree(p) do {if (p != NULL) {free((void*)(p)); p = NULL;}} while(0)
 #define wconvert(p)     wchar_t* w ## p = utf8_to_wchar(p)
