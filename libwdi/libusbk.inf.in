@@ -58,7 +58,7 @@ AddReg=#USE_DEVICE_INTERFACE_GUID#
 [AddDeviceInterfaceGUID]
 HKR,,DeviceInterfaceGUIDs, 0x10000,%DeviceGUID%
 
-; ========== Driver/Servce section ==============
+; ========== Driver/Service section ==============
 [LUsbK_Device.NT.Services]
 Addservice=libusbK,2,LUsbK_AddService
 
