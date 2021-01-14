@@ -285,16 +285,16 @@ AC_ARG_ENABLE([debug-log], [AS_HELP_STRING([--enable-debug-log],
 	[debug_log_enabled=$enableval],
 	[debug_log_enabled='no'])
 
-AC_ARG_ENABLE([toggable-debug], [AS_HELP_STRING([--enable-toggable-debug],
+AC_ARG_ENABLE([togglable-debug], [AS_HELP_STRING([--enable-togglable-debug],
 	[enable switchable debug logging (default n)])],
-	[toggable_debug=$enableval],
-	[toggable_debug='no'])
+	[togglable_debug=$enableval],
+	[togglable_debug='no'])
 
 if test "x$debug_log_enabled" != "xno"; then
 	AC_DEFINE([ENABLE_DEBUG_LOGGING], [1], [Debug message logging (forced)])
 else
-	if test "x$toggable_debug" != "xno"; then
-		AC_DEFINE([INCLUDE_DEBUG_LOGGING], [1], [Debug message logging (toggable)])
+	if test "x$togglable_debug" != "xno"; then
+		AC_DEFINE([INCLUDE_DEBUG_LOGGING], [1], [Debug message logging (togglable)])
 	fi
 fi
 

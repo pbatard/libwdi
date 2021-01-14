@@ -57,7 +57,7 @@
 /* Debug message logging */
 //#define ENABLE_DEBUG_LOGGING
 
-/* Debug message logging (toggable) */
+/* Debug message logging (togglable) */
 #define INCLUDE_DEBUG_LOGGING
 
 /* Message logging */
