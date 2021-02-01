@@ -777,7 +777,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 
 	if (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) {
 		wdi_dbg("Acquired existing key container");
-	} else if ( (GetLastError() == NTE_BAD_KEYSET)
+	} else if ( (GetLastError() == NTE_BAD_KEYSET || GetLastError() == NTE_KEYSET_ENTRY_BAD)
 			 && (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET|CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) ) {
 		wdi_dbg("Created new key container");
 	} else {

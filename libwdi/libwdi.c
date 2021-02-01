@@ -1583,7 +1583,7 @@ static int install_driver_internal(void* arglist)
 		case ERROR_SUCCESS:
 			break;
 		case ERROR_CANCELLED:
-			wdi_info("Operation cancelled by the user");
+			wdi_info("Operation cancelled by the user or due to missing data");
 			r = WDI_ERROR_USER_CANCEL;
 			goto out;
 		case ERROR_FILE_NOT_FOUND:
