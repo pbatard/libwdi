@@ -2945,6 +2945,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x3334, "AEI" },
 	{ 0x3340, "Yakumo" },
 	{ 0x3344, "Leaguer Microelectronics (LME)" },
+	{ 0x33aa, "GOWIN Semiconductor Corp." },
 	{ 0x3504, "Micro Star" },
 	{ 0x3538, "Power Quotient International Co., Ltd" },
 	{ 0x3579, "DIVA" },
