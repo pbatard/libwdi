@@ -1444,13 +1444,14 @@ static int install_driver_internal(void* arglist)
 	PROCESS_INFORMATION pi;
 	SECURITY_ATTRIBUTES sa;
 	char path[MAX_PATH], exepath[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
-	char srcpath[MAX_PATH], dstpath[MAX_PATH], tmppath[MAX_PATH];
+	char srcpath[MAX_PATH], dstpath[MAX_PATH], syspath[MAX_PATH];
 	HANDLE stdout_w = INVALID_HANDLE_VALUE;
 	HANDLE handle[3] = { INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE };
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
-	BOOL is_x64 = FALSE;
+	UINT ret;
+	BOOL is_x64 = FALSE, is_WOW64 = FALSE;
 	BOOL is_uninstall = FALSE;
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
@@ -1506,6 +1507,7 @@ static int install_driver_internal(void* arglist)
 		// This application is not 64 bit, but it might be 32 bit
 		// running in WOW64
 		IsWow64Process(GetCurrentProcess(), &is_x64);
+		is_WOW64 = is_x64;
 	} else {
 		is_x64 = TRUE;
 	}
@@ -1605,83 +1607,66 @@ static int install_driver_internal(void* arglist)
 	} else {
 		// Copy required files for filter driver
 		if (filter_driver && !is_uninstall) {
+			ret = GetSystemWindowsDirectoryU(syspath, sizeof(syspath));
+			if (ret == 0) {
+				err = GetLastError();
+
+				wdi_err("Error getting system path: %s", windows_error_str(err));
+				r = WDI_ERROR_IO;
+				goto out;
+			}
+
 			if (is_x64) {
-				if (SHGetFolderPathA(NULL, CSIDL_SYSTEM, NULL, 0, tmppath) != S_OK) {
-					wdi_err("Error getting system path");
-					r = WDI_ERROR_NOT_FOUND;
-					goto out;
-				}
-
 				static_sprintf(srcpath, "%s\\amd64\\libusb0.sys", path);
-				static_sprintf(dstpath, "%s\\drivers\\libusb0.sys", tmppath);
-				if (!CopyFileU(srcpath, dstpath, TRUE)) {
-					err = GetLastError();
-
-					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
-						wdi_err("Error copying libusb0.sys: %s", windows_error_str(err));
-						r = WDI_ERROR_NOT_FOUND;
-						goto out;
-					}
-				}
-
-				static_sprintf(srcpath, "%s\\amd64\\libusb0.dll", path);
-				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
-				if (!CopyFileU(srcpath, dstpath, TRUE)) {
-					err = GetLastError();
-
-					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
-						wdi_err("Error copying libusb0.dll: %s", windows_error_str(err));
-						r = WDI_ERROR_NOT_FOUND;
-						goto out;
-					}
-				}
-
-				if (SHGetFolderPathA(NULL, CSIDL_SYSTEMX86, NULL, 0, tmppath) != S_OK) {
-					wdi_err("Error getting x86 system path");
-					r = WDI_ERROR_NOT_FOUND;
-					goto out;
-				}
-
-				static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
-				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
-				if (!CopyFileU(srcpath, dstpath, TRUE)) {
-					err = GetLastError();
-
-					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
-						wdi_err("Error copying libusb0_x86.dll: %s", windows_error_str(err));
-						r = WDI_ERROR_NOT_FOUND;
-						goto out;
-					}
-				}
 			} else {
-				if (SHGetFolderPathA(NULL, CSIDL_SYSTEM, NULL, 0, tmppath) != S_OK) {
-					wdi_err("Error getting system path");
-					r = WDI_ERROR_NOT_FOUND;
+				static_sprintf(srcpath, "%s\\x86\\libusb0.sys", path);
+			}
+			if (is_x64 && is_WOW64) {
+				static_sprintf(dstpath, "%s\\Sysnative\\drivers\\libusb0.sys", syspath);
+			} else {
+				static_sprintf(dstpath, "%s\\System32\\drivers\\libusb0.sys", syspath);
+			}
+			if (!CopyFileU(srcpath, dstpath, TRUE)) {
+				err = GetLastError();
+
+				if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+					wdi_err("Error copying \"%s\" to \"%s\": %s", srcpath, dstpath, windows_error_str(err));
+					r = WDI_ERROR_IO;
 					goto out;
 				}
+			}
 
-				static_sprintf(srcpath, "%s\\x86\\libusb0.sys", path);
-				static_sprintf(dstpath, "%s\\drivers\\libusb0.sys", tmppath);
+			if (is_x64) {
+				static_sprintf(srcpath, "%s\\amd64\\libusb0.dll", path);
+				if (is_WOW64) {
+					static_sprintf(dstpath, "%s\\Sysnative\\libusb0.dll", syspath);
+				} else {
+					static_sprintf(dstpath, "%s\\System32\\libusb0.dll", syspath);
+				}
 				if (!CopyFileU(srcpath, dstpath, TRUE)) {
 					err = GetLastError();
 
 					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
-						wdi_err("Error copying libusb0.sys: %s", windows_error_str(err));
-						r = WDI_ERROR_NOT_FOUND;
+						wdi_err("Error copying \"%s\" to \"%s\": %s", srcpath, dstpath, windows_error_str(err));
+						r = WDI_ERROR_IO;
 						goto out;
 					}
 				}
+			}
 
-				static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
-				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
-				if (!CopyFileU(srcpath, dstpath, TRUE)) {
-					err = GetLastError();
+			static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
+			if (is_x64 && is_WOW64) {
+				static_sprintf(dstpath, "%s\\System32\\libusb0.dll", syspath);
+			} else {
+				static_sprintf(dstpath, "%s\\SysWOW64\\libusb0.dll", syspath);
+			}
+			if (!CopyFileU(srcpath, dstpath, TRUE)) {
+				err = GetLastError();
 
-					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
-						wdi_err("Error copying libusb0_x86.dll: %s", windows_error_str(err));
-						r = WDI_ERROR_NOT_FOUND;
-						goto out;
-					}
+				if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+					wdi_err("Error copying \"%s\" to \"%s\": %s", srcpath, dstpath, windows_error_str(err));
+					r = WDI_ERROR_IO;
+					goto out;
 				}
 			}
 		}
