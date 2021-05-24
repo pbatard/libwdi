@@ -1655,7 +1655,7 @@ static int install_driver_internal(void* arglist)
 			}
 
 			static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
-			if (is_x64 && is_WOW64) {
+			if (!is_x64 || is_WOW64) {
 				static_sprintf(dstpath, "%s\\System32\\libusb0.dll", syspath);
 			} else {
 				static_sprintf(dstpath, "%s\\SysWOW64\\libusb0.dll", syspath);
