@@ -1443,13 +1443,15 @@ static int install_driver_internal(void* arglist)
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
 	SECURITY_ATTRIBUTES sa;
-	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
+	char path[MAX_PATH], exepath[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
+	char srcpath[MAX_PATH], dstpath[MAX_PATH], tmppath[MAX_PATH];
 	HANDLE stdout_w = INVALID_HANDLE_VALUE;
 	HANDLE handle[3] = { INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE };
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
 	BOOL is_x64 = FALSE;
+	BOOL is_uninstall = FALSE;
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
 
@@ -1529,12 +1531,15 @@ static int install_driver_internal(void* arglist)
 	if (!filter_driver) {
 		// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
 		// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
+		static_strcpy(exepath, path);
 		static_sprintf(exename, "\"%s\\installer_x%s.exe\"", path, is_x64?"64":"86");
 		static_sprintf(exeargs, "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
-		static_sprintf(exename, "\"%s\\%s\\\\install-filter.exe\"", path, is_x64?"amd64":"x86");
-		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
+		static_sprintf(exepath, "%s\\%s", path, is_x64?"amd64":"x86");
+		static_sprintf(exename, "\"%s\\%s\\install-filter.exe\"", path, is_x64?"amd64":"x86");
+		is_uninstall = safe_stricmp(current_device->upper_filter, filter_name) == 0;
+		if (is_uninstall) {
 			// Device already has the libusb-win32 filter => remove
 			static_strcpy(exeargs, "uninstall -d=");
 		} else {
@@ -1561,7 +1566,7 @@ static int install_driver_internal(void* arglist)
 		r = WDI_ERROR_NOT_FOUND; goto out;
 	}
 
-	if (IsUserAnAdmin()) {
+	if (!IsUserAnAdmin()) {
 		// Take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -1569,7 +1574,7 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.lpVerb = "runas";
 		shExecInfo.lpFile = filter_driver?"install-filter.exe":(is_x64?"installer_x64.exe":"installer_x86.exe");
 		shExecInfo.lpParameters = exeargs;
-		shExecInfo.lpDirectory = path;
+		shExecInfo.lpDirectory = exepath;
 		shExecInfo.lpClass = NULL;
 		shExecInfo.nShow = SW_HIDE;
 		shExecInfo.hInstApp = NULL;
@@ -1598,6 +1603,89 @@ static int install_driver_internal(void* arglist)
 
 		handle[1] = shExecInfo.hProcess;
 	} else {
+		// Copy required files for filter driver
+		if (filter_driver && !is_uninstall) {
+			if (is_x64) {
+				if (SHGetFolderPathA(NULL, CSIDL_SYSTEM, NULL, 0, tmppath) != S_OK) {
+					wdi_err("Error getting system path");
+					r = WDI_ERROR_NOT_FOUND;
+					goto out;
+				}
+
+				static_sprintf(srcpath, "%s\\amd64\\libusb0.sys", path);
+				static_sprintf(dstpath, "%s\\drivers\\libusb0.sys", tmppath);
+				if (!CopyFileU(srcpath, dstpath, TRUE)) {
+					err = GetLastError();
+
+					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+						wdi_err("Error copying libusb0.sys: %s", windows_error_str(err));
+						r = WDI_ERROR_NOT_FOUND;
+						goto out;
+					}
+				}
+
+				static_sprintf(srcpath, "%s\\amd64\\libusb0.dll", path);
+				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
+				if (!CopyFileU(srcpath, dstpath, TRUE)) {
+					err = GetLastError();
+
+					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+						wdi_err("Error copying libusb0.dll: %s", windows_error_str(err));
+						r = WDI_ERROR_NOT_FOUND;
+						goto out;
+					}
+				}
+
+				if (SHGetFolderPathA(NULL, CSIDL_SYSTEMX86, NULL, 0, tmppath) != S_OK) {
+					wdi_err("Error getting x86 system path");
+					r = WDI_ERROR_NOT_FOUND;
+					goto out;
+				}
+
+				static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
+				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
+				if (!CopyFileU(srcpath, dstpath, TRUE)) {
+					err = GetLastError();
+
+					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+						wdi_err("Error copying libusb0_x86.dll: %s", windows_error_str(err));
+						r = WDI_ERROR_NOT_FOUND;
+						goto out;
+					}
+				}
+			} else {
+				if (SHGetFolderPathA(NULL, CSIDL_SYSTEM, NULL, 0, tmppath) != S_OK) {
+					wdi_err("Error getting system path");
+					r = WDI_ERROR_NOT_FOUND;
+					goto out;
+				}
+
+				static_sprintf(srcpath, "%s\\x86\\libusb0.sys", path);
+				static_sprintf(dstpath, "%s\\drivers\\libusb0.sys", tmppath);
+				if (!CopyFileU(srcpath, dstpath, TRUE)) {
+					err = GetLastError();
+
+					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+						wdi_err("Error copying libusb0.sys: %s", windows_error_str(err));
+						r = WDI_ERROR_NOT_FOUND;
+						goto out;
+					}
+				}
+
+				static_sprintf(srcpath, "%s\\x86\\libusb0_x86.dll", path);
+				static_sprintf(dstpath, "%s\\libusb0.dll", tmppath);
+				if (!CopyFileU(srcpath, dstpath, TRUE)) {
+					err = GetLastError();
+
+					if (err != ERROR_SUCCESS && err != ERROR_FILE_EXISTS) {
+						wdi_err("Error copying libusb0_x86.dll: %s", windows_error_str(err));
+						r = WDI_ERROR_NOT_FOUND;
+						goto out;
+					}
+				}
+			}
+		}
+
 		// If app is already elevated, simply use CreateProcess()
 		memset(&si, 0, sizeof(si));
 		si.cb = sizeof(si);
