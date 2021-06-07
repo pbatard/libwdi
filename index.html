@@ -3,6 +3,32 @@
 <head profile="http://www.w3.org/2005/10/profile">
 	<meta charset='utf-8'>
 	<title>Zadig - USB driver installation made easy</title>
+	<script>
+	function setCookie(name, value, days) {
+		var expires = "";
+		if (days) {
+			var date = new Date();
+			date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+			expires = "; expires=" + date.toUTCString();
+		}
+		document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+	}
+	function getCookie(name) {
+		var nameEQ = name + "=";
+		var ca = document.cookie.split(';');
+		for (var i = 0; i < ca.length; i++) {
+			var c = ca[i];
+			while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+			if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+		}
+		return "";
+	}
+	document.addEventListener("DOMContentLoaded", function(event)
+	{
+		if (getCookie('display_cookie_notice') != 'no')
+			document.getElementById('cookie-statement').style.display = 'block';
+	});
+	</script>
 	<script type="text/javascript">
 		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -16,6 +42,32 @@
 			background-color: #3f4555;
 			font-family: Helvetica, Arial, FreeSans, san-serif;
 			color: #ffffff;
+		}
+		#cookie-statement {
+			background-color: #5a5a5a;
+			border: none;
+			border-radius: 0;
+			color: #fff;
+			-moz-border-radius: 0;
+			-webkit-border-radius: 0;
+			margin: -8px -8px;
+			padding: 5px 0px 5px 15px;
+			position: relative;
+			width: 100%;
+			z-index: 999;
+		}
+		#cookie-statement a {
+			background-color: #303030;
+			border: 1px solid rgba(0,0,0,.1);
+			-moz-border-radius: 2px;
+			-webkit-border-radius: 2px;
+			border-radius: 2px;
+			color: #fff;
+			cursor: pointer;
+			line-height: 200%;
+			padding: 4px 8px;
+			text-decoration: none;
+			white-space: nowrap;
 		}
 		#right_column {
 			float: right;
@@ -57,6 +109,7 @@
 		h3 { text-align: center; color: #c0baaa; }
 		a { color: #c0baaa; }
 		span.centerImage { text-align: center; }
+		.cookie-notification { background: #fffbe4; border-color: #f8f6e6; overflow: hidden; }
 		.tagline { font-size: 1.6em; margin-bottom: 20px; margin-top: -30px; font-style: italic;}
 		.download { float: right; }
 		pre { background: #000; color: #fff; padding: 15px;}
@@ -74,6 +127,13 @@
 </head>
 
 <body>
+	<div id="cookie-statement" style="display: none;" class="cookie-notification">
+	  <div class="text">
+	    <span>This page uses Google services, which may serve <u>non-personalised</u> cookies for advertising, analytics and security.</span>
+	    <a href="https://policies.google.com/technologies/cookies" target="_blank">See details</a>
+	    <a href="#" onclick="document.getElementById('cookie-statement').style.display = 'none'; setCookie('display_cookie_notice', 'no', 365);">OK</a>
+	  </div>
+	</div>
 	<div id="right_column">
 	<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 	<!-- Zadig -->
