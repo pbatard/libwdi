@@ -38,10 +38,10 @@ build:
   verbosity: detailed
 
 install:
-  - curl -o wdk10-redist.7z -L http://files.akeo.ie/appveyor/libwdi/wdk10-redist.7z
-  - curl -o libusb-win32-bin-1.2.6.0.zip -L http://files.akeo.ie/appveyor/libwdi/libusb-win32-bin-1.2.6.0.zip
-  - curl -o libusbK-3.0.7.0-bin.7z -L http://files.akeo.ie/appveyor/libwdi/libusbK-3.0.7.0-bin.7z
-  - 7z x wdk10-redist.7z
+  - curl -o wdk8-redist.7z -L https://files.akeo.ie/appveyor/libwdi/wdk8-redist.7z
+  - curl -o libusb-win32-bin-1.2.6.0.zip -L https://files.akeo.ie/appveyor/libwdi/libusb-win32-bin-1.2.6.0.zip
+  - curl -o libusbK-3.0.7.0-bin.7z -L https://files.akeo.ie/appveyor/libwdi/libusbK-3.0.7.0-bin.7z
+  - 7z x wdk8-redist.7z
   - 7z x libusb-win32-bin-1.2.6.0.zip
   - 7z x libusbK-3.0.7.0-bin.7z
   - if [%PLATFORM%]==[x86_64] set BITS=64

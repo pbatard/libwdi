@@ -16,12 +16,14 @@
 #endif
 
 /*
- * Embed WinUSB driver files from the following WDK location
+ * Embed WinUSB driver files from the following WDK location.
+ * If needed, you can obtain the WDK redistributable components from:
+ * https://go.microsoft.com/fwlink/p/?LinkID=253170
  * NB: You must also make sure the WDF_VER, COINSTALLER_DIR and X64_DIR
- * match your WinUSB redist directories
+ * match your WinUSB redist directories.
  */
 #ifndef WDK_DIR
-#define WDK_DIR "C:/Program Files (x86)/Windows Kits/10"
+#define WDK_DIR "C:/Program Files (x86)/Windows Kits/8.0"
 #endif
 
 /* WDK WDF coinstaller version */
