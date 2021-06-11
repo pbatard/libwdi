@@ -54,7 +54,7 @@
 void toggle_driverless(BOOL refresh);
 void set_install_button(void);
 BOOL parse_ini(void);
-INT_PTR parse_VID();
+static INT_PTR parse_VID();
 
 /*
  * Globals
@@ -1155,7 +1155,7 @@ static INT_PTR parse_VID()
 	const char* vid_string = malloc(128);
 	unsigned short nVID = (unsigned short)strtol(newVID, NULL, 16);
 	vid_string = wdi_get_vendor_name(nVID);
-	BOOL unknown_vid = (vid_string == NULL);
+	unknown_vid = (vid_string == NULL);
 	if (unknown_vid) {
 		vid_string = "(unknown VID)";
 	};
