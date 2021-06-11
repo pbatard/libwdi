@@ -19,6 +19,7 @@
 #define IDC_EDITNAME                    1007
 #define IDC_DRIVER                      1008
 #define IDC_INSTALL                     1009
+#define IDC_VSTR                        1010
 #define IDC_TARGET                      1011
 #define IDC_VID_REPORT                  1012
 #define IDC_GROUPLOG                    1013
@@ -73,7 +74,6 @@
 #define IDS_NEW_VERSION_NOTES_GRP       1093
 #define IDS_CHECK_NOW_GRP               1094
 #define IDC_PROGRESS                    1095
-
 #define IDM_ABOUT                       40001
 #define IDM_UPDATES                     40002
 #define IDM_ADVANCEDMODE                40003

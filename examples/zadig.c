@@ -54,6 +54,7 @@
 void toggle_driverless(BOOL refresh);
 void set_install_button(void);
 BOOL parse_ini(void);
+INT_PTR parse_VID();
 
 /*
  * Globals
@@ -376,6 +377,14 @@ int install_driver(void)
 			r = WDI_ERROR_USER_CANCEL; goto out;
 		}
 	}
+
+	// Set custom vedor name if entered
+	GetDlgItemTextA(hMainDialog, IDC_VSTR, str_buf, STR_BUFFER_SIZE);
+	if (strcmp(str_buf, "") != 0) {
+		pd_options.vendor_name = malloc(128);
+		sprintf(pd_options.vendor_name, "%s", str_buf);
+	}
+
 	r = wdi_prepare_driver(dev, szFolderPath, inf_name, &pd_options);
 	if (r == WDI_SUCCESS) {
 		dsprintf("Successfully extracted driver files.");
@@ -421,9 +430,12 @@ void combo_breaker(BOOL edit)
 	if (edit) {
 		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICELIST), SW_HIDE);
 		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), SW_SHOW);
+		PostMessage(GetDlgItem(hMainDialog, IDC_VSTR), EM_SETREADONLY, (WPARAM)FALSE, 0);
 	} else {
 		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), SW_HIDE);
 		ShowWindow(GetDlgItem(hMainDialog, IDC_DEVICELIST), SW_SHOW);
+		PostMessage(GetDlgItem(hMainDialog, IDC_VSTR), EM_SETREADONLY, (WPARAM)TRUE, 0);
+		parse_VID();
 	}
 }
 
@@ -699,6 +711,9 @@ void toggle_create(BOOL refresh)
 		PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMainDialog, IDC_PID), EM_SETREADONLY, (WPARAM)FALSE, 0);
 		PostMessage(GetDlgItem(hMainDialog, IDC_MI), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_VSTR), EM_SETREADONLY, (WPARAM)FALSE, 0);
+		PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETMODIFY, (WPARAM)TRUE, 0);
+		
 		destroy_tooltip(hVIDToolTip);
 		hVIDToolTip = NULL;
 		unknown_vid = FALSE;
@@ -862,6 +877,14 @@ void init_dialog(HWND hDlg)
 		"Change the device name", -1);
 	create_tooltip(GetDlgItem(hMainDialog, IDC_VIDPID),
 		"VID:PID[:MI]", -1);
+	create_tooltip(GetDlgItem(hMainDialog, IDC_VID),
+		"VID", -1);
+	create_tooltip(GetDlgItem(hMainDialog, IDC_PID),
+		"PID", -1);
+	create_tooltip(GetDlgItem(hMainDialog, IDC_MI),
+		"[MI]", -1);
+	create_tooltip(GetDlgItem(hMainDialog, IDC_VSTR),
+		"Vendor string", -1);
 	create_tooltip(GetDlgItem(hMainDialog, IDC_DRIVER),
 		"Current Driver", -1);
 	create_tooltip(GetDlgItem(hMainDialog, IDC_TARGET),
@@ -1125,11 +1148,27 @@ BOOL parse_preset(char* filename)
 	return TRUE;
 }
 
+static INT_PTR parse_VID()
+{
+	char newVID[5] = { 0 };
+	GetDlgItemTextU(hMainDialog, IDC_VID, newVID, 5);
+	const char* vid_string = malloc(128);
+	unsigned short nVID = (unsigned short)strtol(newVID, NULL, 16);
+	vid_string = wdi_get_vendor_name(nVID);
+	BOOL unknown_vid = (vid_string == NULL);
+	if (unknown_vid) {
+		vid_string = "(unknown VID)";
+	};
+	SetDlgItemTextU(hMainDialog, IDC_VSTR, vid_string);
+	return (INT_PTR)TRUE;
+
+}
 /*
  * Work around the limitations of edit control, for UI aesthetics
  */
 static INT_PTR CALLBACK subclass_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (message == WM_COMMAND && LOWORD(wParam) == IDC_VID && HIWORD(wParam) == EN_CHANGE) return parse_VID();
 	switch (message)
 	{
 	case WM_SETCURSOR:
