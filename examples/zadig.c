@@ -246,7 +246,7 @@ struct wdi_device_info* get_selected_device(void)
 	current_device_index = ComboBox_GetCurSel(hDeviceList);
 	if (current_device_index != CB_ERR) {
 		// Use the device pointers as dropdown values for easy access
-		dev = (struct wdi_device_info*)ComboBox_GetItemData(hDeviceList, current_device_index);
+		dev = list;
 	}
 	return dev;
 }
@@ -295,7 +295,7 @@ int get_driver_type(struct wdi_device_info* dev)
 int install_driver(void)
 {
 	struct wdi_device_info* dev = device;
-	char str_buf[STR_BUFFER_SIZE];
+	char str_buf[STR_BUFFER_SIZE] = "STM32 Virtual ComPort";
 	char* inf_name = NULL;
 	BOOL need_dealloc = FALSE;
 	int tmp, r = WDI_ERROR_OTHER;
@@ -324,6 +324,9 @@ int install_driver(void)
 			}
 			safe_sprintf(dev->desc, 128, "%s Generic Device", driver_display_name[pd_options.driver_type]);
 		} else {
+            dev = list;
+
+            /* PELS-3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
 			// Retrieve the various device parameters
 			if (ComboBox_GetTextU(GetDlgItem(hMainDialog, IDC_DEVICEEDIT), str_buf, STR_BUFFER_SIZE) == 0) {
 				notification(MSG_ERROR, NULL, "Driver Installation", "The description string cannot be empty.");
@@ -350,7 +353,7 @@ int install_driver(void)
 			} else {
 				dev->is_composite = FALSE;
 				dev->mi = 0;
-			}
+			} End of Comment */
 		}
 	}
 
@@ -639,7 +642,9 @@ void update_ui(void)
 	BOOL same_driver;
 	BOOL warn;
 
-	switch (has_wcid) {
+	/* PELS-3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+    // Commenting out
+    switch (has_wcid) {  
 	case WCID_TRUE:
 		ShowWindow(GetDlgItem(hMainDialog, IDC_WCID), TRUE);
 		SendMessage(GetDlgItem(hMainDialog, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)hIconTickOK);
@@ -652,7 +657,7 @@ void update_ui(void)
 		ShowWindow(GetDlgItem(hMainDialog, IDC_WCID), FALSE);
 		SendMessage(GetDlgItem(hMainDialog, IDC_WCID_ICON), STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)NULL);
 		break;
-	}
+	} End of Comment*/
 
 	if (pd_options.driver_type != WDI_LIBUSB0) {
 		id_options.install_filter_driver = FALSE;
@@ -661,7 +666,9 @@ void update_ui(void)
 	same_driver = device && (safe_stricmp(device->driver, driver_name[pd_options.driver_type]) == 0);
 	warn = (get_driver_type(device) == DT_SYSTEM) || (same_driver && (target_driver_version < device->driver_version)) ;
 
-	if (use_arrow_icons) {
+	/* PELS-3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+    // Commenting out
+    if (use_arrow_icons) { 
 		MoveWindow(hArrow, arrow_origin.x, arrow_origin.y, arrow_width, arrow_height+(warn?-2:0), TRUE);
 		SendMessage(hArrow, STM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)(warn?hIconArrowOrange:hIconArrowGreen));
 	}
@@ -673,7 +680,7 @@ void update_ui(void)
 	destroy_tooltip(hArrowToolTip);
 	hArrowToolTip = create_tooltip(hArrow, warn?
 		"Driver installation may produce unwanted results":
-		"Driver installation is deemed safe", -1);
+		"Driver installation is deemed safe", -1);  End of Comment*/
 }
 
 // Toggle device creation mode
@@ -716,7 +723,9 @@ void toggle_create(BOOL refresh)
 	CheckMenuItem(hMenuDevice, IDM_CREATE, create_device?MF_CHECKED:MF_UNCHECKED);
 	pd_options.use_wcid_driver = FALSE;
 	replace_driver = FALSE;
-	set_install_button();
+    /* PELS-3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+    // Commenting out
+	// set_install_button(); End of Comment*/
 }
 
 // Toggle ignore hubs & composite
@@ -741,7 +750,8 @@ void toggle_hubs(BOOL refresh)
 // Toggle driverless device listing
 void toggle_driverless(BOOL refresh)
 {
-	cl_options.list_all = !(GetMenuState(hMenuOptions, IDM_LISTALL, MF_CHECKED) & MF_CHECKED);
+    cl_options.list_all = TRUE;
+	//cl_options.list_all = !(GetMenuState(hMenuOptions, IDM_LISTALL, MF_CHECKED) & MF_CHECKED);
 	EnableMenuItem(hMenuOptions, IDM_IGNOREHUBS, cl_options.list_all?MF_ENABLED:MF_GRAYED);
 
 	if (create_device) {
@@ -826,6 +836,7 @@ void init_dialog(HWND hDlg)
 		UINT uAlign;
 	} bi = {0};	// BUTTON_IMAGELIST
 
+    cl_options.trim_whitespaces = TRUE;
 	// Quite a burden to carry around as parameters
 	hMainDialog = hDlg;
 	hDeviceList = GetDlgItem(hDlg, IDC_DEVICELIST);
@@ -836,7 +847,7 @@ void init_dialog(HWND hDlg)
 	hMenuLogLevel = GetSubMenu(hMenuOptions, 7);
 	hMenuSplit = GetSubMenu(LoadMenuA(main_instance, "IDR_INSTALLSPLIT"), 0);
 
-	// High DPI scaling
+	// High DPI scaling 
 	i16 = GetSystemMetrics(SM_CXSMICON);
 	hdc = GetDC(hDlg);
 	fScale = GetDeviceCaps(hdc, LOGPIXELSX) / 96.0f;
@@ -857,9 +868,9 @@ void init_dialog(HWND hDlg)
 	// Display the version in the right area of the status bar
 	SendMessageA(GetDlgItem(hDlg, IDC_STATUS), SB_SETTEXTA, SBT_OWNERDRAW | 1, (LPARAM)APP_VERSION);
 
-	// Create various tooltips
-	create_tooltip(GetDlgItem(hMainDialog, IDC_EDITNAME),
-		"Change the device name", -1);
+	// Create various tooltips  
+    create_tooltip(GetDlgItem(hMainDialog, IDC_EDITNAME),
+        "Change the device name", -1);
 	create_tooltip(GetDlgItem(hMainDialog, IDC_VIDPID),
 		"VID:PID[:MI]", -1);
 	create_tooltip(GetDlgItem(hMainDialog, IDC_DRIVER),
@@ -947,7 +958,7 @@ void init_dialog(HWND hDlg)
 		ShowWindow(hArrow, TRUE);
 	}
 
-	// Set a folder icon on the select folder button
+	// Set a folder icon on the select folder button  
 	bi.himl = ImageList_Create(i16, i16, ILC_COLOR32 | ILC_MASK, 1, 0);
 	ImageList_ReplaceIcon(bi.himl, -1, hIconFolder);
 	SetRect(&bi.margin, 0, 0, 0, 0);
@@ -968,17 +979,17 @@ void init_dialog(HWND hDlg)
 	if (err != WDI_SUCCESS) {
 		dprintf("Unable to access log output - logging will be disabled (%s)", wdi_strerror(err));
 	}
-	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)
+	// Increase the size of our log textbox to MAX_LOG_SIZE (unsigned word)  
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
 	dprintf(APP_VERSION);
 	dprintf(WindowsVersionStr);
 
-	// Limit the input size of VID, PID, MI
+	// Limit the input size of VID, PID, MI 
 	PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMainDialog, IDC_PID), EM_SETLIMITTEXT, 4, 0);
 	PostMessage(GetDlgItem(hMainDialog, IDC_MI), EM_SETLIMITTEXT, 2, 0);
-
+    
 	// Parse the ini file and set the startup options accordingly
 	parse_ini();
 	set_loglevel(log_level+IDM_LOGLEVEL_DEBUG);
@@ -1176,6 +1187,173 @@ void create_static_fonts(HDC dc) {
 	lf.lfUnderline = FALSE;
 	bold_font = CreateFontIndirect(&lf);
 }
+INT_PTR refreshDeviceList()
+{
+    NOT_DURING_INSTALL;
+    int r;
+    
+    id_options.install_filter_driver = FALSE;
+    if (list != NULL) wdi_destroy_list(list);
+    if (!from_install) {
+        current_device_index = 0;
+    }
+    editable_desc = NULL;
+    device = NULL;
+    r = wdi_create_list(&list, &cl_options);
+    if (r == WDI_SUCCESS) {
+        nb_devices = display_devices();
+        getSelectedDeviceToInstall();
+    }
+    else {
+        nb_devices = -1;
+        has_wcid = WCID_NONE;
+        pd_options.use_wcid_driver = TRUE;
+        update_ui();
+        // PELS-3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+        // Return the error, if optical scanner not found or drivers already installed
+        return r;
+    }
+    // Make sure we don't override the install status on refresh from install
+    if (!from_install) {
+        dsprintf("%d device%s found.", nb_devices + 1, (nb_devices != 0) ? "s" : "");
+    }
+    else {
+        dprintf("%d device%s found.", nb_devices + 1, (nb_devices != 0) ? "s" : "");
+        from_install = FALSE;
+    }
+    return (INT_PTR)r;
+}
+
+INT_PTR getSelectedDeviceToInstall()
+{
+    char str_tmp[5];
+    const char *vid_string, *ms_comp_hdr = "USB\\MS_COMP_";
+    int i;
+
+    device = get_selected_device();
+    if (device != NULL) {
+        // Change the description string if needed
+        if (device->desc == NULL) {
+            editable_desc = (char*)malloc(STR_BUFFER_SIZE);
+            if (editable_desc == NULL) {
+                dprintf("could not use modified device description");
+                editable_desc = device->desc;
+            }
+            else {
+                safe_sprintf(editable_desc, STR_BUFFER_SIZE, "(Unknown Device)");
+                device->desc = editable_desc;
+            }
+        }
+        // Display the current driver info
+        replace_driver = (device->driver != NULL);
+        if (replace_driver) {
+            if (device->driver_version == 0) {
+                safe_strcpy(driver_text, sizeof(driver_text), device->driver);
+            }
+            else {
+                static_sprintf(driver_text, "%s (v%d.%d.%d.%d)", device->driver,
+                    (int)((device->driver_version >> 48) & 0xffff), (int)((device->driver_version >> 32) & 0xffff),
+                    (int)((device->driver_version >> 16) & 0xffff), (int)(device->driver_version & 0xffff));
+            }
+        }
+        else {
+            safe_strcpy(driver_text, sizeof(driver_text), "(NONE)");
+        }
+        
+        
+        // Display the WCID status
+        pd_options.use_wcid_driver = (safe_strncmp(device->compatible_id, ms_comp_hdr, safe_strlen(ms_comp_hdr)) == 0);
+        has_wcid = (pd_options.use_wcid_driver) ? WCID_TRUE : WCID_FALSE;
+        if (has_wcid == WCID_TRUE) {
+            // Select the driver according to the WCID (will be set to WDI_USER = unsupported if no match)
+            for (wcid_type = WDI_WINUSB; wcid_type<WDI_LIBUSBK; wcid_type++) {
+                if (safe_stricmp(device->compatible_id + safe_strlen(ms_comp_hdr), driver_name[wcid_type]) == 0) {
+                    break;
+                }
+            }
+            if (wcid_type < WDI_USER) {
+                for (i = WDI_WINUSB; i<WDI_USER; i++) {
+                    if ((i == wcid_type) && (wdi_is_driver_supported(i, NULL)))
+                        break;
+                }
+                if (i < WDI_USER) {
+                    pd_options.driver_type = i;
+                    set_driver();
+                }
+                else {
+                    pd_options.use_wcid_driver = FALSE;
+                }
+            }
+        }
+    }
+    else {
+        has_wcid = WCID_NONE;
+    }
+    update_ui();
+    set_install_button();
+}
+
+INT_PTR install_zadig_driver()
+{
+    int r = install_driver();
+    if (id_options.install_filter_driver) {
+        dsprintf("Driver Installation: %s", (r == WDI_SUCCESS) ? "SUCCESS" : "FAILED");
+    }
+    if (r == WDI_SUCCESS) {
+        if (!extract_only) {
+            dsprintf("Driver Installation: SUCCESS");
+        }
+        if (exit_on_success)
+            PostMessage(hMainDialog, WM_CLOSE, 0, 0);
+    }
+    else if (r == WDI_ERROR_USER_CANCEL) {
+        dsprintf("Driver Installation: Cancelled by User");
+        notification(MSG_WARNING, NULL, "Driver Installation", "Driver installation cancelled by user.");
+    }
+    else {
+        dsprintf("Driver Installation: FAILED (%s)", wdi_strerror(r));
+        // PELS-4414 : Script for installing Optical Scanner drivers 
+        // In Windows 10, notify the user if installation failed 
+        GetWindowsVersion();
+        if (nWindowsVersion == WINDOWS_10)
+        {
+            notification(MSG_WARNING, NULL, "Driver Installation", "Skipped Driver installation, optical scanner is not connected or corrupted.");
+        }
+        else
+        {
+            notification(MSG_ERROR, NULL, "Driver Installation", "The driver installation failed.");
+        }
+    }
+    return (INT_PTR)r;
+}
+
+void initialise_installation()
+{
+    int i;
+    long lfHeight;
+    int i16, i24;
+    char *token, version[] = APP_VERSION;
+
+    cl_options.trim_whitespaces = TRUE;
+
+    // Parse the ini file and set the startup options accordingly
+    parse_ini();
+    set_loglevel(log_level + IDM_LOGLEVEL_DEBUG);
+    set_default_driver();
+
+    if (!advanced_mode) {
+        toggle_advanced();	// We start in advanced mode
+    }
+    if (cl_options.list_all) {
+        toggle_driverless(FALSE);
+    }
+    if (cl_options.list_hubs) {
+        toggle_hubs(FALSE);
+    }
+    pd_options.driver_type = default_driver_type;
+    select_next_driver(0);
+}
+
 
 /*
  * Main dialog callback
@@ -1270,7 +1448,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		break;
 
 	case WM_INITDIALOG:
-		SetUpdateCheck();
+		SetUpdateCheck();  
 		// Setup options
 		cl_options.trim_whitespaces = TRUE;
 
@@ -1333,7 +1511,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			has_wcid = WCID_NONE;
 			pd_options.use_wcid_driver = TRUE;
 			update_ui();
-			set_install_button();
+		    set_install_button();
 		}
 		// Make sure we don't override the install status on refresh from install
 		if (!from_install) {
@@ -1348,7 +1526,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		if (LOWORD(wParam) == 4) {
 			select_next_driver( ((HIWORD(wParam) <= last_scroll))?-1:+1);
 			update_ui();
-			set_install_button();
+			set_install_button(); 
 			last_scroll = HIWORD(wParam);
 			return (INT_PTR)TRUE;
 		}
@@ -1556,7 +1734,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 					has_wcid = WCID_NONE;
 				}
 				update_ui();
-				set_install_button();
+                set_install_button();
 				break;
 			default:
 				return (INT_PTR)FALSE;
@@ -1572,7 +1750,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			if (r == WDI_SUCCESS) {
 				if (!extract_only) {
 					dsprintf("Driver Installation: SUCCESS");
-					notification(MSG_INFO, NULL, "Driver Installation", "The driver was installed successfully.");
+				//	notification(MSG_INFO, NULL, "Driver Installation", "The driver was installed successfully.");
 				}
 				if (exit_on_success)
 					PostMessage(hMainDialog, WM_CLOSE, 0, 0);
@@ -1682,7 +1860,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			pd_options.use_wcid_driver = ( (LOWORD(wParam) == IDM_SPLIT_WCID)
 				|| ((device == NULL) && (!create_device)) );
 			extract_only = (LOWORD(wParam) == IDM_SPLIT_EXTRACT);
-			set_install_button();
+			set_install_button(); 
 			break;
 		default:
 			return (INT_PTR)FALSE;
@@ -1720,7 +1898,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	const char* system_dir[] = { "System32", "SysWOW64", "Sysnative" };
 	char path[MAX_PATH], *tmp;
 	int i, wait_for_mutex = 0;
-	BOOL r;
+    BOOL r;
+    // PELS-4414 : Script for installing Optical Scanner drivers 
+    // Added this to return the status of installation
+    int result = WDI_SUCCESS;
 
 	// Disable loading system DLLs from the current directory (DLL sideloading mitigation)
 #ifndef DDKBUILD	// WDK doesn't know about that one
@@ -1771,20 +1952,50 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Retrieve the current application directory and set the extraction directory from the user's
 	GetCurrentDirectoryU(MAX_PATH, app_dir);
 	tmp = getenvU("USERPROFILE");
-	static_sprintf(szFolderPath, "%s\\usb_driver", tmp);
+	// PELS-4414 : Script for installing Optical Scanner drivers
+	static_sprintf(szFolderPath, "%s\\Usb_Driver", tmp);
 	safe_free(tmp);
 
-	// Create the main Window
+    // PELS - 3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+    // Install the optical scanner drivers without UI
+    initialise_installation();
+    if (refreshDeviceList() != WDI_SUCCESS)
+    {
+         result = WDI_ERROR_NO_DEVICE;
+         // Notify the user, if optical scanner not found
+         notification(MSG_WARNING, NULL, "Optical Scanner Driver Installation", "Optical Scanner not found, skipped Driver installation.");
+         // PELS-4414 : Script for installing Optical Scanner drivers 
+         // Copy the script file to install the optical scanner driver to desktop
+         CopyFileU("C:\\SOE\\InstallOpticalScannerDriver.bat", "C:\\Users\\Peloris\\Desktop\\InstallOpticalScannerDriver.bat", TRUE);
+    }
+    else
+    {
+		// PELS-4414 : Script for installing Optical Scanner drivers
+		// Added to return the installation status
+        result = install_zadig_driver();
+    }
+    // Delete the installer script file if driver installation is successful
+    if (result == WDI_SUCCESS)
+    {
+        DeleteFileA("C:\\Users\\Peloris\\Desktop\\InstallOpticalScannerDriver.bat");
+        DeleteFileA("C:\\Users\\PelorisSupport\\Desktop\\InstallOpticalScannerDriver.bat");
+        DeleteFileA("C:\\Users\\Public\\Desktop\\InstallOpticalScannerDriver.bat");
+    }
+    
+    /* PELS - 3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+    // Commenting out the code for making the installation silent
+ 	// Create the main Window 
 	if ( (hDlg = CreateDialogA(hInstance, "MAIN_DIALOG", NULL, main_callback)) == NULL ) {
 		MessageBoxA(NULL, "Could not create Window", "DialogBox failure", MB_ICONSTOP);
 	}
 	ShowWindow(hDlg, SW_SHOWNORMAL);
 	UpdateWindow(hDlg);
 
-	// Do our own event processing, in order to process "magic" commands
-	while(GetMessage(&msg, NULL, 0, 0)) {
+	 Do our own event processing, in order to process "magic" commands
+	while(GetMessage(&msg, NULL, 0, 0)) { 
 		// Alt-Z => Delete libusb-1.0 DLLs
-		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) {
+		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'Z')) { 
+    // End of comment  */
 			for (r = TRUE, i = 0; i<ARRAYSIZE(system_dir); i++) {
 				path[0] = 0;
 				tmp = getenvU("WINDIR");
@@ -1804,20 +2015,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			} else {
 				dsprintf("Could not remove the libusb-1.0 system32 DLLs");
 			}
-			continue;
+			/* PELS - 3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+            // Commenting out the code for making the installation silent
+            continue; 
 		}
+        // End of comment  */
+
 		// Alt-R => Remove all the registry keys created by Zadig
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'R')) {
 			dsprintf(DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME "\\" APPLICATION_NAME)?
 				"Application registry keys successfully deleted":"Failed to delete application registry keys");
 			// Also try to delete the upper key (company name) if it's empty (don't care about the result)
 			DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME);
-			continue;
+            /* PELS - 3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+            // Commenting out the code for making the installation silent
+			//continue; */
 		}
-
-		TranslateMessage(&msg);
+        /* PELS - 3844 : Installing Optical Scanner drivers as part of PELORIS SW installation
+        // Commenting out the code for making the installation silent
+		TranslateMessage(&msg); 
 		DispatchMessage(&msg);
+        // 
 	}
+    End of comment  */
 
 	safe_free(update.download_url);
 	safe_free(update.release_notes);
@@ -1827,5 +2047,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	_CrtDumpMemoryLeaks();
 #endif
 
-	return 0;
+    return result;
 }

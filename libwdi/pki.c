@@ -1,6 +1,6 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011-2020 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2011-2017 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
@@ -28,8 +28,10 @@
 #include <setupapi.h>
 #include <wincrypt.h>
 #include <stdio.h>
+#include <conio.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 #include "mssign32.h"
 
 #include <config.h>
@@ -186,6 +188,17 @@ typedef PCCERT_CONTEXT (WINAPI *CertCreateSelfSignCertificate_t)(
 #ifndef szOID_PKIX_POLICY_QUALIFIER_CPS
 #define szOID_PKIX_POLICY_QUALIFIER_CPS "1.3.6.1.5.5.7.2.1"
 #endif
+typedef struct _CERT_ALT_NAME_ENTRY_URL {
+	DWORD   dwAltNameChoice;
+	union {
+		LPWSTR  pwszURL;
+	};
+} CERT_ALT_NAME_ENTRY_URL, *PCERT_ALT_NAME_ENTRY_URL;
+
+typedef struct _CERT_ALT_NAME_INFO_URL {
+	DWORD                    cAltEntry;
+	PCERT_ALT_NAME_ENTRY_URL rgAltEntry;
+} CERT_ALT_NAME_INFO_URL, *PCERT_ALT_NAME_INFO_URL;
 
 typedef struct _CERT_POLICY_QUALIFIER_INFO_REDEF {
 	LPSTR            pszPolicyQualifierId;
@@ -374,9 +387,7 @@ char* winpki_error_str(uint32_t retval)
 	uint32_t error_code = retval ? retval : GetLastError();
 
 	if (error_code == 0x800706D9)
-		return "This system is missing required cryptographic services.";
-	if (error_code == 0x80070020)
-		return "Sharing violation - Some data handles to this file are still open.";
+		return "This system is missing required cryptographic services";
 
 	if ((error_code >> 16) != 0x8009)
 		return windows_error_str(error_code);
@@ -691,7 +702,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	PF_DECL(CertCreateSelfSignCertificate);
 	PF_DECL(CertFreeCertificateContext);
 
-	DWORD dwSize = 0;
+	DWORD dwSize;
 	HCRYPTPROV hCSP = 0;
 	HCRYPTKEY hKey = 0;
 	PCCERT_CONTEXT pCertContext = NULL;
@@ -706,10 +717,9 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	// Code Signing Enhanced Key Usage
 	LPSTR szCertPolicyElementId = "1.3.6.1.5.5.7.3.3"; // szOID_PKIX_KP_CODE_SIGNING;
 	CERT_ENHKEY_USAGE certEnhKeyUsage = { 1, &szCertPolicyElementId };
-	// Abuse Alt Name to insert ourselves in the e-mail field
-	CERT_ALT_NAME_ENTRY certAltNameEntry = { CERT_ALT_NAME_RFC822_NAME,
-		{ (PCERT_OTHER_NAME)L"Created by libwdi (http://libwdi.akeo.ie)" } };
-	CERT_ALT_NAME_INFO certAltNameInfo = { 1, &certAltNameEntry };
+	// Alternate Name (URL)
+	CERT_ALT_NAME_ENTRY_URL certAltNameEntry = { CERT_ALT_NAME_URL, {L"http://libwdi.akeo.ie"} };
+	CERT_ALT_NAME_INFO_URL certAltNameInfo = { 1, &certAltNameEntry };
 	// Certificate Policies
 	CERT_POLICY_QUALIFIER_INFO_REDEF certPolicyQualifier;
 	CERT_POLICY_INFO_REDEF certPolicyInfo = { "1.3.6.1.5.5.7.2.1", 1, &certPolicyQualifier };
@@ -734,11 +744,11 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	certExtension[0].Value.cbData = dwSize;
 	certExtension[0].Value.pbData = pbEnhKeyUsage;
 
-	// Set Alt Name parameter
+	// Set URL as Alt Name parameter
 	if ( (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, NULL, &dwSize))
 	  || ((pbAltNameInfo = (BYTE*)malloc(dwSize)) == NULL)
 	  || (!pfCryptEncodeObject(X509_ASN_ENCODING, X509_ALTERNATE_NAME, (LPVOID)&certAltNameInfo, pbAltNameInfo, &dwSize)) ) {
-		wdi_warn("Could not set Alt Name: %s", winpki_error_str(0));
+		wdi_warn("Could not setup URL: %s", winpki_error_str(0));
 		goto out;
 	}
 	certExtension[1].pszObjId = szOID_SUBJECT_ALT_NAME;
@@ -968,7 +978,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	signerFileInfo.cbSize = sizeof(SIGNER_FILE_INFO);
 	wszFileName = UTF8toWCHAR(szFileName);
 	if (wszFileName == NULL) {
-		wdi_warn("Unable to convert '%s' to UTF16", szFileName);
+		wdi_warn("Unable to convert '%s' to UTF16");
 		goto out;
 	}
 	signerFileInfo.pwszFileName = wszFileName;
@@ -1018,7 +1028,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	// Sign file with cert
 	hResult = pfSignerSignEx(0, &signerSubjectInfo, &signerCert, &signerSignatureInfo, NULL, NULL, NULL, NULL, &pSignerContext);
 	if (hResult != S_OK) {
-		wdi_warn("SignerSignEx failed: %s", hResult, winpki_error_str(hResult));
+		wdi_warn("SignerSignEx failed. hResult #%X, error %s", hResult, winpki_error_str(0));
 		goto out;
 	}
 	r = TRUE;

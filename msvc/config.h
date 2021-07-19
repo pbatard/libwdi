@@ -35,12 +35,12 @@
 
 /* embed libusb0 driver files from the following location */
 #ifndef LIBUSB0_DIR
-#define LIBUSB0_DIR "D:/libusb-win32"
+//#define LIBUSB0_DIR "D:/libusb-win32"
 #endif
 
 /* embed libusbK driver files from the following location */
 #ifndef LIBUSBK_DIR
-#define LIBUSBK_DIR "D:/libusbK/bin"
+//#define LIBUSBK_DIR "D:/libusbK/bin"
 #endif
 
 /* embed user defined driver files from the following location */

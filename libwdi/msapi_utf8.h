@@ -328,12 +328,14 @@ static __inline int DrawTextU(HDC hDC, LPCSTR lpText, int nCount, LPRECT lpRect,
 static __inline int GetWindowTextU(HWND hWnd, char* lpString, int nMaxCount)
 {
 	int ret = 0;
+    char* wlpString;
 	DWORD err = ERROR_INVALID_DATA;
 	// Handle the empty string as GetWindowTextW() returns 0 then
 	if ((lpString != NULL) && (nMaxCount > 0))
 		lpString[0] = 0;
 	// coverity[returned_null]
-	walloc(lpString, nMaxCount);
+	//walloc(lpString, nMaxCount);
+    lpString = malloc(nMaxCount);
 	ret = GetWindowTextW(hWnd, wlpString, nMaxCount);
 	err = GetLastError();
 	// coverity[var_deref_model]

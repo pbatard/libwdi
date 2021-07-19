@@ -58,7 +58,7 @@ int __cdecl main(int argc, char *argv[])
 {
 	int c;
 	struct wdi_device_info *device, *list;
-	char* path = "usb_driver";
+	char* path = "Usb_Driver"; // PELS-4414 : Script for installing Optical Scanner drivers 
 	static struct wdi_options_create_list cl_options = { 0 };
 	static struct wdi_options_prepare_driver pd_options = { 0 };
 

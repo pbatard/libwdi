@@ -44,7 +44,7 @@
 #define VID         0x045E
 #define PID         0x0289
 #define INF_NAME    "usb_device.inf"
-#define DEFAULT_DIR "usb_driver"
+#define DEFAULT_DIR "Usb_Driver" // PELS-4414 : Script for installing Optical Scanner drivers 
 
 
 void usage(void)
