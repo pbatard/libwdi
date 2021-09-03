@@ -1,0 +1,59 @@
+name: Coverity
+
+on: 
+  push:
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - '**.cmd'
+      - '**.md'
+      - 'AUTHORS'
+      - 'NEWS'
+      - 'ChangeLog'
+
+env:
+  SOLUTION_FILE_PATH: ./libwdi.sln
+  EMAIL: pete@akeo.ie
+  BUILD_MACROS: '"WDK_DIR=\"../wdk/Windows Kits/8.0\";LIBUSB0_DIR=\"../libusb0\";LIBUSBK_DIR=\"../libusbk/bin\""'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+    - name: Download Coverity
+      run: |
+        curl -d "token=${{ secrets.COVERITY_SCAN_TOKEN }}&project=pbatard%2Flibwdi" -L https://scan.coverity.com/download/cxx/win64 -o cov-analysis-win64.zip
+        7z x cov-analysis-win64.zip
+        del cov-analysis-win64.zip
+        move cov-analysis-win64* cov-analysis-win64
+    - name: Add Coverity to PATH
+      shell: bash
+      run: echo "${{ github.workspace }}/cov-analysis-win64/bin" >> $GITHUB_PATH
+    - name: Download support files
+      shell: cmd
+      run: |
+        curl -L https://go.microsoft.com/fwlink/p/?LinkID=253170 -o wdk-redist.msi
+        curl -L https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip/download -o libusb0-redist.zip
+        curl -L https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z -o libusbk-redist.7z
+        msiexec /a wdk-redist.msi /qn TARGETDIR=%CD%\wdk
+        7z x libusb0-redist.zip
+        7z x libusbk-redist.7z
+        del *.zip
+        del *.7z
+        move libusb-win32* libusb0
+        move libusbK* libusbk
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1
+    - name: Build with Coverity
+      shell: cmd
+      run: cov-build.exe --dir cov-int msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=Release,Platform=x64,BuildMacros=${{ env.BUILD_MACROS }}
+    - name: Upload Coverity build for analysis
+      run: |
+        7z a -r cov-int.zip cov-int
+        curl --form email=${{ env.EMAIL }} --form token=${{ secrets.COVERITY_SCAN_TOKEN }} --form file=@cov-int.zip --form version="${{ env.GITHUB_SHA }}" --form description="libwdi" https://scan.coverity.com/builds?project=pbatard%2Flibwdi
