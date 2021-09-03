@@ -89,7 +89,7 @@ void dump_buffer_hex(FILE* fd, unsigned char *buffer, size_t size)
 		fprintf(fd, "0x00");
 	}
 
-	for (i=0; i<size; i++) {
+	for (i = 0; i < size; i++) {
 		if (!(i%0x10))
 			fprintf(fd, "\n\t");
 		fprintf(fd, "0x%02X,", buffer[i]);
@@ -294,7 +294,7 @@ void add_user_files(void) {
 		return;
 	}
 	// Copy the fixed part of our table into our new array
-	for (i=0; i<nb_embeddables_fixed; i++) {
+	for (i = 0; i < nb_embeddables_fixed; i++) {
 		embeddable[i].reuse_last = 0;
 		embeddable[i].file_name = embeddable_fixed[i].file_name;
 		embeddable[i].extraction_subdir = embeddable_fixed[i].extraction_subdir;
@@ -313,7 +313,6 @@ __cdecl
 main (int argc, char *argv[])
 {
 	int ret = 1, i, j, rebuild;
-	size_t size;
 	char* file_name = NULL;
 	char* junk;
 	size_t* file_size = NULL;
@@ -370,11 +369,9 @@ main (int argc, char *argv[])
 		}
 	}
 
-	size = sizeof(size_t)*nb_embeddables;
-	file_size = malloc(size);
+	file_size = calloc(nb_embeddables, sizeof(size_t));
 	if (file_size == NULL) goto out1;
-	size = sizeof(int64_t)*nb_embeddables;
-	file_time = malloc(size);
+	file_time = calloc(nb_embeddables, sizeof(int64_t));
 	if (file_time == NULL) goto out1;
 
 	header_fd = fopen(argv[1], "w");
@@ -384,7 +381,7 @@ main (int argc, char *argv[])
 	}
 	fprintf(header_fd, "#pragma once\n");
 
-	for (i=0; i<nb_embeddables; i++) {
+	for (i = 0; i < nb_embeddables; i++) {
 		if (embeddable[i].reuse_last) {
 			continue;
 		}
@@ -394,6 +391,7 @@ main (int argc, char *argv[])
 		}
 #if defined(_WIN32)
 		MultiByteToWideChar(CP_UTF8, 0, fullpath, -1, wfullpath, MAX_PATH);
+		// coverity[bad_printf_format_string]
 		printf("  EMBED  %S ", wfullpath);
 		fd = _wfopen(wfullpath, L"rb");
 #else
@@ -442,14 +440,14 @@ main (int argc, char *argv[])
 		"};\n\n");
 
 	fprintf(header_fd, "const struct res resource[] = {\n");
-	for (last=0,i=0; i<nb_embeddables; i++) {
+	for (last = 0,i = 0; i < nb_embeddables; i++) {
 		if (!embeddable[i].reuse_last) {
 			last = (unsigned char)i;
 		}
 		sprintf(internal_name, "file_%03X", last);
 		fprintf(header_fd, "\t{ \"");
 		// Backslashes need to be escaped
-		for (j=0; j<(int)strlen(embeddable[i].extraction_subdir); j++) {
+		for (j = 0; j < (int)strlen(embeddable[i].extraction_subdir); j++) {
 			if ( (embeddable[i].extraction_subdir[j] == NATIVE_SEPARATOR)
 			  || (embeddable[i].extraction_subdir[j] == NON_NATIVE_SEPARATOR) ) {
 				fputc('\\', header_fd);

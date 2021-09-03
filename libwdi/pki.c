@@ -1346,7 +1346,7 @@ BOOL CreateCat(LPCSTR szCatPath, LPCSTR szHWID, LPCSTR szSearchDir, LPCSTR* szFi
 		goto out;
 	}
 	// Make sure the list entries are all lowercase
-	szLocalFileList = (LPSTR *)malloc(cFileList*sizeof(LPSTR));
+	szLocalFileList = (LPSTR *)calloc(cFileList, sizeof(LPSTR));
 	if (szLocalFileList == NULL) {
 		wdi_warn("Unable allocate local file list");
 		goto out;

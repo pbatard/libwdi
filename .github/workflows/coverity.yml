@@ -12,6 +12,9 @@ on:
       - 'ChangeLog'
 
 env:
+  WDK_URL: https://go.microsoft.com/fwlink/p/?LinkID=253170
+  LIBUSB0_URL: https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip/download
+  LIBUSBK_URL: https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z
   SOLUTION_FILE_PATH: ./libwdi.sln
   EMAIL: pete@akeo.ie
   BUILD_MACROS: '"WDK_DIR=\"../wdk/Windows Kits/8.0\";LIBUSB0_DIR=\"../libusb0\";LIBUSBK_DIR=\"../libusbk/bin\""'
@@ -38,9 +41,9 @@ jobs:
     - name: Download support files
       shell: cmd
       run: |
-        curl -L https://go.microsoft.com/fwlink/p/?LinkID=253170 -o wdk-redist.msi
-        curl -L https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip/download -o libusb0-redist.zip
-        curl -L https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z -o libusbk-redist.7z
+        curl -L ${{ env.WDK_URL }} -o wdk-redist.msi
+        curl -L ${{ env.LIBUSB0_URL }} -o libusb0-redist.zip
+        curl -L ${{ env.LIBUSBK_URL }} -o libusbk-redist.7z
         msiexec /a wdk-redist.msi /qn TARGETDIR=%CD%\wdk
         7z x libusb0-redist.zip
         7z x libusbk-redist.7z

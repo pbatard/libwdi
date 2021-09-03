@@ -485,12 +485,14 @@ void set_default_driver(void) {
 void set_driver(void)
 {
 	VS_FIXEDFILEINFO file_info;
-	char target_text[64];
+	char target_text[64] = { 0 };
 
 	if ((pd_options.driver_type == WDI_CDC) || (pd_options.driver_type >= WDI_USER)) {
-		static_sprintf(target_text, "%s", driver_display_name[pd_options.driver_type]);
-		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
-		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
+		if (pd_options.driver_type < WDI_NB_DRIVERS) {
+			static_sprintf(target_text, "%s", driver_display_name[pd_options.driver_type]);
+			EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_GRAYED);
+			EnableMenuItem(hMenuOptions, IDM_SIGNCAT, MF_GRAYED);
+		}
 	} else {
 		EnableMenuItem(hMenuOptions, IDM_CREATECAT, MF_ENABLED);
 		EnableMenuItem(hMenuOptions, IDM_SIGNCAT, pd_options.disable_cat?MF_GRAYED:MF_ENABLED);
@@ -1631,6 +1633,7 @@ INT_PTR CALLBACK main_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		case IDM_OPEN:
 			filepath = FileDialog(FALSE, app_dir, &cfg_ext, 0);
 			parse_preset(filepath);
+			safe_free(filepath);
 			break;
 		case IDM_ABOUT:
 			DialogBoxW(main_instance, MAKEINTRESOURCEW(IDD_ABOUTBOX), hMainDialog, about_callback);
