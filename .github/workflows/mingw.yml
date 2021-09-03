@@ -1,0 +1,85 @@
+name: MinGW
+
+on: 
+  push:
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - '**.cmd'
+      - '**.md'
+      - 'AUTHORS'
+      - 'NEWS'
+      - 'ChangeLog'
+  pull_request:
+    paths-ignore:
+      - '.gitignore'
+      - '.gitattributes'
+      - '**.cmd'
+      - '**.md'
+      - 'AUTHORS'
+      - 'NEWS'
+      - 'ChangeLog'
+
+env:
+  BUILD_OPTIONS: '--enable-toggable-debug --enable-examples-build --disable-debug --disable-shared'
+  DRIVERS_PATHS: '--with-wdkdir="wdk/Windows Kits/8.0" --with-wdfver=1011 --with-libusb0="libusb0" --with-libusbk="libusbk/bin"'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64, env: x86_64 }
+          - { sys: mingw32, env: i686 }
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - name: Install MinGW
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.sys }}
+        update: true
+        install: >-
+          mingw-w64-${{ matrix.env }}-toolchain
+          base-devel
+          git
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: recursive
+    - name: Download support files
+      shell: cmd
+      run: |
+        curl -L https://go.microsoft.com/fwlink/p/?LinkID=253170 -o wdk-redist.msi
+        curl -L https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip/download -o libusb0-redist.zip
+        curl -L https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z -o libusbk-redist.7z
+        msiexec /a wdk-redist.msi /qn TARGETDIR=%CD%\wdk
+        7z x libusb0-redist.zip
+        7z x libusbk-redist.7z
+        del *.zip
+        del *.7z
+        move libusb-win32* libusb0
+        move libusbK* libusbk
+    - name: Build
+      run: |
+        ./bootstrap.sh
+        [ "${{ matrix.env }}" == "x86_64" ] && EXTRA_OPTION=--disable-32bit
+        ./configure --build=${{ matrix.env }}-w64-mingw32 --host=${{ matrix.env }}-w64-mingw32 ${{ env.BUILD_OPTIONS }} $EXTRA_OPTION ${{ env.DRIVERS_PATHS }}
+        make
+        mkdir -p artifacts/${{ matrix.env }}
+        mv examples/*.exe artifacts/${{ matrix.env }}
+    - name: Display SHA-256
+      if: ${{ github.event_name == 'push' }}
+      run: sha256sum artifacts/${{ matrix.env }}/*.exe
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      if: ${{ github.event_name == 'push' }}
+      with:
+        name: MinGW
+        path: ./artifacts/*/*.exe

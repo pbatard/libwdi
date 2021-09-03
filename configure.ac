@@ -1,16 +1,16 @@
-AC_INIT([libwdi], [1.3.1], [libwdi-devel@lists.sourceforge.net], [libwdi], [http://libwdi.akeo.ie])
+AC_INIT([libwdi],[1.3.1],[libwdi-devel@lists.sourceforge.net],[libwdi],[http://libwdi.akeo.ie])
 AM_INIT_AUTOMAKE([-Wno-portability 1.11 foreign])
 AC_CONFIG_SRCDIR([libwdi/libwdi.c])
 AC_CONFIG_MACRO_DIR([m4])
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS(config.h)
 # Enable silent build rules by default (Automake v1.11 or later).
 # Disable by either passing --disable-silent-rules to configure or passing V=1 to make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
          [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
-AC_PREREQ([2.50])
+AC_PREREQ([2.71])
 AC_PROG_CC
-AC_PROG_LIBTOOL
+LT_INIT
 LT_LANG([Windows Resource])
 AC_C_INLINE
 AM_PROG_CC_C_O
@@ -108,19 +108,17 @@ CFLAGS="${saved_CFLAGS}"
 LDFLAGS="${saved_LDFLAGS}"
 cross_compiling=$saved_cross_compiling
 if test "x$cc_for_build_ok" != "xyes"; then
-	AC_ERROR([The build compiler cannot produce executables for this
+	AC_MSG_ERROR(The build compiler cannot produce executables for this
 	platform. You might have to define the CC_FOR_BUILD environment variable.
 	For instance, on 32 bit Windows, if using a multilib MinGW-w64 that defaults
-	to 64 bit executables, you would need: export CC_FOR_BUILD="gcc -m32"])
+	to 64 bit executables, you would need: export CC_FOR_BUILD="gcc -m32")
 fi
 
 # 32 bit support
 saved_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -m32"
 AC_MSG_CHECKING([whether the compiler can produce 32 bit binaries])
-AC_TRY_COMPILE([], [;],
-	[compiler_has_m32=yes],
-	[compiler_has_m32=no])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[;]])],[compiler_has_m32=yes],[compiler_has_m32=no])
 if test "x$compiler_has_m32" == "xyes"; then
 	AC_MSG_RESULT([yes])
 else
@@ -132,9 +130,7 @@ CFLAGS="${saved_CFLAGS}"
 saved_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -m64"
 AC_MSG_CHECKING([whether the compiler can produce 64 bit binaries])
-AC_TRY_COMPILE([], [;],
-	[compiler_has_m64=yes],
-	[compiler_has_m64=no])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[;]])],[compiler_has_m64=yes],[compiler_has_m64=no])
 if test "x$compiler_has_m64" == "xyes"; then
 	AC_MSG_RESULT([yes])
 else

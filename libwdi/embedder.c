@@ -394,7 +394,7 @@ main (int argc, char *argv[])
 		}
 #if defined(_WIN32)
 		MultiByteToWideChar(CP_UTF8, 0, fullpath, -1, wfullpath, MAX_PATH);
-		wprintf(L"  EMBED  %s ", wfullpath);
+		printf("  EMBED  %S ", wfullpath);
 		fd = _wfopen(wfullpath, L"rb");
 #else
 		printf("  EMBED  %s ", fullpath);
