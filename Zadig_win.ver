@@ -1,11 +1,10 @@
-version = 2.5.730
+version = 2.6.755
 platform_min = 6.1
-download_url = https://github.com/pbatard/libwdi/releases/download/b730/zadig-2.5.exe
+download_url = https://github.com/pbatard/libwdi/releases/download/b755/zadig-2.6.exe
 release_notes = {\rtf1\ansi\ansicpg1252\deff0\deflang6153{\fonttbl{\f0\fnil\fcharset0 Times New Roman;}{\f1\fnil\fcharset0 Courier New;}{\f2\fnil\fcharset2 Symbol;}}
 {\*\generator Riched20 6.3.9600}\viewkind4\uc1
-\pard\sl276\slmult1\b\f0\fs22\lang9\tab Zadig 2.5 (2020.03.28)\b0\line\par
-\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl276\slmult1\f1\fs16 Fix .cat generation for some user directories with non western characters\par
-{\pntext\f2\'B7\tab}Fix update check\par
+\pard\sl276\slmult1\b\f0\fs22\lang9\tab Zadig 2.6 (2021.09.04)\b0\line\par
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl276\slmult1\f1\fs16 Work around Windows corrupting the key containers\par
 {\pntext\f2\'B7\tab}Improve error reporting\par
-{\pntext\f2\'B7\tab}embedded drivers:\line WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.0.7.0 & usbser (native)\par
+{\pntext\f2\'B7\tab}embedded drivers:\line WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.1.0.0 & usbser (native)\par
 }
