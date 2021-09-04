@@ -5,7 +5,7 @@ o v1.4.0 (2021.09.04)
   Bugfixes:
   - fix breakage when providing a user driver
   - work around Windows corrupting the key containers
-  - don't populate empty device decriptors
+  - don't populate empty device descriptors
   Improvements:
   - more error reporting improvements
   - remove the zadic sample
