@@ -31,10 +31,6 @@ jobs:
   VS2019-Build:
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        TARGET_PLATFORM: [x64, Win32]
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -62,13 +58,11 @@ jobs:
     - name: Build
       shell: cmd
       run: |
-        for %%B in (Debug Release) do (
-          msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=%%B,Platform=${{ matrix.TARGET_PLATFORM }},BuildMacros=${{ env.BUILD_MACROS }}
+        for %%P in (Win32 x64) do (
+          for %%B in (Debug Release) do (
+            msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=%%B,Platform=%%P,BuildMacros=${{ env.BUILD_MACROS }}
+          )
         )
-
-    - name: Display SHA-256
-      if: ${{ github.event_name == 'push' }}
-      run: sha256sum ./${{ matrix.TARGET_PLATFORM }}/*/examples/*.exe
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
@@ -76,3 +70,32 @@ jobs:
       with:
         name: VS2019
         path: ./*/*/examples/*.exe
+
+    - name: Display SHA-256
+      if: ${{ github.event_name == 'push' }}
+      run: sha256sum ./*/*/examples/*.exe
+
+    - name: Compress release-ready version of Zadig
+      uses: crazy-max/ghaction-upx@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        version: latest
+        files: ./Win32/Release/examples/zadig.exe
+        args: --lzma --best
+
+    - name: Rename release-ready version of Zadig
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: cmd
+      run: |
+        for /f "tokens=3" %%i in ('findstr FileVersion examples\zadig.rc') do set "ver=%%i"
+        set ver=%ver:"=%
+        for /f "tokens=1,2 delims=." %%i in ("%ver%") do set "ZADIG_VERSION=%%i.%%j"
+        copy Win32\Release\examples\zadig.exe zadig-%ZADIG_VERSION%.exe
+        sha256sum zadig-*.exe
+
+    - name: Upload release-ready version of Zadig
+      uses: actions/upload-artifact@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        name: Zadig
+        path: ./zadig-*.exe

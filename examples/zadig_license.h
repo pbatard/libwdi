@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2020 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ const char* about_blurb_format =
 "{\\b\\fs20Zadig - The Automated Driver Installer}\\line\n"
 "\\fs18Version %d.%d (Build %d)\\line\n"
 "\\line\n"
-"Copyright © 2010-2020 Pete Batard / Akeo\\line\n"
+"Copyright © 2010-2021 Pete Batard / Akeo\\line\n"
 APPLICATION_URL "\\line\n"
 "\\line\n"
 "Report bugs or request enhancements at:\\line\n"
@@ -32,7 +32,7 @@ APPLICATION_URL "\\line\n"
 const char* additional_copyrights =
 "{\\rtf1\\ansi\n"
 "Windows Driver Installer library, libwdi:\\line\n"
-"Copyright © 2010-2020 by Pete Batard et al.\\line\n"
+"Copyright © 2010-2021 by Pete Batard et al.\\line\n"
 "GNU Lesser General Public License (LGPL) v3 or later\\line\n"
 "https://github.com/pbatard/libwdi/wiki\\line\n"
 "\\line\n"

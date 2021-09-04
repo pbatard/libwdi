@@ -1,6 +1,15 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.4.0 (2021.09.04)
+  Bugfixes:
+  - fix breakage when providing a user driver
+  - work around Windows corrupting the key containers
+  - don't populate empty device decriptors
+  Improvements:
+  - more error reporting improvements
+  - remove the zadic sample
+
 o v1.3.1 (2020.03.30)
   Bugfixes:
   - fix handling of non western paths during cat file generation
