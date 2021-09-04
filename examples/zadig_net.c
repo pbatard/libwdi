@@ -376,7 +376,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 			dprintf("Error writing file '%s': %s\n", &file[last_slash], WinInetErrorString());
 			goto out;
 		} else if (dwDownloaded != dwWritten) {
-			dprintf("Error writing file '%s': Only %d/%d bytes written\n", dwWritten, dwDownloaded);
+			dprintf("Error writing file '%s': Only %d/%d bytes written\n", &file[last_slash], dwWritten, dwDownloaded);
 			goto out;
 		}
 	}

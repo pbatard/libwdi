@@ -82,7 +82,7 @@ WORD application_version[4];
 char app_dir[MAX_PATH], driver_text[64];
 char szFolderPath[MAX_PATH];
 const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb-win32", "libusbK", "USB Serial (CDC)", "Custom (extract only)" };
-const char* driver_name[WDI_NB_DRIVERS-1] = { "WinUSB", "libusb0", "libusbK", "usbser" };
+const char* driver_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0", "libusbK", "usbser", "custom" };
 struct wdi_options_create_list cl_options = { 0 };
 struct wdi_options_prepare_driver pd_options = { 0 };
 struct wdi_options_install_cert ic_options = { 0 };

@@ -295,7 +295,7 @@ void add_user_files(void) {
 	}
 	// Copy the fixed part of our table into our new array
 	for (i = 0; i < nb_embeddables_fixed; i++) {
-		embeddable[i].reuse_last = 0;
+		embeddable[i].reuse_last = embeddable_fixed[i].reuse_last;
 		embeddable[i].file_name = embeddable_fixed[i].file_name;
 		embeddable[i].extraction_subdir = embeddable_fixed[i].extraction_subdir;
 	}
