@@ -28,7 +28,7 @@ env:
   DRIVERS_PATHS: '--with-wdkdir="wdk/Windows Kits/8.0" --with-wdfver=1011 --with-libusb0="libusb0" --with-libusbk="libusbk/bin"'
 
 jobs:
-  build:
+  MinGW-Build:
     runs-on: windows-latest
 
     strategy:

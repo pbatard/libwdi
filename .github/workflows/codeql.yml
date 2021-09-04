@@ -1,4 +1,4 @@
-name: VS2019
+name: CodeQL
 
 on: 
   push:
@@ -25,15 +25,16 @@ env:
   LIBUSB0_URL: https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/libusb-win32-bin-1.2.6.0.zip/download
   LIBUSBK_URL: https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z
   SOLUTION_FILE_PATH: ./libwdi.sln
+  TARGET_PLATFORM: x64
+  BUILD_CONFIGURATION: Debug
   BUILD_MACROS: '"WDK_DIR=\"../wdk/Windows Kits/8.0\";LIBUSB0_DIR=\"../libusb0\";LIBUSBK_DIR=\"../libusbk/bin\""'
 
 jobs:
-  VS2019-Build:
+  CodeQL-Build:
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        TARGET_PLATFORM: [x64, Win32]
+    permissions:
+      security-events: write
 
     steps:
     - name: Checkout repository
@@ -56,23 +57,17 @@ jobs:
         move libusb-win32* libusb0
         move libusbK* libusbk
 
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: cpp
+
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1
 
     - name: Build
       shell: cmd
-      run: |
-        for %%B in (Debug Release) do (
-          msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=%%B,Platform=${{ matrix.TARGET_PLATFORM }},BuildMacros=${{ env.BUILD_MACROS }}
-        )
+      run: msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=${{ env.BUILD_CONFIGURATION}},Platform=${{ env.TARGET_PLATFORM }},BuildMacros=${{ env.BUILD_MACROS }}
 
-    - name: Display SHA-256
-      if: ${{ github.event_name == 'push' }}
-      run: sha256sum ./${{ matrix.TARGET_PLATFORM }}/*/examples/*.exe
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      if: ${{ github.event_name == 'push' }}
-      with:
-        name: VS2019
-        path: ./*/*/examples/*.exe
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
