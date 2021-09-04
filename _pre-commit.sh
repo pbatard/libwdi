@@ -41,13 +41,11 @@ sed -i -e "s/@@TAGVER@@/$TAGVER/g" cmd.sed
 # Run sed to update the nano version, and add the modified files
 sed -i -f cmd.sed libwdi/libwdi.rc
 sed -i 's/$/\r/' libwdi/libwdi.rc
-sed -i -f cmd.sed examples/zadic.rc
-sed -i 's/$/\r/' examples/zadic.rc
 sed -i -f cmd.sed examples/zadig.rc
 sed -i 's/$/\r/' examples/zadig.rc
 sed -i -f cmd.sed examples/zadig.h
 sed -i 's/$/\r/' examples/zadig.h
 sed -i -f cmd.sed examples/wdi-simple.rc
 sed -i 's/$/\r/' examples/wdi-simple.rc
-git add libwdi/libwdi.rc examples/zadic.rc examples/zadig.rc examples/zadig.h examples/wdi-simple.rc
+git add libwdi/libwdi.rc examples/zadig.rc examples/zadig.h examples/wdi-simple.rc
 rm cmd.sed

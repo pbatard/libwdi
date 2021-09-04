@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}"
 EndProject
@@ -11,8 +11,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "embedder", "libwdi\.msvc\embedder.vcxproj", "{792D44D5-28A7-4EB3-B84B-8021FE3189F9}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wdi-simple", "examples\.msvc\wdi-simple.vcxproj", "{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadic", "examples\.msvc\zadic.vcxproj", "{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zadig", "examples\.msvc\zadig.vcxproj", "{F7F7842F-2912-454E-ADF5-0B22987946E2}"
 EndProject
@@ -58,14 +56,6 @@ Global
 		{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}.Release|Win32.Build.0 = Release|Win32
 		{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}.Release|x64.ActiveCfg = Release|x64
 		{84C746FC-0B8B-40C5-9FB0-5EDC8377506D}.Release|x64.Build.0 = Release|x64
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Debug|Win32.ActiveCfg = Debug|Win32
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Debug|Win32.Build.0 = Debug|Win32
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Debug|x64.ActiveCfg = Debug|x64
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Debug|x64.Build.0 = Debug|x64
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Release|Win32.ActiveCfg = Release|Win32
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Release|Win32.Build.0 = Release|Win32
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Release|x64.ActiveCfg = Release|x64
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87}.Release|x64.Build.0 = Release|x64
 		{F7F7842F-2912-454E-ADF5-0B22987946E2}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F7F7842F-2912-454E-ADF5-0B22987946E2}.Debug|Win32.Build.0 = Debug|Win32
 		{F7F7842F-2912-454E-ADF5-0B22987946E2}.Debug|x64.ActiveCfg = Debug|x64
@@ -115,8 +105,10 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{B1F3B94A-4EC4-406E-9CBF-056E1EA03DE0} = {CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}
 		{84C746FC-0B8B-40C5-9FB0-5EDC8377506D} = {CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}
-		{F4938DB0-3DE7-4737-9C5A-EAD1BE819F87} = {CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}
 		{F7F7842F-2912-454E-ADF5-0B22987946E2} = {CE152D17-B7D5-4ECA-9C6B-BFA86ACBFF75}
 		{AE83E1B4-CE06-47EE-B7A3-C3A1D7C2D71E} = {B1F3B94A-4EC4-406E-9CBF-056E1EA03DE0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {31CAC804-E47E-4336-B896-016DFB1117CB}
 	EndGlobalSection
 EndGlobal

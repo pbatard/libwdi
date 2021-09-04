@@ -40,8 +40,6 @@ sed -i -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" -e "s/@@MICRO@@/$MICR
 # Run sed to update the .rc version
 sed -i -f cmd.sed libwdi/libwdi.rc
 sed -i 's/$/\r/' libwdi/libwdi.rc
-sed -i -f cmd.sed examples/zadic.rc
-sed -i 's/$/\r/' examples/zadic.rc
 sed -i -f cmd.sed examples/wdi-simple.rc
 sed -i 's/$/\r/' examples/wdi-simple.rc
 rm cmd.sed

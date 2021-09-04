@@ -8,6 +8,9 @@
     <Filter Include="Resource Files">
       <UniqueIdentifier>{da31138d-56fc-4ef9-bea2-68f46be07623}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{cac8a2f4-ad03-4bd7-9219-846a23f7392a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\wdi-simple.c">
@@ -18,5 +21,13 @@
     <Manifest Include="..\common_controls.manifest">
       <Filter>Resource Files</Filter>
     </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\getopt\getopt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libwdi\libwdi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
