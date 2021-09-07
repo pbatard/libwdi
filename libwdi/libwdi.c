@@ -59,6 +59,7 @@ static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb0.i
 static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.cat.in", "libusbk.cat.in", "usbser.cat.in"};
 static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "MS_COMP_USBSER"};
 int nWindowsVersion = WINDOWS_UNDEFINED;
+int nWindowsBuildNumber = -1;
 char WindowsVersionStr[128] = "Windows ";
 
 // Detect Windows version
@@ -76,27 +77,101 @@ BOOL is_x64(void)
 	return ret;
 }
 
-// From smartmontools os_win32.cpp
+static const char* GetEdition(DWORD ProductType)
+{
+	// From: https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+	// These values can be found in the winnt.h header.
+	switch (ProductType) {
+	case 0x00000000: return "";	//  Undefined
+	case 0x00000001: return "Ultimate";
+	case 0x00000002: return "Home Basic";
+	case 0x00000003: return "Home Premium";
+	case 0x00000004: return "Enterprise";
+	case 0x00000005: return "Home Basic N";
+	case 0x00000006: return "Business";
+	case 0x00000007: return "Standard Server";
+	case 0x00000008: return "Datacenter Server";
+	case 0x00000009: return "Smallbusiness Server";
+	case 0x0000000A: return "Enterprise Server";
+	case 0x0000000B: return "Starter";
+	case 0x00000010: return "Business N";
+	case 0x00000011: return "Web Server";
+	case 0x00000012: return "Cluster Server";
+	case 0x00000013: return "Home Server";
+	case 0x0000001A: return "Home Premium N";
+	case 0x0000001B: return "Enterprise N";
+	case 0x0000001C: return "Ultimate N";
+	case 0x00000022: return "Home Premium Server";
+	case 0x0000002F: return "Starter N";
+	case 0x00000030: return "Pro";
+	case 0x00000031: return "Pro N";
+	case 0x00000042: return "Starter E";
+	case 0x00000043: return "Home Basic E";
+	case 0x00000044: return "Premium E";
+	case 0x00000045: return "Pro E";
+	case 0x00000046: return "Enterprise E";
+	case 0x00000047: return "Ultimate E";
+	case 0x00000048: return "Enterprise Eval";
+	case 0x00000054: return "Enterprise N Eval";
+	case 0x00000057: return "Thin PC";
+	case 0x0000006F: return "Core Connected";
+	case 0x00000070: return "Pro Student";
+	case 0x00000071: return "Core Connected N";
+	case 0x00000072: return "Pro Student N";
+	case 0x00000073: return "Core Connected Single Language";
+	case 0x00000074: return "Core Connected China";
+	case 0x00000079: return "Edu";
+	case 0x0000007A: return "Edu N";
+	case 0x0000007D: return "Enterprise S";
+	case 0x0000007E: return "Enterprise S N";
+	case 0x0000007F: return "Pro S";
+	case 0x00000080: return "Pro S N";
+	case 0x00000081: return "Enterprise S Eval";
+	case 0x00000082: return "Enterprise S N Eval";
+	case 0x0000008A: return "Pro Single Language";
+	case 0x0000008B: return "Pro China";
+	case 0x0000008C: return "Enterprise Subscription";
+	case 0x0000008D: return "Enterprise Subscription N";
+	case 0x00000095: return "Utility VM";
+	case 0x000000A1: return "Pro Workstation";
+	case 0x000000A2: return "Pro Workstation N";
+	case 0x000000A4: return "Pro for Education";
+	case 0x000000A5: return "Pro for Education N";
+	case 0x000000AB: return "Enterprise G";	// I swear Microsoft are just making up editions...
+	case 0x000000AC: return "Enterprise G N";
+	case 0x000000B6: return "Core OS";
+	case 0x000000B7: return "Cloud E";
+	case 0x000000B8: return "Cloud E N";
+	case 0x000000BD: return "Lite";
+	case 0xABCDABCD: return "(Unlicensed)";
+	default: return "(Unknown Edition)";
+	}
+}
+
+/*
+ * Modified from smartmontools' os_win32.cpp
+ */
 void GetWindowsVersion(void)
 {
 	OSVERSIONINFOEXA vi, vi2;
+	DWORD dwProductType;
 	const char* w = 0;
 	const char* w64 = "32 bit";
-	char *vptr, build_number[10] = "";
+	char* vptr;
 	size_t vlen;
 	unsigned major, minor;
 	ULONGLONG major_equal, minor_equal;
 	BOOL ws;
 
 	nWindowsVersion = WINDOWS_UNDEFINED;
-	safe_strcpy(WindowsVersionStr, sizeof(WindowsVersionStr), "Windows Undefined");
+	static_strcpy(WindowsVersionStr, "Windows Undefined");
 
 	memset(&vi, 0, sizeof(vi));
 	vi.dwOSVersionInfoSize = sizeof(vi);
-	if (!GetVersionExA((OSVERSIONINFOA *)&vi)) {
+	if (!GetVersionExA((OSVERSIONINFOA*)&vi)) {
 		memset(&vi, 0, sizeof(vi));
 		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
-		if (!GetVersionExA((OSVERSIONINFOA *)&vi))
+		if (!GetVersionExA((OSVERSIONINFOA*)&vi))
 			return;
 	}
 
@@ -136,22 +211,30 @@ void GetWindowsVersion(void)
 			ws = (vi.wProductType <= VER_NT_WORKSTATION);
 			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
 			switch (nWindowsVersion) {
-			case 0x61: w = (ws ? "7" : "2008_R2");
+			case 0x51: w = "XP";
 				break;
-			case 0x62: w = (ws ? "8" : "2012");
+			case 0x52: w = (!GetSystemMetrics(89) ? "Server 2003" : "Server 2003_R2");
 				break;
-			case 0x63: w = (ws ? "8.1" : "2012_R2");
+			case 0x60: w = (ws ? "Vista" : "Server 2008");
+				break;
+			case 0x61: w = (ws ? "7" : "Server 2008_R2");
+				break;
+			case 0x62: w = (ws ? "8" : "Server 2012");
+				break;
+			case 0x63: w = (ws ? "8.1" : "Server 2012_R2");
 				break;
 			case 0x64: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
 				break;
 				// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
-			case 0xA0: w = (ws ? "10" : "Server 10");
+			case 0xA0: w = (ws ? ((vi.dwBuildNumber < 20000) ? "10" : "11") : ((vi.dwBuildNumber < 17763) ? "Server 2016" : "Server 2019"));
+				break;
+			case 0xB0: w = (ws ? "11" : "Server 2022");
 				break;
 			default:
-				if (nWindowsVersion < 0x61)
+				if (nWindowsVersion < 0x51)
 					nWindowsVersion = WINDOWS_UNSUPPORTED;
 				else
-					w = "11 or later";
+					w = "12 or later";
 				break;
 			}
 		}
@@ -160,6 +243,7 @@ void GetWindowsVersion(void)
 	if (is_x64())
 		w64 = "64-bit";
 
+	GetProductInfo(vi.dwMajorVersion, vi.dwMinorVersion, vi.wServicePackMajor, vi.wServicePackMinor, &dwProductType);
 	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
 	vlen = sizeof(WindowsVersionStr) - sizeof("Windows ") - 1;
 	if (!w)
@@ -170,19 +254,29 @@ void GetWindowsVersion(void)
 	else if (vi.wServicePackMajor)
 		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
 	else
-		safe_sprintf(vptr, vlen, "%s %s", w, w64);
+		safe_sprintf(vptr, vlen, "%s%s%s, %s",
+			w, (dwProductType != PRODUCT_UNDEFINED) ? " " : "", GetEdition(dwProductType), w64);
 
-	// Add the build number for Windows 8.0 and later
+	// Add the build number (including UBR if available) for Windows 8.0 and later
+	nWindowsBuildNumber = vi.dwBuildNumber;
 	if (nWindowsVersion >= 0x62) {
-		ReadRegistryStr(REGKEY_HKLM, "Microsoft\\Windows NT\\CurrentVersion\\CurrentBuildNumber", build_number, sizeof(build_number));
-		if (build_number[0] != 0) {
-			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), " (Build ");
-			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), build_number);
-			safe_strcat(WindowsVersionStr, sizeof(WindowsVersionStr), ")");
+		HKEY hCurrentVersion;
+		DWORD dwType = REG_DWORD, dwSize = sizeof(DWORD), dwUbr = 0;
+		if (RegOpenKeyExA(REGKEY_HKLM, "Software\\Microsoft\\Windows NT\\CurrentVersion",
+			0, KEY_READ, &hCurrentVersion) == ERROR_SUCCESS) {
+			RegQueryValueExA(hCurrentVersion, "UBR", NULL, &dwType, (LPBYTE)&dwUbr, &dwSize);
+			RegCloseKey(hCurrentVersion);
 		}
-	}
 
+		vptr = &WindowsVersionStr[safe_strlen(WindowsVersionStr)];
+		vlen = sizeof(WindowsVersionStr) - safe_strlen(WindowsVersionStr) - 1;
+		if (dwUbr != 0)
+			safe_sprintf(vptr, vlen, " (Build %d.%d)", nWindowsBuildNumber, (int)dwUbr);
+		else
+			safe_sprintf(vptr, vlen, " (Build %d)", nWindowsBuildNumber);
+	}
 }
+
 /*
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
