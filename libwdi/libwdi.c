@@ -227,8 +227,13 @@ void GetWindowsVersion(void)
 			case 0x64: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
 				break;
 				// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
-			case 0xA0: w = (ws ? ((vi.dwBuildNumber < 20000) ? "10" : "11") : ((vi.dwBuildNumber < 17763) ? "Server 2016" : "Server 2019"));
-				break;
+			case 0xA0:
+				if (vi.dwBuildNumber < 20000) {
+					w = (ws ? "10" : ((vi.dwBuildNumber < 17763) ? "Server 2016" : "Server 2019"));
+					break;
+				}
+				nWindowsVersion = 0xB0;
+				// Fall through
 			case 0xB0: w = (ws ? "11" : "Server 2022");
 				break;
 			default:

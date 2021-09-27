@@ -15,7 +15,7 @@ Main features
 * Automated driver files extraction, for both 32 and 64 bit platforms
 * Automated driver installation, including UAC elevation where necessary
 * Single library embedding all the required files
-* Supports Windows platform from Windows 7 to Windows 10
+* Supports Windows platform from Windows 7 to Windows 11
 
 Additional features
 -------------------

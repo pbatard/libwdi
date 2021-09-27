@@ -37,6 +37,7 @@ enum WindowsVersion {
 	WINDOWS_8_1 = 0x63,
 	WINDOWS_10_PREVIEW1 = 0x64,
 	WINDOWS_10 = 0xA0,
+	WINDOWS_11 = 0xB0,
 	WINDOWS_MAX
 };
 
