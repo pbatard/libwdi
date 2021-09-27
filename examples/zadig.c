@@ -1762,6 +1762,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 	}
 
+	if (nWindowsVersion >= WINDOWS_11) {
+		MessageBoxA(NULL, "Zadig/libwdi is not compatible with Windows 11 or later",
+			"Incompatible version", MB_ICONSTOP);
+		CloseHandle(mutex);
+		return 0;
+	}
+
 	// Save instance of the application for further reference
 	main_instance = hInstance;
 

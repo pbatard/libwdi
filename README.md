@@ -15,7 +15,23 @@ Main features
 * Automated driver files extraction, for both 32 and 64 bit platforms
 * Automated driver installation, including UAC elevation where necessary
 * Single library embedding all the required files
-* Supports Windows platform from Windows 7 to Windows 10
+* Supports Windows platform from Windows 7 to Windows 10 (but **NOT** Windows 11)
+
+## IMPORTANT NOTICE REGARDING WINDOWS 11
+
+Libwdi is **NOT COMPATIBLE WITH WINDOWS 11 OR LATER**.
+
+This is due to Microsoft having removed Windows users' ability to indicate whether
+they want to trust a driver package in Windows 11, which
+[libwdi needs in order to install a driver](https://community.osr.com/discussion/293115/windows-11-and-alternative-driver-installation-method-in-libwdi).
+
+Currently, there is no known way to work around this, which means that libwdi is
+unlikely to ever be compatible with Windows 11.
+
+If you are unhappy about this, feel free to tell Microsoft that keeping a user's
+ability to declare whether they want to trust a driver package, by adding its
+signing certificate into the *Trusted Publishers* store, is an important feature
+of earlier versions of Windows that should be retained in Windows 11.
 
 Additional features
 -------------------
