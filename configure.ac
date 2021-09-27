@@ -65,7 +65,7 @@ case $host in
 	create_import_lib="yes"
 	LIBCONFIG_LIBADD=""
 	LIBCONFIG_CFLAGS=""
-	AM_CFLAGS="-Wshadow"
+	AM_CFLAGS="-Wshadow -Wno-stringop-truncation"
 	AM_LDFLAGS="-Wl,--add-stdcall-alias"
 	;;
 *)

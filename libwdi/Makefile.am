@@ -50,7 +50,7 @@ libwdi_rc.lo: libwdi.rc
 
 libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
 libwdi_la_LDLAGS = $(AM_LDFLAGS)
-libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32
+libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32 -lntdll
 libwdi_la_SOURCES = $(LIB_SRC)
 libwdi_la_HEADERS = $(LIB_HDR)
 libwdi_ladir = $(includedir)

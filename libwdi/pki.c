@@ -385,24 +385,29 @@ char* winpki_error_str(uint32_t retval)
 	case NTE_BAD_UID:
 		return "Bad UID.";
 	case NTE_BAD_KEYSET:
-		return "The key container could not be opened.";
+		return "Keyset does not exist.";
 	case NTE_KEYSET_ENTRY_BAD:
-		return "The requested key container is corrupted.";
+		return "Keyset as registered is invalid.";
 	case NTE_BAD_FLAGS:
+		return "Invalid flags specified.";
 	case NTE_BAD_KEYSET_PARAM:
+		return "The Keyset parameter is invalid.";
 	case NTE_BAD_PROV_TYPE:
+		return "Invalid provider type specified.";
 	case NTE_EXISTS:
-		return "Invalid parameter.";
+		return "Object already exists.";
 	case NTE_BAD_SIGNATURE:
-		return "This system's cryptographic DLL has been tampered with.";
+		return "Invalid Signature.";
 	case NTE_PROVIDER_DLL_FAIL:
+		return "Provider DLL failed to initialize correctly.";
 	case NTE_SIGNATURE_FILE_BAD:
+		return "The digital signature file is corrupt.";
 	case NTE_PROV_DLL_NOT_FOUND:
-		return "This system's cryptographic DLL can not be loaded.";
+		return "Provider DLL could not be found.";
 	case NTE_KEYSET_NOT_DEF:
-		return "The requested provider does not exist.";
+		return "The keyset is not defined.";
 	case NTE_NO_MEMORY:
-		return "Out of memory.";
+		return "Insufficient memory available for the operation.";
 	case CRYPT_E_MSG_ERROR:
 		return "An error occurred while performing an operation on a cryptographic message.";
 	case CRYPT_E_UNKNOWN_ALGO:
@@ -430,9 +435,11 @@ char* winpki_error_str(uint32_t retval)
 	case CRYPT_E_NO_MATCH:
 		return "Cannot find the requested object.";
 	case CRYPT_E_UNEXPECTED_MSG_TYPE:
+		return "The certificate does not have a property that references a private key.";
 	case CRYPT_E_NO_KEY_PROPERTY:
+		return "Cannot find the private key to use for decryption.";
 	case CRYPT_E_NO_DECRYPT_CERT:
-		return "Private key or certificate issue";
+		return "Cannot find the certificate to use for decryption.";
 	case CRYPT_E_BAD_MSG:
 		return "Not a cryptographic message.";
 	case CRYPT_E_NO_SIGNER:
@@ -440,10 +447,13 @@ char* winpki_error_str(uint32_t retval)
 	case CRYPT_E_REVOKED:
 		return "The certificate is revoked.";
 	case CRYPT_E_NO_REVOCATION_DLL:
+		return "No Dll or exported function was found to verify revocation.";
 	case CRYPT_E_NO_REVOCATION_CHECK:
+		return "The revocation function was unable to check revocation for the certificate.";
 	case CRYPT_E_REVOCATION_OFFLINE:
+		return "The revocation function was unable to check revocation because the revocation server was offline.";
 	case CRYPT_E_NOT_IN_REVOCATION_DATABASE:
-		return "Cannot check certificate revocation.";
+		return "The certificate is not in the revocation server's database.";
 	case CRYPT_E_INVALID_NUMERIC_STRING:
 	case CRYPT_E_INVALID_PRINTABLE_STRING:
 	case CRYPT_E_INVALID_IA5_STRING:
@@ -453,8 +463,9 @@ char* winpki_error_str(uint32_t retval)
 	case CRYPT_E_SECURITY_SETTINGS:
 		return "The cryptographic operation failed due to a local security option setting.";
 	case CRYPT_E_NO_VERIFY_USAGE_CHECK:
+		return "The called function was unable to do a usage check on the subject.";
 	case CRYPT_E_VERIFY_USAGE_OFFLINE:
-		return "Cannot complete usage check.";
+		return "Since the server was offline, the called function was unable to complete the usage check.";
 	case CRYPT_E_NO_TRUSTED_SIGNER:
 		return "None of the signers of the cryptographic message or certificate trust list is trusted.";
 	default:
@@ -781,7 +792,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 			 && (CryptAcquireContextW(&hCSP, wszKeyContainer, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET|CRYPT_MACHINE_KEYSET|CRYPT_SILENT)) ) {
 		wdi_dbg("Created new key container");
 	} else {
-		wdi_warn("Could not obtain a key container: %s", winpki_error_str(0));
+		wdi_warn("Could not obtain a key container: %s (0x%08X)", winpki_error_str(0), GetLastError());
 		goto out;
 	}
 
