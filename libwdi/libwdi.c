@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2020 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -1131,9 +1131,9 @@ static int extract_binaries(const char* path)
 	return WDI_SUCCESS;
 }
 
-// tokenizes a resource stored in resource.h
-static long tokenize_internal(const char* resource_name, char** dst, const token_entity_t* token_entities,
-					   const char* tok_prefix, const char* tok_suffix, int recursive)
+// tokenizes a resource stored in resource.h and write it to file <dst>
+static long wdi_tokenize_resource(const char* resource_name, char** dst, const token_entity_t* token_entities,
+								  const char* tok_prefix, const char* tok_suffix, int recursive)
 {
 	int i;
 
@@ -1150,10 +1150,46 @@ static long tokenize_internal(const char* resource_name, char** dst, const token
 	return -ERROR_RESOURCE_DATA_NOT_FOUND;
 }
 
+// tokenizes an external file pointed by <src> into destination file <dst>
+static long wdi_tokenize_file(const char* src, char** dst, const token_entity_t* token_entities,
+							  const char* tok_prefix, const char* tok_suffix, int recursive)
+{
+	long ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
+
+	FILE* fd = NULL;
+	char* buffer = NULL;
+
+	fd = fopen(src, "r");
+	if (fd) {
+		fseek(fd, 0L, SEEK_END);
+		long size = ftell(fd);
+		fseek(fd, 0L, SEEK_SET);
+
+		buffer = (char*)malloc(size);
+		if (buffer == NULL) {
+			wdi_err("Could not allocate tokenization buffer");
+			ret = WDI_ERROR_RESOURCE;
+			goto out;
+		}
+		if (fread(buffer, 1, size, fd) < 0) {
+			wdi_err("Could not read file to tokenize");
+			ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
+			goto out;
+		}
+		ret = tokenize_string(buffer, size, dst, token_entities, tok_prefix, tok_suffix, recursive);
+	}
+
+out:
+	free(buffer);
+	if (fd)
+		fclose(fd);
+	return ret;
+}
+
 #define CAT_LIST_MAX_ENTRIES 16
 // Create an inf and extract coinstallers in the directory pointed by path
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
-								  const char* inf_name, struct wdi_options_prepare_driver* options)
+								  const char* inf, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
 #if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
@@ -1163,7 +1199,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	const char* vendor_name = NULL;
 	const char* cat_list[CAT_LIST_MAX_ENTRIES+1];
 	char drv_path[MAX_PATH], inf_path[MAX_PATH], cat_path[MAX_PATH], hw_id[40], cert_subject[64];
-	char *strguid, *token, *cat_name = NULL, *dst = NULL, *cat_in_copy = NULL;
+	char *strguid, *token, *cat_name = NULL, *dst = NULL, *inf_name;
 	wchar_t *wdst = NULL;
 	int i, nb_entries, driver_type = WDI_WINUSB, r = WDI_ERROR_OTHER;
 	long inf_file_size, cat_file_size;
@@ -1184,11 +1220,14 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		goto out;
 	}
 
-	if ((device_info == NULL) || (inf_name == NULL)) {
+	if ((device_info == NULL) || (inf == NULL)) {
 		wdi_err("One of the required parameter is NULL");
 		r = WDI_ERROR_INVALID_PARAM;
 		goto out;
 	}
+
+	// If we are dealing with a path (e.g. option 'external_inf'), remove the directory part
+	inf_name = filename(inf);
 
 	// Check the inf file provided and create the cat file name
 	if (strcmp(inf_name+safe_strlen(inf_name)-4, inf_ext) != 0) {
@@ -1379,9 +1418,12 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		(int)driver_version[driver_type].dwFileVersionMS>>16, (int)driver_version[driver_type].dwFileVersionMS&0xFFFF,
 		(int)driver_version[driver_type].dwFileVersionLS>>16, (int)driver_version[driver_type].dwFileVersionLS&0xFFFF);
 
-	// Tokenize the file
-	if ((inf_file_size = tokenize_internal(inf_template[driver_type],
-		&dst, inf_entities, "#", "#", 0)) > 0) {
+	// Tokenize the inf
+	if (options->external_inf)
+		inf_file_size = wdi_tokenize_file(inf, &dst, inf_entities, "#", "#", 0);
+	else
+		inf_file_size = wdi_tokenize_resource(inf_template[driver_type], &dst, inf_entities, "#", "#", 0);
+	if (inf_file_size > 0) {
 		fd = fopen_as_userU(inf_path, "w");
 		if (fd == NULL) {
 			wdi_err("Failed to create file: %s", inf_path);
@@ -1419,7 +1461,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		wdi_info("Creating and self-signing a .cat file...");
 
 		// Tokenize the cat file (for WDF version)
-		if ((cat_file_size = tokenize_internal(cat_template[driver_type],
+		if ((cat_file_size = wdi_tokenize_resource(cat_template[driver_type],
 			&dst, inf_entities, "#", "#", 0)) <= 0) {
 			wdi_err("Could not tokenize cat file (%d)", cat_file_size);
 			r = WDI_ERROR_ACCESS;
@@ -1473,7 +1515,6 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 			}
 			wdi_warn("Could not sign cat file");
 		}
-		safe_free(cat_in_copy);
 		safe_free(dst);
 	} else {
 		wdi_info("No .cat file generated (missing elevated privileges)");
@@ -1871,13 +1912,15 @@ out:
 }
 
 int LIBWDI_API wdi_install_driver(struct wdi_device_info* device_info, const char* path,
-								  const char* inf_name, struct wdi_options_install_driver* options)
+								  const char* inf, struct wdi_options_install_driver* options)
 {
 	struct install_driver_params params;
 	params.device_info = device_info;
-	params.inf_name = inf_name;
 	params.options = options;
 	params.path = path;
+
+	// If we are dealing with a path (e.g. option 'external_inf'), remove the directory part
+	params.inf_name = filename(inf);
 
 	if ((options == NULL) || (options->hWnd == NULL)) {
 		wdi_dbg("Using standard mode");

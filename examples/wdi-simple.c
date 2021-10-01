@@ -1,6 +1,6 @@
 /*
 * wdi-simple.c: Console Driver Installer for a single USB device
-* Copyright (c) 2010-2018 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -62,6 +62,8 @@ void usage(void)
 	printf("                           one (WinUSB, libusb-win32 or libusbK only)\n");
 	printf("    --filter               use the libusb-win32 filter driver (requires -t1)\n");
 	printf("-d, --dest <dir>           set the extraction directory\n");
+	printf("-e, --external <path>      use the external inf specified by <path> as source\n");
+	printf("                           (overrides the internal embedded inf)\n");
 	printf("-x, --extract              extract files only (don't install)\n");
 	printf("-c, --cert <certname>      install certificate <certname> from the\n");
 	printf("                           embedded user files as a trusted publisher\n");
@@ -123,6 +125,7 @@ int __cdecl main(int argc, char** argv)
 		{"progressbar", optional_argument, 0, 'b'},
 		{"log", required_argument, 0, 'l'},
 		{"timeout", required_argument, 0, 'o'},
+		{"external", required_argument, 0, 'e'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -134,7 +137,7 @@ int __cdecl main(int argc, char** argv)
 
 	while(1)
 	{
-		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:o:hxsbw", long_options, NULL);
+		c = getopt_long(argc, argv, "bc:d:e:f:hi:l:m:n:o:p:st:v:wx", long_options, NULL);
 		if (c == -1)
 			break;
 		switch(c) {
@@ -144,23 +147,39 @@ int __cdecl main(int argc, char** argv)
 		case 2: // --filter
 			oid.install_filter_driver = TRUE;
 			break;
-		case 'n':
-			dev.desc = optarg;
-			break;
-		case 'm':
-			opd.vendor_name = optarg;
-			break;
-		case 'f':
-			inf_name = optarg;
-			break;
-		case 'd':
-			ext_dir = optarg;
+		case 'b':
+			oid.hWnd = (optarg) ? (HWND)(uintptr_t)strtol(optarg, NULL, 0) : GetConsoleHwnd();
+			oic.hWnd = oid.hWnd;
 			break;
 		case 'c':
 			cert_name = optarg;
 			break;
-		case 'v':
-			dev.vid = (unsigned short)strtol(optarg, NULL, 0);
+		case 'd':
+			ext_dir = optarg;
+			break;
+		case 'e':
+			inf_name = optarg;
+			opd.external_inf = TRUE;
+			break;
+		case 'f':
+			inf_name = optarg;
+			break;
+		case 'h':
+			usage();
+			exit(0);
+			break;
+		case 'i':
+			dev.is_composite = TRUE;
+			dev.mi = (unsigned char)strtol(optarg, NULL, 0);
+			break;
+		case 'l':
+			log_level = (int)strtol(optarg, NULL, 0);
+			break;
+		case 'm':
+			opd.vendor_name = optarg;
+			break;
+		case 'n':
+			dev.desc = optarg;
 			break;
 		case 'o':
 			oid.pending_install_timeout = (DWORD)strtoul(optarg, NULL, 0);
@@ -168,33 +187,21 @@ int __cdecl main(int argc, char** argv)
 		case 'p':
 			dev.pid = (unsigned short)strtol(optarg, NULL, 0);
 			break;
-		case 'i':
-			dev.is_composite = TRUE;
-			dev.mi = (unsigned char)strtol(optarg, NULL, 0);
-			break;
-		case 't':
-			opd.driver_type = (int)strtol(optarg, NULL, 0);
-			break;
-		case 'w':
-			opd.use_wcid_driver = TRUE;
-			break;
-		case 'h':
-			usage();
-			exit(0);
-			break;
-		case 'x':
-			opt_extract = 1;
-			break;
 		case 's':
 			opt_silent = 1;
 			log_level = WDI_LOG_LEVEL_NONE;
 			break;
-		case 'b':
-			oid.hWnd = (optarg)?(HWND)(uintptr_t)strtol(optarg, NULL, 0):GetConsoleHwnd();
-			oic.hWnd = oid.hWnd;
+		case 't':
+			opd.driver_type = (int)strtol(optarg, NULL, 0);
 			break;
-		case 'l':
-			log_level = (int)strtol(optarg, NULL, 0);
+		case 'v':
+			dev.vid = (unsigned short)strtol(optarg, NULL, 0);
+			break;
+		case 'w':
+			opd.use_wcid_driver = TRUE;
+			break;
+		case 'x':
+			opt_extract = 1;
 			break;
 		default:
 			usage();

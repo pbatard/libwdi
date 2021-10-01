@@ -83,6 +83,17 @@ enum installer_code {
 	IC_INSTALLER_COMPLETED,
 };
 
+/* Helper function to isolate a filename from a path */
+static __inline const char* filename(const char* path)
+{
+	int i;
+	if (path == NULL)
+		return NULL;
+	i = (int)strlen(path);
+	while ((--i >= 0) && (path[i] != '\\') && (path[i] != '/'));
+	return (const char*)&path[i + 1];
+}
+
 /* Helper functions to access DLLs */
 static __inline HMODULE GetLibraryHandle(char* szDLLName)
 {
