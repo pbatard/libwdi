@@ -134,7 +134,7 @@ int __cdecl main(int argc, char** argv)
 
 	while(1)
 	{
-		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:o:hxsb", long_options, NULL);
+		c = getopt_long(argc, argv, "n:f:m:d:c:v:p:i:l:t:o:hxsbw", long_options, NULL);
 		if (c == -1)
 			break;
 		switch(c) {
