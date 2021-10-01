@@ -1127,10 +1127,50 @@ static long tokenize_internal(const char* resource_name, char** dst, const token
 	return -ERROR_RESOURCE_DATA_NOT_FOUND;
 }
 
+// tokenizes a resource stored in resource.h
+static long tokenize_file_internal(const char* file_name, char** dst, const token_entity_t* token_entities,
+					   const char* tok_prefix, const char* tok_suffix, int recursive)
+{
+	long ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
+
+	FILE* f = NULL;
+	char* buffer = NULL;
+
+	f = fopen(file_name, "r");
+	if (f) {
+			fseek(f, 0L, SEEK_END);
+			long size = ftell(f);
+			fseek(f, 0L, SEEK_SET);
+
+			buffer = (char*)malloc(size);
+			if (buffer == NULL) {
+				wdi_err("Unable to allocate buffer: aborting");
+				ret = WDI_ERROR_RESOURCE;
+				goto out;
+			}
+			if (fread(buffer, 1, size, f) < 0) {
+				wdi_err("Error reading template file");
+				ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
+				goto out;
+			}
+			ret = tokenize_string(buffer, size,
+				dst, token_entities, tok_prefix, tok_suffix, recursive);
+	}
+
+out:
+	if (buffer) {
+		free(buffer);
+	}
+	if (f) {
+		fclose(f);
+	}
+	return ret;
+}
+
 #define CAT_LIST_MAX_ENTRIES 16
 // Create an inf and extract coinstallers in the directory pointed by path
-int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
-								  const char* inf_name, struct wdi_options_prepare_driver* options)
+static int LIBWDI_API wdi_prepare_or_sign_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, const char* inf_input_name, struct wdi_options_prepare_driver* options)
 {
 	const wchar_t bom = 0xFEFF;
 #if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
@@ -1164,6 +1204,29 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		wdi_err("This version of Windows is not supported");
 		r = WDI_ERROR_NOT_SUPPORTED;
 		goto out;
+	}
+
+	if (inf_name == NULL && inf_input_name != NULL) {
+		static char inf_name_generated[256];
+		char fext[128] = "";
+
+		if (_splitpath_s(inf_input_name,
+			       NULL, 0, // drive: not needed
+			       NULL, 0, // dir: not needed
+			       inf_name_generated, sizeof(inf_name_generated),
+			       fext, sizeof(fext)) != 0) {
+			wdi_err("Error in _splitpath_s");
+			r = WDI_ERROR_INVALID_PARAM;
+			goto out;
+		}
+
+		if (strcat_s(inf_name_generated, sizeof(inf_name_generated), fext) != 0) {
+			wdi_err("Could not generated inf name");
+			r = WDI_ERROR_RESOURCE;
+			goto out;
+		}
+
+		inf_name = inf_name_generated;
 	}
 
 	if ((device_info == NULL) || (inf_name == NULL)) {
@@ -1362,8 +1425,15 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		(int)driver_version[driver_type].dwFileVersionLS>>16, (int)driver_version[driver_type].dwFileVersionLS&0xFFFF);
 
 	// Tokenize the file
-	if ((inf_file_size = tokenize_internal(inf_template[driver_type],
-		&dst, inf_entities, "#", "#", 0)) > 0) {
+	if (inf_input_name != NULL) {
+		inf_file_size = tokenize_file_internal(inf_input_name,
+			&dst, inf_entities, "#", "#", 0);
+	}
+	else {
+		inf_file_size = tokenize_internal(inf_template[driver_type],
+			&dst, inf_entities, "#", "#", 0);
+	}
+	if (inf_file_size > 0) {
 		fd = fopen_as_userU(inf_path, "w");
 		if (fd == NULL) {
 			wdi_err("Failed to create file: %s", inf_path);
@@ -1465,6 +1535,20 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 out:
 	CloseHandle(mutex);
 	return r;
+}
+
+// Create an inf and extract coinstallers in the directory pointed by path
+int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_name, struct wdi_options_prepare_driver* options)
+{
+	return wdi_prepare_or_sign_driver(device_info, path, inf_name, NULL, options);
+}
+
+// Create an inf and extract coinstallers in the directory pointed by path
+int LIBWDI_API wdi_sign_driver_inf(struct wdi_device_info* device_info, const char* path,
+								  const char* inf_input_name, struct wdi_options_prepare_driver* options)
+{
+	return wdi_prepare_or_sign_driver(device_info, path, NULL, inf_input_name, options);
 }
 
 // Handle messages received from the elevated installer through the pipe
