@@ -581,14 +581,18 @@ BOOL RemoveCertFromStore(LPCSTR szCertSubject, LPCSTR szStoreName)
 	if ( (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, NULL, &certNameBlob.cbData, NULL))
 	  || ((certNameBlob.pbData = (BYTE*)malloc(certNameBlob.cbData)) == NULL)
 	  || (!pfCertStrToNameA(X509_ASN_ENCODING, szCertSubject, CERT_X500_NAME_STR, NULL, certNameBlob.pbData, &certNameBlob.cbData, NULL)) ) {
-		wdi_warn("Failed to encode'%s': %s", szCertSubject, winpki_error_str(0));
+		wdi_warn("Failed to encode '%s': %s", szCertSubject, winpki_error_str(0));
 		goto out;
 	}
 
 	pCertContext = NULL;
 	while ((pCertContext = pfCertFindCertificateInStore(hSystemStore, X509_ASN_ENCODING, 0,
 		CERT_FIND_SUBJECT_NAME, (const void*)&certNameBlob, NULL)) != NULL) {
-		pfCertDeleteCertificateFromStore(pCertContext);
+		if (!pfCertDeleteCertificateFromStore(pCertContext)) {
+			wdi_warn("Failed to delete certificate '%s' from '%s' store: %s",
+				szCertSubject, szStoreName, winpki_error_str(0));
+			goto out;
+		}
 		wdi_info("Deleted existing certificate '%s' from '%s' store", szCertSubject, szStoreName);
 	}
 	r = TRUE;
