@@ -635,9 +635,12 @@ static __inline int process_error(DWORD r, char* path) {
 		return WDI_ERROR_CAT_MISSING;
 	case ERROR_NO_AUTHENTICODE_CATALOG:
 	case ERROR_DRIVER_STORE_ADD_FAILED:
-	case ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED:
 		plog("Invalid CAT file signature or operation cancelled by user.");
 		return WDI_ERROR_USER_CANCEL;
+	case ERROR_AUTHENTICODE_PUBLISHER_NOT_TRUSTED:
+	case ERROR_CERTIFICATE_AUTHORITY_NOT_TRUSTED:
+		plog("This version of Windows is refusing to trust the installed certificate.");
+		return WDI_ERROR_NOT_SUPPORTED;
 	case ERROR_NO_DRIVER_SELECTED:
 		plog("The driver is not compatible with this version of Windows.");
 		return WDI_ERROR_NOT_SUPPORTED;
