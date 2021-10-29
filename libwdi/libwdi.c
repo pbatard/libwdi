@@ -1154,30 +1154,31 @@ static long wdi_tokenize_resource(const char* resource_name, char** dst, const t
 static long wdi_tokenize_file(const char* src, char** dst, const token_entity_t* token_entities,
 							  const char* tok_prefix, const char* tok_suffix, int recursive)
 {
-	long ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
-
 	FILE* fd = NULL;
+	long size, ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
 	char* buffer = NULL;
 
 	fd = fopen(src, "r");
-	if (fd) {
-		fseek(fd, 0L, SEEK_END);
-		long size = ftell(fd);
-		fseek(fd, 0L, SEEK_SET);
-
-		buffer = (char*)malloc(size);
-		if (buffer == NULL) {
-			wdi_err("Could not allocate tokenization buffer");
-			ret = WDI_ERROR_RESOURCE;
-			goto out;
-		}
-		if (fread(buffer, 1, size, fd) < 0) {
-			wdi_err("Could not read file to tokenize");
-			ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
-			goto out;
-		}
-		ret = tokenize_string(buffer, size, dst, token_entities, tok_prefix, tok_suffix, recursive);
+	if (fd == NULL)
+		goto out;
+	fseek(fd, 0L, SEEK_END);
+	size = ftell(fd);
+	if (size < 0)
+		goto out;
+	fseek(fd, 0L, SEEK_SET);
+	// +1  for NUL terminator since we pass the whole file as a text string
+	buffer = (char*)calloc(size + 1, 1);
+	if (buffer == NULL) {
+		wdi_err("Could not allocate tokenization buffer");
+		ret = WDI_ERROR_RESOURCE;
+		goto out;
 	}
+	if (fread(buffer, 1, size, fd) != size) {
+		wdi_err("Could not read file to tokenize");
+		ret = -ERROR_RESOURCE_DATA_NOT_FOUND;
+		goto out;
+	}
+	ret = tokenize_string(buffer, size, dst, token_entities, tok_prefix, tok_suffix, recursive);
 
 out:
 	free(buffer);
@@ -1227,7 +1228,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 
 	// If we are dealing with a path (e.g. option 'external_inf'), remove the directory part
-	inf_name = filename(inf);
+	inf_name = (char*)filename(inf);
 
 	// Check the inf file provided and create the cat file name
 	if (strcmp(inf_name+safe_strlen(inf_name)-4, inf_ext) != 0) {
@@ -1419,7 +1420,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 		(int)driver_version[driver_type].dwFileVersionLS>>16, (int)driver_version[driver_type].dwFileVersionLS&0xFFFF);
 
 	// Tokenize the inf
-	if (options->external_inf)
+	if ((options != NULL) && (options->external_inf))
 		inf_file_size = wdi_tokenize_file(inf, &dst, inf_entities, "#", "#", 0);
 	else
 		inf_file_size = wdi_tokenize_resource(inf_template[driver_type], &dst, inf_entities, "#", "#", 0);
