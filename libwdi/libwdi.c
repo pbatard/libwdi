@@ -1720,7 +1720,8 @@ static int install_driver_internal(void* arglist)
 		static_sprintf(exeargs, "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
-		static_sprintf(exename, "\"%s\\%s\\\\install-filter.exe\"", path, is_x64?"amd64":"x86");
+		static_strcat(path, is_x64 ? "\\amd64" : "\\x86");
+		static_sprintf(exename, "\"%s\\install-filter.exe\"", path);
 		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
 			// Device already has the libusb-win32 filter => remove
 			static_strcpy(exeargs, "uninstall -d=");
