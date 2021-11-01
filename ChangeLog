@@ -1,6 +1,19 @@
 For the latest changes, please visit:
   https://github.com/pbatard/libwdi/commits/master
 
+o v1.4.1 (2021.11.01)
+  New features:
+  - add a new 'external_inf' boolean option to wdi_options_prepare_driver
+    to allow the use of an external .inf instead of the embedded ones
+  Bugfixes:
+  - prevent an infinite loop when a certificate cannot be deleted
+  - fix the use of -w option in wdi-simple
+  - fix error when trying to install libusb0.sys as a filter-driver
+  Improvements:
+  - improve Windows version reporting for Windows 11
+  - stop on .cat signing error if test signing is not enabled
+  - add an explicit error for code 0x109 (for Windows 11 Insider builds)
+
 o v1.4.0 (2021.09.04)
   Bugfixes:
   - fix breakage when providing a user driver

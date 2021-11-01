@@ -16,36 +16,40 @@ if [ -x ./_detect-amend.sh ]; then
 	. ./_detect-amend.sh
 fi
 
-VER=`git log --oneline | wc -l`
+BUILD=`git rev-list HEAD --count`
 # adjust so that we match the github commit count
-TAGVER=`expr $VER + 1`
+((BUILD++))
 # there may be a better way to prevent improper nano on amend. For now the detection
 # of a .amend file in the current directory will do
 if [ -f ./.amend ]; then
-	TAGVER=`expr $TAGVER - 1`
+	((BUILD--))
 	rm ./.amend;
 fi
-echo "setting nano to $TAGVER"
+echo "setting nano to $BUILD"
 
-cat > cmd.sed <<\_EOF
-s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),.*,0/ FILEVERSION \1,\2,@@TAGVER@@,0/
-s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),.*,0/ PRODUCTVERSION \1,\2,@@TAGVER@@,0/
-s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@TAGVER@@"/
-s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@TAGVER@@"/
-s/^\(.*\)"Zadig \(.*\)\..*"\(.*\)/\1"Zadig \2.@@TAGVER@@"\3/
+cat > _library.sed <<\_EOF
+s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ FILEVERSION \1,\2,\3,@@BUILD@@/
+s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@BUILD@@/
+s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@BUILD@@"/
+s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@BUILD@@"/
+_EOF
+
+cat > _zadig.sed <<\_EOF
+s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),.*,0/ FILEVERSION \1,\2,@@BUILD@@,0/
+s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),.*,0/ PRODUCTVERSION \1,\2,@@BUILD@@,0/
+s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@BUILD@@"/
+s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@BUILD@@"/
+s/^\(.*\)"Zadig \(.*\)\..*"\(.*\)/\1"Zadig \2.@@BUILD@@"\3/
 _EOF
 
 # First run sed to substitute our variable in the sed command file
-sed -i -e "s/@@TAGVER@@/$TAGVER/g" cmd.sed
+sed -i -e "s/@@BUILD@@/$BUILD/g" _library.sed
+sed -i -e "s/@@BUILD@@/$BUILD/g" _zadig.sed
 
 # Run sed to update the nano version, and add the modified files
-sed -i -f cmd.sed libwdi/libwdi.rc
-sed -i 's/$/\r/' libwdi/libwdi.rc
-sed -i -f cmd.sed examples/zadig.rc
-sed -i 's/$/\r/' examples/zadig.rc
-sed -i -f cmd.sed examples/zadig.h
-sed -i 's/$/\r/' examples/zadig.h
-sed -i -f cmd.sed examples/wdi-simple.rc
-sed -i 's/$/\r/' examples/wdi-simple.rc
+sed -b -i -f _library.sed libwdi/libwdi.rc
+sed -b -i -f _library.sed examples/wdi-simple.rc
+sed -b -i -f _zadig.sed examples/zadig.rc
+sed -b -i -f _zadig.sed examples/zadig.h
+rm _library.sed _zadig.sed
 git add libwdi/libwdi.rc examples/zadig.rc examples/zadig.h examples/wdi-simple.rc
-rm cmd.sed

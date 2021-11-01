@@ -38,8 +38,6 @@ _EOF
 # First run sed to substitute our variable in the sed command file
 sed -i -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" -e "s/@@MICRO@@/$MICRO/g" cmd.sed
 # Run sed to update the .rc version
-sed -i -f cmd.sed libwdi/libwdi.rc
-sed -i 's/$/\r/' libwdi/libwdi.rc
-sed -i -f cmd.sed examples/wdi-simple.rc
-sed -i 's/$/\r/' examples/wdi-simple.rc
+sed -b -i -f cmd.sed libwdi/libwdi.rc
+sed -b -i -f cmd.sed examples/wdi-simple.rc
 rm cmd.sed

@@ -31,10 +31,8 @@ s/^\(.*\)"Zadig .*\..*\.\(.*\)"\(.*\)/\1"Zadig @@MAJOR@@.@@MINOR@@.\2"\3/
 _EOF
 
 sed -i -e "s/@@MAJOR@@/$MAJOR/g" -e "s/@@MINOR@@/$MINOR/g" cmd.sed
-sed -i -f cmd.sed examples/zadig.rc
-sed -i 's/$/\r/' examples/zadig.rc
-sed -i -f cmd.sed examples/zadig.h
-sed -i 's/$/\r/' examples/zadig.h
+sed -b -i -f cmd.sed examples/zadig.rc
+sed -b -i -f cmd.sed examples/zadig.h
 
 rm cmd.sed
 

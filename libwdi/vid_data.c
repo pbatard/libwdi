@@ -29,7 +29,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2021.07.19
+ * Version: 2021.10.24
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -3103,6 +3103,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x25c6, "Vitus Audio (AVA Group A/S)" },
 	{ 0x25c8, "Visual Planet Ltd" },
 	{ 0x25da, "Netatmo" },
+	{ 0x25dd, "Bit4id Srl" },
 	{ 0x25e3, "Lumigon" },
 	{ 0x25f0, "ShanWan" },
 	{ 0x25fb, "Pentax Ricoh Imaging Co., Ltd" },
