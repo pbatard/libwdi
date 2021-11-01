@@ -161,8 +161,8 @@
 			</p>
 			<p><b>Note:</b> <i>"libusb-based"</i> above means an application that uses either <a href="https://libusb.info">libusb</a>, <a href="https://sourceforge.net/p/libusb-win32/wiki/Home/">libusb-win32</a> or <a href="http://libusbk.sourceforge.net/UsbK3/">libusbK</a>.</p>
 			<h2 style="border: 4px solid #a09a8a;"><span style="font-size: 133%">Download</span></h2>
-				<p><b>Updated 2021.09.04:</b></p>
-				<p><ul><li><span style="font-size: 133%"><b><a href="https://github.com/pbatard/libwdi/releases/download/b755/zadig-2.6.exe">Zadig 2.6</a></b></span> (4.9 MB)</li>
+				<p><b>Updated 2021.11.01:</b></p>
+				<p><ul><li><span style="font-size: 133%"><b><a href="https://github.com/pbatard/libwdi/releases/download/v1.4.1/zadig-2.7.exe">Zadig 2.7</a></b></span> (4.9 MB)</li>
 				<li><a href="/downloads/">Other versions</a></li>
 				</ul></p>
 			<h4>System Requirements:</h4>
@@ -183,9 +183,12 @@
 			<a name="versions"></a>
 			<h2>Changelog</h2>
 			<ul>
-				<li><b>Version 2.6</b> (2021.09.04)<ul>
-					<li>Work around Windows corrupting the key containers</li>
-					<li>Improve error reporting</li>
+				<li><b>Version 2.7</b> (2021.11.01)<ul>
+					<li>Improve Windows version reporting</li>
+					<li>Prevent an infinite loop when a certificate cannot be deleted</li>
+					<li>Fix an error when trying to install <code>libusb0.sys</code> as a filter driver</li>
+					<li>Don't continue on <code>.cat</code> signing errors unless test signing is enabled</li>
+					<li>Add a more explicit error for incompatible Windows 11 Insider builds</li>
 					<li>Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.6.0, libusbK v3.1.0.0 & usbser (native)</li>
 				</ul></li>
 				<li><b><a href="https://github.com/pbatard/libwdi/blob/master/examples/zadig_README.creole">Other Versions</a></b></li>
@@ -198,7 +201,7 @@
 				If you are a developer, you are very much encouraged to tinker with Zadig/libwdi and submit patches.</p>
 		</div>
  		<div class="footer">
-		Copyright © 2013-2020 <a href="https://pete.akeo.ie">Pete Batard</a><br/>
+		Copyright © 2013-2021 <a href="https://pete.akeo.ie">Pete Batard</a><br/>
 		Hosting by <a href="https://github.com">GitHub</a>
 		</div>
 	</div>
