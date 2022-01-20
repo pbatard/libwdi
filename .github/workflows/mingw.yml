@@ -29,7 +29,7 @@ env:
 
 jobs:
   MinGW-Build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     strategy:
       matrix:
@@ -50,6 +50,7 @@ jobs:
         install: >-
           mingw-w64-${{ matrix.env }}-toolchain
           base-devel
+          autotools
           git
     - name: Checkout repository
       uses: actions/checkout@v2

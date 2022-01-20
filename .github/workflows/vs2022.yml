@@ -1,4 +1,4 @@
-name: VS2019
+name: VS2022
 
 on: 
   push:
@@ -28,8 +28,8 @@ env:
   BUILD_MACROS: '"WDK_DIR=\"../wdk/Windows Kits/8.0\";LIBUSB0_DIR=\"../libusb0\";LIBUSBK_DIR=\"../libusbk/bin\""'
 
 jobs:
-  VS2019-Build:
-    runs-on: windows-latest
+  VS2022-Build:
+    runs-on: windows-2022
 
     steps:
     - name: Checkout repository
@@ -68,7 +68,7 @@ jobs:
       uses: actions/upload-artifact@v2
       if: ${{ github.event_name == 'push' }}
       with:
-        name: VS2019
+        name: VS2022
         path: ./*/*/examples/*.exe
 
     - name: Display SHA-256
