@@ -1,6 +1,7 @@
 /*
- * Library for WinUSB/libusb automated driver installation
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Library for USB automated driver installation
+ * Copyright (c) 2010-2022 Pete Batard <pete@akeo.ie>
+ * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,13 +42,13 @@
 
 #define safe_free(p) do {free((void*)p); p = NULL;} while(0)
 #define safe_min(a, b) min((size_t)(a), (size_t)(b))
-#define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, src, safe_min(count, dst_max)); \
+#define safe_strcp(dst, dst_max, src, count) do {memcpy(dst, (src), safe_min(count, dst_max)); \
 	((char*)dst)[safe_min(count, dst_max)-1] = 0;} while(0)
-#define safe_strcpy(dst, dst_max, src) safe_strcp(dst, dst_max, src, safe_strlen(src)+1)
-#define static_strcpy(dst, src) safe_strcpy(dst, sizeof(dst), src)
-#define safe_strncat(dst, dst_max, src, count) strncat(dst, src, safe_min(count, dst_max - safe_strlen(dst) - 1))
+#define safe_strcpy(dst, dst_max, src) safe_strcp(dst, dst_max, (src), safe_strlen(src)+1)
+#define static_strcpy(dst, src) safe_strcpy(dst, sizeof(dst), (src))
+#define safe_strncat(dst, dst_max, src, count) strncat(dst, (src), safe_min(count, dst_max - safe_strlen(dst) - 1))
 #define safe_strcat(dst, dst_max, src) safe_strncat(dst, dst_max, src, safe_strlen(src)+1)
-#define static_strcat(dst, src) safe_strcat(dst, sizeof(dst), src)
+#define static_strcat(dst, src) safe_strcat(dst, sizeof(dst), (src))
 #define safe_strcmp(str1, str2) strcmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_stricmp(str1, str2) _stricmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2))
 #define safe_strncmp(str1, str2, count) strncmp(((str1==NULL)?"<NULL>":str1), ((str2==NULL)?"<NULL>":str2), count)

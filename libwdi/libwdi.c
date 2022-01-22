@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2022 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -39,6 +39,7 @@
 #include <fcntl.h>
 #include <wincrypt.h>
 #include <winternl.h>
+#include <assert.h>
 
 #include "installer.h"
 #include "libwdi.h"
@@ -240,32 +241,32 @@ void GetWindowsVersion(void)
 			ws = (vi.wProductType <= VER_NT_WORKSTATION);
 			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
 			switch (nWindowsVersion) {
-			case 0x51: w = "XP";
+			case WINDOWS_XP: w = "XP";
 				break;
-			case 0x52: w = (!GetSystemMetrics(89) ? "Server 2003" : "Server 2003_R2");
+			case WINDOWS_2003: w = (ws ? "XP_64" : (!GetSystemMetrics(89) ? "Server 2003" : "Server 2003_R2"));
 				break;
-			case 0x60: w = (ws ? "Vista" : "Server 2008");
+			case WINDOWS_VISTA: w = (ws ? "Vista" : "Server 2008");
 				break;
-			case 0x61: w = (ws ? "7" : "Server 2008_R2");
+			case WINDOWS_7: w = (ws ? "7" : "Server 2008_R2");
 				break;
-			case 0x62: w = (ws ? "8" : "Server 2012");
+			case WINDOWS_8: w = (ws ? "8" : "Server 2012");
 				break;
-			case 0x63: w = (ws ? "8.1" : "Server 2012_R2");
+			case WINDOWS_8_1: w = (ws ? "8.1" : "Server 2012_R2");
 				break;
-			case 0x64: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
+			case WINDOWS_10_PREVIEW1: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
 				break;
 				// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
-			case 0xA0:
+			case WINDOWS_10:
 				if (vi.dwBuildNumber < 20000) {
 					w = (ws ? "10" : ((vi.dwBuildNumber < 17763) ? "Server 2016" : "Server 2019"));
 					break;
 				}
-				nWindowsVersion = 0xB0;
+				nWindowsVersion = WINDOWS_11;
 				// Fall through
-			case 0xB0: w = (ws ? "11" : "Server 2022");
+			case WINDOWS_11: w = (ws ? "11" : "Server 2022");
 				break;
 			default:
-				if (nWindowsVersion < 0x51)
+				if (nWindowsVersion < WINDOWS_XP)
 					nWindowsVersion = WINDOWS_UNSUPPORTED;
 				else
 					w = "12 or later";
@@ -315,37 +316,38 @@ void GetWindowsVersion(void)
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
  */
-char *windows_error_str(uint32_t retval)
+char *windows_error_str(DWORD retval)
 {
-static char err_string[STR_BUFFER_SIZE];
+	static char err_string[STR_BUFFER_SIZE];
+	DWORD size, presize, error_code, format_error;
 
-	DWORD size;
-	size_t i;
-	uint32_t error_code, format_error;
+	error_code = retval ? retval : GetLastError();
 
-	error_code = retval?retval:GetLastError();
+	static_sprintf(err_string, "[0x%08lX] ", error_code);
+	presize = (DWORD)strlen(err_string);
 
-	static_sprintf(err_string, "[#%08X] ", error_code);
-
-	size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error_code,
-		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), &err_string[safe_strlen(err_string)],
-		STR_BUFFER_SIZE - (DWORD)safe_strlen(err_string), NULL);
+	size = FormatMessageU(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		HRESULT_CODE(error_code), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		&err_string[presize], (DWORD)(sizeof(err_string) - strlen(err_string)), NULL);
 	if (size == 0) {
 		format_error = GetLastError();
-		if (format_error)
+		if ((format_error) && (format_error != ERROR_MR_MID_NOT_FOUND) && (format_error != ERROR_MUI_FILE_NOT_LOADED))
 			static_sprintf(err_string, "Windows error code 0x%08lX (FormatMessage error code 0x%08lX)",
 				error_code, format_error);
 		else
-			static_sprintf(err_string, "Unknown error code 0x%08lX", error_code);
+			static_sprintf(err_string, "Windows error code 0x%08lX", error_code);
 	} else {
-		// Remove CR/LF terminators
-		for (i=safe_strlen(err_string)-1; ((err_string[i]==0x0A) || (err_string[i]==0x0D)); i--) {
-			err_string[i] = 0;
-		}
+		// Microsoft may suffix CRLF to error messages, which we need to remove...
+		assert(presize > 2);
+		size += presize - 2;
+		// Cannot underflow if the above assert passed since our first char is neither of the following
+		while ((err_string[size] == 0x0D) || (err_string[size] == 0x0A) || (err_string[size] == 0x20))
+			err_string[size--] = 0;
 	}
+
+	SetLastError(error_code);	// Make sure we don't change the errorcode on exit
 	return err_string;
 }
-
 
 // Retrieve the SID of the current user. The returned PSID must be freed by the caller using LocalFree()
 static PSID GetSid(void) {

@@ -23,6 +23,6 @@ create_def()
 set -e
 
 ./bootstrap.sh
-./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-wdkdir="C:/Program Files (x86)/Windows Kits/10" --with-wdfver=1011 --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin" $*
+./configure --enable-toggable-debug --enable-examples-build --disable-debug --with-wdkdir="C:/Program Files (x86)/Windows Kits/8.0" --with-wdfver=1011 --with-libusb0="D:/libusb-win32" --with-libusbk="D:/libusbK/bin" $*
 # rebuild .def, if sed is available
 type -P sed &>/dev/null && create_def
