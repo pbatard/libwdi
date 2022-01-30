@@ -1194,6 +1194,8 @@ out:
 int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const char* path,
 								  const char* inf, struct wdi_options_prepare_driver* options)
 {
+	PF_DECL_LIBRARY(Ntdll);
+	PF_TYPE_DECL(NTAPI, NTSTATUS, NtQuerySystemInformation, (SYSTEM_INFORMATION_CLASS, PVOID, ULONG, PULONG));
 	const wchar_t bom = 0xFEFF;
 #if defined(ENABLE_DEBUG_LOGGING) || defined(INCLUDE_DEBUG_LOGGING)
 	const char* driver_display_name[WDI_NB_DRIVERS] = { "WinUSB", "libusb0.sys", "libusbK.sys", "Generic USB CDC", "user driver" };
@@ -1498,10 +1500,13 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 
 		// Check if testsigning is enabled
 		// https://social.msdn.microsoft.com/Forums/Windowsapps/en-US/e6c1be93-7003-4594-b8e4-18ab4a75d273/detecting-testsigning-onoff-via-api
-		sci.Length = sizeof(sci);
-		if (NtQuerySystemInformation((SYSTEM_INFORMATION_CLASS)0x67, &sci, sizeof(sci), &dwcbSz) >= 0 && dwcbSz == sizeof(sci))
-			is_test_signing_enabled = !!(sci.CodeIntegrityOptions & 0x02);
-		wdi_info("Test signing is: %s", is_test_signing_enabled ? "Enabled" : "Disabled");
+		PF_INIT(NtQuerySystemInformation, Ntdll);
+		if (pfNtQuerySystemInformation != NULL) {
+			sci.Length = sizeof(sci);
+			if (pfNtQuerySystemInformation((SYSTEM_INFORMATION_CLASS)0x67, &sci, sizeof(sci), &dwcbSz) >= 0 && dwcbSz == sizeof(sci))
+				is_test_signing_enabled = !!(sci.CodeIntegrityOptions & 0x02);
+			wdi_info("Test signing is: %s", is_test_signing_enabled ? "Enabled" : "Disabled");
+		}
 
 		// Failures on the following are fatal on Windows 10 when test signing is not enabled
 		if (!CreateCat(cat_path, hw_id, drv_path, cat_list, nb_entries)) {

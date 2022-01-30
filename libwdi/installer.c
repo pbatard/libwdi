@@ -1,6 +1,6 @@
 /*
- * Library for WinUSB/libusb automated driver installation
- * Copyright (c) 2010-2013 Pete Batard <pete@akeo.ie>
+ * Library for USB automated driver installation
+ * Copyright (c) 2010-2022 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -689,7 +689,7 @@ BOOL disable_system_restore(BOOL enabled)
 	LONG r;
 	DWORD disp, regtype, val, val_size=sizeof(DWORD);
 	HRESULT hr;
-	IGroupPolicyObject* pLGPO;
+	IGroupPolicyObject* pLGPO = NULL;
 	static DWORD original_val = -1;		// -1 = key doesn't exist
 	HKEY machine_key = NULL, disable_system_restore_key = NULL;
 	// MSVC is finicky about these ones => redefine them
