@@ -316,7 +316,7 @@ void GetWindowsVersion(void)
  * Converts a windows error to human readable string
  * uses retval as errorcode, or, if 0, use GetLastError()
  */
-char *windows_error_str(DWORD retval)
+char *wdi_windows_error_str(DWORD retval)
 {
 	static char err_string[STR_BUFFER_SIZE];
 	DWORD size, presize, error_code, format_error;
@@ -358,13 +358,13 @@ static PSID GetSid(void) {
 	char* psid_string = NULL;
 
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
-		wdi_err("OpenProcessToken failed: %s", windows_error_str(0));
+		wdi_err("OpenProcessToken failed: %s", wdi_windows_error_str(0));
 		return NULL;
 	}
 
 	if (!GetTokenInformation(token, TokenUser, tu, 0, &len)) {
 		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-			wdi_err("GetTokenInformation (pre) failed: %s", windows_error_str(0));
+			wdi_err("GetTokenInformation (pre) failed: %s", wdi_windows_error_str(0));
 			return NULL;
 		}
 		tu = (TOKEN_USER*)calloc(1, len);
@@ -380,11 +380,11 @@ static PSID GetSid(void) {
 		 * The workaround? Convert to string then back to PSID
 		 */
 		if (!ConvertSidToStringSidA(tu->User.Sid, &psid_string)) {
-			wdi_err("Unable to convert SID to string: %s", windows_error_str(0));
+			wdi_err("Unable to convert SID to string: %s", wdi_windows_error_str(0));
 			ret = NULL;
 		} else {
 			if (!ConvertStringSidToSidA(psid_string, &ret)) {
-				wdi_err("Unable to convert string back to SID: %s", windows_error_str(0));
+				wdi_err("Unable to convert string back to SID: %s", wdi_windows_error_str(0));
 				ret = NULL;
 			}
 			// MUST use LocalFree()
@@ -392,7 +392,7 @@ static PSID GetSid(void) {
 		}
 	} else {
 		ret = NULL;
-		wdi_err("GetTokenInformation (real) failed: %s", windows_error_str(0));
+		wdi_err("GetTokenInformation (real) failed: %s", wdi_windows_error_str(0));
 	}
 	free(tu);
 	return ret;
@@ -418,7 +418,7 @@ static int check_dir(const char* path, BOOL create)
 		case ERROR_PATH_NOT_FOUND:
 			break;
 		default:
-			wdi_err("Unable to read file attributes %s", windows_error_str(0));
+			wdi_err("Unable to read file attributes %s", wdi_windows_error_str(0));
 			return WDI_ERROR_ACCESS;
 		}
 	} else {
@@ -447,7 +447,7 @@ static int check_dir(const char* path, BOOL create)
 		s_attr.lpSecurityDescriptor = &s_desc;
 		ps = &s_attr;
 	} else {
-		wdi_err("Could not set security descriptor: %s", windows_error_str(0));
+		wdi_err("Could not set security descriptor: %s", wdi_windows_error_str(0));
 	}
 
 	// SHCreateDirectoryEx creates subdirectories as required
@@ -475,7 +475,7 @@ static int check_dir(const char* path, BOOL create)
 		wdi_err("Directory name '%s' is too long", path);
 		return WDI_ERROR_INVALID_PARAM;
 	default:
-		wdi_err("Unable to create directory '%s' (%s)", path, windows_error_str(0));
+		wdi_err("Unable to create directory '%s' (%s)", path, wdi_windows_error_str(0));
 		return WDI_ERROR_ACCESS;
 	}
 
@@ -524,7 +524,7 @@ static FILE *fopen_as_userU(const char *filename, const char *mode)
 		s_attr.lpSecurityDescriptor = &s_desc;
 		ps = &s_attr;
 	} else {
-		wdi_err("Could not set security descriptor: %s", windows_error_str(0));
+		wdi_err("Could not set security descriptor: %s", wdi_windows_error_str(0));
 	}
 
 	handle = CreateFileU(filename, access_mode, FILE_SHARE_READ,
@@ -610,7 +610,7 @@ int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
 
 	fd = fopen_as_userU(filename, "w");
 	if (fd == NULL) {
-		wdi_warn("Failed to create file '%s' (%s)", filename, windows_error_str(0));
+		wdi_warn("Failed to create file '%s' (%s)", filename, wdi_windows_error_str(0));
 		r = WDI_ERROR_RESOURCE;
 		goto out;
 	}
@@ -981,7 +981,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 			if (!SetupDiGetDeviceRegistryPropertyW(dev_info, &dev_info_data, SPDRP_DEVICEDESC,
 				&reg_type, (BYTE*)desc, 2*MAX_DESC_LENGTH, &size) || (desc[0] == 0)) {
 				wdi_dbg("Could not read device description for %d: %s",
-					i, windows_error_str(0));
+					i, wdi_windows_error_str(0));
 				safe_swprintf(desc, MAX_DESC_LENGTH, L"Unknown Device #%d", unknown_count++);
 			}
 		}
@@ -1121,7 +1121,7 @@ static int extract_binaries(const char* path)
 
 		fd = fopen_as_userU(filename, "w");
 		if (fd == NULL) {
-			wdi_err("Could not create file '%s' (%s)", filename, windows_error_str(0));
+			wdi_err("Could not create file '%s' (%s)", filename, wdi_windows_error_str(0));
 			return WDI_ERROR_RESOURCE;
 		}
 
@@ -1706,7 +1706,7 @@ static int install_driver_internal(void* arglist)
 	pipe_handle = CreateNamedPipeA(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
 	if (pipe_handle == INVALID_HANDLE_VALUE) {
-		wdi_err("Could not create read pipe: %s", windows_error_str(0));
+		wdi_err("Could not create read pipe: %s", wdi_windows_error_str(0));
 		r = WDI_ERROR_RESOURCE;
 		goto out;
 	}
@@ -1743,7 +1743,7 @@ static int install_driver_internal(void* arglist)
 		stdout_w = CreateFileA(INSTALLER_PIPE_NAME, GENERIC_WRITE, FILE_SHARE_WRITE,
 			&sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, NULL);
 		if (stdout_w == INVALID_HANDLE_VALUE) {
-			wdi_err("Could not create stdout endpoint: %s", windows_error_str(0));
+			wdi_err("Could not create stdout endpoint: %s", wdi_windows_error_str(0));
 			r = WDI_ERROR_RESOURCE;
 			goto out;
 		}
@@ -1786,7 +1786,7 @@ static int install_driver_internal(void* arglist)
 			r = WDI_ERROR_NOT_FOUND;
 			goto out;
 		default:
-			wdi_err("ShellExecuteEx failed: %s", windows_error_str(err));
+			wdi_err("ShellExecuteEx failed: %s", wdi_windows_error_str(err));
 			r = WDI_ERROR_NEEDS_ADMIN;
 			goto out;
 		}
@@ -1808,7 +1808,7 @@ static int install_driver_internal(void* arglist)
 		static_strcat(exename, " ");
 		static_strcat(exename, exeargs);
 		if (!CreateProcessU(NULL, exename, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, path, &si, &pi)) {
-			wdi_err("CreateProcess failed: %s", windows_error_str(0));
+			wdi_err("CreateProcess failed: %s", wdi_windows_error_str(0));
 			r = WDI_ERROR_NEEDS_ADMIN; goto out;
 		}
 		handle[1] = pi.hProcess;
@@ -1869,7 +1869,7 @@ static int install_driver_internal(void* arglist)
 							}
 							break;
 						default:
-							wdi_err("Could not read from pipe (async): %s", windows_error_str(0));
+							wdi_err("Could not read from pipe (async): %s", wdi_windows_error_str(0));
 							break;
 						}
 					}
@@ -1883,7 +1883,7 @@ static int install_driver_internal(void* arglist)
 					// installer process terminated
 					r = check_completion(handle[1]); goto out;
 				default:
-					wdi_err("Could not read from pipe (wait): %s", windows_error_str(0));
+					wdi_err("Could not read from pipe (wait): %s", wdi_windows_error_str(0));
 					break;
 				}
 				break;
@@ -1900,7 +1900,7 @@ static int install_driver_internal(void* arglist)
 				}
 				break;
 			default:
-				wdi_err("Could not read from pipe (sync): %s", windows_error_str(0));
+				wdi_err("Could not read from pipe (sync): %s", wdi_windows_error_str(0));
 				break;
 			}
 		}

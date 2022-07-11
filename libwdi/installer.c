@@ -526,7 +526,7 @@ out:
 	_endthread();
 }
 
-static char *windows_error_str(uint32_t retval)
+static char *wdi_windows_error_str(uint32_t retval)
 {
 static char err_string[STR_BUFFER_SIZE];
 
@@ -677,7 +677,7 @@ static __inline int process_error(DWORD r, char* path) {
 		return WDI_ERROR_OTHER;
 	default:
 		plog("Unhandled error 0x%X (%d)", r, r);
-		plog(windows_error_str(r));
+		plog(wdi_windows_error_str(r));
 		return WDI_ERROR_OTHER;
 	}
 }
