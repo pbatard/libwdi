@@ -92,7 +92,7 @@ PF_TYPE_DECL(WINAPI, HFONT, CreateFontA, (int, int, int, int, int, DWORD, DWORD,
 PF_TYPE_DECL(WINAPI, HGDIOBJ, GetStockObject, (int));
 PF_TYPE_DECL(WINAPI, int, SetBkMode, (HDC, int));
 
-extern char *windows_error_str(uint32_t retval);
+extern char *wdi_windows_error_str(uint32_t retval);
 
 /*
  * Detect if a Windows Security prompt is active, by enumerating the
@@ -189,7 +189,7 @@ static void init_children(HWND hDlg)
 		app_instance,
 		NULL);
 	if (hProgressBar == NULL) {
-		wdi_err("Unable to create progress bar: %s", windows_error_str(0));
+		wdi_err("Unable to create progress bar: %s", wdi_windows_error_str(0));
 	}
 
 	// Start progress animation
@@ -205,7 +205,7 @@ static void init_children(HWND hDlg)
 		app_instance,
 		NULL);
 	if (hProgressBar == NULL) {
-		wdi_err("Unable to create progress text: %s", windows_error_str(0));
+		wdi_err("Unable to create progress text: %s", wdi_windows_error_str(0));
 	}
 
 	// Set the font to MS Dialog default
@@ -383,7 +383,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 
 		if (!RegisterClassEx(&wc)) {
-			wdi_err("can't register class %s", windows_error_str(0));
+			wdi_err("can't register class %s", wdi_windows_error_str(0));
 			msg.wParam = WDI_ERROR_RESOURCE;
 			goto out;
 		}
@@ -395,7 +395,7 @@ int run_with_progress_bar(HWND hWnd, int(*function)(void*), void* arglist) {
 		WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_CAPTION | WS_POPUP | WS_VISIBLE | WS_THICKFRAME,
 		100, 100, 287, 102, hWnd, NULL, app_instance, NULL);
 	if (hDlg == NULL) {
-		wdi_err("Unable to create progress dialog: %s", windows_error_str(0));
+		wdi_err("Unable to create progress dialog: %s", wdi_windows_error_str(0));
 		msg.wParam = WDI_ERROR_RESOURCE;
 		goto out;
 	}

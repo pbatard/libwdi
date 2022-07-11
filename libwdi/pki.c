@@ -363,7 +363,7 @@ typedef BOOL (WINAPI *CryptCATAdminCalcHashFromFileHandle_t)(
 	DWORD dwFlags
 );
 
-extern char *windows_error_str(uint32_t retval);
+extern char *wdi_windows_error_str(uint32_t retval);
 
 /*
  * FormatMessage does not handle PKI errors
@@ -379,7 +379,7 @@ char* winpki_error_str(uint32_t retval)
 		return "Sharing violation - Some data handles to this file are still open.";
 
 	if ((error_code >> 16) != 0x8009)
-		return windows_error_str(error_code);
+		return wdi_windows_error_str(error_code);
 
 	switch (error_code) {
 	case NTE_BAD_UID:
