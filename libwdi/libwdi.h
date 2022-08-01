@@ -25,7 +25,7 @@
  */
 #define WDI_MAX_STRLEN		200
 
-#if defined(DLL_EXPORT)
+#if defined(LIBWDI_DLL_EXPORT)
 #define LIBWDI_EXP __declspec(dllexport)
 #else
 #define LIBWDI_EXP
