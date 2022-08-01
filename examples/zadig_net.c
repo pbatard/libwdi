@@ -267,6 +267,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 		hostname, sizeof(hostname), 0, NULL, 1, urlpath, sizeof(urlpath), NULL, 1};
 	size_t last_slash;
 	int i;
+	int windows_version = wdi_get_windows_version();
 
 	DownloadStatus = 404;
 	if (hProgressDialog != NULL) {
@@ -313,7 +314,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	}
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion>>4, nWindowsVersion&0x0F, wdi_is_x64()?"; WOW64":"");
+		windows_version>>4, windows_version&0x0F, wdi_is_x64()?"; WOW64":"");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL) {
 		dprintf("Could not open Internet session: %s\n", WinInetErrorString());
@@ -462,6 +463,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 	SYSTEMTIME ServerTime, LocalTime;
 	FILETIME FileTime;
 	int64_t local_time = 0, reg_time, server_time, update_interval;
+	int windows_version = wdi_get_windows_version();
 
 	update_check_in_progress = TRUE;
 	verbose = ReadRegistryKey32(REGKEY_HKCU, REGKEY_VERBOSE_UPDATES);
@@ -513,7 +515,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion >> 4, nWindowsVersion & 0x0F, wdi_is_x64() ? "; WOW64" : "");
+		windows_version >> 4, windows_version & 0x0F, wdi_is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL)
 		goto out;

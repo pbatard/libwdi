@@ -974,7 +974,7 @@ void init_dialog(HWND hDlg)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
 	dprintf(APP_VERSION);
-	dprintf(WindowsVersionStr);
+	dprintf(wdi_get_windows_version_str());
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETLIMITTEXT, 4, 0);
@@ -1751,11 +1751,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return 0;
 	}
 
-	// Set the Windows version
-	GetWindowsVersion();
-
 	// Alert users if they are running versions older than Windows 7
-	if (nWindowsVersion < WINDOWS_7) {
+	if (wdi_get_windows_version() < WINDOWS_7) {
 		MessageBoxA(NULL, "This version of Zadig can only be run on Windows 7 or later",
 			"Incompatible version", MB_ICONSTOP);
 		CloseHandle(mutex);

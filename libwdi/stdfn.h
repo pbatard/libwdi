@@ -28,27 +28,6 @@
 #define WDI_COMPANY_NAME            "Akeo Consulting"
 #define WDI_APPLICATION_NAME        "libwdi"
 
-// Windows versions
-enum WindowsVersion {
-	WINDOWS_UNDEFINED = -1,
-	WINDOWS_UNSUPPORTED = 0,
-	WINDOWS_XP = 0x51,
-	WINDOWS_2003 = 0x52,	// Also XP_64
-	WINDOWS_VISTA = 0x60,	// Also Server 2008
-	WINDOWS_7 = 0x61,		// Also Server 2008_R2
-	WINDOWS_8 = 0x62,		// Also Server 2012
-	WINDOWS_8_1 = 0x63,		// Also Server 2012_R2
-	WINDOWS_10_PREVIEW1 = 0x64,
-	WINDOWS_10 = 0xA0,		// Also Server 2016, also Server 2019
-	WINDOWS_11 = 0xB0,		// Also Server 2022
-	WINDOWS_MAX
-};
-
-extern int nWindowsVersion;
-extern char WindowsVersionStr[128];
-
-void GetWindowsVersion(void);
-
 /* Read a string registry key value */
 static __inline BOOL ReadRegistryStr(HKEY key_root, const char* key_name, char* str, DWORD len)
 {

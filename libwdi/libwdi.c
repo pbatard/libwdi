@@ -60,12 +60,9 @@ static const char* driver_name[WDI_NB_DRIVERS-1] = {"winusbcoinstaller2.dll", "l
 static const char* inf_template[WDI_NB_DRIVERS-1] = {"winusb.inf.in", "libusb0.inf.in", "libusbk.inf.in", "usbser.inf.in"};
 static const char* cat_template[WDI_NB_DRIVERS-1] = {"winusb.cat.in", "libusb0.cat.in", "libusbk.cat.in", "usbser.cat.in"};
 static const char* ms_compat_id[WDI_NB_DRIVERS-1] = {"MS_COMP_WINUSB", "MS_COMP_LIBUSB0", "MS_COMP_LIBUSBK", "MS_COMP_USBSER"};
-int nWindowsVersion = WINDOWS_UNDEFINED;
-int nWindowsBuildNumber = -1;
-char WindowsVersionStr[128] = "Windows ";
-
-// Detect Windows version
-#define GET_WINDOWS_VERSION do { if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
+static int nWindowsVersion = WINDOWS_UNDEFINED;
+static int nWindowsBuildNumber = -1;
+static char WindowsVersionStr[128] = "Windows ";
 
 BOOL LIBWDI_API wdi_is_x64(void)
 {
@@ -181,7 +178,7 @@ static const char* GetEdition(DWORD ProductType)
 /*
  * Modified from smartmontools' os_win32.cpp
  */
-void GetWindowsVersion(void)
+static void GetWindowsVersion(void)
 {
 	OSVERSIONINFOEXA vi, vi2;
 	DWORD dwProductType;
@@ -310,6 +307,18 @@ void GetWindowsVersion(void)
 		else
 			safe_sprintf(vptr, vlen, " (Build %d)", nWindowsBuildNumber);
 	}
+}
+
+int LIBWDI_API wdi_get_windows_version(void) {
+	if (nWindowsVersion == WINDOWS_UNDEFINED)
+		GetWindowsVersion();
+	return nWindowsVersion;
+}
+
+const char* LIBWDI_API wdi_get_windows_version_str(void) {
+	if (nWindowsVersion == WINDOWS_UNDEFINED)
+		GetWindowsVersion();
+	return WindowsVersionStr;
 }
 
 /*
@@ -831,8 +840,7 @@ int LIBWDI_API wdi_create_list(struct wdi_device_info** list,
 
 	MUTEX_START;
 
-	GET_WINDOWS_VERSION;
-	if (nWindowsVersion < WINDOWS_7) {
+	if (wdi_get_windows_version() < WINDOWS_7) {
 		wdi_err("This version of Windows is no longer supported");
 		r = WDI_ERROR_NOT_SUPPORTED;
 		goto out;
@@ -1218,8 +1226,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 
 	MUTEX_START;
 
-	GET_WINDOWS_VERSION;
-	if (nWindowsVersion < WINDOWS_7) {
+	if (wdi_get_windows_version() < WINDOWS_7) {
 		wdi_err("This version of Windows is no longer supported");
 		r = WDI_ERROR_NOT_SUPPORTED;
 		goto out;
@@ -1649,8 +1656,7 @@ static int install_driver_internal(void* arglist)
 
 	MUTEX_START;
 
-	GET_WINDOWS_VERSION;
-	if (nWindowsVersion < WINDOWS_7) {
+	if (wdi_get_windows_version() < WINDOWS_7) {
 		wdi_err("This version of Windows is no longer supported");
 		r = WDI_ERROR_NOT_SUPPORTED;
 		goto out;
@@ -1938,8 +1944,7 @@ int LIBWDI_API wdi_install_trusted_certificate(const char* cert_name,
 	HWND hWnd = NULL;
 	BOOL disable_warning = FALSE;
 
-	GET_WINDOWS_VERSION;
-	if (nWindowsVersion < WINDOWS_7) {
+	if (wdi_get_windows_version() < WINDOWS_7) {
 		wdi_err("This version of Windows is no longer supported");
 		r = WDI_ERROR_NOT_SUPPORTED;
 		goto out;

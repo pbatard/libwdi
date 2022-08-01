@@ -830,8 +830,7 @@ PCCERT_CONTEXT CreateSelfSignedCert(LPCSTR szCertSubject)
 	memset(&SignatureAlgorithm, 0, sizeof(SignatureAlgorithm));
 
 	// Windows 7 does not properly support SHA256 and may show a "Trusted Publisher" dialog unless SHA1 is used
-	GetWindowsVersion();
-	SignatureAlgorithm.pszObjId = (nWindowsVersion > WINDOWS_7) ? szOID_RSA_SHA256RSA : szOID_RSA_SHA1RSA;
+	SignatureAlgorithm.pszObjId = (wdi_get_windows_version() > WINDOWS_7) ? szOID_RSA_SHA256RSA : szOID_RSA_SHA1RSA;
 
 	// Create self-signed certificate
 	pCertContext = pfCertCreateSelfSignCertificate((ULONG_PTR)NULL,
