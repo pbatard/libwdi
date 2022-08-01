@@ -30,6 +30,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "libwdi.h"
 #include "msapi_utf8.h"
 #include "stdfn.h"
 #include "zadig.h"
@@ -312,7 +313,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	}
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion>>4, nWindowsVersion&0x0F, is_x64()?"; WOW64":"");
+		nWindowsVersion>>4, nWindowsVersion&0x0F, wdi_is_x64()?"; WOW64":"");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL) {
 		dprintf("Could not open Internet session: %s\n", WinInetErrorString());
@@ -512,7 +513,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
+		nWindowsVersion >> 4, nWindowsVersion & 0x0F, wdi_is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL)
 		goto out;
@@ -531,7 +532,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		// look for <app_name>_win_x64_6.2.ver (Win8 x64) but only get a match for <app_name>_win_x64_6.ver (Vista x64 or later)
 		// This allows sunsetting OS versions (eg XP) or providing different downloads for different archs/groups.
 		static_sprintf(urlpath, "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k==0)?"":"_",
-			(k==0)?"":channel[k], archname[is_x64()?1:0], os_version.dwMajorVersion, os_version.dwMinorVersion);
+			(k==0)?"":channel[k], archname[wdi_is_x64()?1:0], os_version.dwMajorVersion, os_version.dwMinorVersion);
 		vuprintf("Base update check: %s\n", urlpath);
 		for (i=0, j=(int)safe_strlen(urlpath)-5; (j>0)&&(i<ARRAYSIZE(verpos)); j--) {
 			if ((urlpath[j] == '.') || (urlpath[j] == '_')) {

@@ -1,5 +1,6 @@
 LIBRARY "libwdi.dll"
 EXPORTS
+  wdi_is_x64
   wdi_is_driver_supported
   wdi_is_file_embedded
   wdi_strerror
@@ -14,6 +15,7 @@ EXPORTS
   wdi_unregister_logger
   wdi_read_logger
   wdi_set_log_level
+  wdi_is_x64@4 = wdi_is_x64
   wdi_is_driver_supported@4 = wdi_is_driver_supported
   wdi_is_file_embedded@4 = wdi_is_file_embedded
   wdi_strerror@4 = wdi_strerror
@@ -28,6 +30,7 @@ EXPORTS
   wdi_unregister_logger@4 = wdi_unregister_logger
   wdi_read_logger@4 = wdi_read_logger
   wdi_set_log_level@4 = wdi_set_log_level
+  wdi_is_x64@8 = wdi_is_x64
   wdi_is_driver_supported@8 = wdi_is_driver_supported
   wdi_is_file_embedded@8 = wdi_is_file_embedded
   wdi_strerror@8 = wdi_strerror
@@ -42,6 +45,7 @@ EXPORTS
   wdi_unregister_logger@8 = wdi_unregister_logger
   wdi_read_logger@8 = wdi_read_logger
   wdi_set_log_level@8 = wdi_set_log_level
+  wdi_is_x64@12 = wdi_is_x64
   wdi_is_driver_supported@12 = wdi_is_driver_supported
   wdi_is_file_embedded@12 = wdi_is_file_embedded
   wdi_strerror@12 = wdi_strerror
@@ -56,6 +60,7 @@ EXPORTS
   wdi_unregister_logger@12 = wdi_unregister_logger
   wdi_read_logger@12 = wdi_read_logger
   wdi_set_log_level@12 = wdi_set_log_level
+  wdi_is_x64@16 = wdi_is_x64
   wdi_is_driver_supported@16 = wdi_is_driver_supported
   wdi_is_file_embedded@16 = wdi_is_file_embedded
   wdi_strerror@16 = wdi_strerror

@@ -48,7 +48,7 @@ EXTRA_DIST = $(LIB_SRC)
 libwdi_rc.lo: libwdi.rc
 	$(pkg_v_rc)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --tag=RC --mode=compile $(RC) $(ARCH_RCFLAGS) -i $< -o $@
 
-libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS)
+libwdi_la_CFLAGS = $(ARCH_CFLAGS) $(VISIBILITY_CFLAGS) $(AM_CFLAGS) -DLIBWDI_DLL_EXPORT
 libwdi_la_LDLAGS = $(AM_LDFLAGS)
 libwdi_la_LIBADD = libwdi_rc.lo -lsetupapi -lole32 -lntdll
 libwdi_la_SOURCES = $(LIB_SRC)

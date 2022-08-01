@@ -67,7 +67,7 @@ char WindowsVersionStr[128] = "Windows ";
 // Detect Windows version
 #define GET_WINDOWS_VERSION do { if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
 
-BOOL is_x64(void)
+BOOL LIBWDI_API wdi_is_x64(void)
 {
 	BOOL ret = FALSE;
 	// Detect if we're running a 32 or 64 bit system
@@ -275,7 +275,7 @@ void GetWindowsVersion(void)
 		}
 	}
 
-	if (is_x64())
+	if (wdi_is_x64())
 		w64 = "64-bit";
 
 	GetProductInfo(vi.dwMajorVersion, vi.dwMinorVersion, vi.wServicePackMajor, vi.wServicePackMinor, &dwProductType);
@@ -1643,7 +1643,7 @@ static int install_driver_internal(void* arglist)
 	OVERLAPPED overlapped;
 	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
-	BOOL is_x64 = FALSE;
+	BOOL is_x64 = wdi_is_x64();
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
 
@@ -1690,16 +1690,6 @@ static int install_driver_internal(void* arglist)
 		}
 	} else {
 		wdi_dbg("CMP_WaitNoPendingInstallEvents not available");
-	}
-
-	// Detect whether if we should run the 64 bit installer, without
-	// relying on external libs
-	if (sizeof(uintptr_t) < 8) {
-		// This application is not 64 bit, but it might be 32 bit
-		// running in WOW64
-		IsWow64Process(GetCurrentProcess(), &is_x64);
-	} else {
-		is_x64 = TRUE;
 	}
 
 	// Use a pipe to communicate with our installer

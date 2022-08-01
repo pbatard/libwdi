@@ -224,6 +224,11 @@ struct wdi_options_install_cert {
 };
 
 /*
+ * Detects if we're running a 32 or 64 bit system
+ */
+LIBWDI_EXP BOOL LIBWDI_API wdi_is_x64(void);
+
+/*
  * Convert a libwdi error to a human readable error message
  */
 LIBWDI_EXP const char* LIBWDI_API wdi_strerror(int errcode);

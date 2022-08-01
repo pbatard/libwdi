@@ -174,7 +174,6 @@ BOOL FileIo(BOOL save, char* path, char** buffer, DWORD* size);
 INT_PTR CALLBACK about_callback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void create_status_bar(void);
-BOOL is_x64(void);
 BOOL notification(int type, const notification_info* more_info, char* title, char* format, ...);
 int run_with_progress_bar(int(*function)(void));
 char* to_valid_filename(char* name, char* ext);
