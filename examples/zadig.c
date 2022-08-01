@@ -47,7 +47,6 @@
 #include "zadig_registry.h"
 #include "zadig.h"
 #include "profile.h"
-#include "stdfn.h"
 
 #define NOT_DURING_INSTALL if (installation_running) return (INT_PTR)TRUE
 
@@ -1808,10 +1807,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 		// Alt-R => Remove all the registry keys created by Zadig
 		if ((msg.message == WM_SYSKEYDOWN) && (msg.wParam == 'R')) {
-			dsprintf(DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME "\\" APPLICATION_NAME)?
+			dsprintf(DeleteRegistryKey(HKEY_CURRENT_USER, COMPANY_NAME "\\" APPLICATION_NAME)?
 				"Application registry keys successfully deleted":"Failed to delete application registry keys");
 			// Also try to delete the upper key (company name) if it's empty (don't care about the result)
-			DeleteRegistryKey(REGKEY_HKCU, COMPANY_NAME);
+			DeleteRegistryKey(HKEY_CURRENT_USER, COMPANY_NAME);
 			continue;
 		}
 

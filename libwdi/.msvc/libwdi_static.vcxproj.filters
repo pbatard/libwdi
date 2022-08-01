@@ -61,9 +61,6 @@
     <ClInclude Include="..\libwdi_i.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\stdfn.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\embedder_files.h">
       <Filter>Header Files</Filter>
     </ClInclude>

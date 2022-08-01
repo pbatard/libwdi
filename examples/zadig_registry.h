@@ -26,9 +26,6 @@
 extern "C" {
 #endif
 
-#define REGKEY_HKCU                 HKEY_CURRENT_USER
-#define REGKEY_HKLM                 HKEY_LOCAL_MACHINE
-
 /*
  * List of registry keys used by this application
  * These keys go into HKCU\Software\COMPANY_NAME\APPLICATION_NAME\

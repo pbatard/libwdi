@@ -37,7 +37,6 @@
 #include "installer.h"
 #include "libwdi.h"
 #include "logging.h"
-#include "stdfn.h"
 
 #define KEY_CONTAINER               L"libwdi key container"
 #define PF_ERR                      wdi_err

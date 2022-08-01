@@ -48,7 +48,6 @@
 #include "tokenizer.h"
 #include "embedded.h"	// auto-generated during compilation
 #include "msapi_utf8.h"
-#include "stdfn.h"
 
 // Global variables
 static struct wdi_device_info *current_device = NULL;
@@ -294,7 +293,7 @@ static void GetWindowsVersion(void)
 	if (nWindowsVersion >= 0x62) {
 		HKEY hCurrentVersion;
 		DWORD dwType = REG_DWORD, dwSize = sizeof(DWORD), dwUbr = 0;
-		if (RegOpenKeyExA(REGKEY_HKLM, "Software\\Microsoft\\Windows NT\\CurrentVersion",
+		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows NT\\CurrentVersion",
 			0, KEY_READ, &hCurrentVersion) == ERROR_SUCCESS) {
 			RegQueryValueExA(hCurrentVersion, "UBR", NULL, &dwType, (LPBYTE)&dwUbr, &dwSize);
 			RegCloseKey(hCurrentVersion);

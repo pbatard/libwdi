@@ -44,7 +44,6 @@
 #include "zadig_license.h"
 #include "zadig_registry.h"
 #include "msapi_utf8.h"
-#include "stdfn.h"
 
 /*
  * Globals
@@ -981,7 +980,7 @@ INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		IGNORE_RETVAL(ComboBox_SetItemData(hFrequency, ComboBox_AddStringU(hFrequency, "Daily (Default)"), 86400));
 		IGNORE_RETVAL(ComboBox_SetItemData(hFrequency, ComboBox_AddStringU(hFrequency, "Weekly"), 604800));
 		IGNORE_RETVAL(ComboBox_SetItemData(hFrequency, ComboBox_AddStringU(hFrequency, "Monthly"), 2629800));
-		freq = ReadRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL);
+		freq = ReadRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL);
 		EnableWindow(GetDlgItem(hDlg, IDC_CHECK_NOW), (freq != 0));
 		EnableWindow(hBeta, (freq >= 0));
 		switch(freq) {
@@ -1005,7 +1004,7 @@ INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		}
 		IGNORE_RETVAL(ComboBox_AddStringU(hBeta, "Yes"));
 		IGNORE_RETVAL(ComboBox_AddStringU(hBeta, "No"));
-		IGNORE_RETVAL(ComboBox_SetCurSel(hBeta, GetRegistryKeyBool(REGKEY_HKCU, REGKEY_INCLUDE_BETAS)?0:1));
+		IGNORE_RETVAL(ComboBox_SetCurSel(hBeta, GetRegistryKeyBool(HKEY_CURRENT_USER, REGKEY_INCLUDE_BETAS)?0:1));
 		hPolicy = GetDlgItem(hDlg, IDC_POLICY);
 		SendMessage(hPolicy, EM_AUTOURLDETECT, 1, 0);
 		safe_sprintf(update_policy_text, sizeof(update_policy_text), update_policy);
@@ -1027,13 +1026,13 @@ INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 			if (HIWORD(wParam) != CBN_SELCHANGE)
 				break;
 			freq = (int32_t)ComboBox_GetItemData(hFrequency, ComboBox_GetCurSel(hFrequency));
-			WriteRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL, (DWORD)freq);
+			WriteRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL, (DWORD)freq);
 			EnableWindow(hBeta, (freq >= 0));
 			return (INT_PTR)TRUE;
 		case IDC_INCLUDE_BETAS:
 			if (HIWORD(wParam) != CBN_SELCHANGE)
 				break;
-			SetRegistryKeyBool(REGKEY_HKCU, REGKEY_INCLUDE_BETAS, ComboBox_GetCurSel(hBeta) == 0);
+			SetRegistryKeyBool(HKEY_CURRENT_USER, REGKEY_INCLUDE_BETAS, ComboBox_GetCurSel(hBeta) == 0);
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -1053,13 +1052,13 @@ BOOL SetUpdateCheck(void)
 	size_t fn_len, exe_len;
 
 	// Test if we have access to the registry. If not, forget it.
-	WriteRegistryKey32(REGKEY_HKCU, REGKEY_COMM_CHECK, commcheck);
-	if (ReadRegistryKey32(REGKEY_HKCU, REGKEY_COMM_CHECK) != commcheck)
+	WriteRegistryKey32(HKEY_CURRENT_USER, REGKEY_COMM_CHECK, commcheck);
+	if (ReadRegistryKey32(HKEY_CURRENT_USER, REGKEY_COMM_CHECK) != commcheck)
 		return FALSE;
 	reg_commcheck = TRUE;
 
 	// If the update interval is not set, this is the first time we run so prompt the user
-	if (ReadRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL) == 0) {
+	if (ReadRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL) == 0) {
 
 		// Add a hack for people who'd prefer the app not to prompt about update settings on first run.
 		// If the executable is called "<app_name>.exe", without version, we disable the prompt
@@ -1074,13 +1073,13 @@ BOOL SetUpdateCheck(void)
 				"Do you want to allow " APPLICATION_NAME " to check for application updates online?");
 		}
 		if (!enable_updates) {
-			WriteRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL, -1);
+			WriteRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL, -1);
 			return FALSE;
 		}
 		// If the user hasn't set the interval in the dialog, set to default
-		if ( (ReadRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL) == 0) ||
-			 ((ReadRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL) == -1) && enable_updates) )
-			WriteRegistryKey32(REGKEY_HKCU, REGKEY_UPDATE_INTERVAL, 86400);
+		if ( (ReadRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL) == 0) ||
+			 ((ReadRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL) == -1) && enable_updates) )
+			WriteRegistryKey32(HKEY_CURRENT_USER, REGKEY_UPDATE_INTERVAL, 86400);
 	}
 	return TRUE;
 }
