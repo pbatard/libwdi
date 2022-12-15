@@ -21,7 +21,7 @@ env:
 
 jobs:
   Coverity-Build:
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
@@ -55,7 +55,9 @@ jobs:
       uses: microsoft/setup-msbuild@v1
     - name: Build with Coverity
       shell: cmd
-      run: cov-build.exe --dir cov-int msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=Release,Platform=x64,BuildMacros=${{ env.BUILD_MACROS }}
+      run: |
+        cov-configure --msvc
+        cov-build.exe --dir cov-int msbuild ${{ env.SOLUTION_FILE_PATH }} /m /p:Configuration=Release,Platform=x64,BuildMacros=${{ env.BUILD_MACROS }}
     - name: Upload Coverity build for analysis
       run: |
         7z a -r cov-int.zip cov-int
