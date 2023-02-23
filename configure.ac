@@ -10,6 +10,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
 
 AC_PREREQ([2.71])
 AC_PROG_CC
+AC_CHECK_TOOL(WINDRES, windres, :)
 LT_INIT
 LT_LANG([Windows Resource])
 AC_C_INLINE

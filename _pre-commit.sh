@@ -49,6 +49,9 @@ sed -i -e "s/@@BUILD@@/$BUILD/g" _zadig.sed
 # Run sed to update the nano version, and add the modified files
 sed -b -i -f _library.sed libwdi/libwdi.rc
 sed -b -i -f _library.sed examples/wdi-simple.rc
+# SED is an ass when it comes to replacing at the end of a line and preserving the EOL sequence
+unix2dos -q libwdi/libwdi.rc
+unix2dos -q examples/wdi-simple.rc
 sed -b -i -f _zadig.sed examples/zadig.rc
 sed -b -i -f _zadig.sed examples/zadig.h
 rm _library.sed _zadig.sed
