@@ -1,6 +1,6 @@
 /*
  * libwdi: Library for automated Windows Driver Installation - PKI part
- * Copyright (c) 2011-2020 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2011-2023 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This library is free software; you can redistribute it and/or
@@ -364,6 +364,8 @@ typedef BOOL (WINAPI *CryptCATAdminCalcHashFromFileHandle_t)(
 );
 
 extern char *wdi_windows_error_str(uint32_t retval);
+extern int nWindowsVersion;
+extern void GetWindowsVersion(void);
 
 /*
  * FormatMessage does not handle PKI errors

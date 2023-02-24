@@ -1,6 +1,6 @@
 /*
 * Library for USB automated driver installation
-* Copyright (c) 2010-2022 Pete Batard <pete@akeo.ie>
+* Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -43,11 +43,6 @@ enum WindowsVersion {
 	WINDOWS_11 = 0xB0,		// Also Server 2022
 	WINDOWS_MAX
 };
-
-extern int nWindowsVersion;
-extern char WindowsVersionStr[128];
-
-void GetWindowsVersion(void);
 
 /* Read a string registry key value */
 static __inline BOOL ReadRegistryStr(HKEY key_root, const char* key_name, char* str, DWORD len)

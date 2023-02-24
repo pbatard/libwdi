@@ -1,7 +1,7 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
  * Networking functionality (web file download, check for update, etc.)
- * Copyright © 2012-2021 Pete Batard <pete@akeo.ie>
+ * Copyright © 2012-2023 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -312,7 +312,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	}
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion>>4, nWindowsVersion&0x0F, is_x64()?"; WOW64":"");
+		windows_version >> 4, windows_version & 0x0F, is_x64()?"; WOW64":"");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL) {
 		dprintf("Could not open Internet session: %s\n", WinInetErrorString());
@@ -512,7 +512,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		nWindowsVersion >> 4, nWindowsVersion & 0x0F, is_x64() ? "; WOW64" : "");
+		windows_version >> 4, windows_version & 0x0F, is_x64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (hSession == NULL)
 		goto out;

@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@
 #define FIELD_ORANGE                RGB(255,240,200)
 #define ARROW_GREEN                 RGB(92,228,65)
 #define ARROW_ORANGE                RGB(253,143,56)
-#define APP_VERSION                 "Zadig 2.7.773"
+#define APP_VERSION                 "Zadig 2.7.774"
 
 // These are used to flag end users about the driver they are going to replace
 enum driver_type {
@@ -166,7 +166,7 @@ typedef struct ext_t {
 #define vuprintf(...) if (verbose) w_printf(FALSE, __VA_ARGS__)
 #define vvuprintf(...) if (verbose > 1) w_printf(FALSE, __VA_ARGS__)
 void print_status(unsigned int duration, BOOL debug, const char* message);
-int detect_windows_version(void);
+int get_windows_version(char* WindowsVersionStr, size_t WindowsVersionStrSize);
 void w_printf(BOOL update_status, const char *format, ...);
 void BrowseForFolder(void);
 char* FileDialog(BOOL save, char* path, const ext_t* ext, DWORD options);
@@ -176,7 +176,6 @@ INT_PTR CALLBACK UpdateCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 void create_status_bar(void);
 BOOL is_x64(void);
 BOOL notification(int type, const notification_info* more_info, char* title, char* format, ...);
-int run_with_progress_bar(int(*function)(void));
 char* to_valid_filename(char* name, char* ext);
 HWND create_tooltip(HWND hWnd, char* message, int duration);
 void destroy_tooltip(HWND hWnd);
@@ -204,6 +203,8 @@ extern char szFolderPath[MAX_PATH], app_dir[MAX_PATH];
 extern int dialog_showing;
 extern BOOL installation_running;
 extern APPLICATION_UPDATE update;
+extern int windows_version;
+extern char windows_version_str[128];
 
 /*
  * typedefs for the function prototypes. Use the something like:

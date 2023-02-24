@@ -1,6 +1,6 @@
 /*
  * Library for USB automated driver installation
- * Copyright (c) 2010-2022 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
  * Parts of the code from libusb by Daniel Drake, Johannes Erdfelt et al.
  * For more info, please visit http://libwdi.akeo.ie
  *
@@ -67,7 +67,7 @@ char WindowsVersionStr[128] = "Windows ";
 // Detect Windows version
 #define GET_WINDOWS_VERSION do { if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
 
-BOOL is_x64(void)
+static BOOL is_x64(void)
 {
 	BOOL ret = FALSE;
 	// Detect if we're running a 32 or 64 bit system

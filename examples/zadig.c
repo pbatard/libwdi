@@ -1,6 +1,6 @@
 /*
  * Zadig: Automated Driver Installer for USB devices (GUI version)
- * Copyright (c) 2010-2021 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
  * For more info, please visit http://libwdi.akeo.ie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -89,6 +89,8 @@ struct wdi_options_install_cert ic_options = { 0 };
 struct wdi_options_install_driver id_options = { 0 };
 struct wdi_device_info *device, *list = NULL;
 int current_device_index = CB_ERR;
+int windows_version = WINDOWS_UNDEFINED;
+char windows_version_str[128];
 char* current_device_hardware_id = NULL;
 char* editable_desc = NULL;
 int default_driver_type = WDI_WINUSB;
@@ -811,6 +813,253 @@ void set_loglevel(DWORD menu_cmd)
 	wdi_set_log_level(log_level);
 }
 
+BOOL is_x64(void)
+{
+	BOOL ret = FALSE;
+	// Detect if we're running a 32 or 64 bit system
+	if (sizeof(uintptr_t) < 8) {
+		IsWow64Process(GetCurrentProcess(), &ret);
+	} else {
+		ret = TRUE;
+	}
+	return ret;
+}
+
+static const char* get_edition(DWORD ProductType)
+{
+	static char unknown_edition_str[64];
+
+	// From: https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+	// These values can be found in the winnt.h header.
+	switch (ProductType) {
+	case 0x00000000: return "";	//  Undefined
+	case 0x00000001: return "Ultimate";
+	case 0x00000002: return "Home Basic";
+	case 0x00000003: return "Home Premium";
+	case 0x00000004: return "Enterprise";
+	case 0x00000005: return "Home Basic N";
+	case 0x00000006: return "Business";
+	case 0x00000007: return "Server Standard";
+	case 0x00000008: return "Server Datacenter";
+	case 0x00000009: return "Smallbusiness Server";
+	case 0x0000000A: return "Server Enterprise";
+	case 0x0000000B: return "Starter";
+	case 0x0000000C: return "Server Datacenter (Core)";
+	case 0x0000000D: return "Server Standard (Core)";
+	case 0x0000000E: return "Server Enterprise (Core)";
+	case 0x00000010: return "Business N";
+	case 0x00000011: return "Web Server";
+	case 0x00000012: return "HPC Edition";
+	case 0x00000013: return "Storage Server (Essentials)";
+	case 0x0000001A: return "Home Premium N";
+	case 0x0000001B: return "Enterprise N";
+	case 0x0000001C: return "Ultimate N";
+	case 0x00000022: return "Home Server";
+	case 0x00000024: return "Server Standard without Hyper-V";
+	case 0x00000025: return "Server Datacenter without Hyper-V";
+	case 0x00000026: return "Server Enterprise without Hyper-V";
+	case 0x00000027: return "Server Datacenter without Hyper-V (Core)";
+	case 0x00000028: return "Server Standard without Hyper-V (Core)";
+	case 0x00000029: return "Server Enterprise without Hyper-V (Core)";
+	case 0x0000002A: return "Hyper-V Server";
+	case 0x0000002F: return "Starter N";
+	case 0x00000030: return "Pro";
+	case 0x00000031: return "Pro N";
+	case 0x00000034: return "Server Solutions Premium";
+	case 0x00000035: return "Server Solutions Premium (Core)";
+	case 0x00000040: return "Server Hyper Core V";
+	case 0x00000042: return "Starter E";
+	case 0x00000043: return "Home Basic E";
+	case 0x00000044: return "Premium E";
+	case 0x00000045: return "Pro E";
+	case 0x00000046: return "Enterprise E";
+	case 0x00000047: return "Ultimate E";
+	case 0x00000048: return "Enterprise (Eval)";
+	case 0x0000004F: return "Server Standard (Eval)";
+	case 0x00000050: return "Server Datacenter (Eval)";
+	case 0x00000054: return "Enterprise N (Eval)";
+	case 0x00000057: return "Thin PC";
+	case 0x00000058: case 0x00000059: case 0x0000005A: case 0x0000005B: case 0x0000005C: return "Embedded";
+	case 0x00000062: return "Home N";
+	case 0x00000063: return "Home China";
+	case 0x00000064: return "Home Single Language";
+	case 0x00000065: return "Home";
+	case 0x00000067: return "Pro with Media Center";
+	case 0x00000069: case 0x0000006A: case 0x0000006B: case 0x0000006C: return "Embedded";
+	case 0x0000006F: return "Home Connected";
+	case 0x00000070: return "Pro Student";
+	case 0x00000071: return "Home Connected N";
+	case 0x00000072: return "Pro Student N";
+	case 0x00000073: return "Home Connected Single Language";
+	case 0x00000074: return "Home Connected China";
+	case 0x00000079: return "Education";
+	case 0x0000007A: return "Education N";
+	case 0x0000007D: return "Enterprise LTSB";
+	case 0x0000007E: return "Enterprise LTSB N";
+	case 0x0000007F: return "Pro S";
+	case 0x00000080: return "Pro S N";
+	case 0x00000081: return "Enterprise LTSB (Eval)";
+	case 0x00000082: return "Enterprise LTSB N (Eval)";
+	case 0x0000008A: return "Pro Single Language";
+	case 0x0000008B: return "Pro China";
+	case 0x0000008C: return "Enterprise Subscription";
+	case 0x0000008D: return "Enterprise Subscription N";
+	case 0x00000091: return "Server Datacenter SA (Core)";
+	case 0x00000092: return "Server Standard SA (Core)";
+	case 0x00000095: return "Utility VM";
+	case 0x000000A1: return "Pro for Workstations";
+	case 0x000000A2: return "Pro for Workstations N";
+	case 0x000000A4: return "Pro for Education";
+	case 0x000000A5: return "Pro for Education N";
+	case 0x000000AB: return "Enterprise G";	// I swear Microsoft are just making up editions...
+	case 0x000000AC: return "Enterprise G N";
+	case 0x000000B6: return "Home OS";
+	case 0x000000B7: return "Cloud E";
+	case 0x000000B8: return "Cloud E N";
+	case 0x000000BD: return "Lite";
+	case 0xABCDABCD: return "(Unlicensed)";
+	default:
+		static_sprintf(unknown_edition_str, "(Unknown Edition 0x%02X)", (uint32_t)ProductType);
+		return unknown_edition_str;
+	}
+}
+
+/*
+ * Modified from smartmontools' os_win32.cpp
+ */
+int get_windows_version(char* WindowsVersionStr, size_t WindowsVersionStrSize)
+{
+	OSVERSIONINFOEXA vi, vi2;
+	DWORD dwProductType;
+	const char* w = 0;
+	const char* w64 = "32 bit";
+	char* vptr;
+	size_t vlen;
+	unsigned major, minor;
+	int nWindowsVersion, nWindowsBuildNumber;
+	ULONGLONG major_equal, minor_equal;
+	BOOL ws;
+
+	nWindowsVersion = WINDOWS_UNDEFINED;
+	safe_strcpy(WindowsVersionStr, WindowsVersionStrSize, "Windows Undefined");
+
+	memset(&vi, 0, sizeof(vi));
+	vi.dwOSVersionInfoSize = sizeof(vi);
+	if (!GetVersionExA((OSVERSIONINFOA*)&vi)) {
+		memset(&vi, 0, sizeof(vi));
+		vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
+		if (!GetVersionExA((OSVERSIONINFOA*)&vi))
+			return nWindowsVersion;
+	}
+
+	if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+
+		if (vi.dwMajorVersion > 6 || (vi.dwMajorVersion == 6 && vi.dwMinorVersion >= 2)) {
+			// Starting with Windows 8.1 Preview, GetVersionEx() does no longer report the actual OS version
+			// See: http://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+			// And starting with Windows 10 Preview 2, Windows enforces the use of the application/supportedOS
+			// manifest in order for VerSetConditionMask() to report the ACTUAL OS major and minor...
+
+			major_equal = VerSetConditionMask(0, VER_MAJORVERSION, VER_EQUAL);
+			for (major = vi.dwMajorVersion; major <= 9; major++) {
+				memset(&vi2, 0, sizeof(vi2));
+				vi2.dwOSVersionInfoSize = sizeof(vi2); vi2.dwMajorVersion = major;
+				if (!VerifyVersionInfoA(&vi2, VER_MAJORVERSION, major_equal))
+					continue;
+				if (vi.dwMajorVersion < major) {
+					vi.dwMajorVersion = major; vi.dwMinorVersion = 0;
+				}
+
+				minor_equal = VerSetConditionMask(0, VER_MINORVERSION, VER_EQUAL);
+				for (minor = vi.dwMinorVersion; minor <= 9; minor++) {
+					memset(&vi2, 0, sizeof(vi2)); vi2.dwOSVersionInfoSize = sizeof(vi2);
+					vi2.dwMinorVersion = minor;
+					if (!VerifyVersionInfoA(&vi2, VER_MINORVERSION, minor_equal))
+						continue;
+					vi.dwMinorVersion = minor;
+					break;
+				}
+
+				break;
+			}
+		}
+
+		if (vi.dwMajorVersion <= 0xf && vi.dwMinorVersion <= 0xf) {
+			ws = (vi.wProductType <= VER_NT_WORKSTATION);
+			nWindowsVersion = vi.dwMajorVersion << 4 | vi.dwMinorVersion;
+			switch (nWindowsVersion) {
+			case WINDOWS_XP: w = "XP";
+				break;
+			case WINDOWS_2003: w = (ws ? "XP_64" : (!GetSystemMetrics(89) ? "Server 2003" : "Server 2003_R2"));
+				break;
+			case WINDOWS_VISTA: w = (ws ? "Vista" : "Server 2008");
+				break;
+			case WINDOWS_7: w = (ws ? "7" : "Server 2008_R2");
+				break;
+			case WINDOWS_8: w = (ws ? "8" : "Server 2012");
+				break;
+			case WINDOWS_8_1: w = (ws ? "8.1" : "Server 2012_R2");
+				break;
+			case WINDOWS_10_PREVIEW1: w = (ws ? "10 (Preview 1)" : "Server 10 (Preview 1)");
+				break;
+				// Starting with Windows 10 Preview 2, the major is the same as the public-facing version
+			case WINDOWS_10:
+				if (vi.dwBuildNumber < 20000) {
+					w = (ws ? "10" : ((vi.dwBuildNumber < 17763) ? "Server 2016" : "Server 2019"));
+					break;
+				}
+				nWindowsVersion = WINDOWS_11;
+				// Fall through
+			case WINDOWS_11: w = (ws ? "11" : "Server 2022");
+				break;
+			default:
+				if (nWindowsVersion < WINDOWS_XP)
+					nWindowsVersion = WINDOWS_UNSUPPORTED;
+				else
+					w = "12 or later";
+				break;
+			}
+		}
+	}
+
+	if (is_x64())
+		w64 = "64-bit";
+
+	GetProductInfo(vi.dwMajorVersion, vi.dwMinorVersion, vi.wServicePackMajor, vi.wServicePackMinor, &dwProductType);
+	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
+	vlen = WindowsVersionStrSize - sizeof("Windows ") - 1;
+	if (!w)
+		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId == VER_PLATFORM_WIN32_NT ? "NT" : "??"),
+			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, w64);
+	else if (vi.wServicePackMinor)
+		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
+	else if (vi.wServicePackMajor)
+		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
+	else
+		safe_sprintf(vptr, vlen, "%s%s%s, %s",
+			w, (dwProductType != PRODUCT_UNDEFINED) ? " " : "", get_edition(dwProductType), w64);
+
+	// Add the build number (including UBR if available) for Windows 8.0 and later
+	nWindowsBuildNumber = vi.dwBuildNumber;
+	if (nWindowsVersion >= 0x62) {
+		HKEY hCurrentVersion;
+		DWORD dwType = REG_DWORD, dwSize = sizeof(DWORD), dwUbr = 0;
+		if (RegOpenKeyExA(REGKEY_HKLM, "Software\\Microsoft\\Windows NT\\CurrentVersion",
+			0, KEY_READ, &hCurrentVersion) == ERROR_SUCCESS) {
+			RegQueryValueExA(hCurrentVersion, "UBR", NULL, &dwType, (LPBYTE)&dwUbr, &dwSize);
+			RegCloseKey(hCurrentVersion);
+		}
+
+		vptr = &WindowsVersionStr[safe_strlen(WindowsVersionStr)];
+		vlen = WindowsVersionStrSize - safe_strlen(WindowsVersionStr) - 1;
+		if (dwUbr != 0)
+			safe_sprintf(vptr, vlen, " (Build %d.%d)", nWindowsBuildNumber, (int)dwUbr);
+		else
+			safe_sprintf(vptr, vlen, " (Build %d)", nWindowsBuildNumber);
+	}
+	return nWindowsVersion;
+}
+
 void init_dialog(HWND hDlg)
 {
 	int i, err;
@@ -974,7 +1223,7 @@ void init_dialog(HWND hDlg)
 	PostMessage(hInfo, EM_LIMITTEXT, MAX_LOG_SIZE , 0);
 
 	dprintf(APP_VERSION);
-	dprintf(WindowsVersionStr);
+	dprintf(windows_version_str);
 
 	// Limit the input size of VID, PID, MI
 	PostMessage(GetDlgItem(hMainDialog, IDC_VID), EM_SETLIMITTEXT, 4, 0);
@@ -1752,10 +2001,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	// Set the Windows version
-	GetWindowsVersion();
+	windows_version = get_windows_version(windows_version_str, sizeof(windows_version_str));
 
 	// Alert users if they are running versions older than Windows 7
-	if (nWindowsVersion < WINDOWS_7) {
+	if (windows_version < WINDOWS_7) {
 		MessageBoxA(NULL, "This version of Zadig can only be run on Windows 7 or later",
 			"Incompatible version", MB_ICONSTOP);
 		CloseHandle(mutex);
