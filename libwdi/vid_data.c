@@ -29,7 +29,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2021.10.24
+ * Version: 2023.01.16
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -37,6 +37,8 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0003, "Club Mac" },
 	{ 0x0004, "Nebraska Furniture Mart" },
 	{ 0x0011, "Unknown" },
+	{ 0x0040, "Anyware Corporation" },
+	{ 0x0042, "DMT" },
 	{ 0x0053, "Planex" },
 	{ 0x0078, "Microntek" },
 	{ 0x0079, "DragonRise Inc." },
@@ -50,6 +52,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0200, "TP-Link" },
 	{ 0x0204, "Chipsbank Microelectronics Co., Ltd" },
 	{ 0x0218, "Hangzhou Worlde" },
+	{ 0x0231, "Sonuus Limited" },
 	{ 0x02ad, "HUMAX Co., Ltd." },
 	{ 0x0303, "Mini Automation Controller" },
 	{ 0x0324, "OCZ Technology Inc" },
@@ -1768,6 +1771,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0e23, "Liou Yuane Enterprise Co., Ltd" },
 	{ 0x0e25, "VinChip Systems, Inc." },
 	{ 0x0e26, "J-Phone East Co., Ltd" },
+	{ 0x0e2e, "Brady Worldwide, Inc." },
 	{ 0x0e30, "HeartMath LLC" },
 	{ 0x0e34, "Micro Computer Control Corp." },
 	{ 0x0e35, "3Pea Technologies, Inc." },
@@ -2275,7 +2279,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x138e, "Jungo LTD" },
 	{ 0x1390, "TOMTOM B.V." },
 	{ 0x1391, "IdealTEK, Inc." },
-	{ 0x1395, "Sennheiser Communications" },
+	{ 0x1395, "DSEA A/S" },
 	{ 0x1397, "BEHRINGER International GmbH" },
 	{ 0x1398, "Q-tec" },
 	{ 0x13ad, "Baltech" },
@@ -2301,7 +2305,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x13ec, "Zydacron" },
 	{ 0x13ee, "MosArt" },
 	{ 0x13fd, "Initio Corporation" },
-	{ 0x13fe, "Kingston Technology Company Inc." },
+	{ 0x13fe, "Phison Electronics Corp." },
 	{ 0x1400, "Axxion Group Corp." },
 	{ 0x1402, "Bowe Bell & Howell" },
 	{ 0x1403, "Sitronix" },
@@ -3016,6 +3020,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x22e0, "secunet Security Networks AG" },
 	{ 0x22e8, "Cambridge Audio" },
 	{ 0x2304, "Pinnacle Systems, Inc." },
+	{ 0x2309, "TimeLink Technology Co., Ltd" },
 	{ 0x230d, "Teracom" },
 	{ 0x2314, "INQ Mobile" },
 	{ 0x2318, "Shining Technologies, Inc. [hex]" },
@@ -3196,7 +3201,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x2a0e, "Shenzhen DreamSource Technology Co., Ltd." },
 	{ 0x2a13, "Grabba International" },
 	{ 0x2a19, "Numato Systems Pvt. Ltd" },
-	{ 0x2a1d, "Oxford Nanopore Technologies, Ltd" },
+	{ 0x2a1d, "Oxford Nanopore Technologies plc" },
 	{ 0x2a37, "RTD Embedded Technologies, Inc." },
 	{ 0x2a39, "RME" },
 	{ 0x2a3c, "Trinamic Motion Control GmbH & Co KG" },
@@ -3295,6 +3300,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x3171, "8086 Consultancy" },
 	{ 0x3176, "Whanam Electronics Co., Ltd" },
 	{ 0x3195, "Link Instruments" },
+	{ 0x3197, "Katusha" },
 	{ 0x31c9, "BeiJing LanXum Computer Technology Co., Ltd." },
 	{ 0x3200, "Alcatel-Lucent Enterprise" },
 	{ 0x3219, "Smak Tecnologia e Automacao LTDA" },
@@ -3356,7 +3362,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x5654, "Gotview" },
 	{ 0x5656, "Uni-Trend Group Limited" },
 	{ 0x595a, "IRTOUCHSYSTEMS Co. Ltd." },
-	{ 0x5986, "Acer, Inc" },
+	{ 0x5986, "Bison Electronics Inc." },
 	{ 0x59e3, "Nonolith Labs" },
 	{ 0x5a57, "Zinwell" },
 	{ 0x6000, "Beholder International Ltd." },

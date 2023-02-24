@@ -26,7 +26,7 @@ Additional features
 * Resolution of USB Vendor IDs, based on the data maintained by Stephen J. Gowdy 
   at http://www.linux-usb.org/usb.ids
 * Fully Open Source (LGPL v3), with multiple sample applications
-* Supports MinGW32, MinGW-w64, Visual Studio, WDK
+* Supports MinGW32, MinGW-w64, Visual Studio
 
 Installation and Compilation
 ----------------------------
