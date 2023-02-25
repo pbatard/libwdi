@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2010-2016 Pete Batard <pete@akeo.ie> (GNU LGPL)
+; Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie> (GNU LGPL)
 [Strings]
 DeviceName = "#DEVICE_DESCRIPTION#"
 VendorName = "#DEVICE_MANUFACTURER#"
@@ -23,7 +23,7 @@ HKR,,,0,"Universal Serial Bus devices"
 HKR,,Icon,,-20
 
 [Manufacturer]
-%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTarm
+%VendorName% = libusbDevice_WinUSB,NTx86,NTamd64,NTarm64
 
 [libusbDevice_WinUSB.NTx86]
 %DeviceName% = USB_Install, USB\%DeviceID%
@@ -31,7 +31,7 @@ HKR,,Icon,,-20
 [libusbDevice_WinUSB.NTamd64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
-[libusbDevice_WinUSB.NTarm]
+[libusbDevice_WinUSB.NTarm64]
 %DeviceName% = USB_Install, USB\%DeviceID%
 
 [USB_Install]
@@ -64,9 +64,16 @@ AddReg = #USE_DEVICE_INTERFACE_GUID#
 [AddDeviceInterfaceGUID]
 HKR,,DeviceInterfaceGUIDs,0x10000,%DeviceGUID%
 
-[USB_Install.CoInstallers]
+[USB_Install.NTx86.CoInstallers]
 AddReg    = CoInstallers_AddReg
 CopyFiles = CoInstallers_CopyFiles
+
+[USB_Install.NTamd64.CoInstallers]
+AddReg    = CoInstallers_AddReg
+CopyFiles = CoInstallers_CopyFiles
+
+[USB_Install.NTarm64.CoInstallers]
+;
 
 [CoInstallers_AddReg]
 HKR,,CoInstallers32,0x00010000,"WdfCoInstaller#WDF_VERSION#.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
@@ -89,6 +96,5 @@ WdfCoInstaller#WDF_VERSION#.dll = 1,x86
 WinUSBCoInstaller2.dll = 1,amd64
 WdfCoInstaller#WDF_VERSION#.dll = 1,amd64
 
-[SourceDisksFiles.arm]
-WinUSBCoInstaller2.dll = 1,arm
-WdfCoInstaller#WDF_VERSION#.dll = 1,arm
+[SourceDisksFiles.arm64]
+;

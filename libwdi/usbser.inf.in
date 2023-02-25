@@ -1,5 +1,5 @@
 ; #INF_FILENAME#
-; Copyright (c) 2016 Pete Batard <pete@akeo.ie> (GNU LGPL)
+; Copyright (c) 2016-2023 Pete Batard <pete@akeo.ie> (GNU LGPL)
 ; Based on the USB CDC .inf sample file provided by James Stephanick
 ; at https://community.freescale.com/message/493287#493287
 ; With acknowledgement to Sensics, Inc. <http://sensics.com/osvr>,
@@ -22,7 +22,7 @@ CatalogFile = #CAT_FILENAME#
 DriverVer   = #DRIVER_DATE#, 1.0.0.0
 
 [Manufacturer]
-%VendorName% = DeviceList,NTx86,NTamd64,NTarm
+%VendorName% = DeviceList,NTx86,NTamd64,NTarm64
 
 [DeviceList.NTx86]
 %DeviceName% = UsbSer_Install, USB\%DeviceID%
@@ -30,7 +30,7 @@ DriverVer   = #DRIVER_DATE#, 1.0.0.0
 [DeviceList.NTamd64]
 %DeviceName% = UsbSer_Install, USB\%DeviceID%
 
-[DeviceList.NTarm]
+[DeviceList.NTarm64]
 %DeviceName% = UsbSer_Install, USB\%DeviceID%
 
 [UsbSer_Install]

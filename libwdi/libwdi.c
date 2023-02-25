@@ -540,6 +540,37 @@ static FILE *fopen_as_userU(const char *filename, const char *mode)
 	return _fdopen(lowlevel_fd, mode);
 }
 
+// Detect the underlying platform arch.
+static USHORT get_platform_arch(void)
+{
+	BOOL is_64bit = FALSE;
+	USHORT ProcessMachine = IMAGE_FILE_MACHINE_UNKNOWN, NativeMachine = IMAGE_FILE_MACHINE_UNKNOWN;
+
+	PF_DECL_LIBRARY(Kernel32);
+	PF_TYPE_DECL(WINAPI, BOOL, IsWow64Process2, (HANDLE, USHORT*, USHORT*));
+	PF_LOAD_LIBRARY(Kernel32);
+	PF_INIT(IsWow64Process2, Kernel32);
+
+	// Best way to find the underlying platform, is to use IsWow64Process2() and look at
+	// NativeMachine. However this API is only available on Windows 10 1511 or later, so
+	// we first try to detect the x86 arch in case we need a fallback.
+	if (sizeof(uintptr_t) < 8) {
+		// This application is not 64 bit, but it might be 32 bit
+		// running in WOW64
+		IsWow64Process(GetCurrentProcess(), &is_64bit);
+	} else {
+		is_64bit = TRUE;
+	}
+
+	if ((pfIsWow64Process2 == NULL) ||
+		!pfIsWow64Process2(GetCurrentProcess(), &ProcessMachine, &NativeMachine)) {
+		// Couldn't get NativeMachine from IsWow64Process2() so assume x86
+		NativeMachine = (is_64bit) ? IMAGE_FILE_MACHINE_AMD64 : IMAGE_FILE_MACHINE_I386;
+	}
+
+	PF_FREE_LIBRARY(Kernel32);
+	return NativeMachine;
+}
 
 // Retrieve the version info from the WinUSB, libusbK or libusb0 drivers
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
@@ -647,8 +678,13 @@ out:
 
 
 // Find out if the driver selected is actually embedded in this version of the library
+// or supported by the underlying platform architecture.
 BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
+#if (defined(LIBUSB0_DIR) || defined(LIBUSBK_DIR))
+	USHORT platform_arch = get_platform_arch();
+#endif
+
 	if (driver_type < WDI_USER) {	// github issue #40
 		if (driver_type != WDI_CDC) {
 			// The CDC driver does not have embedded binaries
@@ -668,13 +704,13 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #endif
 	case WDI_LIBUSB0:
 #if defined(LIBUSB0_DIR)
-		return TRUE;
+		return (platform_arch == IMAGE_FILE_MACHINE_AMD64 || platform_arch == IMAGE_FILE_MACHINE_I386);
 #else
 		return FALSE;
 #endif
 	case WDI_LIBUSBK:
 #if defined(LIBUSBK_DIR)
-		return TRUE;
+		return (platform_arch == IMAGE_FILE_MACHINE_AMD64 || platform_arch == IMAGE_FILE_MACHINE_I386);
 #else
 		return FALSE;
 #endif
@@ -700,7 +736,7 @@ BOOL LIBWDI_API wdi_is_file_embedded(const char* path, const char* name)
 {
 	int i;
 
-	for (i=0; i<nb_resources; i++) {
+	for (i = 0; i < nb_resources; i++) {
 		if (safe_strcmp(name, resource[i].name) == 0) {
 			if (path == NULL) {
 				return TRUE;
@@ -1235,7 +1271,7 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	inf_name = (char*)filename(inf);
 
 	// Check the inf file provided and create the cat file name
-	if (strcmp(inf_name+safe_strlen(inf_name)-4, inf_ext) != 0) {
+	if (strcmp(inf_name + safe_strlen(inf_name) - 4, inf_ext) != 0) {
 		wdi_err("Inf name provided must have a '.inf' extension");
 		r = WDI_ERROR_INVALID_PARAM;
 		goto out;
@@ -1268,14 +1304,14 @@ int LIBWDI_API wdi_prepare_driver(struct wdi_device_info* device_info, const cha
 	}
 
 	// Ensure driver_type is what we expect
-	if ( (driver_type < 0) || (driver_type > WDI_USER) ) {
+	if ((driver_type < 0) || (driver_type > WDI_USER)) {
 		wdi_err("Program assertion failed - Unknown driver type");
 		r = WDI_ERROR_INVALID_PARAM;
 		goto out;
 	}
 
 	if (!wdi_is_driver_supported(driver_type, &driver_version[driver_type])) {
-		for (driver_type=0; driver_type<WDI_NB_DRIVERS; driver_type++) {
+		for (driver_type = 0; driver_type < WDI_NB_DRIVERS; driver_type++) {
 			if (wdi_is_driver_supported(driver_type, NULL)) {
 				wdi_warn("unsupported or no driver type specified, will use %s",
 					driver_display_name[driver_type]);
@@ -1627,6 +1663,20 @@ static int process_message(char* buffer, DWORD size)
 	return WDI_SUCCESS;
 }
 
+static const char* get_installer_arch(USHORT uArch)
+{
+	switch (uArch) {
+	case IMAGE_FILE_MACHINE_AMD64:
+		return "x64";
+	case IMAGE_FILE_MACHINE_I386:
+		return "x86";
+	case IMAGE_FILE_MACHINE_ARM64:
+		return "arm64";
+	default:
+		return "unknown_arch";
+	}
+}
+
 // Run the elevated installer
 static int install_driver_internal(void* arglist)
 {
@@ -1637,13 +1687,13 @@ static int install_driver_internal(void* arglist)
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
 	SECURITY_ATTRIBUTES sa;
-	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH];
 	HANDLE stdout_w = INVALID_HANDLE_VALUE;
 	HANDLE handle[3] = { INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE };
 	OVERLAPPED overlapped;
-	int r;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
-	BOOL is_x64 = FALSE;
+	USHORT platform_arch = get_platform_arch();
+	int r;
+	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH], installer_name[32];
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
 
@@ -1692,16 +1742,6 @@ static int install_driver_internal(void* arglist)
 		wdi_dbg("CMP_WaitNoPendingInstallEvents not available");
 	}
 
-	// Detect whether if we should run the 64 bit installer, without
-	// relying on external libs
-	if (sizeof(uintptr_t) < 8) {
-		// This application is not 64 bit, but it might be 32 bit
-		// running in WOW64
-		IsWow64Process(GetCurrentProcess(), &is_x64);
-	} else {
-		is_x64 = TRUE;
-	}
-
 	// Use a pipe to communicate with our installer
 	pipe_handle = CreateNamedPipeA(INSTALLER_PIPE_NAME, PIPE_ACCESS_DUPLEX|FILE_FLAG_OVERLAPPED,
 		PIPE_TYPE_MESSAGE|PIPE_READMODE_MESSAGE, 1, 4096, 4096, 0, NULL);
@@ -1721,14 +1761,15 @@ static int install_driver_internal(void* arglist)
 	overlapped.hEvent = handle[0];
 
 	if (!filter_driver) {
-		// Why do we need two installers? Glad you asked. If you try to run the x86 installer on an x64
+		// Why do we need multiple installers? Glad you asked. If you try to run the x86 installer on an x64
 		// system, you will get a "System does not work under WOW64 and requires 64-bit version" message.
-		static_sprintf(exename, "\"%s\\installer_x%s.exe\"", path, is_x64?"64":"86");
+		// And of course, Windows ARM64 won't let you use an x86 installer either...
+		static_sprintf(installer_name, "installer_%s.exe", get_installer_arch(platform_arch));
 		static_sprintf(exeargs, "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
-		static_strcat(path, is_x64 ? "\\amd64" : "\\x86");
-		static_sprintf(exename, "\"%s\\install-filter.exe\"", path);
+		static_strcat(installer_name, "install-filter.exe");
+		static_strcat(path, (platform_arch == IMAGE_FILE_MACHINE_AMD64) ? "\\amd64" : "\\x86");
 		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
 			// Device already has the libusb-win32 filter => remove
 			static_strcpy(exeargs, "uninstall -d=");
@@ -1748,12 +1789,15 @@ static int install_driver_internal(void* arglist)
 			goto out;
 		}
 	}
-	// At this stage, if either the 32 or 64 bit installer version is missing,
+	static_sprintf(exename, "\"%s\\%s\"", path, installer_name);
+
+	// At this stage, if the installer for the relevant arch is missing,
 	// it is the application developer's fault...
 	if (GetFileAttributesU(exename) == INVALID_FILE_ATTRIBUTES) {
-		wdi_err("This application does not contain the required %s bit installer", is_x64?"64":"32");
-		wdi_err("Please contact the application provider for a %s bit compatible version", is_x64?"64":"32");
-		r = WDI_ERROR_NOT_FOUND; goto out;
+		wdi_err("This application does not contain the required %s installer", installer_name);
+		wdi_err("Please contact the application provider for a compatible version");
+		r = WDI_ERROR_NOT_FOUND;
+		goto out;
 	}
 
 	if (IsUserAnAdmin()) {
@@ -1762,7 +1806,7 @@ static int install_driver_internal(void* arglist)
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = NULL;
 		shExecInfo.lpVerb = "runas";
-		shExecInfo.lpFile = filter_driver?"install-filter.exe":(is_x64?"installer_x64.exe":"installer_x86.exe");
+		shExecInfo.lpFile = installer_name;
 		shExecInfo.lpParameters = exeargs;
 		shExecInfo.lpDirectory = path;
 		shExecInfo.lpClass = NULL;
