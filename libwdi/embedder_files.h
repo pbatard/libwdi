@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -124,6 +124,9 @@ struct emb embeddable_fixed[] = {
 #endif
 #if defined(OPT_M64)
 	{ 0, INSTALLER_PATH_64 "\\installer_x64.exe", "." },
+#endif
+#if defined(OPT_ARM)
+	{ 0, INSTALLER_PATH_ARM "\\installer_arm64.exe", "." },
 #endif
 // inf templates for the tokenizer ("" directory means no extraction)
 	{ 0, "winusb.inf.in", "" },

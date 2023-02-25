@@ -213,6 +213,9 @@ embedder embedded.h</Command>
       <Project>{792d44d5-28a7-4eb3-b84b-8021fe3189f9}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="installer_arm64.vcxproj">
+      <Project>{6ac16f78-f266-4ae0-bd63-550a55f54c15}</Project>
+    </ProjectReference>
     <ProjectReference Include="installer_x64.vcxproj">
       <Project>{e5a56ee0-182f-470f-8cdc-8c1b7b86ee26}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

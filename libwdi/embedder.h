@@ -1,7 +1,7 @@
 /*
  * embedder : converts binary resources into a .h include
  * "If you can think of a better way to get ice, I'd like to hear it."
- * Copyright (c) 2010-2017 Pete Batard <pete@akeo.ie>
+ * Copyright (c) 2010-2023 Pete Batard <pete@akeo.ie>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,9 +52,11 @@
 #if defined(_DEBUG)
 #define INSTALLER_PATH_32 SOLUTIONDIR "\\Win32\\Debug\\helper"
 #define INSTALLER_PATH_64 SOLUTIONDIR "\\x64\\Debug\\helper"
+#define INSTALLER_PATH_ARM SOLUTIONDIR "\\arm64\\Debug\\helper"
 #else
 #define INSTALLER_PATH_32 SOLUTIONDIR "\\Win32\\Release\\helper"
 #define INSTALLER_PATH_64 SOLUTIONDIR "\\x64\\Release\\helper"
+#define INSTALLER_PATH_ARM SOLUTIONDIR "\\arm64\\Release\\helper"
 #endif
 #else
 #if !defined(SOLUTIONDIR)
@@ -64,4 +66,5 @@
 // as it won't run from ANYWHERE ELSE! Use the one from .libs instead.
 #define INSTALLER_PATH_32 SOLUTIONDIR
 #define INSTALLER_PATH_64 SOLUTIONDIR
+#define INSTALLER_PATH_ARM SOLUTIONDIR
 #endif
