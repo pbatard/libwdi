@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: recursive
@@ -65,7 +65,7 @@ jobs:
         )
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       if: ${{ github.event_name == 'push' }}
       with:
         name: VS2022
@@ -76,7 +76,7 @@ jobs:
       run: sha256sum ./*/*/examples/*.exe
 
     - name: Compress release-ready version of Zadig
-      uses: crazy-max/ghaction-upx@v1
+      uses: crazy-max/ghaction-upx@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         version: latest
@@ -94,7 +94,7 @@ jobs:
         sha256sum zadig-*.exe
 
     - name: Upload release-ready version of Zadig
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       if: startsWith(github.ref, 'refs/tags/')
       with:
         name: Zadig
