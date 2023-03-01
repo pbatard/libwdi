@@ -25,6 +25,7 @@
 
 #include <windows.h>
 #include <wininet.h>
+#include <netlistmgr.h>
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
@@ -36,13 +37,17 @@
 #include "zadig_registry.h"
 #include "zadig_resource.h"
 
+#if defined(__MINGW32__)
+#define INetworkListManager_get_IsConnectedToInternet INetworkListManager_IsConnectedToInternet
+#endif
+
 /* Maximum download chunk size, in bytes */
 #define DOWNLOAD_BUFFER_SIZE    10240
 /* Default delay between update checks (1 day) */
-#define DEFAULT_UPDATE_INTERVAL (24*3600)
+#define DEFAULT_UPDATE_INTERVAL (24 * 3600)
 
 DWORD error_code;
-APPLICATION_UPDATE update = { {0,0,0,0}, {0,0}, NULL, NULL };
+APPLICATION_UPDATE update = { { 0,0,0,0 }, { 0,0 }, NULL, NULL };
 
 static BOOL force_update = FALSE;
 static BOOL force_update_check = FALSE;
@@ -244,6 +249,62 @@ const char* WinInetErrorString(void)
 }
 
 /*
+ * Open an Internet session
+ */
+static HINTERNET GetInternetSession(int num_retries)
+{
+	int i;
+	char agent[64];
+	BOOL decodingSupport = TRUE;
+	VARIANT_BOOL InternetConnection = VARIANT_FALSE;
+	DWORD dwFlags, dwTimeout = NET_SESSION_TIMEOUT, dwProtocolSupport = HTTP_PROTOCOL_FLAG_HTTP2;
+	HINTERNET hSession = NULL;
+	HRESULT hr = S_FALSE;
+	INetworkListManager* pNetworkListManager;
+
+	// Create a NetworkListManager Instance to check the network connection
+	IGNORE_RETVAL(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
+	hr = CoCreateInstance(&CLSID_NetworkListManager, NULL, CLSCTX_ALL,
+		&IID_INetworkListManager, (LPVOID*)&pNetworkListManager);
+	if (hr == S_OK) {
+		for (i = 0; i <= num_retries; i++) {
+			hr = INetworkListManager_get_IsConnectedToInternet(pNetworkListManager, &InternetConnection);
+			if (hr == S_OK && InternetConnection == VARIANT_TRUE)
+				break;
+			// INetworkListManager may fail with ERROR_SERVICE_DEPENDENCY_FAIL if the DHCP service
+			// is not running, in which case we must fall back to using InternetGetConnectedState().
+			// See https://github.com/pbatard/rufus/issues/1801.
+			if (hr == HRESULT_FROM_WIN32(ERROR_SERVICE_DEPENDENCY_FAIL)) {
+				if (InternetGetConnectedState(&dwFlags, 0)) {
+					InternetConnection = VARIANT_TRUE;
+					break;
+				}
+			}
+			Sleep(1000);
+		}
+	}
+	if (InternetConnection == VARIANT_FALSE) {
+		SetLastError(ERROR_INTERNET_DISCONNECTED);
+		goto out;
+	}
+	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
+		application_version[0], application_version[1], application_version[2],
+		windows_version >> 4, windows_version & 0x0F, is_x64() ? "; WOW64" : "");
+	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	// Set the timeouts
+	InternetSetOptionA(hSession, INTERNET_OPTION_CONNECT_TIMEOUT, (LPVOID)&dwTimeout, sizeof(dwTimeout));
+	InternetSetOptionA(hSession, INTERNET_OPTION_SEND_TIMEOUT, (LPVOID)&dwTimeout, sizeof(dwTimeout));
+	InternetSetOptionA(hSession, INTERNET_OPTION_RECEIVE_TIMEOUT, (LPVOID)&dwTimeout, sizeof(dwTimeout));
+	// Enable gzip and deflate decoding schemes
+	InternetSetOptionA(hSession, INTERNET_OPTION_HTTP_DECODING, (LPVOID)&decodingSupport, sizeof(decodingSupport));
+	// Enable HTTP/2 protocol support
+	InternetSetOptionA(hSession, INTERNET_OPTION_ENABLE_HTTP_PROTOCOL, (LPVOID)&dwProtocolSupport, sizeof(dwProtocolSupport));
+
+out:
+	return hSession;
+}
+
+/*
  * Download a file from an URL
  * Mostly taken from http://support.microsoft.com/kb/234913
  * If hProgressDialog is not NULL, this function will send INIT and EXIT messages
@@ -255,17 +316,16 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	HWND hProgressBar = NULL;
 	BOOL r = FALSE;
 	LONG progress_style;
-	DWORD dwFlags, dwSize, dwWritten, dwDownloaded, dwTotalSize;
+	DWORD dwSize, dwWritten, dwDownloaded, dwTotalSize;
 	DWORD DownloadStatus;
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 	const char* accept_types[] = {"*/*\0", NULL};
 	unsigned char buf[DOWNLOAD_BUFFER_SIZE];
-	char agent[64], hostname[64], urlpath[128], msg[MAX_PATH];
+	char hostname[64], urlpath[128], msg[MAX_PATH];
 	HINTERNET hSession = NULL, hConnection = NULL, hRequest = NULL;
 	URL_COMPONENTSA UrlParts = {sizeof(URL_COMPONENTSA), NULL, 1, (INTERNET_SCHEME)0,
 		hostname, sizeof(hostname), 0, NULL, 1, urlpath, sizeof(urlpath), NULL, 1};
 	size_t last_slash;
-	int i;
 
 	DownloadStatus = 404;
 	if (hProgressDialog != NULL) {
@@ -301,19 +361,7 @@ DWORD DownloadFile(const char* url, const char* file, HWND hProgressDialog)
 	hostname[sizeof(hostname)-1] = 0;
 
 	// Open an Internet session
-	for (i=5; (i>0) && (!InternetGetConnectedState(&dwFlags, 0)); i--) {
-		Sleep(1000);
-	}
-	if (i <= 0) {
-		// http://msdn.microsoft.com/en-us/library/windows/desktop/aa384702.aspx is wrong...
-		SetLastError(ERROR_INTERNET_NOT_INITIALIZED);
-		dprintf("Network is unavailable: %s\n", WinInetErrorString());
-		goto out;
-	}
-	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
-		application_version[0], application_version[1], application_version[2],
-		windows_version >> 4, windows_version & 0x0F, is_x64()?"; WOW64":"");
-	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	hSession = GetInternetSession(5);
 	if (hSession == NULL) {
 		dprintf("Could not open Internet session: %s\n", WinInetErrorString());
 		goto out;
@@ -434,8 +482,8 @@ HANDLE DownloadFileThreaded(const char* url, const char* file, HWND hProgressDia
 static __inline uint64_t to_uint64_t(uint16_t x[4]) {
 	int i;
 	uint64_t ret = 0;
-	for (i=0; i<4; i++)
-		ret = (ret<<16) + x[i];
+	for (i = 0; i < 4; i++)
+		ret = (ret << 16) + x[i];
 	return ret;
 }
 
@@ -448,16 +496,16 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 	int status = 0;
 	const char* server_url = APPLICATION_URL "/";
 	int i, j, k, verbose = 0, verpos[4];
-	static const char* archname[] = {"win_x86", "win_x64"};
-	static const char* channel[] = {"release", "beta"};		// release channel
-	const char* accept_types[] = {"*/*\0", NULL};
-	DWORD dwFlags, dwSize, dwDownloaded, dwTotalSize, dwStatus;
+	static const char* archname[] = { "win_x86", "win_x64" };
+	static const char* channel[] = { "release", "beta" };		// release channel
+	const char* accept_types[] = { "*/*\0", NULL };
+	DWORD dwSize, dwDownloaded, dwTotalSize, dwStatus;
 	char* buf = NULL;
-	char agent[64], hostname[64], urlpath[128];
-	OSVERSIONINFOA os_version = {sizeof(OSVERSIONINFOA), 0, 0, 0, 0, ""};
+	char hostname[64], urlpath[128];
+	OSVERSIONINFOA os_version = { sizeof(OSVERSIONINFOA), 0, 0, 0, 0, "" };
 	HINTERNET hSession = NULL, hConnection = NULL, hRequest = NULL;
-	URL_COMPONENTSA UrlParts = {sizeof(URL_COMPONENTSA), NULL, 1, (INTERNET_SCHEME)0,
-		hostname, sizeof(hostname), 0, NULL, 1, urlpath, sizeof(urlpath), NULL, 1};
+	URL_COMPONENTSA UrlParts = { sizeof(URL_COMPONENTSA), NULL, 1, (INTERNET_SCHEME)0,
+		hostname, sizeof(hostname), 0, NULL, 1, urlpath, sizeof(urlpath), NULL, 1 };
 	SYSTEMTIME ServerTime, LocalTime;
 	FILETIME FileTime;
 	int64_t local_time = 0, reg_time, server_time, update_interval;
@@ -472,7 +520,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		// It would of course be a lot nicer to use a timer and wake the thread, but my
 		// development time is limited and this is FASTER to implement.
 		do {
-			for (i=0; (i<30) && (!force_update_check); i++)
+			for (i = 0; (i < 30) && (!force_update_check); i++)
 				Sleep(500);
 		} while ((!force_update_check) && ((installation_running || (dialog_showing>0))));
 		if (!force_update_check) {
@@ -506,14 +554,10 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		goto out;
 	}
 
-	if ((!InternetCrackUrlA(server_url, (DWORD)safe_strlen(server_url), 0, &UrlParts)) || (!InternetGetConnectedState(&dwFlags, 0)))
+	if (!InternetCrackUrlA(server_url, (DWORD)safe_strlen(server_url), 0, &UrlParts))
 		goto out;
-	hostname[sizeof(hostname)-1] = 0;
-
-	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d  (Windows NT %d.%d%s)",
-		application_version[0], application_version[1], application_version[2],
-		windows_version >> 4, windows_version & 0x0F, is_x64() ? "; WOW64" : "");
-	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	hostname[sizeof(hostname) - 1] = 0;
+	hSession = GetInternetSession(5);
 	if (hSession == NULL)
 		goto out;
 	hConnection = InternetConnectA(hSession, UrlParts.lpszHostName, UrlParts.nPort, NULL, NULL, INTERNET_SERVICE_HTTP, 0, (DWORD_PTR)NULL);
@@ -523,17 +567,17 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 	status++;	// 2
 	releases_only = !GetRegistryKeyBool(REGKEY_HKCU, REGKEY_INCLUDE_BETAS);
 
-	for (k=0; (k<(releases_only?1:(int)ARRAYSIZE(channel))) && (!found_new_version); k++) {
+	for (k = 0; (k < (releases_only ? 1 : (int)ARRAYSIZE(channel))) && (!found_new_version); k++) {
 		dprintf("Checking %s channel...\n", channel[k]);
 		// At this stage we can query the server for various update version files.
 		// We first try to lookup for "<appname>_<os_arch>_<os_version_major>_<os_version_minor>.ver"
 		// and then remove each each of the <os_> components until we find our match. For instance, we may first
 		// look for <app_name>_win_x64_6.2.ver (Win8 x64) but only get a match for <app_name>_win_x64_6.ver (Vista x64 or later)
 		// This allows sunsetting OS versions (eg XP) or providing different downloads for different archs/groups.
-		static_sprintf(urlpath, "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k==0)?"":"_",
-			(k==0)?"":channel[k], archname[is_x64()?1:0], os_version.dwMajorVersion, os_version.dwMinorVersion);
+		static_sprintf(urlpath, "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k == 0) ? "" : "_",
+			(k == 0) ? "" : channel[k], archname[is_x64() ? 1 : 0], os_version.dwMajorVersion, os_version.dwMinorVersion);
 		vuprintf("Base update check: %s\n", urlpath);
-		for (i=0, j=(int)safe_strlen(urlpath)-5; (j>0)&&(i<ARRAYSIZE(verpos)); j--) {
+		for (i = 0, j = (int)safe_strlen(urlpath) - 5; (j>0) && (i<ARRAYSIZE(verpos)); j--) {
 			if ((urlpath[j] == '.') || (urlpath[j] == '_')) {
 				verpos[i++] = j;
 			}
@@ -566,7 +610,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		}
 		if (dwStatus != 200) {
 			vuprintf("Could not find a %s version file on server %s", channel[k], server_url);
-			if ((releases_only) || (k+1 >= ARRAYSIZE(channel)))
+			if ((releases_only) || (k + 1 >= ARRAYSIZE(channel)))
 				goto out;
 			continue;
 		}
@@ -580,7 +624,7 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		if ( (!HttpQueryInfoA(hRequest, HTTP_QUERY_DATE|HTTP_QUERY_FLAG_SYSTEMTIME, (LPVOID)&ServerTime, &dwSize, NULL))
 			|| (!SystemTimeToFileTime(&ServerTime, &FileTime)) )
 			goto out;
-		server_time = ((((int64_t)FileTime.dwHighDateTime)<<32) + FileTime.dwLowDateTime) / 10000000;
+		server_time = ((((int64_t)FileTime.dwHighDateTime) << 32) + FileTime.dwLowDateTime) / 10000000;
 		vvuprintf("Server time: %" PRId64 "\n", server_time);
 		// Always store the server response time - the only clock we trust!
 		WriteRegistryKey64(REGKEY_HKCU, REGKEY_LAST_UPDATE, server_time);
@@ -624,9 +668,12 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 
 out:
 	safe_free(buf);
-	if (hRequest) InternetCloseHandle(hRequest);
-	if (hConnection) InternetCloseHandle(hConnection);
-	if (hSession) InternetCloseHandle(hSession);
+	if (hRequest)
+		InternetCloseHandle(hRequest);
+	if (hConnection)
+		InternetCloseHandle(hConnection);
+	if (hSession)
+		InternetCloseHandle(hSession);
 	switch(status) {
 	case 1:
 		print_status(3000, TRUE, "Updates: Unable to connect to the internet");
