@@ -365,12 +365,12 @@ static __inline char* xlocale_to_utf8(const char* str)
 	}
 
 	// +1 for extra leading byte
-	if ((ustr = (char*)calloc(size+1, 1)) == NULL) {
+	if ((ustr = (char*)calloc((size_t)size + 1, 1)) == NULL) {
 		free(wstr);
 		return NULL;
 	}
 
-	if (wchar_to_utf8_no_alloc(wstr, ustr+1, size) != size) {
+	if (wchar_to_utf8_no_alloc(wstr, ustr + 1, size) != size) {
 		free(ustr);
 		free(wstr);
 		return NULL;
@@ -480,7 +480,7 @@ void __cdecl syslog_reader_thread(void* param)
 
 		if (size != 0) {
 			// Read from file and add a zero terminator
-			buffer = malloc(size+1);
+			buffer = malloc((size_t)size + 1);
 			if (buffer == NULL) {
 				plog("could not allocate buffer to read syslog");
 				goto out;

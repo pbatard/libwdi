@@ -936,11 +936,12 @@ int get_windows_version(char* WindowsVersionStr, size_t WindowsVersionStrSize)
 	char* vptr;
 	size_t vlen;
 	unsigned major, minor;
-	int nWindowsVersion, nWindowsBuildNumber;
+	int nWindowsVersion = WINDOWS_UNDEFINED, nWindowsBuildNumber = 0;
 	ULONGLONG major_equal, minor_equal;
 	BOOL ws;
 
-	nWindowsVersion = WINDOWS_UNDEFINED;
+	if (WindowsVersionStr == NULL || WindowsVersionStrSize < 32)
+		return nWindowsVersion;
 	safe_strcpy(WindowsVersionStr, WindowsVersionStrSize, "Windows Undefined");
 
 	memset(&vi, 0, sizeof(vi));
@@ -1282,7 +1283,7 @@ BOOL parse_ini(void) {
 
 	// Set the log level
 	profile_get_integer(profile, "general", "log_level", NULL, WDI_LOG_LEVEL_INFO, &log_level);
-	if ((log_level < WDI_LOG_LEVEL_DEBUG) && (log_level > WDI_LOG_LEVEL_NONE)) {
+	if ((log_level < WDI_LOG_LEVEL_DEBUG) || (log_level > WDI_LOG_LEVEL_NONE)) {
 		log_level = WDI_LOG_LEVEL_INFO;
 	}
 

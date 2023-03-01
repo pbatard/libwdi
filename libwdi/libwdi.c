@@ -1693,7 +1693,7 @@ static int install_driver_internal(void* arglist)
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
 	USHORT platform_arch = get_platform_arch();
 	int r;
-	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH], installer_name[32];
+	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH], installer_name[32] = { 0 };
 	char *buffer = NULL, *new_buffer;
 	const char* filter_name = "libusb0";
 
@@ -1768,7 +1768,7 @@ static int install_driver_internal(void* arglist)
 		static_sprintf(exeargs, "\"%s\"", params->inf_name);
 	} else {
 		// Use libusb-win32's filter driver installer
-		static_strcat(installer_name, "install-filter.exe");
+		static_strcpy(installer_name, "install-filter.exe");
 		static_strcat(path, (platform_arch == IMAGE_FILE_MACHINE_AMD64) ? "\\amd64" : "\\x86");
 		if (safe_stricmp(current_device->upper_filter, filter_name) == 0) {
 			// Device already has the libusb-win32 filter => remove
