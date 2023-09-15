@@ -1800,7 +1800,7 @@ static int install_driver_internal(void* arglist)
 		goto out;
 	}
 
-	if (IsUserAnAdmin()) {
+	if (!IsUserAnAdmin()) {
 		// Take care of UAC with ShellExecuteEx + runas
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
