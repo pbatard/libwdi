@@ -73,6 +73,11 @@ struct emb embeddable_fixed[] = {
 		{ 0, LIBUSB0_DIR "\\bin\\amd64\\libusb0.sys", "amd64" },
 		{ 0, LIBUSB0_DIR "\\bin\\amd64\\install-filter.exe", "amd64" },
 #	endif	// OPT_M64
+#	if defined(OPT_ARM)
+		{ 0, LIBUSB0_DIR "\\bin\\arm64\\libusb0.dll", "arm64" },
+		{ 0, LIBUSB0_DIR "\\bin\\arm64\\libusb0.sys", "arm64" },
+		{ 0, LIBUSB0_DIR "\\bin\\arm64\\install-filter.exe", "arm64" },
+#	endif	// OPT_ARM
 	{ 0, LIBUSB0_DIR "\\installer_license.txt", "license\\libusb0" },
 #endif	// LIBUSB0_DIR
 

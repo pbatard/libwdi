@@ -704,7 +704,7 @@ BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* drive
 #endif
 	case WDI_LIBUSB0:
 #if defined(LIBUSB0_DIR)
-		return (platform_arch == IMAGE_FILE_MACHINE_AMD64 || platform_arch == IMAGE_FILE_MACHINE_I386);
+		return (platform_arch == IMAGE_FILE_MACHINE_ARM64 || platform_arch == IMAGE_FILE_MACHINE_AMD64 || platform_arch == IMAGE_FILE_MACHINE_I386);
 #else
 		return FALSE;
 #endif
