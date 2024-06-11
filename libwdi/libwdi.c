@@ -67,16 +67,66 @@ char WindowsVersionStr[128] = "Windows ";
 // Detect Windows version
 #define GET_WINDOWS_VERSION do { if (nWindowsVersion == WINDOWS_UNDEFINED) GetWindowsVersion(); } while(0)
 
-static BOOL is_x64(void)
+static __inline USHORT GetApplicationArch(void)
 {
-	BOOL ret = FALSE;
-	// Detect if we're running a 32 or 64 bit system
-	if (sizeof(uintptr_t) < 8) {
-		IsWow64Process(GetCurrentProcess(), &ret);
-	} else {
-		ret = TRUE;
+#if defined(_M_AMD64)
+	return IMAGE_FILE_MACHINE_AMD64;
+#elif defined(_M_IX86)
+	return IMAGE_FILE_MACHINE_I386;
+#elif defined(_M_ARM64)
+	return IMAGE_FILE_MACHINE_ARM64;
+#elif defined(_M_ARM)
+	return IMAGE_FILE_MACHINE_ARM;
+#else
+	return IMAGE_FILE_MACHINE_UNKNOWN;
+#endif
+}
+
+static __inline const char* GetArchName(USHORT uArch)
+{
+	switch (uArch) {
+	case IMAGE_FILE_MACHINE_AMD64:
+		return "x64";
+	case IMAGE_FILE_MACHINE_I386:
+		return "x86";
+	case IMAGE_FILE_MACHINE_ARM64:
+		return "arm64";
+	case IMAGE_FILE_MACHINE_ARM:
+		return "arm";
+	default:
+		return "unknown";
 	}
-	return ret;
+}
+
+// Detect the underlying platform arch.
+static USHORT GetPlatformArch(void)
+{
+	BOOL is_64bit = FALSE, is_wow64 = FALSE;
+	USHORT ProcessMachine = IMAGE_FILE_MACHINE_UNKNOWN, NativeMachine = IMAGE_FILE_MACHINE_UNKNOWN;
+
+	PF_DECL_LIBRARY(Kernel32);
+	PF_TYPE_DECL(WINAPI, BOOL, IsWow64Process2, (HANDLE, USHORT*, USHORT*));
+	PF_LOAD_LIBRARY(Kernel32);
+	PF_INIT(IsWow64Process2, Kernel32);
+
+	if ((pfIsWow64Process2 == NULL) ||
+		!pfIsWow64Process2(GetCurrentProcess(), &ProcessMachine, &NativeMachine)) {
+		// Assume same arch as the app
+		NativeMachine = GetApplicationArch();
+		// Fix the Arch if we have a 32-bit app running under WOW64
+		if ((sizeof(uintptr_t) < 8) && IsWow64Process(GetCurrentProcess(), &is_wow64) && is_wow64) {
+			if (NativeMachine == IMAGE_FILE_MACHINE_I386)
+				NativeMachine = IMAGE_FILE_MACHINE_AMD64;
+			else if (NativeMachine == IMAGE_FILE_MACHINE_ARM)
+				NativeMachine = IMAGE_FILE_MACHINE_ARM64;
+			else // I sure wanna be made aware of this scenario...
+				assert(FALSE);
+		}
+		wdi_warn("Note: Underlying Windows architecture was guessed and may be incorrect...");
+	}
+
+	PF_FREE_LIBRARY(Kernel32);
+	return NativeMachine;
 }
 
 static const char* GetEdition(DWORD ProductType)
@@ -167,10 +217,18 @@ static const char* GetEdition(DWORD ProductType)
 	case 0x000000A5: return "Pro for Education N";
 	case 0x000000AB: return "Enterprise G";	// I swear Microsoft are just making up editions...
 	case 0x000000AC: return "Enterprise G N";
+	case 0x000000B2: return "Cloud";
+	case 0x000000B3: return "Cloud N";
 	case 0x000000B6: return "Home OS";
-	case 0x000000B7: return "Cloud E";
-	case 0x000000B8: return "Cloud E N";
+	case 0x000000B7: case 0x000000CB: return "Cloud E";
+	case 0x000000B9: return "IoT OS";
+	case 0x000000BA: case 0x000000CA: return "Cloud E N";
+	case 0x000000BB: return "IoT Edge OS";
+	case 0x000000BC: return "IoT Enterprise";
 	case 0x000000BD: return "Lite";
+	case 0x000000BF: return "IoT Enterprise S";
+	case 0x000000C0: case 0x000000C2: case 0x000000C3: case 0x000000C4: case 0x000000C5: case 0x000000C6: return "XBox";
+	case 0x000000C7: case 0x000000C8: case 0x00000196: case 0x00000197: case 0x00000198: return "Azure Server";
 	case 0xABCDABCD: return "(Unlicensed)";
 	default:
 		static_sprintf(unknown_edition_str, "(Unknown Edition 0x%02X)", (uint32_t)ProductType);
@@ -185,8 +243,8 @@ void GetWindowsVersion(void)
 {
 	OSVERSIONINFOEXA vi, vi2;
 	DWORD dwProductType;
-	const char* w = 0;
-	const char* w64 = "32 bit";
+	const char* w = NULL;
+	const char* arch_name;
 	char* vptr;
 	size_t vlen;
 	unsigned major, minor;
@@ -275,22 +333,21 @@ void GetWindowsVersion(void)
 		}
 	}
 
-	if (is_x64())
-		w64 = "64-bit";
+	arch_name = GetArchName(GetPlatformArch());
 
 	GetProductInfo(vi.dwMajorVersion, vi.dwMinorVersion, vi.wServicePackMajor, vi.wServicePackMinor, &dwProductType);
 	vptr = &WindowsVersionStr[sizeof("Windows ") - 1];
 	vlen = sizeof(WindowsVersionStr) - sizeof("Windows ") - 1;
 	if (!w)
 		safe_sprintf(vptr, vlen, "%s %u.%u %s", (vi.dwPlatformId == VER_PLATFORM_WIN32_NT ? "NT" : "??"),
-			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, w64);
+			(unsigned)vi.dwMajorVersion, (unsigned)vi.dwMinorVersion, arch_name);
 	else if (vi.wServicePackMinor)
-		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, w64);
+		safe_sprintf(vptr, vlen, "%s SP%u.%u %s", w, vi.wServicePackMajor, vi.wServicePackMinor, arch_name);
 	else if (vi.wServicePackMajor)
-		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, w64);
+		safe_sprintf(vptr, vlen, "%s SP%u %s", w, vi.wServicePackMajor, arch_name);
 	else
 		safe_sprintf(vptr, vlen, "%s%s%s, %s",
-			w, (dwProductType != PRODUCT_UNDEFINED) ? " " : "", GetEdition(dwProductType), w64);
+			w, (dwProductType != PRODUCT_UNDEFINED) ? " " : "", GetEdition(dwProductType), arch_name);
 
 	// Add the build number (including UBR if available) for Windows 8.0 and later
 	nWindowsBuildNumber = vi.dwBuildNumber;
@@ -540,37 +597,6 @@ static FILE *fopen_as_userU(const char *filename, const char *mode)
 	return _fdopen(lowlevel_fd, mode);
 }
 
-// Detect the underlying platform arch.
-static USHORT get_platform_arch(void)
-{
-	BOOL is_64bit = FALSE;
-	USHORT ProcessMachine = IMAGE_FILE_MACHINE_UNKNOWN, NativeMachine = IMAGE_FILE_MACHINE_UNKNOWN;
-
-	PF_DECL_LIBRARY(Kernel32);
-	PF_TYPE_DECL(WINAPI, BOOL, IsWow64Process2, (HANDLE, USHORT*, USHORT*));
-	PF_LOAD_LIBRARY(Kernel32);
-	PF_INIT(IsWow64Process2, Kernel32);
-
-	// Best way to find the underlying platform, is to use IsWow64Process2() and look at
-	// NativeMachine. However this API is only available on Windows 10 1511 or later, so
-	// we first try to detect the x86 arch in case we need a fallback.
-	if (sizeof(uintptr_t) < 8) {
-		// This application is not 64 bit, but it might be 32 bit
-		// running in WOW64
-		IsWow64Process(GetCurrentProcess(), &is_64bit);
-	} else {
-		is_64bit = TRUE;
-	}
-
-	if ((pfIsWow64Process2 == NULL) ||
-		!pfIsWow64Process2(GetCurrentProcess(), &ProcessMachine, &NativeMachine)) {
-		// Couldn't get NativeMachine from IsWow64Process2() so assume x86
-		NativeMachine = (is_64bit) ? IMAGE_FILE_MACHINE_AMD64 : IMAGE_FILE_MACHINE_I386;
-	}
-
-	PF_FREE_LIBRARY(Kernel32);
-	return NativeMachine;
-}
 
 // Retrieve the version info from the WinUSB, libusbK or libusb0 drivers
 int get_version_info(int driver_type, VS_FIXEDFILEINFO* driver_info)
@@ -682,7 +708,7 @@ out:
 BOOL LIBWDI_API wdi_is_driver_supported(int driver_type, VS_FIXEDFILEINFO* driver_info)
 {
 #if (defined(LIBUSB0_DIR) || defined(LIBUSBK_DIR))
-	USHORT platform_arch = get_platform_arch();
+	USHORT platform_arch = GetPlatformArch();
 #endif
 
 	if (driver_type < WDI_USER) {	// github issue #40
@@ -1691,7 +1717,7 @@ static int install_driver_internal(void* arglist)
 	HANDLE handle[3] = { INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE };
 	OVERLAPPED overlapped;
 	DWORD err, rd_count, to_read, offset, bufsize = LOGBUF_SIZE;
-	USHORT platform_arch = get_platform_arch();
+	USHORT platform_arch = GetPlatformArch();
 	int r;
 	char path[MAX_PATH], exename[MAX_PATH], exeargs[MAX_PATH], installer_name[32] = { 0 };
 	char *buffer = NULL, *new_buffer;

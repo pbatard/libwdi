@@ -53,6 +53,20 @@ static BOOL force_update = FALSE;
 static BOOL force_update_check = FALSE;
 static BOOL update_check_in_progress = FALSE;
 
+static const char* GetAppArchName(void) {
+#if defined(_M_AMD64)
+	return "x64";
+#elif defined(_M_IX86)
+	return "x86";
+#elif defined(_M_ARM64)
+	return "arm64";
+#elif defined(_M_ARM)
+	return "arm";
+#else
+	return "unknown";
+#endif
+}
+
 /* MinGW is missing some of those */
 #if !defined(ERROR_INTERNET_DISCONNECTED)
 #define ERROR_INTERNET_DISCONNECTED (INTERNET_ERROR_BASE + 163)
@@ -248,6 +262,13 @@ const char* WinInetErrorString(void)
 	}
 }
 
+static __inline BOOL is_WOW64(void)
+{
+	BOOL ret = FALSE;
+	IsWow64Process(GetCurrentProcess(), &ret);
+	return ret;
+}
+
 /*
  * Open an Internet session
  */
@@ -289,7 +310,7 @@ static HINTERNET GetInternetSession(int num_retries)
 	}
 	static_sprintf(agent, APPLICATION_NAME "/%d.%d.%d (Windows NT %d.%d%s)",
 		application_version[0], application_version[1], application_version[2],
-		windows_version >> 4, windows_version & 0x0F, is_x64() ? "; WOW64" : "");
+		windows_version >> 4, windows_version & 0x0F, is_WOW64() ? "; WOW64" : "");
 	hSession = InternetOpenA(agent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	// Set the timeouts
 	InternetSetOptionA(hSession, INTERNET_OPTION_CONNECT_TIMEOUT, (LPVOID)&dwTimeout, sizeof(dwTimeout));
@@ -574,8 +595,8 @@ static DWORD WINAPI CheckForUpdatesThread(LPVOID param)
 		// and then remove each each of the <os_> components until we find our match. For instance, we may first
 		// look for <app_name>_win_x64_6.2.ver (Win8 x64) but only get a match for <app_name>_win_x64_6.ver (Vista x64 or later)
 		// This allows sunsetting OS versions (eg XP) or providing different downloads for different archs/groups.
-		static_sprintf(urlpath, "%s%s%s_%s_%ld.%ld.ver", APPLICATION_NAME, (k == 0) ? "" : "_",
-			(k == 0) ? "" : channel[k], archname[is_x64() ? 1 : 0], os_version.dwMajorVersion, os_version.dwMinorVersion);
+		static_sprintf(urlpath, "%s%s%s_win_%s_%lu.%lu.ver", APPLICATION_NAME, (k == 0) ? "" : "_",
+			(k == 0) ? "" : channel[k], GetAppArchName(), os_version.dwMajorVersion, os_version.dwMinorVersion);
 		vuprintf("Base update check: %s\n", urlpath);
 		for (i = 0, j = (int)safe_strlen(urlpath) - 5; (j>0) && (i<ARRAYSIZE(verpos)); j--) {
 			if ((urlpath[j] == '.') || (urlpath[j] == '_')) {
