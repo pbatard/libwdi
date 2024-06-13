@@ -1,11 +1,11 @@
-version = 2.8.782
+version = 2.9.788
 platform_min = 6.1
-download_url = https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe
+download_url = https://github.com/pbatard/libwdi/releases/download/v1.5.1/zadig-2.9.exe
 release_notes = {\rtf1\ansi\ansicpg1252\deff0\deflang6153{\fonttbl{\f0\fnil\fcharset0 Times New Roman;}{\f1\fnil\fcharset0 Courier New;}{\f2\fnil\fcharset2 Symbol;}}
 {\*\generator Riched20 6.3.9600}\viewkind4\uc1
-\pard\sl276\slmult1\b\f0\fs22\lang9\tab Zadig 2.8 (2023.03.01)\b0\line\par
-\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl276\slmult1\f1\fs16 Add ARM64 driver installation support (WinUSB and USBSer only!)\par
-{\pntext\f2\'B7\tab}Note: The above requires Windows 10 1511 or later with x86 (32-bit) emulation support.\par
-{\pntext\f2\'B7\tab}Improve networking support\par
-{\pntext\f2\'B7\tab}embedded drivers:\line WinUSB v6.1.7600.16385, libusb-win32 v1.2.7.3, libusbK v3.1.0.0 & USBSer (native)\par
+\pard\sl276\slmult1\b\f0\fs22\lang9\tab Zadig 2.9 (2024.06.13)\b0\line\par
+\pard{\pntext\f2\'B7\tab}{\*\pn\pnlvlblt\pnf2\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl276\slmult1\f1\fs16 Add libusb-win32 ARM64 driver installation support)\par
+{\pntext\f2\'B7\tab}Fix filter installer being potentially overwritten\par
+{\pntext\f2\'B7\tab}Fix UAC not being properly triggered during driver installation\par
+{\pntext\f2\'B7\tab}embedded drivers:\line WinUSB v6.1.7600.16385, libusb-win32 v1.4.0.0, libusbK v3.1.0.0 & USBSer (native)\par
 }

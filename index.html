@@ -160,8 +160,8 @@
 			</p>
 			<p><b>Note:</b> <i>"libusb-based"</i> above means an application that uses either <a href="https://libusb.info">libusb</a>, <a href="https://sourceforge.net/p/libusb-win32/wiki/Home/">libusb-win32</a> or <a href="http://libusbk.sourceforge.net/UsbK3/">libusbK</a>.</p>
 			<h2 style="border: 4px solid #a09a8a;"><span style="font-size: 133%">Download</span></h2>
-				<p><b>Updated 2023.03.01:</b></p>
-				<p><ul><li><span style="font-size: 133%"><b><a href="https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe">Zadig 2.8</a></b></span> (5.0 MB)</li>
+				<p><b>Updated 2024.06.13:</b></p>
+				<p><ul><li><span style="font-size: 133%"><b><a href="https://github.com/pbatard/libwdi/releases/download/v1.5.1/zadig-2.9.exe">Zadig 2.9</a></b></span> (5.1 MB)</li>
 				<li><a href="/downloads/">Other versions</a></li>
 				</ul></p>
 			<h4>System Requirements:</h4>
@@ -182,23 +182,22 @@
 			<a name="versions"></a>
 			<h2>Changelog</h2>
 			<ul>
-				<li><b>Version 2.8</b> (2023.03.01)<ul>
-					<li>Add ARM64 driver installation support (<i>WinUSB</i> and <i>USBSer</i> only!)<br/>
+				<li><b>Version 2.9</b> (2024.06.13)<ul>
+					<li>Add libusb-win32 ARM64 driver installation support (courtesy of <b>Peter Dons Tychsen</b>)<br/>
 					<b>Note:</b> Requires Windows 10 1511 or later with x86 (32-bit) emulation support.</li>
-					<li>Improve networking support</li>
-					<li>Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.2.7.3, libusbK v3.1.0.0 & USBSer (native)</li>
+					<li>Fix UAC not being properly triggered during driver installation (courtesy of <b>Andrew Meyer</b>)</li>
+					<li>Embedded drivers: WinUSB v6.1.7600.16385, libusb-win32 v1.4.0.0, libusbK v3.1.0.0 & USBSer (native)</li>
 				</ul></li>
-				<li><b><a href="https://github.com/pbatard/libwdi/blob/master/examples/zadig_README.creole">Other Versions</a></b></li>
 			</ul>
 			<h2>Source Code</h2>
-				<p><ul><li><a href="https://github.com/pbatard/libwdi/archive/v1.5.0.zip">libwdi 1.5.0 source</a> (328 KB). Includes Zadig in the examples directory.</li>
+				<p><ul><li><a href="https://github.com/pbatard/libwdi/archive/v1.5.1.zip">libwdi 1.5.1 source</a> (330 KB). Includes Zadig in the examples directory.</li>
 				<li>Alternatively, you can clone the <a href="https://git-scm.com">git</a> repository using:
 				<pre>$ git clone git://github.com/pbatard/libwdi</pre></li>
 				<li>For more information, see the <a href="https://github.com/pbatard/libwdi">GitHub project</a>.</li></ul>
 				If you are a developer, you are very much encouraged to tinker with Zadig/libwdi and submit patches.</p>
 		</div>
  		<div class="footer">
-		Copyright © 2013-2023 <a href="https://pete.akeo.ie">Pete Batard</a><br/>
+		Copyright © 2013-2024 <a href="https://pete.akeo.ie">Pete Batard</a><br/>
 		Hosting by <a href="https://github.com">GitHub</a>
 		</div>
 	</div>
