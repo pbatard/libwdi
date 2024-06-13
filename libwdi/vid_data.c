@@ -29,7 +29,7 @@ struct vendor_name {
 
 /*
  * http://www.linux-usb.org/usb.ids
- * Version: 2023.01.16
+ * Version: 2024.03.18
  */
 static struct vendor_name usb_vendor[] = {
 	{ 0x0001, "Fry's Electronics" },
@@ -37,6 +37,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0003, "Club Mac" },
 	{ 0x0004, "Nebraska Furniture Mart" },
 	{ 0x0011, "Unknown" },
+	{ 0x001f, "Walmart" },
 	{ 0x0040, "Anyware Corporation" },
 	{ 0x0042, "DMT" },
 	{ 0x0053, "Planex" },
@@ -173,7 +174,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0464, "AMP/Tycoelectronics Corp." },
 	{ 0x0467, "AT&T Paradyne" },
 	{ 0x0468, "Wieson Technologies Co., Ltd" },
-	{ 0x046a, "Cherry GmbH" },
+	{ 0x046a, "CHERRY" },
 	{ 0x046b, "American Megatrends, Inc." },
 	{ 0x046c, "Toshiba Corp., Digital Media Equipment" },
 	{ 0x046d, "Logitech, Inc." },
@@ -1226,6 +1227,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0a2c, "AK-Modul-Bus Computer GmbH" },
 	{ 0x0a34, "TG3 Electronics, Inc." },
 	{ 0x0a35, "Radikal Technologies" },
+	{ 0x0a38, "IRIS sa" },
 	{ 0x0a39, "Gilat Satellite Networks, Ltd" },
 	{ 0x0a3a, "PentaMedia Co., Ltd" },
 	{ 0x0a3c, "NTT DoCoMo, Inc." },
@@ -1249,7 +1251,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x0a5b, "EAsics NV" },
 	{ 0x0a5c, "Broadcom Corp." },
 	{ 0x0a5d, "Diatrend Corp." },
-	{ 0x0a5f, "Zebra" },
+	{ 0x0a5f, "Zebra Technologies" },
 	{ 0x0a62, "MPMan" },
 	{ 0x0a66, "ClearCube Technology" },
 	{ 0x0a67, "Medeli Electronics Co., Ltd" },
@@ -3267,6 +3269,7 @@ static struct vendor_name usb_vendor[] = {
 	{ 0x2e57, "MEGWARE Computer Vertrieb und Service GmbH" },
 	{ 0x2e69, "Swift Navigation" },
 	{ 0x2e95, "SCUF Gaming" },
+	{ 0x2ecc, "ASR Microelectronics" },
 	{ 0x2f76, "KeyXentic Inc." },
 	{ 0x2fad, "Definium Technologies" },
 	{ 0x2fb0, "Infocrypt" },

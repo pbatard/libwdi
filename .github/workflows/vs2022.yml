@@ -22,7 +22,7 @@ on:
 
 env:
   WDK_URL: https://go.microsoft.com/fwlink/p/?LinkID=253170
-  LIBUSB0_URL: https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.7.3/libusb-win32-bin-1.2.7.3.zip/download
+  LIBUSB0_URL: https://github.com/mcuee/libusb-win32/releases/download/release_1.4.0.0/libusb-win32-bin-1.4.0.0.zip
   LIBUSBK_URL: https://github.com/mcuee/libusbk/releases/download/V3.1.0.0/libusbK-3.1.0.0-bin.7z
   SOLUTION_FILE_PATH: ./libwdi.sln
   BUILD_MACROS: '"WDK_DIR=\"../wdk/Windows Kits/8.0\";LIBUSB0_DIR=\"../libusb0\";LIBUSBK_DIR=\"../libusbk/bin\""'
@@ -99,14 +99,3 @@ jobs:
       with:
         name: Zadig
         path: ./zadig-*.exe
-
-  Merge-Artifacts:
-    runs-on: windows-latest
-    needs: VS2022-Build
-    steps:
-      - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
-        if: ${{ github.event_name == 'push' }}
-        with:
-          name: Zadig
-          delete-merged: true
