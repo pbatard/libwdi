@@ -1035,7 +1035,7 @@ BOOL SelfSignFile(LPCSTR szFileName, LPCSTR szCertSubject)
 	// Sign file with cert
 	hResult = pfSignerSignEx(0, &signerSubjectInfo, &signerCert, &signerSignatureInfo, NULL, NULL, NULL, NULL, &pSignerContext);
 	if (hResult != S_OK) {
-		wdi_warn("SignerSignEx failed: %s", hResult, winpki_error_str(hResult));
+		wdi_warn("SignerSignEx failed: %s", winpki_error_str(hResult));
 		goto out;
 	}
 	r = TRUE;
