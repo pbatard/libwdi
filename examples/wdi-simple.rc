@@ -7,8 +7,8 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,1,790
- PRODUCTVERSION 1,5,1,790
+ FILEVERSION 1,5,1,791
+ PRODUCTVERSION 1,5,1,791
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -25,13 +25,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "WDI-Simple"
-            VALUE "FileVersion", "1.5.1.790"
+            VALUE "FileVersion", "1.5.1.791"
             VALUE "InternalName", "WDI-Simple"
             VALUE "LegalCopyright", "© 2010-2025 Pete Batard (LGPL v3)"
             VALUE "LegalTrademarks", "https://www.gnu.org/licenses/lgpl-3.0.html"
             VALUE "OriginalFilename", "wdi-simple.exe"
             VALUE "ProductName", "WDI-Simple"
-            VALUE "ProductVersion", "1.5.1.790"
+            VALUE "ProductVersion", "1.5.1.791"
             VALUE "Comments", "http://libwdi.akeo.ie"
         END
     END
