@@ -103,6 +103,7 @@ embedder embedded.h</Command>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
       <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalOptions>/BREPRO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -128,6 +129,7 @@ embedder embedded.h</Command>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
       <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalOptions>/BREPRO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -152,6 +154,7 @@ embedder embedded.h</Command>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
       <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalOptions>/BREPRO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -176,6 +179,7 @@ embedder embedded.h</Command>
       <OutputFile>$(OutDir)libwdi.dll</OutputFile>
       <ModuleDefinitionFile>../libwdi.def</ModuleDefinitionFile>
       <EmbedManagedResourceFile>../libwdi.rc;%(EmbedManagedResourceFile)</EmbedManagedResourceFile>
+      <AdditionalOptions>/BREPRO %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

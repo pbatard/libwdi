@@ -32,6 +32,7 @@ s/^[ \t]*FILEVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ FILEVERSION \1,\2,\3,@@BUILD@
 s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),\(.*\),.*/ PRODUCTVERSION \1,\2,\3,@@BUILD@@/
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@BUILD@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@BUILD@@"/
+s/\xef\xbf\xbd/\xa9/
 _EOF
 
 cat > _zadig.sed <<\_EOF
@@ -40,6 +41,7 @@ s/^[ \t]*PRODUCTVERSION[ \t]*\(.*\),\(.*\),.*,0/ PRODUCTVERSION \1,\2,@@BUILD@@,
 s/^\([ \t]*\)VALUE[ \t]*"FileVersion",[ \t]*"\(.*\)\..*"/\1VALUE "FileVersion", "\2.@@BUILD@@"/
 s/^\([ \t]*\)VALUE[ \t]*"ProductVersion",[ \t]*"\(.*\)\..*"/\1VALUE "ProductVersion", "\2.@@BUILD@@"/
 s/^\(.*\)"Zadig \(.*\)\..*"\(.*\)/\1"Zadig \2.@@BUILD@@"\3/
+s/\xef\xbf\xbd/\xa9/
 _EOF
 
 # First run sed to substitute our variable in the sed command file

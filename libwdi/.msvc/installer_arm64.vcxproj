@@ -91,11 +91,17 @@
     <ClCompile>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
+    <Link>
+      <AdditionalOptions>/BREPRO /DEPENDENTLOADFLAG:0x800 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
+    <Link>
+      <AdditionalOptions>/BREPRO /DEPENDENTLOADFLAG:0x800 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\installer.c" />

@@ -151,7 +151,7 @@ BEGIN
     LTEXT           "WCID",IDC_STATIC_WCID,14,84,18,9,SS_NOTIFY
     EDITTEXT        IDC_WCID_BOX,40,82,14,14,ES_READONLY | NOT WS_TABSTOP
     EDITTEXT        IDC_WCID,55,82,44,14,ES_READONLY | NOT WS_VISIBLE | NOT WS_TABSTOP,WS_EX_TRANSPARENT
-    LTEXT           "ï¿½",IDC_RARR,142,44,17,14,SS_NOTIFY | SS_CENTERIMAGE | NOT WS_VISIBLE
+    LTEXT           "",IDC_RARR,142,44,17,14,SS_NOTIFY | SS_CENTERIMAGE | NOT WS_VISIBLE
     EDITTEXT        IDC_TARGET,162,44,98,14,ES_READONLY | NOT WS_TABSTOP
     CONTROL         "",IDC_TARGETSPIN,"msctls_updown32",UDS_ARROWKEYS,260,44,11,14,WS_EX_TRANSPARENT
     CONTROL         IDB_ZADIG,IDC_THIS_SPACE_FOR_RENT,"Static",SS_BITMAP | SS_CENTERIMAGE | SS_REALSIZEIMAGE,278,37,97,66
@@ -246,8 +246,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,9,788,0
- PRODUCTVERSION 2,9,788,0
+ FILEVERSION 2,9,789,0
+ PRODUCTVERSION 2,9,789,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -264,13 +264,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "akeo.ie"
             VALUE "FileDescription", "Zadig"
-            VALUE "FileVersion", "2.9.788"
+            VALUE "FileVersion", "2.9.789"
             VALUE "InternalName", "Zadig"
-            VALUE "LegalCopyright", "ï¿½ 2010-2023 Pete Batard (GPL v3)"
-            VALUE "LegalTrademarks", "https://www.gnu.org/copyleft/gpl.html"
+            VALUE "LegalCopyright", "© 2010-2025 Pete Batard (GPL v3)"
+            VALUE "LegalTrademarks", "https://www.gnu.org/licenses/gpl-3.0.html"
             VALUE "OriginalFilename", "zadig.exe"
             VALUE "ProductName", "Zadig"
-            VALUE "ProductVersion", "2.9.788"
+            VALUE "ProductVersion", "2.9.789"
             VALUE "Comments", "https://zadig.akeo.ie"
         END
     END
