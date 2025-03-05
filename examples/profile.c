@@ -299,6 +299,7 @@ long profile_update_file(prf_file_t prf)
 		retval = errno;
 		if (retval == 0)
 			retval = ENOENT;
+		profile_free_node(state.root_section);
 		return retval;
 	}
 	prf->upd_serial++;
@@ -311,6 +312,7 @@ long profile_update_file(prf_file_t prf)
 				(syntax_err_cb)(prf->filespec, retval,
 						state.line_num);
 			fclose(f);
+			profile_free_node(state.root_section);
 			return retval;
 		}
 	}

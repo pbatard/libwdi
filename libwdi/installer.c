@@ -104,12 +104,12 @@ void plog_v(const char *format, va_list args)
 
 	buffer[0] = IC_PRINT_MESSAGE;
 
-	size = safe_vsnprintf(buffer+1, STR_BUFFER_SIZE-1, format, args);
+	size = safe_vsnprintf(buffer + 1, STR_BUFFER_SIZE - 1, format, args);
 	if (size < 0) {
-		buffer[STR_BUFFER_SIZE-1] = 0;
-		size = STR_BUFFER_SIZE-2;
+		buffer[STR_BUFFER_SIZE - 1] = 0;
+		size = STR_BUFFER_SIZE - 2;
 	}
-	WriteFile(pipe_handle, buffer, (DWORD)size+2, &junk, NULL);
+	WriteFile(pipe_handle, buffer, (DWORD)min(size + 2, STR_BUFFER_SIZE), &junk, NULL);
 }
 
 void plog(const char *format, ...)

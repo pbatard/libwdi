@@ -120,23 +120,24 @@ EXT_DECL(cfg_ext, "sample.cfg", __VA_GROUP__("*.cfg"), __VA_GROUP__("Zadig devic
  */
 void w_printf_v(BOOL update_status, const char *format, va_list args)
 {
-	char str[STR_BUFFER_SIZE+2];
+	char str[STR_BUFFER_SIZE + 2];
 	int size;
 	size_t slen;
 
 	size = safe_vsnprintf(str, STR_BUFFER_SIZE, format, args);
 	if (size < 0) {
-		str[STR_BUFFER_SIZE-1] = 0;
-		str[STR_BUFFER_SIZE-2] = ']';
-		str[STR_BUFFER_SIZE-3] = str[STR_BUFFER_SIZE-4] = str[STR_BUFFER_SIZE-5] = '.';
-		str[STR_BUFFER_SIZE-6] = '[';
+		str[STR_BUFFER_SIZE - 1] = 0;
+		str[STR_BUFFER_SIZE - 2] = ']';
+		str[STR_BUFFER_SIZE - 3] = str[STR_BUFFER_SIZE - 4] = str[STR_BUFFER_SIZE - 5] = '.';
+		str[STR_BUFFER_SIZE - 6] = '[';
 	}
 	slen = safe_strlen(str);
 	str[slen] = '\r';
-	str[slen+1] = '\n';
-	str[slen+2] = 0;
+	str[slen + 1] = '\n';
+	str[slen + 2] = 0;
 
 	// Also send output to debug logger
+	// coverity[dont_call]
 	OutputDebugStringA(str);
 	// Set cursor to the end of the buffer
 	Edit_SetSel(hInfo, MAX_LOG_SIZE, MAX_LOG_SIZE);
@@ -407,7 +408,8 @@ out:
 	if ((pd_options.use_wcid_driver) && (dev != NULL)) {
 		safe_free(dev->desc);
 	}
-	if (need_dealloc) {
+	if (need_dealloc && (dev != NULL)) {
+		free(dev->desc);
 		free(dev);
 	}
 	safe_free(inf_name);
